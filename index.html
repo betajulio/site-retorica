@@ -4,77 +4,228 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retórica | Classic Rock</title>
+    
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Oswald:wght@500;700&family=Special+Elite&display=swap" rel="stylesheet">
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Roboto:wght@400;700&display=swap');
-        body { background-color: #121212; color: #f5f5f5; font-family: 'Roboto', sans-serif; margin: 0; scroll-behavior: smooth; }
-        h1, h2, h3 { font-family: 'Oswald', sans-serif; text-transform: uppercase; color: #d32f2f; }
-        header { text-align: center; padding: 80px 20px; background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&w=1350&q=80') center/cover; border-bottom: 3px solid #d32f2f; }
-        .quick-access { display: flex; justify-content: center; gap: 20px; margin-top: -30px; padding-bottom: 40px; flex-wrap: wrap; }
-        .btn-main { background-color: #d32f2f; color: white; padding: 15px 25px; text-decoration: none; font-family: 'Oswald', sans-serif; font-size: 1.1em; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.3s; border: none; cursor: pointer; }
-        .btn-main:hover { transform: scale(1.05); background-color: #b71c1c; }
-        nav { background: #000; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
-        nav a { color: #fff; text-decoration: none; margin: 0 15px; font-family: 'Oswald'; font-weight: bold; }
-        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
-        section { background-color: #1e1e1e; padding: 30px; margin-bottom: 30px; border-radius: 8px; border-left: 5px solid #d32f2f; }
-        #setlist-content, #repertorio-content { line-height: 1.6; font-size: 1.1em; }
+        /* O GRUNGE E A SUJEIRA DO CLASSIC ROCK */
+        body { 
+            background-color: #050505; 
+            background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png'), radial-gradient(circle, #1a1a1a 0%, #000000 100%);
+            color: #e0e0e0; 
+            font-family: 'Special Elite', monospace; /* Fonte estilo máquina de escrever velha */
+            margin: 0; 
+            scroll-behavior: smooth; 
+        }
+
+        h1, h2, h3 { 
+            font-family: 'Metal Mania', system-ui; /* Fonte rasgada estilo banda de rock */
+            color: #bf0000; /* Vermelho sangue */
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        /* HEADER CABULOSO COM GUITARRA */
+        header { 
+            text-align: center; 
+            padding: 100px 20px; 
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(15,0,0,0.9)), url('https://images.unsplash.com/photo-1598514982205-f36b96d1e8d4?q=80&w=1920') center/cover; 
+            border-bottom: 5px solid #bf0000;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        header h1 { font-size: 5em; margin: 0; color: #fff; text-shadow: 4px 4px 0px #bf0000; }
+        header p { font-size: 1.5em; color: #aaa; font-family: 'Oswald', sans-serif; text-transform: uppercase; }
+
+        /* DECORAÇÕES (ARANHAS E TEIAS VIA CSS) */
+        .spider-web {
+            position: absolute;
+            top: 0; right: 0;
+            width: 150px; height: 150px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path stroke="%23333" stroke-width="1" fill="none" d="M0,0 L100,100 M50,0 L50,100 M100,0 L0,100 M0,50 L100,50 M10,10 Q50,30 90,10 M20,20 Q50,45 80,20 M30,30 Q50,60 70,30"/></svg>');
+            opacity: 0.5;
+        }
+
+        /* BOTÕES ESTILO PEDAL DE GUITARRA */
+        .quick-access { display: flex; justify-content: center; gap: 20px; margin-top: -35px; position: relative; z-index: 10; flex-wrap: wrap; }
+        
+        .btn-main { 
+            background: #111; 
+            color: #fff; 
+            padding: 15px 30px; 
+            text-decoration: none; 
+            font-family: 'Oswald', sans-serif; 
+            font-size: 1.2em; 
+            text-transform: uppercase;
+            border: 2px solid #333;
+            border-top: 2px solid #555;
+            border-radius: 4px; 
+            box-shadow: inset 0 -5px 15px rgba(0,0,0,0.8), 0 10px 15px rgba(0,0,0,0.9); 
+            transition: 0.2s; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+        
+        .btn-main:hover { 
+            background: #bf0000; 
+            border-color: #ff3333; 
+            color: #000; 
+            box-shadow: 0 0 20px #bf0000; 
+            transform: translateY(-2px);
+        }
+
+        /* NAVEGAÇÃO RÚSTICA */
+        nav { background: #0a0a0a; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; border-bottom: 2px dashed #bf0000; }
+        nav a { color: #888; text-decoration: none; margin: 0 20px; font-family: 'Metal Mania'; font-size: 1.5em; transition: 0.3s; }
+        nav a:hover { color: #bf0000; text-shadow: 0 0 10px #bf0000; }
+
+        .container { max-width: 1000px; margin: 50px auto; padding: 0 20px; }
+        
+        /* SEÇÕES RASGADAS */
+        section { 
+            background-color: #111; 
+            padding: 40px; 
+            margin-bottom: 40px; 
+            border: 1px solid #333;
+            border-left: 8px solid #bf0000; 
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        section h2 { font-size: 2.5em; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 0; }
+
+        /* TEXTO DO SETLIST CLARO E VISÍVEL */
+        #setlist-content, #repertorio-content { 
+            font-size: 1.2em; 
+            line-height: 1.8; 
+            color: #f0f0f0; 
+            background: #0a0a0a;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px dashed #444;
+        }
+
+        /* MEMBROS DA BANDA */
+        .members-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 20px; }
+        .member-card { background: #050505; border: 1px solid #bf0000; padding: 20px; text-align: center; transition: 0.3s; }
+        .member-card:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(191,0,0,0.5); }
+        .member-card img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #bf0000; object-fit: cover; margin-bottom: 15px; }
+        .member-card h3 { margin: 0; font-size: 1.8em; }
+        .member-card p { color: #888; margin-top: 5px; font-family: 'Oswald', sans-serif; text-transform: uppercase; }
+
+        /* GALERIA DE FOTOS */
         .photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .photo-item { width: 100%; border-radius: 4px; border: 2px solid #333; }
+        .photo-item { width: 100%; height: 200px; object-fit: cover; border: 3px solid #333; filter: grayscale(50%) contrast(120%); transition: 0.3s; }
+        .photo-item:hover { filter: grayscale(0%); border-color: #bf0000; }
+
+        /* RATO ROQUEIRO NO RODAPÉ */
+        footer { text-align: center; padding: 50px; border-top: 1px solid #333; margin-top: 50px; font-size: 2em; }
     </style>
 </head>
 <body>
 
 <header>
+    <div class="spider-web"></div>
     <h1>RETÓRICA</h1>
-    <p>Classic Rock Management | Itaquaquecetuba</p>
+    <p>A Toca do Mineiro | Classic Rock</p>
 </header>
 
 <div class="quick-access">
-    <a href="#ensaio" class="btn-main">🎸 ENSAIO DA SEMANA</a>
-    <a href="#repertorio" class="btn-main">🎼 REPERTÓRIO</a>
-    <button onclick="netlifyIdentity.open()" class="btn-main" style="background:#333">🔐 LOGIN ADMIN</button>
+    <a href="#ensaio" class="btn-main">🎸 Ensaio da Semana</a>
+    <a href="#repertorio" class="btn-main">🎼 Repertório</a>
+    <button onclick="netlifyIdentity.open()" class="btn-main">🔐 QG Restrito (Admin)</button>
 </div>
 
 <nav>
-    <a href="#ensaio">ENSAIO</a>
-    <a href="#repertorio">REPERTÓRIO</a>
+    <a href="#membros">A BANDA</a>
+    <a href="#ensaio">SETLIST</a>
     <a href="#fotos">FOTOS</a>
 </nav>
 
 <div class="container">
+
+    <section id="membros">
+        <h2>A Banda</h2>
+        <div class="members-grid">
+            <div class="member-card">
+                <img src="https://ui-avatars.com/api/?name=Vocal&background=111&color=bf0000" alt="Vocal">
+                <h3>Vocalista</h3>
+                <p>Voz e Frontman</p>
+            </div>
+            <div class="member-card">
+                <img src="https://ui-avatars.com/api/?name=Guitarra&background=111&color=bf0000" alt="Guitarra">
+                <h3>Você</h3>
+                <p>Guitarras e Riffs</p>
+            </div>
+            <div class="member-card">
+                <img src="https://ui-avatars.com/api/?name=Vini&background=111&color=bf0000" alt="Vini">
+                <h3>Vini</h3>
+                <p>Violão / Baixo</p>
+            </div>
+            <div class="member-card">
+                <img src="https://ui-avatars.com/api/?name=Batera&background=111&color=bf0000" alt="Bateria">
+                <h3>Baterista</h3>
+                <p>Bateria</p>
+            </div>
+        </div>
+    </section>
+
     <section id="ensaio">
-        <h2>Próximo Ensaio</h2>
-        <div id="setlist-content">Carregando detalhes do ensaio...</div>
+        <h2>Setlist do Próximo Ensaio</h2>
+        <div id="setlist-content">
+            <p>Buscando setlist na Toca do Mineiro...</p>
+        </div>
     </section>
 
     <section id="repertorio">
         <h2>Repertório Atual</h2>
-        <div id="repertorio-content">O repertório da banda aparecerá aqui.</div>
+        <div id="repertorio-content">
+            <p>1. Paranoid - Black Sabbath<br>
+               2. Smoke on the Water - Deep Purple<br>
+               3. Whole Lotta Love - Led Zeppelin<br>
+               <em>(Edite a lista direto no código HTML para manter o layout quebrado e roots!)</em>
+            </p>
+        </div>
     </section>
 
     <section id="fotos">
-        <h2>Galeria de Fotos</h2>
-        <div class="photo-gallery" id="gallery-content">
-            <p>As fotos da Toca do Mineiro aparecerão aqui.</p>
+        <h2>Registros</h2>
+        <div class="photo-gallery">
+            <img src="https://images.unsplash.com/photo-1511735111819-9a3f7709049c?q=80&w=500" class="photo-item" alt="Estúdio">
+            <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=500" class="photo-item" alt="Show">
         </div>
     </section>
+
 </div>
 
+<footer>
+    🐀 🤘 🕷️
+</footer>
+
 <script>
-    // 1. Script para carregar o Setlist da Semana
+    // 1. Script que vai buscar APENAS o Setlist salvo no painel administrativo
     fetch('/conteudo/ensaio_atual.md')
-        .then(response => response.text())
+        .then(response => {
+            if (!response.ok) throw new Error("Setlist não publicado ainda.");
+            return response.text();
+        })
         .then(text => {
-            // Remove o cabeçalho do arquivo (frontmatter) e foca no conteúdo
-            const content = text.split('---').pop();
-            document.getElementById('setlist-content').innerHTML = marked.parse(content);
+            // Separa os metadados gerados pelo CMS e pega só o texto das músicas
+            let contentParts = text.split('---');
+            let mainContent = contentParts.length > 2 ? contentParts.slice(2).join('---') : text;
+            
+            // Renderiza o markdown para HTML na tela
+            document.getElementById('setlist-content').innerHTML = marked.parse(mainContent);
         })
         .catch(err => {
-            document.getElementById('setlist-content').innerHTML = "<p>Crie o primeiro ensaio no painel administrativo.</p>";
+            document.getElementById('setlist-content').innerHTML = "<p style='color:#bf0000;'>Nenhum ensaio programado ou publicado no painel ainda.</p>";
         });
 
-    // 2. Lógica do Login Administrativo
+    // 2. Inicializador do Painel de Login
     if (window.netlifyIdentity) {
         window.netlifyIdentity.on("init", user => {
             if (!user) {
