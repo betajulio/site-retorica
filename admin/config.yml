@@ -1,0 +1,46 @@
+backend:
+  name: git-gateway
+  branch: main # Certifique-se de que sua branch no GitHub/Netlify seja 'main'
+
+media_folder: "imagens/upload" # Onde as fotos novas serão salvas
+public_folder: "/imagens/upload"
+
+collections:
+  - name: "membros"
+    label: "Membros da Banda"
+    folder: "conteudo/membros"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - {label: "Nome do Integrante", name: "title", widget: "string"}
+      - {label: "Instrumento Principal", name: "instrumento", widget: "string"}
+      - {label: "Bio/Resumo", name: "body", widget: "markdown"}
+      - {label: "Foto de Perfil", name: "foto", widget: "image"}
+
+  - name: "repertorio"
+    label: "Repertório Completo"
+    folder: "conteudo/repertorio"
+    create: true
+    fields:
+      - {label: "Nome da Música", name: "title", widget: "string"}
+      - {label: "Artista/Banda", name: "artista", widget: "string"}
+      - {label: "Status", name: "status", widget: "select", options: ["Ensaiando", "Pronta", "Sugestão"]}
+
+  - name: "ensaio"
+    label: "Setlist do Próximo Ensaio"
+    files:
+      - label: "Setlist da Semana"
+        name: "setlist_semana"
+        file: "conteudo/ensaio_atual.md"
+        fields:
+          - {label: "Data do Próximo Ensaio", name: "data_ensaio", widget: "datetime"}
+          - {label: "Lista de Músicas (Ordem)", name: "body", widget: "markdown"}
+
+  - name: "galeria"
+    label: "Galeria de Fotos"
+    folder: "conteudo/fotos"
+    create: true
+    fields:
+      - {label: "Título da Foto/Evento", name: "title", widget: "string"}
+      - {label: "Arquivo da Imagem", name: "imagem", widget: "image"}
+      - {label: "Data", name: "date", widget: "date"}
