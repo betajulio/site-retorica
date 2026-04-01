@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retórica — Classic Rock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0804;
+    --dark: #130f09;
+    --brown: #2a1a08;
+    --amber: #c8820a;
+    --gold: #e8a820;
+    --cream: #f0e4c8;
+    --rust: #8b3a0a;
+    --paper: #d4c4a0;
+    --smoke: #6b6050;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--black); color: var(--cream); font-family: 'Lora', serif; overflow-x: hidden; }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.4;
+  }
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: linear-gradient(180deg, rgba(10,8,4,0.98) 0%, rgba(10,8,4,0.85) 100%);
+    border-bottom: 1px solid rgba(200,130,10,0.3);
+    padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;
+    height: 60px; backdrop-filter: blur(10px);
+  }
+  .nav-logo { font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 900; color: var(--gold); letter-spacing: 0.15em; }
+  .nav-links { display: flex; gap: 0; list-style: none; }
+  .nav-links a { color: var(--paper); text-decoration: none; font-family: 'Lora', serif; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.5rem 0.85rem; transition: color 0.2s; cursor: pointer; }
+  .nav-links a:hover { color: var(--gold); }
+  #hero { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% 60%, rgba(200,130,10,0.08) 0%, transparent 70%), radial-gradient(ellipse 40% 40% at 20% 80%, rgba(139,58,10,0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 20%, rgba(200,130,10,0.06) 0%, transparent 60%); }
+  .hero-lines { position: absolute; inset: 0; background-image: repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(200,130,10,0.04) 59px, rgba(200,130,10,0.04) 60px); }
+  .hero-content { position: relative; text-align: center; animation: fadeUp 1.2s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+  .hero-tag { font-family: 'IM Fell English SC', serif; font-size: 0.85rem; letter-spacing: 0.4em; color: var(--amber); text-transform: uppercase; margin-bottom: 1.5rem; }
+  .hero-title { font-family: 'Cinzel', serif; font-size: clamp(5rem, 14vw, 12rem); font-weight: 900; color: var(--cream); line-height: 0.85; letter-spacing: -0.02em; text-shadow: 0 0 80px rgba(200,130,10,0.3), 0 0 160px rgba(200,130,10,0.1), 3px 3px 0 rgba(139,58,10,0.4); animation: fadeUp 1.2s 0.2s ease both; }
+  .hero-subtitle { font-family: 'IM Fell English SC', serif; font-size: 1rem; letter-spacing: 0.5em; color: var(--smoke); margin-top: 1.5rem; animation: fadeUp 1.2s 0.4s ease both; }
+  .hero-divider { display: flex; align-items: center; gap: 1rem; margin: 2rem auto; width: 300px; animation: fadeUp 1.2s 0.6s ease both; }
+  .hero-divider::before { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--amber)); }
+  .hero-divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--amber), transparent); }
+  .hero-diamond { width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); }
+  .scroll-hint { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.5rem; color: var(--smoke); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; animation: bounce 2s infinite; }
+  .scroll-arrow { width: 1px; height: 30px; background: linear-gradient(180deg, transparent, var(--amber)); }
+  @keyframes bounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
+  section { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
+  .section-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 3.5rem; }
+  .section-number { font-family: 'Bebas Neue', sans-serif; font-size: 4rem; color: rgba(200,130,10,0.2); line-height: 1; min-width: 60px; }
+  .section-title-wrap h2 { font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 700; color: var(--cream); letter-spacing: 0.05em; }
+  .section-title-wrap p { color: var(--smoke); font-size: 0.85rem; letter-spacing: 0.1em; margin-top: 0.3rem; text-transform: uppercase; }
+  .section-line { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(200,130,10,0.4), transparent); }
+  .full-divider { border: none; height: 1px; background: linear-gradient(90deg, transparent, rgba(200,130,10,0.2), transparent); max-width: 1100px; margin: 0 auto; }
+  .members-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.5rem; }
+  .member-card { background: linear-gradient(135deg, rgba(42,26,8,0.8) 0%, rgba(19,15,9,0.9) 100%); border: 1px solid rgba(200,130,10,0.2); border-radius: 2px; padding: 1.5rem 1.2rem; text-align: center; transition: border-color 0.3s, transform 0.3s; position: relative; overflow: hidden; }
+  .member-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--amber), transparent); opacity: 0; transition: opacity 0.3s; }
+  .member-card:hover { border-color: rgba(200,130,10,0.5); transform: translateY(-3px); }
+  .member-card:hover::before { opacity: 1; }
+  .member-avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--brown), var(--rust)); margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--gold); border: 2px solid rgba(200,130,10,0.3); }
+  .member-name { font-family: 'Cinzel', serif; font-size: 0.95rem; font-weight: 700; color: var(--cream); margin-bottom: 0.3rem; }
+  .member-role { font-size: 0.75rem; color: var(--amber); letter-spacing: 0.1em; text-transform: uppercase; }
+  .member-since { font-size: 0.7rem; color: var(--smoke); margin-top: 0.4rem; font-style: italic; }
+  .remove-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: none; border: none; color: rgba(139,58,10,0.5); cursor: pointer; font-size: 1rem; transition: color 0.2s; line-height: 1; }
+  .remove-btn:hover { color: var(--rust); }
+  .form-card { background: linear-gradient(135deg, rgba(42,26,8,0.6) 0%, rgba(19,15,9,0.8) 100%); border: 1px solid rgba(200,130,10,0.2); border-radius: 2px; padding: 2rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  label { font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--amber); }
+  input, select, textarea { background: rgba(10,8,4,0.8); border: 1px solid rgba(200,130,10,0.25); color: var(--cream); padding: 0.7rem 0.9rem; font-family: 'Lora', serif; font-size: 0.9rem; border-radius: 1px; outline: none; transition: border-color 0.2s; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 1px rgba(200,130,10,0.15); }
+  select option { background: var(--dark); }
+  textarea { resize: vertical; min-height: 90px; }
+  .btn { background: linear-gradient(135deg, var(--amber), var(--rust)); color: var(--black); border: none; padding: 0.75rem 2rem; font-family: 'Cinzel', serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; border-radius: 1px; transition: opacity 0.2s, transform 0.2s; }
+  .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-ghost { background: transparent; border: 1px solid rgba(200,130,10,0.4); color: var(--amber); padding: 0.5rem 1.2rem; font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; border-radius: 1px; transition: all 0.2s; }
+  .btn-ghost:hover { background: rgba(200,130,10,0.1); border-color: var(--amber); }
+  .poll-card { background: linear-gradient(135deg, rgba(42,26,8,0.6), rgba(19,15,9,0.8)); border: 1px solid rgba(200,130,10,0.2); border-radius: 2px; padding: 1.5rem; margin-bottom: 1.2rem; }
+  .poll-question { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--cream); margin-bottom: 1rem; }
+  .poll-options { display: flex; flex-direction: column; gap: 0.6rem; }
+  .poll-option input[type="radio"] { display: none; }
+  .poll-option-label { flex: 1; display: flex; align-items: center; gap: 0.8rem; cursor: pointer; padding: 0.6rem 0.8rem; border: 1px solid rgba(200,130,10,0.15); border-radius: 1px; transition: all 0.2s; font-size: 0.88rem; }
+  .poll-option-label:hover { border-color: rgba(200,130,10,0.4); background: rgba(200,130,10,0.05); }
+  .poll-dot { width: 14px; height: 14px; border: 2px solid rgba(200,130,10,0.5); border-radius: 50%; flex-shrink: 0; transition: all 0.2s; }
+  .poll-option input[type="radio"]:checked + .poll-option-label .poll-dot { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 8px rgba(200,130,10,0.5); }
+  .poll-option input[type="radio"]:checked + .poll-option-label { border-color: var(--amber); background: rgba(200,130,10,0.08); }
+  .poll-bar-item { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.5rem; font-size: 0.82rem; }
+  .poll-bar-label { min-width: 180px; color: var(--paper); }
+  .poll-bar-track { flex: 1; height: 6px; background: rgba(200,130,10,0.1); border-radius: 3px; overflow: hidden; }
+  .poll-bar-fill { height: 100%; background: linear-gradient(90deg, var(--rust), var(--gold)); border-radius: 3px; transition: width 0.6s ease; }
+  .poll-bar-pct { min-width: 40px; text-align: right; color: var(--amber); font-size: 0.78rem; }
+  .poll-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
+  .poll-total { font-size: 0.75rem; color: var(--smoke); font-style: italic; }
+  .setlist-panel { background: linear-gradient(135deg, rgba(42,26,8,0.6), rgba(19,15,9,0.8)); border: 1px solid rgba(200,130,10,0.2); border-radius: 2px; overflow: hidden; }
+  .setlist-panel-header { background: rgba(200,130,10,0.08); padding: 1rem 1.2rem; border-bottom: 1px solid rgba(200,130,10,0.15); display: flex; justify-content: space-between; align-items: center; }
+  .setlist-panel-title { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold); }
+  .setlist-list { list-style: none; padding: 0.8rem 0; min-height: 200px; }
+  .setlist-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem 1.2rem; transition: background 0.2s; cursor: grab; font-size: 0.88rem; }
+  .setlist-item:hover { background: rgba(200,130,10,0.05); }
+  .setlist-item.dragging { opacity: 0.5; cursor: grabbing; }
+  .setlist-num { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; color: rgba(200,130,10,0.4); min-width: 24px; }
+  .setlist-song { flex: 1; color: var(--cream); }
+  .setlist-artist { font-size: 0.75rem; color: var(--smoke); font-style: italic; }
+  .setlist-remove { background: none; border: none; color: rgba(139,58,10,0.4); cursor: pointer; font-size: 0.9rem; transition: color 0.2s; padding: 0.2rem; }
+  .setlist-remove:hover { color: var(--rust); }
+  .setlist-add-row { padding: 0.8rem 1.2rem; border-top: 1px solid rgba(200,130,10,0.1); display: flex; gap: 0.5rem; }
+  .setlist-input { flex: 1; background: rgba(10,8,4,0.6); border: 1px solid rgba(200,130,10,0.2); color: var(--cream); padding: 0.5rem 0.7rem; font-size: 0.82rem; font-family: 'Lora', serif; border-radius: 1px; outline: none; }
+  .setlist-input:focus { border-color: var(--amber); }
+  .setlist-add-btn { background: rgba(200,130,10,0.15); border: 1px solid rgba(200,130,10,0.3); color: var(--amber); padding: 0.5rem 0.9rem; cursor: pointer; font-size: 1rem; border-radius: 1px; transition: all 0.2s; }
+  .setlist-add-btn:hover { background: rgba(200,130,10,0.25); }
+  .forum-sessions { display: flex; flex-direction: column; gap: 1.2rem; }
+  .forum-thread { background: linear-gradient(135deg, rgba(42,26,8,0.6), rgba(19,15,9,0.8)); border: 1px solid rgba(200,130,10,0.2); border-radius: 2px; overflow: hidden; }
+  .forum-thread-header { padding: 1.2rem 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; background: rgba(200,130,10,0.04); border-bottom: 1px solid rgba(200,130,10,0.1); }
+  .forum-thread-header:hover { background: rgba(200,130,10,0.08); }
+  .forum-thread-title { font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--cream); }
+  .forum-thread-meta { font-size: 0.72rem; color: var(--smoke); margin-top: 0.2rem; font-style: italic; }
+  .forum-chevron { color: var(--amber); font-size: 0.8rem; transition: transform 0.3s; }
+  .forum-chevron.open { transform: rotate(180deg); }
+  .forum-body { display: none; padding: 1.5rem; }
+  .forum-body.open { display: block; }
+  .forum-posts { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.2rem; }
+  .forum-post { display: flex; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(200,130,10,0.08); }
+  .forum-post:last-child { border-bottom: none; padding-bottom: 0; }
+  .post-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--brown), var(--rust)); display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold); flex-shrink: 0; border: 1px solid rgba(200,130,10,0.25); }
+  .post-content { flex: 1; }
+  .post-meta { display: flex; gap: 0.6rem; align-items: baseline; margin-bottom: 0.4rem; }
+  .post-author { font-family: 'Cinzel', serif; font-size: 0.82rem; color: var(--amber); font-weight: 700; }
+  .post-date { font-size: 0.7rem; color: var(--smoke); font-style: italic; }
+  .post-text { font-size: 0.88rem; color: var(--paper); line-height: 1.6; }
+  .forum-reply-form { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .suggestions-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; }
+  .suggestion-item { display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.2rem; background: rgba(42,26,8,0.5); border: 1px solid rgba(200,130,10,0.15); border-radius: 1px; transition: all 0.2s; font-size: 0.88rem; }
+  .suggestion-item:hover { border-color: rgba(200,130,10,0.35); }
+  .suggestion-song { flex: 1; color: var(--cream); }
+  .suggestion-artist { min-width: 140px; color: var(--smoke); font-style: italic; font-size: 0.82rem; }
+  .suggestion-by { min-width: 100px; font-size: 0.75rem; color: var(--amber); }
+  .suggestion-vote { display: flex; align-items: center; gap: 0.4rem; background: none; border: 1px solid rgba(200,130,10,0.25); color: var(--amber); padding: 0.3rem 0.7rem; cursor: pointer; border-radius: 1px; font-size: 0.78rem; font-family: 'Cinzel', serif; transition: all 0.2s; }
+  .suggestion-vote:hover { background: rgba(200,130,10,0.1); border-color: var(--amber); }
+  .suggestion-vote.voted { background: rgba(200,130,10,0.15); }
+  .toast { position: fixed; bottom: 2rem; right: 2rem; background: linear-gradient(135deg, var(--brown), rgba(19,15,9,0.95)); border: 1px solid var(--amber); color: var(--cream); padding: 1rem 1.5rem; border-radius: 2px; font-size: 0.85rem; z-index: 10000; transform: translateY(100px); opacity: 0; transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .tabs { display: flex; gap: 0; margin-bottom: 2rem; border-bottom: 1px solid rgba(200,130,10,0.2); }
+  .tab-btn { background: none; border: none; color: var(--smoke); padding: 0.7rem 1.5rem; font-family: 'Cinzel', serif; font-size: 0.8rem; letter-spacing: 0.1em; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; text-transform: uppercase; margin-bottom: -1px; }
+  .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab-btn:hover:not(.active) { color: var(--paper); }
+  @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } .nav-links { display: none; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Retórica</div>
+  <ul class="nav-links">
+    <li><a onclick="goTo('membros')">Membros</a></li>
+    <li><a onclick="goTo('sugestoes')">Sugestões</a></li>
+    <li><a onclick="goTo('enquetes')">Enquetes</a></li>
+    <li><a onclick="goTo('setlist')">Setlist</a></li>
+    <li><a onclick="goTo('forum')">Fórum</a></li>
+  </ul>
+</nav>
+
+<div id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-lines"></div>
+  <div class="hero-content">
+    <p class="hero-tag">Classic Rock</p>
+    <h1 class="hero-title">Retórica</h1>
+    <div class="hero-divider"><div class="hero-diamond"></div></div>
+    <p class="hero-subtitle">Ensaia com paixão &nbsp;·&nbsp; Toca com alma</p>
+  </div>
+  <div class="scroll-hint"><span>Explorar</span><div class="scroll-arrow"></div></div>
+</div>
+
+<!-- MEMBROS -->
+<section id="membros">
+  <div class="section-header">
+    <div class="section-number">01</div>
+    <div class="section-title-wrap"><h2>Membros da Banda</h2><p>A família Retórica</p></div>
+    <div class="section-line"></div>
+  </div>
+  <div class="members-grid" id="membersGrid"></div>
+  <div style="margin-top:2.5rem">
+    <div class="section-header" style="margin-bottom:1.5rem">
+      <div class="section-title-wrap"><h2 style="font-size:1.3rem">Adicionar Membro</h2></div>
+    </div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-group"><label>Nome</label><input type="text" id="newMemberName" placeholder="Nome completo"></div>
+        <div class="form-group">
+          <label>Instrumento / Função</label>
+          <select id="newMemberRole">
+            <option value="">Selecione...</option>
+            <option>Vocal</option><option>Guitarra</option><option>Guitarra Base</option>
+            <option>Baixo</option><option>Bateria</option><option>Teclado</option><option>Violão</option><option>Outro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Desde</label><input type="month" id="newMemberSince"></div>
+        <div class="form-group"><label>Contato (opcional)</label><input type="text" id="newMemberContact" placeholder="WhatsApp ou e-mail"></div>
+      </div>
+      <button class="btn" onclick="addMember()">Adicionar Membro</button>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- SUGESTÕES -->
+<section id="sugestoes">
+  <div class="section-header">
+    <div class="section-number">02</div>
+    <div class="section-title-wrap"><h2>Sugestões de Músicas</h2><p>Proponha e vote nas próximas pedidas</p></div>
+    <div class="section-line"></div>
+  </div>
+  <div class="form-card">
+    <div class="form-row">
+      <div class="form-group"><label>Música</label><input type="text" id="sugSong" placeholder="Nome da música"></div>
+      <div class="form-group"><label>Artista / Banda</label><input type="text" id="sugArtist" placeholder="Ex: Led Zeppelin"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Quem sugere</label><input type="text" id="sugBy" placeholder="Seu nome"></div>
+      <div class="form-group"><label>Observação (opcional)</label><input type="text" id="sugNote" placeholder="Ex: pra fechar o set"></div>
+    </div>
+    <button class="btn" onclick="addSuggestion()">Enviar Sugestão</button>
+  </div>
+  <div class="suggestions-list" id="suggestionsList"></div>
+</section>
+
+<hr class="full-divider">
+
+<!-- ENQUETES -->
+<section id="enquetes">
+  <div class="section-header">
+    <div class="section-number">03</div>
+    <div class="section-title-wrap"><h2>Enquetes</h2><p>Vote nas músicas do próximo ensaio</p></div>
+    <div class="section-line"></div>
+  </div>
+  <div id="pollsContainer"></div>
+  <div style="margin-top:2rem">
+    <div class="form-card">
+      <p style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold);margin-bottom:1rem">Criar Nova Enquete</p>
+      <div class="form-row full">
+        <div class="form-group"><label>Pergunta</label><input type="text" id="pollQuestion" placeholder="Ex: Qual bloco de músicas pro próximo ensaio?"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Opção 1</label><input type="text" class="poll-opt-input" placeholder="Ex: Abertura clássica"></div>
+        <div class="form-group"><label>Opção 2</label><input type="text" class="poll-opt-input" placeholder="Ex: Set pesado"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Opção 3 (opcional)</label><input type="text" class="poll-opt-input"></div>
+        <div class="form-group"><label>Opção 4 (opcional)</label><input type="text" class="poll-opt-input"></div>
+      </div>
+      <button class="btn" onclick="createPoll()">Criar Enquete</button>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- SETLIST -->
+<section id="setlist">
+  <div class="section-header">
+    <div class="section-number">04</div>
+    <div class="section-title-wrap"><h2>Setlist dos Ensaios</h2><p>Arraste para reordenar</p></div>
+    <div class="section-line"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(0,this)">Ensaio Atual</button>
+    <button class="tab-btn" onclick="switchTab(1,this)">Próximo Ensaio</button>
+  </div>
+  <div id="setlistContainer"></div>
+</section>
+
+<hr class="full-divider">
+
+<!-- FÓRUM -->
+<section id="forum">
+  <div class="section-header">
+    <div class="section-number">05</div>
+    <div class="section-title-wrap"><h2>Fórum dos Ensaios</h2><p>Discussão pós-ensaio</p></div>
+    <div class="section-line"></div>
+  </div>
+  <div style="margin-bottom:1.5rem;display:flex;gap:1rem;align-items:flex-end">
+    <div class="form-group" style="flex:1"><label>Novo Tópico de Ensaio</label><input type="text" id="newThreadTitle" placeholder="Ex: Ensaio 14/06 – Estúdio Centro"></div>
+    <button class="btn" onclick="addForumThread()" style="flex-shrink:0">Criar Tópico</button>
+  </div>
+  <div class="forum-sessions" id="forumContainer"></div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const state = {
+  members: [
+    {id:1,name:'João Pedro',role:'Vocal',since:'2021-03'},
+    {id:2,name:'Rafael',role:'Guitarra',since:'2021-03'},
+    {id:3,name:'Marcos',role:'Baixo',since:'2021-06'},
+    {id:4,name:'Lucas',role:'Bateria',since:'2022-01'},
+    {id:5,name:'Ana',role:'Teclado',since:'2023-05'},
+  ],
+  suggestions: [
+    {id:1,song:'Whole Lotta Love',artist:'Led Zeppelin',by:'Rafael',note:'',votes:3,voted:false},
+    {id:2,song:'Paranoid',artist:'Black Sabbath',by:'Marcos',note:'boa pra abrir',votes:2,voted:false},
+    {id:3,song:'Highway to Hell',artist:'AC/DC',by:'Lucas',note:'',votes:5,voted:false},
+  ],
+  polls: [
+    {id:1,question:'Qual bloco de músicas pro próximo ensaio?',options:[
+      {label:'Abertura clássica (Zeppelin + Sabbath)',votes:4},
+      {label:'Set pesado (AC/DC + Deep Purple)',votes:6},
+      {label:'Mix anos 70 (Stones + Doors + Creedence)',votes:2},
+    ],voted:null}
+  ],
+  setlists: {
+    0:[
+      {id:1,song:'Smoke on the Water',artist:'Deep Purple'},
+      {id:2,song:'Back in Black',artist:'AC/DC'},
+      {id:3,song:'Stairway to Heaven',artist:'Led Zeppelin'},
+      {id:4,song:'Paint It Black',artist:'The Rolling Stones'},
+      {id:5,song:'Light My Fire',artist:'The Doors'},
+    ],
+    1:[
+      {id:1,song:'Whole Lotta Love',artist:'Led Zeppelin'},
+      {id:2,song:'Paranoid',artist:'Black Sabbath'},
+      {id:3,song:'Highway to Hell',artist:'AC/DC'},
+    ]
+  },
+  forum:[
+    {id:1,title:'Ensaio 22/03 – Estúdio Rock In',date:'22/03/2025',open:true,posts:[
+      {author:'João',text:'Boa galera! O vocal ficou muito bom hoje, a acústica da sala nova ajudou bastante.',date:'22/03 21:30'},
+      {author:'Rafael',text:'A guitarra estava um pouco alta no monitor. Próxima vez ajustamos antes de começar.',date:'22/03 21:45'},
+      {author:'Marcos',text:'Concordo. Mas o encaixe do baixo com a bateria no Paranoid ficou redondo! 🤘',date:'23/03 08:10'},
+    ]}
+  ],
+  currentTab:0,
+  nextId:6,
+};
+
+function goTo(id){ document.getElementById(id).scrollIntoView({behavior:'smooth'}); }
+
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+function sinceLabel(s){
+  if(!s)return'';
+  const [y,m]=s.split('-');
+  const mo=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return`Desde ${mo[parseInt(m)-1]}/${y}`;
+}
+
+// MEMBERS
+function renderMembers(){
+  const g=document.getElementById('membersGrid');
+  if(!state.members.length){g.innerHTML='<p style="color:var(--smoke);font-style:italic;grid-column:1/-1">Nenhum membro ainda.</p>';return;}
+  g.innerHTML=state.members.map(m=>`
+    <div class="member-card">
+      <button class="remove-btn" onclick="removeMember(${m.id})">✕</button>
+      <div class="member-avatar">${m.name.charAt(0)}</div>
+      <div class="member-name">${m.name}</div>
+      <div class="member-role">${m.role}</div>
+      ${m.since?`<div class="member-since">${sinceLabel(m.since)}</div>`:''}
+    </div>`).join('');
+}
+
+function addMember(){
+  const name=document.getElementById('newMemberName').value.trim();
+  const role=document.getElementById('newMemberRole').value;
+  const since=document.getElementById('newMemberSince').value;
+  if(!name||!role){showToast('⚠ Preencha nome e instrumento');return;}
+  state.members.push({id:state.nextId++,name,role,since});
+  ['newMemberName','newMemberSince','newMemberContact'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('newMemberRole').value='';
+  renderMembers();
+  showToast(`✓ ${name} adicionado(a)!`);
+}
+
+function removeMember(id){
+  state.members=state.members.filter(m=>m.id!==id);
+  renderMembers(); showToast('Membro removido.');
+}
+
+// SUGGESTIONS
+function renderSuggestions(){
+  const list=document.getElementById('suggestionsList');
+  if(!state.suggestions.length){list.innerHTML='<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p>';return;}
+  const sorted=[...state.suggestions].sort((a,b)=>b.votes-a.votes);
+  list.innerHTML=sorted.map(s=>`
+    <div class="suggestion-item">
+      <div class="suggestion-song"><strong>${s.song}</strong>${s.note?`<div style="font-size:.75rem;color:var(--smoke);margin-top:.2rem;font-style:italic">${s.note}</div>`:''}</div>
+      <div class="suggestion-artist">${s.artist}</div>
+      <div class="suggestion-by">por ${s.by}</div>
+      <button class="suggestion-vote${s.voted?' voted':''}" onclick="voteSuggestion(${s.id})">🎸 ${s.votes}</button>
+    </div>`).join('');
+}
+
+function addSuggestion(){
+  const song=document.getElementById('sugSong').value.trim();
+  const artist=document.getElementById('sugArtist').value.trim();
+  const by=document.getElementById('sugBy').value.trim();
+  const note=document.getElementById('sugNote').value.trim();
+  if(!song||!artist||!by){showToast('⚠ Preencha música, artista e seu nome');return;}
+  state.suggestions.push({id:state.nextId++,song,artist,by,note,votes:0,voted:false});
+  ['sugSong','sugArtist','sugNote'].forEach(id=>document.getElementById(id).value='');
+  renderSuggestions(); showToast(`✓ "${song}" sugerida!`);
+}
+
+function voteSuggestion(id){
+  const s=state.suggestions.find(s=>s.id===id);
+  if(!s)return;
+  s.voted?s.votes--:s.votes++;
+  s.voted=!s.voted;
+  renderSuggestions();
+}
+
+// POLLS
+function renderPolls(){
+  const c=document.getElementById('pollsContainer');
+  if(!state.polls.length){c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhuma enquete ainda.</p>';return;}
+  c.innerHTML=state.polls.map(p=>{
+    const total=p.options.reduce((s,o)=>s+o.votes,0);
+    if(p.voted!==null){
+      const bars=p.options.map(o=>{
+        const pct=total?Math.round(o.votes/total*100):0;
+        return`<div class="poll-bar-item"><div class="poll-bar-label">${o.label}</div><div class="poll-bar-track"><div class="poll-bar-fill" style="width:${pct}%"></div></div><div class="poll-bar-pct">${pct}%</div></div>`;
+      }).join('');
+      return`<div class="poll-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem"><div class="poll-question">${p.question}</div><button class="btn-ghost" onclick="deletePoll(${p.id})">Excluir</button></div>${bars}<div class="poll-footer"><span class="poll-total">${total} voto${total!==1?'s':''}</span><button class="btn-ghost" onclick="resetVote(${p.id})">Mudar voto</button></div></div>`;
+    }
+    const opts=p.options.map((o,i)=>`<div class="poll-option"><input type="radio" id="p${p.id}o${i}" name="poll_${p.id}"><label class="poll-option-label" for="p${p.id}o${i}"><div class="poll-dot"></div>${o.label}</label></div>`).join('');
+    return`<div class="poll-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem"><div class="poll-question">${p.question}</div><button class="btn-ghost" onclick="deletePoll(${p.id})">Excluir</button></div><div class="poll-options">${opts}</div><div class="poll-footer"><span class="poll-total">${total} voto${total!==1?'s':''}</span><button class="btn" onclick="submitVote(${p.id})">Votar</button></div></div>`;
+  }).join('');
+}
+
+function submitVote(id){
+  const p=state.polls.find(p=>p.id===id);
+  if(!p)return;
+  let chosen=null;
+  p.options.forEach((_,i)=>{ if(document.getElementById(`p${id}o${i}`)?.checked) chosen=i; });
+  if(chosen===null){showToast('⚠ Selecione uma opção');return;}
+  p.options[chosen].votes++;
+  p.voted=chosen;
+  renderPolls(); showToast('✓ Voto registrado!');
+}
+
+function resetVote(id){
+  const p=state.polls.find(p=>p.id===id);
+  if(!p||p.voted===null)return;
+  p.options[p.voted].votes--;
+  p.voted=null;
+  renderPolls();
+}
+
+function deletePoll(id){
+  state.polls=state.polls.filter(p=>p.id!==id);
+  renderPolls(); showToast('Enquete excluída.');
+}
+
+function createPoll(){
+  const q=document.getElementById('pollQuestion').value.trim();
+  const inputs=document.querySelectorAll('.poll-opt-input');
+  const opts=Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
+  if(!q){showToast('⚠ Digite a pergunta');return;}
+  if(opts.length<2){showToast('⚠ Adicione pelo menos 2 opções');return;}
+  state.polls.push({id:state.nextId++,question:q,options:opts.map(l=>({label:l,votes:0})),voted:null});
+  document.getElementById('pollQuestion').value='';
+  inputs.forEach(i=>i.value='');
+  renderPolls(); showToast('✓ Enquete criada!');
+}
+
+// SETLIST
+let dragSrc=null;
+
+function renderSetlist(){
+  const c=document.getElementById('setlistContainer');
+  const songs=state.setlists[state.currentTab]||[];
+  const items=songs.map((s,i)=>`
+    <li class="setlist-item" draggable="true" data-idx="${i}"
+        ondragstart="dStart(event)" ondragover="dOver(event)" ondrop="dDrop(event)" ondragend="dEnd(event)">
+      <span class="setlist-num">${i+1}</span>
+      <div class="setlist-song">${s.song}<div class="setlist-artist">${s.artist}</div></div>
+      <button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>
+    </li>`).join('');
+  c.innerHTML=`
+    <div class="setlist-panel">
+      <div class="setlist-panel-header">
+        <span class="setlist-panel-title">${state.currentTab===0?'Ensaio Atual':'Próximo Ensaio'}</span>
+        <span style="font-size:.75rem;color:var(--smoke)">${songs.length} músicas</span>
+      </div>
+      <ul class="setlist-list">${items}</ul>
+      <div class="setlist-add-row">
+        <input class="setlist-input" id="setSong" placeholder="Música">
+        <input class="setlist-input" id="setArtist" placeholder="Artista">
+        <button class="setlist-add-btn" onclick="addSetSong()">+</button>
+      </div>
+    </div>`;
+}
+
+function switchTab(idx,btn){
+  state.currentTab=idx;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  renderSetlist();
+}
+
+function addSetSong(){
+  const song=document.getElementById('setSong').value.trim();
+  const artist=document.getElementById('setArtist').value.trim();
+  if(!song){showToast('⚠ Digite o nome da música');return;}
+  state.setlists[state.currentTab].push({id:Date.now(),song,artist:artist||'—'});
+  renderSetlist(); showToast(`✓ "${song}" adicionada!`);
+}
+
+function removeSetSong(idx){
+  state.setlists[state.currentTab].splice(idx,1);
+  renderSetlist();
+}
+
+function dStart(e){ dragSrc=e.currentTarget; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+function dOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; }
+function dDrop(e){
+  e.preventDefault();
+  const t=e.currentTarget;
+  if(!dragSrc||dragSrc===t)return;
+  const fi=parseInt(dragSrc.dataset.idx), ti=parseInt(t.dataset.idx);
+  const arr=state.setlists[state.currentTab];
+  const [item]=arr.splice(fi,1);
+  arr.splice(ti,0,item);
+  renderSetlist();
+}
+function dEnd(e){ e.currentTarget.classList.remove('dragging'); dragSrc=null; }
+
+// FORUM
+function renderForum(){
+  const c=document.getElementById('forumContainer');
+  if(!state.forum.length){c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhum ensaio registrado ainda.</p>';return;}
+  c.innerHTML=[...state.forum].reverse().map(t=>{
+    const posts=t.posts.map(p=>`
+      <div class="forum-post">
+        <div class="post-avatar">${p.author.charAt(0)}</div>
+        <div class="post-content">
+          <div class="post-meta"><span class="post-author">${p.author}</span><span class="post-date">${p.date}</span></div>
+          <div class="post-text">${p.text}</div>
+        </div>
+      </div>`).join('');
+    return`
+      <div class="forum-thread">
+        <div class="forum-thread-header" onclick="toggleThread(${t.id})">
+          <div>
+            <div class="forum-thread-title">${t.title}</div>
+            <div class="forum-thread-meta">${t.posts.length} comentário${t.posts.length!==1?'s':''} · ${t.date}</div>
+          </div>
+          <span class="forum-chevron${t.open?' open':''}">▼</span>
+        </div>
+        <div class="forum-body${t.open?' open':''}">
+          <div class="forum-posts">${posts.length?posts:'<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Nenhum comentário ainda. Seja o primeiro!</p>'}</div>
+          <div class="forum-reply-form">
+            <div class="form-group" style="flex:0 0 150px"><input type="text" id="fName_${t.id}" placeholder="Seu nome"></div>
+            <div class="form-group" style="flex:1"><input type="text" id="fMsg_${t.id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost(${t.id})"></div>
+            <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost(${t.id})">Enviar</button></div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleThread(id){
+  const t=state.forum.find(t=>t.id===id);
+  if(t)t.open=!t.open;
+  renderForum();
+}
+
+function addPost(id){
+  const author=document.getElementById(`fName_${id}`).value.trim();
+  const text=document.getElementById(`fMsg_${id}`).value.trim();
+  if(!author||!text){showToast('⚠ Preencha seu nome e o comentário');return;}
+  const t=state.forum.find(t=>t.id===id);
+  const now=new Date();
+  const date=`${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  t.posts.push({author,text,date});
+  renderForum(); showToast('✓ Comentário enviado!');
+}
+
+function addForumThread(){
+  const title=document.getElementById('newThreadTitle').value.trim();
+  if(!title){showToast('⚠ Digite o título do ensaio');return;}
+  const now=new Date();
+  state.forum.push({id:state.nextId++,title,date:now.toLocaleDateString('pt-BR'),open:true,posts:[]});
+  document.getElementById('newThreadTitle').value='';
+  renderForum(); showToast('✓ Tópico criado!');
+}
+
+// INIT
+renderMembers();
+renderSuggestions();
+renderPolls();
+renderSetlist();
+renderForum();
+</script>
+</body>
+</html>
