@@ -47,17 +47,35 @@
   .full-divider{border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(200,130,10,.2),transparent);max-width:1100px;margin:0 auto}
 
   /* MEMBERS */
-  .members-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1.5rem}
+  .members-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.5rem}
   .member-card{background:linear-gradient(135deg,rgba(42,26,8,.8),rgba(19,15,9,.9));border:1px solid rgba(200,130,10,.2);border-radius:2px;padding:1.5rem 1.2rem;text-align:center;transition:border-color .3s,transform .3s;position:relative;overflow:hidden}
   .member-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:0;transition:opacity .3s}
   .member-card:hover{border-color:rgba(200,130,10,.5);transform:translateY(-3px)}
   .member-card:hover::before{opacity:1}
-  .member-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--brown),var(--rust));margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.5rem;color:var(--gold);border:2px solid rgba(200,130,10,.3)}
-  .member-name{font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--cream);margin-bottom:.3rem}
-  .member-role{font-size:.75rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase}
-  .member-since{font-size:.7rem;color:var(--smoke);margin-top:.4rem;font-style:italic}
-  .remove-btn{position:absolute;top:.5rem;right:.5rem;background:none;border:none;color:rgba(139,58,10,.5);cursor:pointer;font-size:1rem;transition:color .2s;line-height:1}
+  .member-card.editable{cursor:pointer}
+  .member-card.editable:hover .member-edit-hint{opacity:1}
+  .member-edit-hint{position:absolute;bottom:0;left:0;right:0;background:rgba(200,130,10,.12);color:var(--amber);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.35rem;opacity:0;transition:opacity .2s;font-family:'Cinzel',serif}
+  .member-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--brown),var(--rust));margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.6rem;color:var(--gold);border:2px solid rgba(200,130,10,.3);overflow:hidden;flex-shrink:0}
+  .member-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+  .member-name{font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--cream);margin-bottom:.5rem}
+  .member-instruments{display:flex;flex-wrap:wrap;gap:.3rem;justify-content:center;margin-bottom:.4rem}
+  .instrument-tag{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--amber);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border-radius:1px}
+  .member-since{font-size:.7rem;color:var(--smoke);margin-top:.3rem;font-style:italic}
+  .remove-btn{position:absolute;top:.5rem;right:.5rem;background:none;border:none;color:rgba(139,58,10,.5);cursor:pointer;font-size:1rem;transition:color .2s;line-height:1;z-index:2}
   .remove-btn:hover{color:var(--rust)}
+  /* instrument checkboxes */
+  .instruments-check{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.3rem}
+  .inst-cb{display:none}
+  .inst-label{background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.2);color:var(--smoke);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;padding:.35rem .7rem;border-radius:1px;cursor:pointer;transition:all .2s;user-select:none}
+  .inst-cb:checked+.inst-label{background:rgba(200,130,10,.15);border-color:var(--amber);color:var(--amber)}
+  /* image upload area */
+  .img-upload-area{border:1px dashed rgba(200,130,10,.3);border-radius:2px;padding:1rem;text-align:center;cursor:pointer;transition:border-color .2s;position:relative}
+  .img-upload-area:hover{border-color:var(--amber)}
+  .img-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .img-preview{width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid rgba(200,130,10,.3);margin:0 auto .5rem;display:none}
+  .img-upload-hint{font-size:.75rem;color:var(--smoke);font-style:italic}
+  /* edit modal extra */
+  .modal-wide{max-width:520px}
 
   /* FORMS */
   .form-card{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;padding:2rem}
@@ -237,6 +255,62 @@
   <div class="scroll-hint"><span>Explorar</span><div class="scroll-arrow"></div></div>
 </div>
 
+<!-- EDIT MEMBER MODAL -->
+<div class="modal-overlay" id="editMemberModal">
+  <div class="modal modal-wide">
+    <button class="modal-close" onclick="closeEditMember()">✕</button>
+    <div class="modal-title" id="editModalTitle">Editar Membro</div>
+    <div class="modal-subtitle" id="editModalSub">Atualize os dados do membro</div>
+    <input type="hidden" id="editMemberId">
+
+    <div class="form-row">
+      <div class="form-group"><label>Nome</label><input type="text" id="editMemberName" placeholder="Nome completo"></div>
+      <div class="form-group"><label>Desde</label><input type="month" id="editMemberSince"></div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:1rem">
+      <label>Instrumentos / Funções</label>
+      <div class="instruments-check" id="editInstrumentsCheck">
+        <input class="inst-cb" type="checkbox" id="ic_vocal"  value="Vocal"><label class="inst-label" for="ic_vocal">Vocal</label>
+        <input class="inst-cb" type="checkbox" id="ic_gt"     value="Guitarra"><label class="inst-label" for="ic_gt">Guitarra</label>
+        <input class="inst-cb" type="checkbox" id="ic_gtb"    value="Guitarra Base"><label class="inst-label" for="ic_gtb">Guitarra Base</label>
+        <input class="inst-cb" type="checkbox" id="ic_baixo"  value="Baixo"><label class="inst-label" for="ic_baixo">Baixo</label>
+        <input class="inst-cb" type="checkbox" id="ic_bat"    value="Bateria"><label class="inst-label" for="ic_bat">Bateria</label>
+        <input class="inst-cb" type="checkbox" id="ic_tec"    value="Teclado"><label class="inst-label" for="ic_tec">Teclado</label>
+        <input class="inst-cb" type="checkbox" id="ic_vio"    value="Violão"><label class="inst-label" for="ic_vio">Violão</label>
+        <input class="inst-cb" type="checkbox" id="ic_outro"  value="Outro"><label class="inst-label" for="ic_outro">Outro</label>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:1rem">
+      <label>Foto de Perfil</label>
+      <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap">
+        <!-- Upload -->
+        <div class="img-upload-area" style="flex:1;min-width:140px">
+          <input type="file" id="editPhotoFile" accept="image/*" onchange="previewPhoto(event)">
+          <img id="editPhotoPreview" class="img-preview">
+          <div class="img-upload-hint">📁 Clique para enviar foto do dispositivo</div>
+        </div>
+        <!-- URL -->
+        <div class="form-group" style="flex:2;min-width:160px">
+          <label style="margin-bottom:.3rem">Ou cole uma URL de imagem</label>
+          <input type="text" id="editPhotoUrl" placeholder="https://..." oninput="previewUrl(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:1.2rem">
+      <label>Contato (opcional)</label>
+      <input type="text" id="editMemberContact" placeholder="WhatsApp ou e-mail">
+    </div>
+
+    <div style="display:flex;gap:.8rem;justify-content:flex-end">
+      <button class="btn-ghost" onclick="closeEditMember()">Cancelar</button>
+      <button class="btn" onclick="saveMember()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MEMBROS -->
 <section id="membros">
   <div class="section-header">
@@ -246,29 +320,9 @@
   </div>
   <div class="members-grid" id="membersGrid"></div>
 
-  <!-- Apenas membros logados veem o formulário -->
-  <div class="member-only" style="margin-top:2.5rem">
-    <div class="section-header" style="margin-bottom:1.5rem">
-      <div class="section-title-wrap"><h2 style="font-size:1.3rem">Adicionar Membro</h2></div>
-    </div>
-    <div class="form-card">
-      <div class="form-row">
-        <div class="form-group"><label>Nome</label><input type="text" id="newMemberName" placeholder="Nome completo"></div>
-        <div class="form-group">
-          <label>Instrumento / Função</label>
-          <select id="newMemberRole">
-            <option value="">Selecione...</option>
-            <option>Vocal</option><option>Guitarra</option><option>Guitarra Base</option>
-            <option>Baixo</option><option>Bateria</option><option>Teclado</option><option>Violão</option><option>Outro</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Desde</label><input type="month" id="newMemberSince"></div>
-        <div class="form-group"><label>Contato (opcional)</label><input type="text" id="newMemberContact" placeholder="WhatsApp ou e-mail"></div>
-      </div>
-      <button class="btn" onclick="addMember()">Adicionar Membro</button>
-    </div>
+  <!-- Apenas membros logados veem o botão de adicionar -->
+  <div class="member-only" style="margin-top:2rem">
+    <button class="btn" onclick="openAddMember()">+ Adicionar Membro</button>
   </div>
 </section>
 
@@ -460,31 +514,139 @@ function nowLabel() {
 }
 
 // ─── MEMBERS ───────────────────────────────────────────────────────
+const INSTRUMENTS = ['Vocal','Guitarra','Guitarra Base','Baixo','Bateria','Teclado','Violão','Outro'];
+
 onSnapshot(query(collection(db,'members'), orderBy('createdAt','asc')), snap => {
   const grid = document.getElementById('membersGrid');
   if (snap.empty) { grid.innerHTML = '<p style="color:var(--smoke);font-style:italic;grid-column:1/-1">Nenhum membro cadastrado ainda.</p>'; return; }
   grid.innerHTML = snap.docs.map(d => {
     const m = d.data();
-    return `<div class="member-card">
-      ${isLoggedIn ? `<button class="remove-btn" onclick="removeMember('${d.id}')">✕</button>` : ''}
-      <div class="member-avatar">${m.name.charAt(0)}</div>
+    const instruments = Array.isArray(m.instruments) ? m.instruments : (m.role ? [m.role] : []);
+    const tags = instruments.map(i => `<span class="instrument-tag">${i}</span>`).join('');
+    const avatar = m.photo
+      ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name}" onerror="this.parentElement.innerHTML='${m.name.charAt(0)}'"></div>`
+      : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
+    const editClick = isLoggedIn ? `onclick="openEditMember('${d.id}')"` : '';
+    const editHint  = isLoggedIn ? `<div class="member-edit-hint">✏ Editar</div>` : '';
+    const removeBtn = isLoggedIn ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${d.id}')" title="Remover">✕</button>` : '';
+    return `<div class="member-card${isLoggedIn?' editable':''}" ${editClick}>
+      ${removeBtn}
+      ${avatar}
       <div class="member-name">${m.name}</div>
-      <div class="member-role">${m.role}</div>
+      <div class="member-instruments">${tags}</div>
       ${m.since ? `<div class="member-since">${sinceLabel(m.since)}</div>` : ''}
+      ${editHint}
     </div>`;
   }).join('');
 });
 
-window.addMember = async () => {
-  const name    = document.getElementById('newMemberName').value.trim();
-  const role    = document.getElementById('newMemberRole').value;
-  const since   = document.getElementById('newMemberSince').value;
-  const contact = document.getElementById('newMemberContact').value.trim();
-  if (!name || !role) { showToast('⚠ Preencha nome e instrumento'); return; }
-  await addDoc(collection(db,'members'), { name, role, since, contact, createdAt: serverTimestamp() });
-  ['newMemberName','newMemberSince','newMemberContact'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('newMemberRole').value = '';
-  showToast(`✓ ${name} adicionado(a)!`);
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+window.previewPhoto = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const b64 = await fileToBase64(file);
+  const preview = document.getElementById('editPhotoPreview');
+  preview.src = b64; preview.style.display = 'block';
+  document.getElementById('editPhotoUrl').value = '';
+};
+
+window.previewUrl = (url) => {
+  const preview = document.getElementById('editPhotoPreview');
+  if (url) { preview.src = url; preview.style.display = 'block'; }
+  else { preview.style.display = 'none'; }
+  document.getElementById('editPhotoFile').value = '';
+};
+
+function resetEditModal() {
+  document.getElementById('editMemberId').value = '';
+  document.getElementById('editMemberName').value = '';
+  document.getElementById('editMemberSince').value = '';
+  document.getElementById('editMemberContact').value = '';
+  document.getElementById('editPhotoUrl').value = '';
+  document.getElementById('editPhotoFile').value = '';
+  const preview = document.getElementById('editPhotoPreview');
+  preview.src = ''; preview.style.display = 'none';
+  INSTRUMENTS.forEach(inst => {
+    const cb = document.querySelector(`#editInstrumentsCheck input[value="${inst}"]`);
+    if (cb) cb.checked = false;
+  });
+}
+
+window.openAddMember = () => {
+  resetEditModal();
+  document.getElementById('editModalTitle').textContent = 'Novo Membro';
+  document.getElementById('editModalSub').textContent = 'Preencha os dados do novo integrante';
+  document.getElementById('editMemberModal').classList.add('show');
+};
+
+window.openEditMember = async (id) => {
+  if (!isLoggedIn) return;
+  resetEditModal();
+  const snap = await getDoc(doc(db,'members',id));
+  if (!snap.exists()) return;
+  const m = snap.data();
+  document.getElementById('editMemberId').value = id;
+  document.getElementById('editMemberName').value = m.name || '';
+  document.getElementById('editMemberSince').value = m.since || '';
+  document.getElementById('editMemberContact').value = m.contact || '';
+  if (m.photo) {
+    const preview = document.getElementById('editPhotoPreview');
+    preview.src = m.photo; preview.style.display = 'block';
+    if (m.photo.startsWith('http')) document.getElementById('editPhotoUrl').value = m.photo;
+  }
+  const instruments = Array.isArray(m.instruments) ? m.instruments : (m.role ? [m.role] : []);
+  instruments.forEach(inst => {
+    const cb = document.querySelector(`#editInstrumentsCheck input[value="${inst}"]`);
+    if (cb) cb.checked = true;
+  });
+  document.getElementById('editModalTitle').textContent = 'Editar Membro';
+  document.getElementById('editModalSub').textContent = m.name;
+  document.getElementById('editMemberModal').classList.add('show');
+};
+
+window.closeEditMember = () => document.getElementById('editMemberModal').classList.remove('show');
+
+window.saveMember = async () => {
+  const name    = document.getElementById('editMemberName').value.trim();
+  const since   = document.getElementById('editMemberSince').value;
+  const contact = document.getElementById('editMemberContact').value.trim();
+  const instruments = Array.from(document.querySelectorAll('#editInstrumentsCheck input:checked')).map(cb => cb.value);
+  if (!name) { showToast('⚠ Digite o nome do membro'); return; }
+  if (!instruments.length) { showToast('⚠ Selecione pelo menos um instrumento'); return; }
+
+  let photo = '';
+  const fileInput = document.getElementById('editPhotoFile');
+  const urlInput  = document.getElementById('editPhotoUrl').value.trim();
+  if (fileInput.files[0]) {
+    photo = await fileToBase64(fileInput.files[0]);
+  } else if (urlInput) {
+    photo = urlInput;
+  } else {
+    const existingId = document.getElementById('editMemberId').value;
+    if (existingId) {
+      const s = await getDoc(doc(db,'members',existingId));
+      if (s.exists()) photo = s.data().photo || '';
+    }
+  }
+
+  const existingId = document.getElementById('editMemberId').value;
+  const data = { name, since, contact, instruments, photo };
+  if (existingId) {
+    await updateDoc(doc(db,'members',existingId), data);
+    showToast(`✓ ${name} atualizado!`);
+  } else {
+    await addDoc(collection(db,'members'), { ...data, createdAt: serverTimestamp() });
+    showToast(`✓ ${name} adicionado(a)!`);
+  }
+  closeEditMember();
 };
 
 window.removeMember = async id => {
