@@ -478,6 +478,7 @@ window.doLogin = () => {
     closeLogin();
     showToast('✓ Bem-vindo, membro!');
     renderSetlist();
+    renderMembersFromCache();
   } else {
     document.getElementById('loginError').classList.add('show');
   }
@@ -488,6 +489,7 @@ window.doLogout = () => {
   sessionStorage.removeItem('retorica_auth');
   applyAuth();
   renderSetlist();
+  renderMembersFromCache();
   showToast('Até logo!');
 };
 
@@ -515,20 +517,23 @@ function nowLabel() {
 
 // ─── MEMBERS ───────────────────────────────────────────────────────
 const INSTRUMENTS = ['Vocal','Guitarra','Guitarra Base','Baixo','Bateria','Teclado','Violão','Outro'];
+let membersCache = [];
 
-onSnapshot(query(collection(db,'members'), orderBy('createdAt','asc')), snap => {
+function renderMembersFromCache() {
   const grid = document.getElementById('membersGrid');
-  if (snap.empty) { grid.innerHTML = '<p style="color:var(--smoke);font-style:italic;grid-column:1/-1">Nenhum membro cadastrado ainda.</p>'; return; }
-  grid.innerHTML = snap.docs.map(d => {
-    const m = d.data();
+  if (!membersCache.length) {
+    grid.innerHTML = '<p style="color:var(--smoke);font-style:italic;grid-column:1/-1">Nenhum membro cadastrado ainda.</p>';
+    return;
+  }
+  grid.innerHTML = membersCache.map(({ id, data: m }) => {
     const instruments = Array.isArray(m.instruments) ? m.instruments : (m.role ? [m.role] : []);
     const tags = instruments.map(i => `<span class="instrument-tag">${i}</span>`).join('');
     const avatar = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name}" onerror="this.parentElement.innerHTML='${m.name.charAt(0)}'"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
-    const editClick = isLoggedIn ? `onclick="openEditMember('${d.id}')"` : '';
+    const editClick = isLoggedIn ? `onclick="openEditMember('${id}')"` : '';
     const editHint  = isLoggedIn ? `<div class="member-edit-hint">✏ Editar</div>` : '';
-    const removeBtn = isLoggedIn ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${d.id}')" title="Remover">✕</button>` : '';
+    const removeBtn = isLoggedIn ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${id}')" title="Remover">✕</button>` : '';
     return `<div class="member-card${isLoggedIn?' editable':''}" ${editClick}>
       ${removeBtn}
       ${avatar}
@@ -538,6 +543,11 @@ onSnapshot(query(collection(db,'members'), orderBy('createdAt','asc')), snap => 
       ${editHint}
     </div>`;
   }).join('');
+}
+
+onSnapshot(query(collection(db,'members'), orderBy('createdAt','asc')), snap => {
+  membersCache = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+  renderMembersFromCache();
 });
 
 function fileToBase64(file) {
