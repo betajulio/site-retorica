@@ -768,6 +768,7 @@ onAuthStateChanged(auth, async user => {
       const firstName = user.displayName?.split(' ')[0] || 'Membro';
       document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
       document.getElementById('navUserMobile').textContent = `🎸 ${firstName}`;
+      await writeLog('Login realizado', `${user.displayName || ''} (${user.email})`, 'acesso');
     }
   } else {
     isLoggedIn = false;
