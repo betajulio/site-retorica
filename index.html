@@ -1012,6 +1012,7 @@ onSnapshot(query(collection(db,'suggestions'), orderBy('createdAt','desc')), sna
 });
 
 window.addSuggestion = async () => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para sugerir músicas'); return; }
   const song = document.getElementById('sugSong').value.trim();
   const artist = document.getElementById('sugArtist').value.trim();
   const by   = document.getElementById('sugBy').value.trim();
@@ -1131,6 +1132,7 @@ window.deletePoll = async id => {
 };
 
 window.createPoll = async () => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para criar enquetes'); return; }
   const q    = document.getElementById('pollQuestion').value.trim();
   const opts = Array.from(document.querySelectorAll('.poll-opt-input')).map(i=>i.value.trim()).filter(Boolean);
   if (!q) { showToast('⚠ Digite a pergunta'); return; }
@@ -1189,6 +1191,7 @@ function renderSetlist() {
 }
 
 window.addSetSong = async () => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para editar o setlist'); return; }
   const song = document.getElementById('setSong').value.trim();
   const artist = document.getElementById('setArtist').value.trim();
   const youtube = document.getElementById('setYt').value.trim();
@@ -1262,6 +1265,7 @@ window.switchRepTab = (tab, btn) => {
 };
 
 window.addRepSong = async () => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para editar o repertório'); return; }
   const song  = document.getElementById('repSong').value.trim();
   const artist= document.getElementById('repArtist').value.trim();
   const level = document.getElementById('repLevel').value;
@@ -1327,6 +1331,7 @@ window.toggleThread = async (id, el) => {
 };
 
 window.addPost = async id => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para comentar'); return; }
   const author=document.getElementById(`fName_${id}`)?.value.trim();
   const text  =document.getElementById(`fMsg_${id}`)?.value.trim();
   if (!author||!text) { showToast('⚠ Preencha nome e comentário'); return; }
@@ -1338,6 +1343,7 @@ window.addPost = async id => {
 };
 
 window.addForumThread = async () => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para criar tópicos'); return; }
   const title=document.getElementById('newThreadTitle').value.trim();
   if (!title) { showToast('⚠ Digite o título'); return; }
   await addDoc(collection(db,'forum'),{title,date:new Date().toLocaleDateString('pt-BR'),open:true,posts:[],createdAt:serverTimestamp()});
@@ -1446,6 +1452,7 @@ window.handleGalleryFiles = e => {
 
 // Upload to Firebase Storage with progress toast
 window.uploadGalleryPhotos = async () => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para enviar fotos'); return; }
   if (!galleryFilesBuf.length) { showToast('⚠ Selecione ao menos uma foto'); return; }
   const caption  = document.getElementById('galleryCaption').value.trim();
   const userName = auth.currentUser?.displayName?.split(' ')[0] || 'Membro';
