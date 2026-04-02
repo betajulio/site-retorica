@@ -66,6 +66,7 @@
   .cat-repertorio{background:rgba(200,80,30,.12);border:1px solid rgba(200,80,30,.3);color:#fca5a5}
   .cat-forum    {background:rgba(200,160,20,.12);border:1px solid rgba(200,160,20,.3);color:#fde68a}
   .cat-galeria  {background:rgba(20,160,180,.12);border:1px solid rgba(20,160,180,.3);color:#67e8f9}
+  .cat-acesso   {background:rgba(80,200,80,.12);border:1px solid rgba(80,200,80,.3);color:#86efac}
   .log-action{color:var(--cream);font-weight:600}
   .log-detail{color:var(--paper);font-size:.78rem;margin-top:.15rem}
   .log-who{color:var(--amber);font-size:.78rem}
@@ -135,6 +136,7 @@
       <button class="filter-btn" onclick="setFilter('repertorio',this)">Repertório</button>
       <button class="filter-btn" onclick="setFilter('forum',this)">Fórum</button>
       <button class="filter-btn" onclick="setFilter('galeria',this)">Galeria</button>
+      <button class="filter-btn" onclick="setFilter('acesso',this)">🔑 Acesso</button>
       <input class="filter-search" type="text" placeholder="Buscar nos logs…" oninput="applySearch(this.value)" id="searchInput">
       <span class="filter-count" id="filterCount"></span>
     </div>
@@ -229,7 +231,8 @@ window.doLogout = async () => { await signOut(auth); };
 // ─── LOGS ──────────────────────────────────────────────────────────
 const CAT_LABELS = {
   membros:'Membros', sugestoes:'Sugestões', enquetes:'Enquetes',
-  setlist:'Setlist', repertorio:'Repertório', forum:'Fórum', galeria:'Galeria'
+  setlist:'Setlist', repertorio:'Repertório', forum:'Fórum', galeria:'Galeria',
+  acesso:'Acesso'
 };
 
 function startListening() {
