@@ -466,6 +466,7 @@
     <li><a onclick="goTo('repertorio')">Repertório</a></li>
     <li><a onclick="goTo('forum')">Fórum</a></li>
     <li><a onclick="goTo('galeria')">Galeria</a></li>
+    <li class="member-only"><a href="logs.html" style="color:var(--amber)">⚙ Admin</a></li>
   </ul>
   <div class="nav-auth">
     <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
@@ -486,6 +487,7 @@
   <a onclick="mobileGoTo('repertorio')">Repertório</a>
   <a onclick="mobileGoTo('forum')">Fórum</a>
   <a onclick="mobileGoTo('galeria')">Galeria</a>
+  <a href="logs.html" id="adminLinkMobile" class="member-only" style="color:var(--amber)">⚙ Portal Admin</a>
   <div class="nav-mobile-auth">
     <span id="navUserMobile" style="display:none;font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif">🎸 Membro</span>
     <button class="btn-ghost btn-sm" id="loginBtnMobile" onclick="openLogin();closeMobileMenu()">Entrar</button>
