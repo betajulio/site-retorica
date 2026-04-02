@@ -247,13 +247,40 @@ function renderStats() {
   const counts = {};
   allLogs.forEach(l => { counts[l.category] = (counts[l.category]||0) + 1; });
   const grid = document.getElementById('statsGrid');
+
+  // Recent logins list
+  const logins = allLogs.filter(l => l.category === 'acesso').slice(0, 8);
+  const loginRows = logins.length
+    ? logins.map(l => `
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:.45rem 0;border-bottom:1px solid rgba(200,130,10,.07);gap:.8rem">
+          <span style="font-size:.82rem;color:var(--cream)">${l.who||'?'}</span>
+          <span style="font-size:.72rem;color:var(--smoke);font-style:italic;white-space:nowrap">${l.tsLocal||'—'}</span>
+        </div>`).join('')
+    : `<div style="font-size:.8rem;color:var(--smoke);font-style:italic;padding:.5rem 0">Nenhum login registrado ainda.</div>`;
+
   grid.innerHTML = `
-    <div class="stat-card"><div class="stat-num">${allLogs.length}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card"><div class="stat-num">${allLogs.length}</div><div class="stat-label">Total de ações</div></div>
     ${Object.entries(CAT_LABELS).map(([k,v]) => `
-      <div class="stat-card"><div class="stat-num">${counts[k]||0}</div><div class="stat-label">${v}</div></div>
-    `).join('')}
-  `;
+      <div class="stat-card" style="cursor:pointer" onclick="setFilterById('${k}')">
+        <div class="stat-num">${counts[k]||0}</div>
+        <div class="stat-label">${v}</div>
+      </div>`).join('')}
+    <div style="grid-column:1/-1;background:linear-gradient(135deg,rgba(42,26,8,.7),rgba(19,15,9,.8));border:1px solid rgba(80,200,80,.2);border-radius:1px;padding:1.2rem 1.4rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
+        <span style="font-family:'Cinzel',serif;font-size:.85rem;color:#86efac;letter-spacing:.08em">🔑 Últimos Logins</span>
+        <button class="filter-btn" onclick="setFilterById('acesso')" style="font-size:.65rem;padding:.2rem .6rem">${counts['acesso']||0} total</button>
+      </div>
+      ${loginRows}
+    </div>`;
 }
+
+window.setFilterById = id => {
+  activeFilter = id;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  const btns = document.querySelectorAll('.filter-btn');
+  btns.forEach(b => { if(b.getAttribute('onclick')?.includes(`'${id}'`)) b.classList.add('active'); });
+  renderTable();
+};
 
 function renderTable() {
   const body  = document.getElementById('logBody');
