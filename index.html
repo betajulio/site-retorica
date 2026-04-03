@@ -1103,23 +1103,44 @@ onSnapshot(query(collection(db,'polls'), orderBy('createdAt','desc')), snap => {
 });
 
 window.submitPollVote = async id => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para votar'); return; }
   const uid  = auth.currentUser?.uid;
   const name = document.getElementById(`pname_${id}`)?.value.trim();
-  if (!uid)  { showToast('⚠ Faça login para votar'); return; }
   if (!name) { showToast('⚠ Digite seu nome'); return; }
-  let chosen = null;
+
+  // Check if already voted by reading voterMap fresh from Firestore
   const snap = await getDoc(doc(db,'polls',id));
   if (!snap.exists()) return;
   const p = snap.data();
-  if (p.voterMap?.[uid] !== undefined) { showToast('Você já votou nesta enquete'); return; }
-  p.options.forEach((_,i)=>{ if(document.getElementById(`p${id}o${i}`)?.checked) chosen=i; });
-  if (chosen===null) { showToast('⚠ Selecione uma opção'); return; }
-  const options = p.options.map((o,i)=>({...o, votes:(o.votes||0)+(i===chosen?1:0)}));
-  const voters  = [...(p.voters||[]), {uid, name, optIdx:chosen}];
-  const voterMap= {...(p.voterMap||{}), [uid]:chosen};
-  await updateDoc(doc(db,'polls',id),{options,voters,voterMap});
-  await writeLog('Voto registrado', `"${p.question}" → opção: ${p.options[chosen].label} (${name})`, 'enquetes');
-  showToast('✓ Voto registrado!');
+
+  // Check both voterMap (uid key) and voters array (belt and suspenders)
+  const alreadyVotedMap   = p.voterMap && p.voterMap[uid] !== undefined;
+  const alreadyVotedArray = (p.voters||[]).some(v => v.uid === uid);
+  if (alreadyVotedMap || alreadyVotedArray) {
+    showToast('Você já votou nesta enquete');
+    return;
+  }
+
+  let chosen = null;
+  p.options.forEach((_,i) => {
+    if (document.getElementById(`p${id}o${i}`)?.checked) chosen = i;
+  });
+  if (chosen === null) { showToast('⚠ Selecione uma opção'); return; }
+
+  // Build updated data — use flat structure to avoid Firestore permission issues with dynamic keys
+  const options  = p.options.map((o,i) => ({...o, votes: (o.votes||0) + (i===chosen ? 1 : 0)}));
+  const voters   = [...(p.voters||[]), {uid, name, optIdx: chosen}];
+  // Store voterMap as array of {uid, optIdx} to avoid dynamic key restrictions
+  const voterMap = {...(p.voterMap||{}), [uid]: chosen};
+
+  try {
+    await updateDoc(doc(db,'polls',id), {options, voters, voterMap});
+    await writeLog('Voto registrado', `"${p.question}" → ${p.options[chosen].label} (${name})`, 'enquetes');
+    showToast('✓ Voto registrado!');
+  } catch(e) {
+    console.error('Vote error:', e);
+    showToast('⚠ Erro ao registrar voto. Verifique as regras do Firestore.');
+  }
 };
 
 window.removePollVote = async id => {
