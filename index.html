@@ -1669,61 +1669,6 @@ window.removeRepSong = async id => {
 // ─── FORUM ─────────────────────────────────────────────────────────
 let forumCache = [];
 
-function renderForum() {
-  const c = document.getElementById('forumContainer');
-  if (!forumCache.length) { c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhum ensaio registrado ainda.</p>'; return; }
-  const uid = auth.currentUser?.uid || null;
-  c.innerHTML = forumCache.map(({id, data: t}) => {
-    const posts = (t.posts||[]).map((p, pi) => {
-      const reactions = p.reactions || {};
-      const likes     = Object.values(reactions).filter(v=>v==='like').length;
-      const dislikes  = Object.values(reactions).filter(v=>v==='dislike').length;
-      const myReact   = uid ? reactions[uid] : null;
-      const likeBtn = `<button class="react-btn${myReact==='like'?' liked':''}"
-        ${!isLoggedIn?'disabled':''}
-        onclick="votePost('${id}',${pi},'like')"
-        title="${myReact==='like'?'Remover like':'Curtir'}">
-        👍 ${likes||''}
-      </button>`;
-      const dislikeBtn = `<button class="react-btn${myReact==='dislike'?' disliked':''}"
-        ${!isLoggedIn?'disabled':''}
-        onclick="votePost('${id}',${pi},'dislike')"
-        title="${myReact==='dislike'?'Remover dislike':'Não curtir'}">
-        👎 ${dislikes||''}
-      </button>`;
-      return `
-      <div class="forum-post">
-        <div class="post-avatar">${p.author.charAt(0)}</div>
-        <div class="post-content">
-          <div class="post-meta"><span class="post-author">${p.author}</span><span class="post-date">${p.date}</span></div>
-          <div class="post-text">${p.text}</div>
-          <div class="post-reactions">${likeBtn}${dislikeBtn}</div>
-        </div>
-      </div>`;
-    }).join('');
-    const replyForm = isLoggedIn ? `
-      <div class="forum-reply-form">
-        <div class="form-group" style="flex:0 0 140px"><input type="text" id="fName_${id}" placeholder="Seu nome"></div>
-        <div class="form-group" style="flex:1"><input type="text" id="fMsg_${id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${id}')"></div>
-        <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${id}')">Enviar</button></div>
-      </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic">Faça login para comentar.</p>`;
-    const delBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
-    return `<div class="forum-thread">
-      <div class="forum-thread-header" onclick="toggleThread('${id}',this)">
-        <div>
-          <div class="forum-thread-title">${t.title}</div>
-          <div class="forum-thread-meta">${(t.posts||[]).length} comentário${(t.posts||[]).length!==1?'s':''} · ${t.date}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:.5rem">${delBtn}<span class="forum-chevron${t.open?' open':''}">▼</span></div>
-      </div>
-      <div class="forum-body${t.open?' open':''}" id="fb_${id}">
-        <div class="forum-posts">${posts||'<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Nenhum comentário ainda.</p>'}</div>
-        ${replyForm}
-      </div>
-    </div>`;
-  }).join('');
-}
-
 window.votePost = async (threadId, postIdx, type) => {
   if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
   const uid  = auth.currentUser?.uid;
@@ -1754,13 +1699,13 @@ window.toggleThread = async (id, el) => {
 
 window.addPost = async id => {
   if (!isLoggedIn) { showToast('⚠ Faça login para comentar'); return; }
-  const author=document.getElementById(`fName_${id}`)?.value.trim();
-  const text  =document.getElementById(`fMsg_${id}`)?.value.trim();
-  if (!author||!text) { showToast('⚠ Preencha nome e comentário'); return; }
-  const snap=await getDoc(doc(db,'forum',id)); if(!snap.exists()) return;
-  const posts=[...(snap.data().posts||[]),{author,text,date:nowLabel()}];
-  await updateDoc(doc(db,'forum',id),{posts});
-  await writeLog('Comentário adicionado', `"${text.slice(0,60)}${text.length>60?'…':''}" por ${author} em "${snap.data().title}"`, 'forum');
+  const text = document.getElementById(`fMsg_${id}`)?.value.trim();
+  if (!text) { showToast('⚠ Escreva algo'); return; }
+  const snap = await getDoc(doc(db,'forum',id));
+  if (!snap.exists()) return;
+  const posts = [...(snap.data().posts||[])];
+  posts.push({author: getMemberName(), text, date: nowLabel(), reactions:{}, replies:[]});
+  await updateDoc(doc(db,'forum',id), {posts});
   showToast('✓ Comentário enviado!');
 };
 
@@ -1846,11 +1791,6 @@ window.carouselMove = dir => {
 setInterval(() => {
   if (galleryCache.length > 1) { carouselIndex = (carouselIndex + 1) % galleryCache.length; renderGallery(); }
 }, 5000);
-
-onSnapshot(query(collection(db,'gallery'), orderBy('createdAt','desc')), snap => {
-  galleryCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
-  renderGallery();
-});
 
 // Preview files before upload
 window.handleGalleryFiles = e => {
@@ -2025,7 +1965,7 @@ function renderLightboxComments(id, p) {
 
     let repliesHtml = '';
     if (replies.length) {
-      replies_html_parts = replies.map((rp, rpi) => {
+      const replies_html_parts = replies.map((rp, rpi) => {
         const rr = rp.reactions || {};
         const rLikes = Object.values(rr).filter(v=>v==='like').length;
         const rDislikes = Object.values(rr).filter(v=>v==='dislike').length;
@@ -2039,7 +1979,7 @@ function renderLightboxComments(id, p) {
             </div>
             <div class="lb-cmt-txt">${rp.text}</div>
             <div class="lb-cmt-act">
-              <button class="lb-cr${rMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}`,ci,'reply',rpi,'like')" ${!isLoggedIn?'disabled':''}>👍 ${rLikes||''}</button>
+              <button class="lb-cr${rMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}',${ci},'reply',${rpi},'like')" ${!isLoggedIn?'disabled':''}>👍 ${rLikes||''}</button>
               <button class="lb-cr${rMy==='dislike'?' dkd':''}" onclick="lbCmtReact('${id}',${ci},'reply',${rpi},'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${rDislikes||''}</button>
               ${canDel?`<button class="lb-cdel" onclick="delLbReply('${id}',${ci},${rpi})">✕</button>`:''}
             </div>
