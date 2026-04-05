@@ -252,6 +252,66 @@
   .toca-badge-name{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);letter-spacing:.08em}
   .toca-badge-sub{font-size:.7rem;color:var(--smoke);font-style:italic;margin-top:.15rem}
 
+  /* ── LIGHTBOX ── */
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:8000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:1rem;opacity:0;transition:opacity .3s}
+  .lightbox.open{display:flex;opacity:1}
+  .lightbox-close{position:absolute;top:.8rem;right:1.2rem;background:none;border:none;color:var(--cream);cursor:pointer;font-size:1.8rem;z-index:8010;transition:color .2s}
+  .lightbox-close:hover{color:var(--gold)}
+  .lightbox-img{max-width:95vw;max-height:70vh;object-fit:contain;border:1px solid rgba(200,130,10,.2);border-radius:2px}
+  .lightbox-caption-area{margin-top:1rem;text-align:center;max-width:600px}
+  .lightbox-caption-area p{font-family:'Lora',serif;font-size:.95rem;color:var(--cream);font-style:italic}
+  .lightbox-meta{font-size:.7rem;color:var(--smoke);margin-top:.25rem}
+  .lightbox-reactions{display:flex;gap:.5rem;align-items:center;margin-top:.6rem}
+  .lb-rbtn{background:none;border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.3rem .65rem;cursor:pointer;border-radius:1px;font-size:.82rem;transition:all .2s;display:flex;align-items:center;gap:.3rem}
+  .lb-rbtn:hover{border-color:rgba(200,130,10,.5)}
+  .lb-rbtn.cl{background:rgba(60,180,80,.18);border-color:rgba(60,180,80,.5);color:#6ee7b7}
+  .lb-rbtn.di{background:rgba(180,60,60,.18);border-color:rgba(180,60,60,.5);color:#fca5a5}
+  .lb-rbtn:disabled{opacity:.35;cursor:default}
+  .lb-comments-wrap{margin-top:1rem;width:100%;max-width:600px;max-height:22vh;overflow-y:auto;border:1px solid rgba(200,130,10,.15);border-radius:2px;padding:.7rem}
+  .lb-ctitle{font-family:'Cinzel',serif;font-size:.78rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem}
+  .lb-cmt{padding:.45rem 0;border-bottom:1px solid rgba(200,130,10,.06)}
+  .lb-cmt:last-child{border-bottom:none;padding-bottom:0}
+  .lb-cmt-l1{display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem}
+  .lb-cmt-av{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--brown),var(--rust));display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:.6rem;color:var(--gold);flex-shrink:0;border:1px solid rgba(200,130,10,.15)}
+  .lb-cmt-au{font-family:'Cinzel',serif;font-size:.75rem;color:var(--amber);font-weight:600}
+  .lb-cmt-dt{font-size:.6rem;color:var(--smoke);font-style:italic}
+  .lb-cmt-txt{font-size:.82rem;color:var(--paper);line-height:1.45;margin-bottom:.3rem}
+  .lb-cmt-act{display:flex;gap:.35rem;align-items:center}
+  .lb-cr{background:none;border:1px solid rgba(200,130,10,.12);color:var(--smoke);padding:.12rem .4rem;cursor:pointer;border-radius:1px;font-size:.68rem;transition:all .2s;display:flex;align-items:center;gap:.2rem}
+  .lb-cr:hover{border-color:rgba(200,130,10,.4)}
+  .lb-cr.lkd{background:rgba(60,180,80,.15);border-color:rgba(60,180,80,.4);color:#6ee7b7}
+  .lb-cr.dkd{background:rgba(180,60,60,.15);border-color:rgba(180,60,60,.4);color:#fca5a5}
+  .lb-cr:disabled{opacity:.35;cursor:default}
+  .lb-cdel{background:none;border:none;color:rgba(139,58,10,.4);cursor:pointer;font-size:.7rem;transition:color .2s;padding:.1rem .3rem}
+  .lb-cdel:hover{color:var(--rust)}
+  .lb-rpbtn{background:none;border:1px solid rgba(200,130,10,.15);color:var(--smoke);padding:.1rem .4rem;cursor:pointer;border-radius:1px;font-size:.65rem;transition:all .2s;font-family:'Cinzel',serif}
+  .lb-rpbtn:hover{border-color:rgba(200,130,10,.5);color:var(--paper)}
+  .lb-rpform{margin-top:.4rem;display:flex;gap:.4rem}
+  .lb-rpform input{flex:1;background:rgba(10,8,4,.5);border:1px solid rgba(200,130,10,.2);color:var(--cream);padding:.3rem .5rem;font-size:.75rem;font-family:'Lora',serif;border-radius:1px;outline:none;min-width:0}
+  .lb-rpform input:focus{border-color:var(--amber)}
+  .lb-rpform button{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--amber);padding:.25rem .6rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;white-space:nowrap}
+  .lb-rpform button:hover{background:rgba(200,130,10,.22)}
+  .lb-replies-box{margin-left:1.8rem;margin-top:.3rem;border-left:2px solid rgba(200,130,10,.1);padding-left:.5rem}
+  .lb-rp{text-align:center;color:var(--smoke);font-size:.78rem;font-style:italic}
+  .lb-login-hint{text-align:center;font-size:.72rem;color:var(--smoke);font-style:italic;padding:.3rem 0}
+
+  /* FORUM REPLIES */
+  .forum-replies{margin-left:2rem;margin-top:.5rem;border-left:2px solid rgba(200,130,10,.12);padding-left:.8rem}
+  .frp{padding:.5rem 0;border-bottom:1px solid rgba(200,130,10,.06)}
+  .frp:last-child{border-bottom:none}
+  .frp-act{display:flex;gap:.35rem;align-items:center;margin-top:.35rem}
+  .fr-rbtn{background:none;border:1px solid rgba(200,130,10,.12);color:var(--smoke);padding:.1rem .4rem;cursor:pointer;border-radius:1px;font-size:.7rem;transition:all .2s;display:flex;align-items:center;gap:.2rem}
+  .fr-rbtn:hover{border-color:rgba(200,130,10,.4)}
+  .fr-rbtn.fl{background:rgba(60,180,80,.12);border-color:rgba(60,180,80,.4);color:#6ee7b7}
+  .fr-rbtn.fd{background:rgba(180,60,60,.12);border-color:rgba(180,60,60,.4);color:#fca5a5}
+  .fr-rbtn:disabled{opacity:.35;cursor:default}
+  .frp-rp{background:none;border:1px solid rgba(200,130,10,.15);color:var(--smoke);padding:.1rem .35rem;cursor:pointer;border-radius:1px;font-size:.65rem;transition:all .2s;font-family:'Cinzel',serif}
+  .frp-rp:hover{border-color:rgba(200,130,10,.5);color:var(--paper)}
+  .frp-rform{margin-top:.4rem;display:flex;gap:.4rem;flex-wrap:wrap}
+  .frp-rform input{flex:1;min-width:120px;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.2);color:var(--cream);padding:.4rem .5rem;font-size:.78rem;font-family:'Lora',serif;border-radius:1px;outline:none}
+  .frp-rform input:focus{border-color:var(--amber)}
+  .frp-rform button{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--amber);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif}
+
   /* GALERIA */
   .carousel-wrap{position:relative;overflow:hidden;border-radius:2px;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.2)}
   .carousel-track{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)}
@@ -744,6 +804,20 @@
     </div>
   </div>
 </section>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox(event)">✕</button>
+  <div class="lightbox-inner" onclick="event.stopPropagation()">
+    <img id="lbImg" class="lightbox-img" src="" alt="">
+    <div class="lightbox-caption-area">
+      <p id="lbCaption"></p>
+      <div class="lightbox-meta" id="lbMeta"></div>
+      <div class="lightbox-reactions" id="lbReactions"></div>
+      <div class="lb-comments-wrap" id="lbComments"></div>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1756,7 +1830,7 @@ function renderGallery() {
     const del = isLoggedIn
       ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
       : '';
-    return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="carouselGo(${i})">
+    return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
       <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
       ${del}
     </div>`;
@@ -1859,6 +1933,428 @@ window.deleteGalleryPhoto = async (id, path) => {
   await writeLog('Foto excluída da galeria', `"${caption}"`, 'galeria');
   if (carouselIndex >= galleryCache.length - 1) carouselIndex = Math.max(0, galleryCache.length - 2);
   showToast('Foto excluída.');
+  // se lightbox tiver aberto nessa foto, fecha
+  const lb = document.getElementById('lightbox');
+  if (lb && lb.classList.contains('open') && lb.dataset.id === id) lb.classList.remove('open');
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// LIGHTBOX
+// ═══════════════════════════════════════════════════════════════════
+let currentLbId = null;
+
+window.openLightbox = async id => {
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  currentLbId = id;
+
+  document.getElementById('lbImg').src = p.url;
+  document.getElementById('lbImg').alt = p.caption || '';
+  document.getElementById('lbCaption').textContent = p.caption || '';
+  document.getElementById('lbMeta').textContent = `${p.addedBy||''} · ${p.date||''}`;
+
+  renderLightboxReactions(id, p);
+  renderLightboxComments(id, p);
+
+  const lb = document.getElementById('lightbox');
+  lb.dataset.id = id;
+  lb.classList.add('open');
+};
+
+window.closeLightbox = e => {
+  if (e && e.target && e.target.classList.contains('lightbox-inner')) return; // don't close on inner click
+  document.getElementById('lightbox').classList.remove('open');
+  currentLbId = null;
+};
+
+// close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLightbox({});
+});
+
+function renderLightboxReactions(id, p) {
+  const el = document.getElementById('lbReactions');
+  const uid = auth.currentUser?.uid || null;
+  const r = p.reactions || {};
+  const likes = Object.values(r).filter(v=>v==='like').length;
+  const dislikes = Object.values(r).filter(v=>v==='dislike').length;
+  const my = uid ? r[uid] : null;
+
+  el.innerHTML = `
+    <button class="lb-rbtn${my==='like'?' lkd':''}" onclick="lbReact('${id}','like')" ${!isLoggedIn?'disabled':''} title="Curtir">
+      👍 ${likes||''}
+    </button>
+    <button class="lb-rbtn${my==='dislike'?' di':''}" onclick="lbReact('${id}','dislike')" ${!isLoggedIn?'disabled':''} title="Não curtir">
+      👎 ${dislikes||''}
+    </button>`;
+}
+
+window.lbReact = async (id, type) => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
+  const uid = auth.currentUser?.uid;
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  const r = {...(p.reactions||{})};
+  if (r[uid] === type) delete r[uid];
+  else r[uid] = type;
+  await updateDoc(doc(db,'gallery',id), {reactions: r});
+};
+
+function getMemberName() {
+  return auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ')
+    || auth.currentUser?.email?.split('@')[0] || 'Membro';
+}
+
+function renderLightboxComments(id, p) {
+  const el = document.getElementById('lbComments');
+  const uid = auth.currentUser?.uid || null;
+  const comments = p.comments || [];
+  const name = getMemberName();
+
+  let html = `<div class="lb-ctitle">Comentários (${comments.length})</div>`;
+
+  comments.forEach((c, ci) => {
+    const cr = c.reactions || {};
+    const cLikes = Object.values(cr).filter(v=>v==='like').length;
+    const cDislikes = Object.values(cr).filter(v=>v==='dislike').length;
+    const cMy = uid ? cr[uid] : null;
+    const canDel = isLoggedIn; // membros podem deletar
+    const replies = c.replies || [];
+
+    let repliesHtml = '';
+    if (replies.length) {
+      replies_html_parts = replies.map((rp, rpi) => {
+        const rr = rp.reactions || {};
+        const rLikes = Object.values(rr).filter(v=>v==='like').length;
+        const rDislikes = Object.values(rr).filter(v=>v==='dislike').length;
+        const rMy = uid ? rr[uid] : null;
+        return `<div class="lb-rep" style="display:flex;align-items:flex-start;gap:.5rem;padding:.35rem 0;border-bottom:1px solid rgba(200,130,10,.06)">
+          <div class="lb-cmt-av">${rp.author.charAt(0)}</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:.4rem">
+              <span class="lb-cmt-au">${rp.author}</span>
+              <span class="lb-cmt-dt">${rp.date}</span>
+            </div>
+            <div class="lb-cmt-txt">${rp.text}</div>
+            <div class="lb-cmt-act">
+              <button class="lb-cr${rMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}`,ci,'reply',rpi,'like')" ${!isLoggedIn?'disabled':''}>👍 ${rLikes||''}</button>
+              <button class="lb-cr${rMy==='dislike'?' dkd':''}" onclick="lbCmtReact('${id}',${ci},'reply',${rpi},'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${rDislikes||''}</button>
+              ${canDel?`<button class="lb-cdel" onclick="delLbReply('${id}',${ci},${rpi})">✕</button>`:''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      repliesHtml = `<div style="margin-left:1.8rem;margin-top:.4rem;border-left:2px solid rgba(200,130,10,.1);padding-left:.5rem">${replies_html_parts}</div>`;
+    }
+
+    const replyForm = isLoggedIn
+      ? `<div class="lb-rpform" style="display:none" id="lbRpForm_${ci}">
+          <input placeholder="Sua resposta..." id="lbRpInput_${ci}" onkeydown="if(event.key==='Enter')submitLbReply('${id}',${ci})">
+          <button onclick="submitLbReply('${id}',${ci})">Responder</button>
+        </div>`
+      : `<div class="lb-login-hint">Faça login para responder</div>`;
+
+    html += `<div class="lb-cmt">
+      <div class="lb-cmt-l1">
+        <div class="lb-cmt-av">${c.author.charAt(0)}</div>
+        <span class="lb-cmt-au">${c.author}</span>
+        <span class="lb-cmt-dt">${c.date}</span>
+        ${canDel?`<button class="lb-cdel" onclick="delLbComment('${id}',${ci})">✕</button>`:''}
+      </div>
+      <div class="lb-cmt-txt">${c.text}</div>
+      <div class="lb-cmt-act">
+        <button class="lb-cr${cMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}',${ci},'comment',-1,'like')" ${!isLoggedIn?'disabled':''}>👍 ${cLikes||''}</button>
+        <button class="lb-cr${cMy==='dislike'?' dkd':''}" onclick="lbCmtReact('${id}',${ci},'comment',-1,'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${cDislikes||''}</button>
+        <button class="lb-rpbtn" onclick="toggleLbReplyForm(${ci})"${!isLoggedIn?' disabled style="opacity:.35;cursor:default"':''}>Responder</button>
+      </div>
+      ${replyForm}
+      ${repliesHtml}
+    </div>`;
+  });
+
+  if (isLoggedIn) {
+    html += `<div class="lb-rpform" style="margin-top:.6rem">
+      <input placeholder="Escreva um comentário..." id="lbNewCmtInput" onkeydown="if(event.key==='Enter')addLbComment('${id}')">
+      <button onclick="addLbComment('${id}')">Enviar</button>
+    </div>`;
+  } else {
+    html += `<div class="lb-login-hint">Faça login para comentar</div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+window.toggleLbReplyForm = ci => {
+  const el = document.getElementById(`lbRpForm_${ci}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.addLbComment = async id => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para comentar'); return; }
+  const input = document.getElementById('lbNewCmtInput');
+  const text = input?.value.trim();
+  if (!text) return;
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  const comments = [...(p.comments||[])];
+  comments.push({author: getMemberName(), text, date: nowLabel(), reactions: {}, replies: [], authorUid: auth.currentUser?.uid});
+  await updateDoc(doc(db,'gallery',id), {comments});
+  input.value = '';
+  showToast('✓ Comentário adicionado!');
+};
+
+window.submitLbReply = async (id, cIdx) => {
+  if (!isLoggedIn) return;
+  const input = document.getElementById(`lbRpInput_${cIdx}`);
+  const text = input?.value.trim();
+  if (!text) return;
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  const comments = [...(p.comments||[])];
+  if (!comments[cIdx]) return;
+  const comment = {...comments[cIdx]};
+  comment.replies = [...(comment.replies||[])];
+  comment.replies.push({author: getMemberName(), text, date: nowLabel(), reactions: {}, authorUid: auth.currentUser?.uid});
+  comments[cIdx] = comment;
+  await updateDoc(doc(db,'gallery',id), {comments});
+  showToast('✓ Resposta adicionada!');
+};
+
+window.lbCmtReact = async (id, cIdx, type, rIdx, reaction) => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
+  const uid = auth.currentUser?.uid;
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  const comments = [...(p.comments||[])];
+  const comment = {...comments[cIdx]};
+
+  if (type === 'comment') {
+    const r = {...(comment.reactions||{})};
+    if (r[uid] === reaction) delete r[uid];
+    else r[uid] = reaction;
+    comment.reactions = r;
+  } else {
+    const replies = [...(comment.replies||[])];
+    const reply = {...replies[rIdx]};
+    const rr = {...(reply.reactions||{})};
+    if (rr[uid] === reaction) delete rr[uid];
+    else rr[uid] = reaction;
+    reply.reactions = rr;
+    replies[rIdx] = reply;
+    comment.replies = replies;
+  }
+
+  comments[cIdx] = comment;
+  await updateDoc(doc(db,'gallery',id), {comments});
+};
+
+window.delLbComment = async (id, cIdx) => {
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  const comments = [...(p.comments||[])];
+  comments.splice(cIdx, 1);
+  await updateDoc(doc(db,'gallery',id), {comments});
+  showToast('Comentário excluído.');
+};
+
+window.delLbReply = async (id, cIdx, rIdx) => {
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  const comments = [...(p.comments||[])];
+  const comment = {...comments[cIdx]};
+  const replies = [...(comment.replies||[])];
+  replies.splice(rIdx, 1);
+  comment.replies = replies;
+  comments[cIdx] = comment;
+  await updateDoc(doc(db,'gallery',id), {comments});
+  showToast('Resposta excluída.');
+};
+
+// Refresh lightbox when gallery doc updates (real-time comments/reactions)
+const lbSnapshots = {};
+
+onSnapshot(query(collection(db,'gallery'), orderBy('createdAt','desc')), snap => {
+  galleryCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  renderGallery();
+  // se tem lightbox aberto, atualiza
+  if (currentLbId) {
+    const found = snap.docs.find(d => d.id === currentLbId);
+    if (found) {
+      renderLightboxReactions(currentLbId, found.data());
+      renderLightboxComments(currentLbId, found.data());
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// FORUM REPLIES WITH LIKE/DISLIKE
+// ═══════════════════════════════════════════════════════════════════
+
+function renderForum() {
+  const c = document.getElementById('forumContainer');
+  if (!forumCache.length) { c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhum ensaio registrado ainda.</p>'; return; }
+  const uid = auth.currentUser?.uid || null;
+  c.innerHTML = forumCache.map(({id, data: t}) => {
+    const posts = (t.posts||[]).map((p, pi) => {
+      const reactions = p.reactions || {};
+      const likes     = Object.values(reactions).filter(v=>v==='like').length;
+      const dislikes  = Object.values(reactions).filter(v=>v==='dislike').length;
+      const myReact   = uid ? reactions[uid] : null;
+
+      // Replies
+      const replies = p.replies || [];
+      const repliesHtml = replies.length ? `<div class="forum-replies">${replies.map((rp, rpi) => {
+        const rr = rp.reactions || {};
+        const rLikes = Object.values(rr).filter(v=>v==='like').length;
+        const rDislikes = Object.values(rr).filter(v=>v==='dislike').length;
+        const rMy = uid ? rr[uid] : null;
+        const rpForm = isLoggedIn
+          ? `<div class="frp-rform" style="display:none" id="frpForm_${id}_${pi}_${rpi}">
+              <input placeholder="Responder..." id="frpInput_${id}_${pi}_${rpi}" onkeydown="if(event.key==='Enter')submitFrpReply('${id}',${pi},${rpi})">
+              <button onclick="submitFrpReply('${id}',${pi},${rpi})">Enviar</button>
+            </div>` : '';
+        return `<div class="frp">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
+            <div class="post-avatar" style="width:24px;height:24px;font-size:.6rem">${rp.author.charAt(0)}</div>
+            <span class="post-author">${rp.author}</span><span class="post-date">${rp.date}</span>
+            ${isLoggedIn?`<button class="lb-cdel" onclick="delFrp('${id}',${pi},${rpi})">✕</button>`:''}
+          </div>
+          <div class="post-text" style="font-size:.82rem">${rp.text}</div>
+          <div class="frp-act">
+            <button class="fr-rbtn${rMy==='like'?' fl':''}" onclick="frpReact('${id}',${pi},${rpi},'like')" ${!isLoggedIn?'disabled':''}>👍 ${rLikes||''}</button>
+            <button class="fr-rbtn${rMy==='dislike'?' fd':''}" onclick="frpReact('${id}',${pi},${rpi},'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${rDislikes||''}</button>
+            ${isLoggedIn?`<button class="frp-rp" onclick="toggleFrpForm('${id}',${pi},${rpi})">Responder</button>`:''}
+          </div>
+          ${rpForm}
+        </div>`;
+      }).join('')}</div>` : '';
+
+      const replyForm = isLoggedIn
+        ? `<div class="frp-rform" id="frForm_${id}_${pi}">
+            <input placeholder="Responder a ${p.author}..." id="frInput_${id}_${pi}" onkeydown="if(event.key==='Enter')submitFrpReply('${id}',${pi},-1)">
+            <button onclick="submitFrpReply('${id}',${pi},-1)">Responder</button>
+          </div>` : '';
+
+      const likeBtn = `<button class="react-btn${myReact==='like'?' liked':''}"
+        ${!isLoggedIn?'disabled':''}
+        onclick="votePost('${id}',${pi},'like')"
+        title="${myReact==='like'?'Remover like':'Curtir'}">
+        👍 ${likes||''}
+      </button>`;
+      const dislikeBtn = `<button class="react-btn${myReact==='dislike'?' disliked':''}"
+        ${!isLoggedIn?'disabled':''}
+        onclick="votePost('${id}',${pi},'dislike')"
+        title="${myReact==='dislike'?'Remover dislike':'Não curtir'}">
+        👎 ${dislikes||''}
+      </button>`;
+
+      return `
+      <div class="forum-post">
+        <div class="post-avatar">${p.author.charAt(0)}</div>
+        <div class="post-content">
+          <div class="post-meta"><span class="post-author">${p.author}</span><span class="post-date">${p.date}</span></div>
+          <div class="post-text">${p.text}</div>
+          <div class="post-reactions">${likeBtn}${dislikeBtn}
+            ${isLoggedIn?`<button class="reply-btn" onclick="toggleFrForm('${id}',${pi})">Responder</button>`:''}
+          </div>
+          ${repliesHtml}
+          ${replyForm}
+        </div>
+      </div>`;
+    }).join('');
+    const mainReplyForm = isLoggedIn ? `
+      <div class="forum-reply-form" style="margin-top:1rem">
+        <div class="form-group" style="flex:1"><input type="text" id="fMsg_${id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${id}')"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${id}')">Enviar</button></div>
+      </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-top:.5rem">Faça login para comentar.</p>`;
+    const delBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
+    return `<div class="forum-thread">
+      <div class="forum-thread-header" onclick="toggleThread('${id}',this)">
+        <div>
+          <div class="forum-thread-title">${t.title}</div>
+          <div class="forum-thread-meta">${(t.posts||[]).length} comentário${(t.posts||[]).length!==1?'s':''} · ${t.date}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">${delBtn}<span class="forum-chevron${t.open?' open':''}">▼</span></div>
+      </div>
+      <div class="forum-body${t.open?' open':''}" id="fb_${id}">
+        <div class="forum-posts">${posts||'<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Nenhum comentário ainda.</p>'}</div>
+        ${mainReplyForm}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.submitFrpReply = async (threadId, postIdx, replyIdx) => {
+  if (!isLoggedIn) return;
+  const inputId = replyIdx >= 0
+    ? `frpInput_${threadId}_${postIdx}_${replyIdx}`
+    : `frInput_${threadId}_${postIdx}`;
+  const input = document.getElementById(inputId);
+  const text = input?.value.trim();
+  if (!text) return;
+
+  const snap = await getDoc(doc(db,'forum',threadId));
+  if (!snap.exists()) return;
+  const t = snap.data();
+  const posts = [...(t.posts||[])];
+  const post = {...posts[postIdx]};
+  post.replies = [...(post.replies||[])];
+  post.replies.push({author: getMemberName(), text, date: nowLabel(), reactions: {}, authorUid: auth.currentUser?.uid});
+  posts[postIdx] = post;
+  await updateDoc(doc(db,'forum',threadId), {posts});
+  showToast('✓ Resposta adicionada!');
+};
+
+window.toggleFrpForm = (threadId, postIdx, replyIdx) => {
+  const id = replyIdx >= 0 ? `frpForm_${threadId}_${postIdx}_${replyIdx}` : `frForm_${threadId}_${postIdx}`;
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.toggleFrForm = (threadId, postIdx) => {
+  const el = document.getElementById(`frForm_${threadId}_${postIdx}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.frpReact = async (threadId, postIdx, replyIdx, type) => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
+  const uid = auth.currentUser?.uid;
+  const snap = await getDoc(doc(db,'forum',threadId));
+  if (!snap.exists()) return;
+  const t = snap.data();
+  const posts = [...(t.posts||[])];
+  const post = {...posts[postIdx]};
+  const replies = [...(post.replies||[])];
+  const reply = {...replies[replyIdx]};
+  const r = {...(reply.reactions||{})};
+  if (r[uid] === type) delete r[uid];
+  else r[uid] = type;
+  reply.reactions = r;
+  replies[replyIdx] = reply;
+  post.replies = replies;
+  posts[postIdx] = post;
+  await updateDoc(doc(db,'forum',threadId), {posts});
+};
+
+window.delFrp = async (threadId, postIdx, replyIdx) => {
+  const snap = await getDoc(doc(db,'forum',threadId));
+  if (!snap.exists()) return;
+  const t = snap.data();
+  const posts = [...(t.posts||[])];
+  const post = {...posts[postIdx]};
+  const replies = [...(post.replies||[])];
+  replies.splice(replyIdx, 1);
+  post.replies = replies;
+  posts[postIdx] = post;
+  await updateDoc(doc(db,'forum',threadId), {posts});
+  showToast('Resposta excluída.');
 };
 
 // ─── INIT ──────────────────────────────────────────────────────────
