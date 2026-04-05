@@ -337,6 +337,9 @@
   .gallery-thumb-del{position:absolute;top:.3rem;right:.3rem;background:rgba(10,8,4,.8);border:none;color:var(--rust);cursor:pointer;border-radius:50%;width:22px;height:22px;font-size:.7rem;display:none;align-items:center;justify-content:center;transition:all .2s}
   .gallery-thumb:hover .gallery-thumb-del{display:flex}
   .gallery-thumb-del:hover{background:var(--rust);color:var(--cream)}
+  .img-stats{position:absolute;bottom:.4rem;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 .4rem;pointer-events:none;z-index:5}
+  .stat-badge{background:rgba(10,8,4,.75);backdrop-filter:blur(3px);border-radius:8px;padding:.15rem .45rem;font-size:.65rem;color:var(--paper);display:flex;align-items:center;gap:.25rem;pointer-events:auto;line-height:1}
+  .stat-badge .stat-icon{font-size:.7rem}
   .upload-area{border:2px dashed rgba(200,130,10,.3);border-radius:2px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;margin-bottom:1rem}
   .upload-area:hover{border-color:var(--amber)}
   .upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -472,8 +475,8 @@
 <div class="modal-overlay" id="loginModal">
   <div class="modal">
     <button class="modal-close" onclick="closeLogin()">✕</button>
-    <div class="modal-title">Área dos Membros</div>
-    <div class="modal-subtitle" id="loginSubtitle">Entre com sua conta Google da banda</div>
+    <div class="modal-title">Entrar</div>
+    <div class="modal-subtitle" id="loginSubtitle">Entre com sua conta Google para interagir</div>
 
     <!-- Step 1: Google button -->
     <div id="loginStep1">
@@ -481,13 +484,13 @@
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.569 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z"/></svg>
         Entrar com Google
       </button>
-      <div class="modal-error" id="loginError" style="margin-top:.8rem">Acesso negado. Seu e-mail não está na lista de membros.</div>
+      <div class="modal-error" id="loginError" style="margin-top:.8rem"></div>
     </div>
 
-    <!-- Step 2: access denied (shown if email not approved) -->
+    <!-- Step 2: no longer used (kept for compatibility) -->
     <div id="loginStep2" style="display:none">
       <div class="access-denied">
-        <p id="deniedMsg">Seu e-mail não está na lista de membros aprovados.</p>
+        <p id="deniedMsg"></p>
         <button class="btn-ghost" onclick="showStep1()">Tentar outra conta</button>
       </div>
     </div>
@@ -853,7 +856,8 @@ const storage  = getStorage(app);
 const provider = new GoogleAuthProvider();
 
 // ─── STATE ─────────────────────────────────────────────────────────
-let isLoggedIn    = false;
+let isLoggedIn    = false; // true = qualquer Google user logado
+let isMember      = false; // true = email aprovado (admin)
 let currentTab    = 0;
 let currentRepTab = 'all';
 let dragSrc       = null;
@@ -861,12 +865,10 @@ let membersCache  = [];
 let repCache      = [];
 
 // ─── AUTH ──────────────────────────────────────────────────────────
-// Lista de e-mails Google aprovados — adicione os e-mails dos membros aqui
-// Esta lista também é verificada no Firestore (coleção 'approved_emails')
-// para que você possa gerenciar sem alterar o código
+// Visitantes com Google login podem interagir (likes, comentários).
+// Apenas e-mails aprovados em 'approved_emails' têm acesso admin (membros da banda).
 
 async function isEmailApproved(email) {
-  // 1. Verifica na coleção do Firestore (gerenciável sem mexer no código)
   const snap = await getDoc(doc(db, 'approved_emails', email.toLowerCase()));
   return snap.exists();
 }
@@ -874,23 +876,21 @@ async function isEmailApproved(email) {
 onAuthStateChanged(auth, async user => {
   if (user) {
     const approved = await isEmailApproved(user.email);
-    if (!approved) {
-      // Faz logout imediatamente e mostra mensagem
-      await signOut(auth);
-      document.getElementById('deniedMsg').textContent = `${user.email} não está na lista de membros aprovados.`;
-      document.getElementById('loginStep1').style.display = 'none';
-      document.getElementById('loginStep2').style.display = 'block';
-      document.getElementById('loginModal').classList.add('show');
-      isLoggedIn = false;
+    isMember = approved;
+    isLoggedIn = true;
+    const firstName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'Visitante';
+    document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
+    document.getElementById('navUserMobile').textContent = `🎸 ${firstName}`;
+    if (approved) {
+      await writeLog('Login membro', `${user.displayName || ''} (${user.email})`, 'acesso');
     } else {
-      isLoggedIn = true;
-      const firstName = user.displayName?.split(' ')[0] || 'Membro';
-      document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
-      document.getElementById('navUserMobile').textContent = `🎸 ${firstName}`;
-      await writeLog('Login realizado', `${user.displayName || ''} (${user.email})`, 'acesso');
+      await writeLog('Login visitante', `${user.displayName || ''} (${user.email})`, 'acesso');
     }
+    // Esconde modal de negação se estiver aberto
+    document.getElementById('loginModal').classList.remove('show');
   } else {
     isLoggedIn = false;
+    isMember   = false;
   }
   applyAuth();
   renderMembersFromCache();
@@ -1014,10 +1014,10 @@ function renderMembersFromCache() {
     const avatar  = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
-    const editCb  = isLoggedIn ? `onclick="openEditMember('${id}')"` : '';
-    const hint    = isLoggedIn ? `<div class="member-edit-hint">✏ Editar</div>` : '';
-    const rmBtn   = isLoggedIn ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${id}')">✕</button>` : '';
-    return `<div class="member-card${isLoggedIn?' editable':''}" ${editCb}>
+    const editCb  = isMember ? `onclick="openEditMember('${id}')"` : '';
+    const hint    = isMember ? `<div class="member-edit-hint">✏ Editar</div>` : '';
+    const rmBtn   = isMember ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${id}')">✕</button>` : '';
+    return `<div class="member-card${isMember?' editable':''}" ${editCb}>
       ${rmBtn}${avatar}
       <div class="member-name">${m.name}</div>
       <div class="member-instruments">${tags}</div>
@@ -1131,7 +1131,7 @@ window.openAddMember = () => {
 };
 
 window.openEditMember = async id => {
-  if (!isLoggedIn) return;
+  if (!isMember) return;
   resetEditModal();
   const snap = await getDoc(doc(db,'members',id));
   if (!snap.exists()) return;
@@ -1260,7 +1260,7 @@ function renderSuggestions() {
       👎 <span class="score-num">${s.dislikes||0}</span>
     </button>`;
 
-    const rmBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
+    const rmBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
 
     return `<div class="suggestion-item${rankClass}">
       ${trophy}
@@ -1407,8 +1407,8 @@ function renderPolls() {
 
     const myVoteLabel   = hasVoted ? `<span class="poll-my-vote">Seu voto: ${p.options[myVoteIdx]?.label}</span>` : '';
     const changeVoteBtn = isLoggedIn && hasVoted && !isClosed ? `<button class="btn-ghost btn-sm" onclick="removePollVote('${id}')">Mudar voto</button>` : '';
-    const closeBtn      = isLoggedIn && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
-    const deleteBtn     = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
+    const closeBtn      = isMember && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
+    const deleteBtn     = isMember ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
 
     return `<div class="poll-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.6rem;flex-wrap:wrap;gap:.4rem">
@@ -1492,7 +1492,7 @@ window.deletePoll = async id => {
 };
 
 window.createPoll = async () => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para criar enquetes'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const q        = document.getElementById('pollQuestion').value.trim();
   const opts     = Array.from(document.querySelectorAll('.poll-opt-input')).map(i=>i.value.trim()).filter(Boolean);
   const deadline = document.getElementById('pollDeadline').value; // "2025-06-14T20:00"
@@ -1515,7 +1515,7 @@ window.createPoll = async () => {
 };
 
 window.closePoll = async id => {
-  if (!isLoggedIn) return;
+  if (!isMember) return;
   await updateDoc(doc(db,'polls',id), {closed: true});
   await writeLog('Enquete encerrada manualmente', pollsCache.find(p=>p.id===id)?.data.question||id, 'enquetes');
   showToast('Enquete encerrada.');
@@ -1571,7 +1571,7 @@ function renderSetlist() {
 }
 
 window.addSetSong = async () => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para editar o setlist'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const song = document.getElementById('setSong').value.trim();
   const artist = document.getElementById('setArtist').value.trim();
   const youtube = document.getElementById('setYt').value.trim();
@@ -1645,7 +1645,7 @@ window.switchRepTab = (tab, btn) => {
 };
 
 window.addRepSong = async () => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para editar o repertório'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const song  = document.getElementById('repSong').value.trim();
   const artist= document.getElementById('repArtist').value.trim();
   const level = document.getElementById('repLevel').value;
@@ -1710,7 +1710,7 @@ window.addPost = async id => {
 };
 
 window.addForumThread = async () => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para criar tópicos'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const title=document.getElementById('newThreadTitle').value.trim();
   if (!title) { showToast('⚠ Digite o título'); return; }
   await addDoc(collection(db,'forum'),{title,date:new Date().toLocaleDateString('pt-BR'),open:true,posts:[],createdAt:serverTimestamp()});
@@ -1753,11 +1753,20 @@ function renderGallery() {
   if (carouselIndex < 0) carouselIndex = galleryCache.length - 1;
 
   track.innerHTML = galleryCache.map(({id, data: p}) => {
-    const del = isLoggedIn
-      ? `<button onclick="deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
+    const r = p.reactions || {};
+    const likes    = Object.values(r).filter(v=>v==='like').length;
+    const dislikes = Object.values(r).filter(v=>v==='dislike').length;
+    const comments = (p.comments||[]).length;
+    const del = isMember
+      ? `<button onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
       : '';
-    return `<div class="carousel-slide">
+    const statsHtml = `<div class="img-stats">
+      <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
+      <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
+    </div>`;
+    return `<div class="carousel-slide" onclick="openLightbox('${id}')" style="cursor:pointer">
       <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
+      ${statsHtml}
       <div class="carousel-caption">
         <div class="carousel-caption-text">${p.caption||''}</div>
         <div class="carousel-caption-meta">${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}</div>
@@ -1772,11 +1781,20 @@ function renderGallery() {
   track.style.transform = `translateX(-${carouselIndex * 100}%)`;
 
   grid.innerHTML = galleryCache.map(({id, data: p}, i) => {
-    const del = isLoggedIn
+    const r = p.reactions || {};
+    const likes    = Object.values(r).filter(v=>v==='like').length;
+    const dislikes = Object.values(r).filter(v=>v==='dislike').length;
+    const comments = (p.comments||[]).length;
+    const del = isMember
       ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
       : '';
+    const statsHtml = `<div class="img-stats">
+      <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
+      <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
+    </div>`;
     return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
       <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
+      ${statsHtml}
       ${del}
     </div>`;
   }).join('');
@@ -1814,7 +1832,7 @@ window.handleGalleryFiles = e => {
 
 // Upload to Firebase Storage with progress toast
 window.uploadGalleryPhotos = async () => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para enviar fotos'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   if (!galleryFilesBuf.length) { showToast('⚠ Selecione ao menos uma foto'); return; }
   const caption  = document.getElementById('galleryCaption').value.trim();
   const userName = auth.currentUser?.displayName?.split(' ')[0] || 'Membro';
@@ -1866,6 +1884,7 @@ window.uploadGalleryPhotos = async () => {
 
 // Delete from Storage + Firestore
 window.deleteGalleryPhoto = async (id, path) => {
+  if (!isMember) return;
   const snap = await getDoc(doc(db,'gallery',id));
   const caption = snap.exists() ? (snap.data().caption || 'sem descrição') : id;
   await deleteDoc(doc(db,'gallery',id));
@@ -1960,7 +1979,7 @@ function renderLightboxComments(id, p) {
     const cLikes = Object.values(cr).filter(v=>v==='like').length;
     const cDislikes = Object.values(cr).filter(v=>v==='dislike').length;
     const cMy = uid ? cr[uid] : null;
-    const canDel = isLoggedIn; // membros podem deletar
+    const canDel = isMember; // só membros podem deletar
     const replies = c.replies || [];
 
     let repliesHtml = '';
@@ -2094,6 +2113,7 @@ window.lbCmtReact = async (id, cIdx, type, rIdx, reaction) => {
 };
 
 window.delLbComment = async (id, cIdx) => {
+  if (!isMember) return;
   const snap = await getDoc(doc(db,'gallery',id));
   if (!snap.exists()) return;
   const p = snap.data();
@@ -2104,6 +2124,7 @@ window.delLbComment = async (id, cIdx) => {
 };
 
 window.delLbReply = async (id, cIdx, rIdx) => {
+  if (!isMember) return;
   const snap = await getDoc(doc(db,'gallery',id));
   if (!snap.exists()) return;
   const p = snap.data();
@@ -2164,7 +2185,7 @@ function renderForum() {
           <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
             <div class="post-avatar" style="width:24px;height:24px;font-size:.6rem">${rp.author.charAt(0)}</div>
             <span class="post-author">${rp.author}</span><span class="post-date">${rp.date}</span>
-            ${isLoggedIn?`<button class="lb-cdel" onclick="delFrp('${id}',${pi},${rpi})">✕</button>`:''}
+            ${isMember?`<button class="lb-cdel" onclick="delFrp('${id}',${pi},${rpi})">✕</button>`:''}
           </div>
           <div class="post-text" style="font-size:.82rem">${rp.text}</div>
           <div class="frp-act">
@@ -2214,7 +2235,7 @@ function renderForum() {
         <div class="form-group" style="flex:1"><input type="text" id="fMsg_${id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${id}')"></div>
         <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${id}')">Enviar</button></div>
       </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-top:.5rem">Faça login para comentar.</p>`;
-    const delBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
+    const delBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
     return `<div class="forum-thread">
       <div class="forum-thread-header" onclick="toggleThread('${id}',this)">
         <div>
@@ -2284,6 +2305,7 @@ window.frpReact = async (threadId, postIdx, replyIdx, type) => {
 };
 
 window.delFrp = async (threadId, postIdx, replyIdx) => {
+  if (!isMember) return;
   const snap = await getDoc(doc(db,'forum',threadId));
   if (!snap.exists()) return;
   const t = snap.data();
