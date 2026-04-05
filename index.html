@@ -181,14 +181,26 @@
 
   /* SUGGESTIONS */
   .suggestions-list{display:flex;flex-direction:column;gap:.6rem;margin-top:1.5rem}
-  .suggestion-item{display:flex;align-items:center;gap:.8rem;padding:.8rem 1.2rem;background:rgba(42,26,8,.5);border:1px solid rgba(200,130,10,.15);border-radius:1px;transition:all .2s;font-size:.88rem;flex-wrap:wrap}
+  .suggestion-item{display:flex;align-items:center;gap:.8rem;padding:.8rem 1.2rem;background:rgba(42,26,8,.5);border:1px solid rgba(200,130,10,.15);border-radius:1px;transition:all .2s;font-size:.88rem;flex-wrap:wrap;position:relative}
   .suggestion-item:hover{border-color:rgba(200,130,10,.35)}
+  .suggestion-item.rank-1{border-color:rgba(255,200,0,.4);background:rgba(255,200,0,.04)}
+  .suggestion-item.rank-2{border-color:rgba(192,192,192,.35);background:rgba(192,192,192,.03)}
+  .suggestion-item.rank-3{border-color:rgba(180,100,20,.4);background:rgba(180,100,20,.04)}
+  .suggestion-trophy{font-size:1.3rem;flex-shrink:0;line-height:1}
+  .suggestion-rank{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:rgba(200,130,10,.3);min-width:24px;flex-shrink:0}
   .suggestion-main{flex:1;min-width:160px}
   .suggestion-song{color:var(--cream);font-weight:600}
   .suggestion-artist{font-size:.78rem;color:var(--smoke);font-style:italic;margin-top:.15rem}
   .suggestion-note{font-size:.75rem;color:var(--smoke);font-style:italic;margin-top:.15rem}
   .suggestion-by{font-size:.72rem;color:var(--amber);min-width:80px}
   .suggestion-actions{display:flex;gap:.4rem;align-items:center}
+  .suggestion-score{display:flex;align-items:center;gap:.3rem}
+  .vote-btn{background:none;border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.3rem .6rem;cursor:pointer;border-radius:1px;font-size:.82rem;transition:all .2s;display:flex;align-items:center;gap:.3rem;line-height:1}
+  .vote-btn:hover{border-color:rgba(200,130,10,.5)}
+  .vote-btn.liked{background:rgba(60,180,80,.15);border-color:rgba(60,180,80,.5);color:#6ee7b7}
+  .vote-btn.disliked{background:rgba(180,60,60,.15);border-color:rgba(180,60,60,.5);color:#fca5a5}
+  .vote-btn:disabled{opacity:.4;cursor:default}
+  .score-num{font-family:'Bebas Neue',sans-serif;font-size:.95rem;min-width:20px;text-align:center}
 
   /* TABS */
   .tabs{display:flex;margin-bottom:2rem;border-bottom:1px solid rgba(200,130,10,.2)}
@@ -1021,12 +1033,50 @@ window.removeMember = async id => {
 // ─── SUGGESTIONS ───────────────────────────────────────────────────
 let suggestionsCache = [];
 
+function getSuggestionScore(s) {
+  return (s.likes||0) - (s.dislikes||0);
+}
+
 function renderSuggestions() {
   const list = document.getElementById('suggestionsList');
   if (!suggestionsCache.length) { list.innerHTML='<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p>'; return; }
-  list.innerHTML = suggestionsCache.map(({id, data: s}) => {
+
+  const uid = auth.currentUser?.uid || null;
+
+  // Sort by score desc, then by likes desc as tiebreaker
+  const sorted = [...suggestionsCache].sort((a,b) => {
+    const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
+    if (sb !== sa) return sb - sa;
+    return (b.data.likes||0) - (a.data.likes||0);
+  });
+
+  const trophies = ['🥇','🥈','🥉'];
+
+  list.innerHTML = sorted.map(({id, data: s}, i) => {
+    const score     = getSuggestionScore(s);
+    const myVote    = uid && s.voterMap ? s.voterMap[uid] : null; // 'like' | 'dislike' | null
+    const hasVoted  = myVote !== null && myVote !== undefined;
+    const rankClass = i < 3 ? ` rank-${i+1}` : '';
+    const trophy    = i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
+
+    const likeBtn = `<button class="vote-btn${myVote==='like'?' liked':''}"
+      onclick="voteSuggestion('${id}','like')"
+      ${!isLoggedIn?'disabled title="Faça login para votar"':''}
+      title="${myVote==='like'?'Remover like':'Curtir'}">
+      👍 <span class="score-num">${s.likes||0}</span>
+    </button>`;
+
+    const dislikeBtn = `<button class="vote-btn${myVote==='dislike'?' disliked':''}"
+      onclick="voteSuggestion('${id}','dislike')"
+      ${!isLoggedIn?'disabled title="Faça login para votar"':''}
+      title="${myVote==='dislike'?'Remover dislike':'Não curtir'}">
+      👎 <span class="score-num">${s.dislikes||0}</span>
+    </button>`;
+
     const rmBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
-    return `<div class="suggestion-item">
+
+    return `<div class="suggestion-item${rankClass}">
+      ${trophy}
       <div class="suggestion-main">
         <div class="suggestion-song">${s.song}</div>
         <div class="suggestion-artist">${s.artist}</div>
@@ -1035,6 +1085,7 @@ function renderSuggestions() {
       <div class="suggestion-by">por ${s.by}</div>
       <div class="suggestion-actions">
         ${ytBtn(s.youtube)}
+        <div class="suggestion-score">${likeBtn}${dislikeBtn}</div>
         ${rmBtn}
       </div>
     </div>`;
@@ -1045,6 +1096,36 @@ onSnapshot(query(collection(db,'suggestions'), orderBy('createdAt','desc')), sna
   suggestionsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   renderSuggestions();
 });
+
+window.voteSuggestion = async (id, type) => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para votar'); return; }
+  const uid  = auth.currentUser?.uid;
+  const snap = await getDoc(doc(db,'suggestions',id));
+  if (!snap.exists()) return;
+  const s = snap.data();
+
+  const voterMap = {...(s.voterMap||{})};
+  const current  = voterMap[uid]; // 'like' | 'dislike' | undefined
+  let likes    = s.likes    || 0;
+  let dislikes = s.dislikes || 0;
+
+  if (current === type) {
+    // Toggle off — remove vote
+    if (type === 'like')    likes--;
+    if (type === 'dislike') dislikes--;
+    delete voterMap[uid];
+  } else {
+    // Undo previous vote first
+    if (current === 'like')    likes--;
+    if (current === 'dislike') dislikes--;
+    // Apply new vote
+    if (type === 'like')    likes++;
+    if (type === 'dislike') dislikes++;
+    voterMap[uid] = type;
+  }
+
+  await updateDoc(doc(db,'suggestions',id), {likes, dislikes, voterMap});
+};
 
 window.addSuggestion = async () => {
   if (!isLoggedIn) { showToast('⚠ Faça login para sugerir músicas'); return; }
