@@ -293,7 +293,9 @@
   .lb-rpform button:hover{background:rgba(200,130,10,.22)}
   .lb-replies-box{margin-left:1.8rem;margin-top:.3rem;border-left:2px solid rgba(200,130,10,.1);padding-left:.5rem}
   .lb-rp{text-align:center;color:var(--smoke);font-size:.78rem;font-style:italic}
-  .lb-login-hint{text-align:center;font-size:.72rem;color:var(--smoke);font-style:italic;padding:.3rem 0}
+  .lb-login-hint{text-align:center;padding:.6rem 0;display:flex;flex-direction:column;gap:.4rem}
+  .lb-login-btn{background:linear-gradient(135deg,var(--amber),var(--rust));color:var(--black);border:none;padding:.55rem 1.3rem;font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:1px;transition:opacity .2s;align-self:center}
+  .lb-login-btn:hover{opacity:.85}
 
   /* FORUM REPLIES */
   .forum-replies{margin-left:2rem;margin-top:.5rem;border-left:2px solid rgba(200,130,10,.12);padding-left:.8rem}
@@ -337,7 +339,9 @@
   .gallery-thumb-del{position:absolute;top:.3rem;right:.3rem;background:rgba(10,8,4,.8);border:none;color:var(--rust);cursor:pointer;border-radius:50%;width:22px;height:22px;font-size:.7rem;display:none;align-items:center;justify-content:center;transition:all .2s}
   .gallery-thumb:hover .gallery-thumb-del{display:flex}
   .gallery-thumb-del:hover{background:var(--rust);color:var(--cream)}
-  .img-stats{position:absolute;bottom:.4rem;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 .4rem;pointer-events:none;z-index:5}
+  .img-stats{position:absolute;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 .4rem;pointer-events:none;z-index:5}
+  .gallery-thumb .img-stats{bottom:.4rem}
+  .carousel-slide .img-stats{top:.4rem}
   .stat-badge{background:rgba(10,8,4,.75);backdrop-filter:blur(3px);border-radius:8px;padding:.15rem .45rem;font-size:.65rem;color:var(--paper);display:flex;align-items:center;gap:.25rem;pointer-events:auto;line-height:1}
   .stat-badge .stat-icon{font-size:.7rem}
   .upload-area{border:2px dashed rgba(200,130,10,.3);border-radius:2px;padding:2rem;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;margin-bottom:1rem}
@@ -2013,7 +2017,7 @@ function renderLightboxComments(id, p) {
           <input placeholder="Sua resposta..." id="lbRpInput_${ci}" onkeydown="if(event.key==='Enter')submitLbReply('${id}',${ci})">
           <button onclick="submitLbReply('${id}',${ci})">Responder</button>
         </div>`
-      : `<div class="lb-login-hint">Faça login para responder</div>`;
+      : `<div class="lb-login-hint"><button class="lb-login-btn" onclick="openLogin()">Entrar para responder</button></div>`;
 
     html += `<div class="lb-cmt">
       <div class="lb-cmt-l1">
@@ -2039,7 +2043,9 @@ function renderLightboxComments(id, p) {
       <button onclick="addLbComment('${id}')">Enviar</button>
     </div>`;
   } else {
-    html += `<div class="lb-login-hint">Faça login para comentar</div>`;
+    html += `<div class="lb-login-hint">
+      <button class="lb-login-btn" onclick="openLogin()">Entrar para comentar</button>
+    </div>`;
   }
 
   el.innerHTML = html;
