@@ -52,6 +52,23 @@
   .stat-num{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--gold);line-height:1}
   .stat-label{font-size:.65rem;color:var(--smoke);letter-spacing:.1em;text-transform:uppercase;margin-top:.2rem}
 
+  /* DETAIL PANELS */
+  .detail-section{margin-bottom:2rem}
+  .detail-title{font-family:'Cinzel',serif;font-size:.95rem;color:var(--amber);letter-spacing:.08em;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+  .detail-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(200,130,10,.3),transparent)}
+  .metric-row{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem}
+  .metric-card{flex:1;min-width:180px;background:linear-gradient(135deg,rgba(42,26,8,.5),rgba(19,15,9,.7));border:1px solid rgba(200,130,10,.12);border-radius:1px;padding:1rem 1.2rem}
+  .metric-label{font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.3rem}
+  .metric-value{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--cream);line-height:1}
+  .metric-value.gold{color:var(--gold)}
+  .metric-bar{height:4px;background:rgba(200,130,10,.1);border-radius:2px;margin-top:.5rem;overflow:hidden}
+  .metric-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--amber),var(--gold))}
+  .top-table{width:100%;border-collapse:collapse}
+  .top-table td{padding:.5rem .8rem;font-size:.8rem;border-bottom:1px solid rgba(200,130,10,.06)}
+  .top-table td:first-child{color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:1rem;text-align:center;width:32px}
+  .top-table td:nth-child(2){color:var(--cream)}
+  .top-table td:last-child{text-align:right;color:var(--smoke);font-size:.75rem}
+
   /* LOG TABLE */
   .log-table{width:100%;border-collapse:collapse}
   .log-table th{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);padding:.6rem 1rem;border-bottom:1px solid rgba(200,130,10,.25);text-align:left;background:rgba(42,26,8,.4)}
@@ -123,6 +140,9 @@
       </div>
     </div>
 
+    <!-- REALTIME METRICS -->
+    <div id="realtimeMetrics"></div>
+
     <!-- STATS -->
     <div class="stats-grid" id="statsGrid"></div>
 
@@ -170,8 +190,8 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getFirestore, collection, doc, getDoc,
-  onSnapshot, deleteDoc, orderBy, query, limit, writeBatch, getDocs
+  getFirestore, collection, doc, getDoc, getDocs,
+  onSnapshot, deleteDoc, orderBy, query, limit, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
@@ -195,6 +215,7 @@ const provider = new GoogleAuthProvider();
 let allLogs      = [];
 let activeFilter = 'all';
 let activeSearch = '';
+let realtimeData = {};
 
 // ─── AUTH ──────────────────────────────────────────────────────────
 async function isApproved(email) {
@@ -228,6 +249,129 @@ window.doLogin = async () => {
 
 window.doLogout = async () => { await signOut(auth); };
 
+// ─── REALTIME COLLECTIONS ─────────────────────────────────────────
+const RT_COLLECTIONS = ['members','gallery','forum','suggestions','polls','approved_emails'];
+
+function startRTListeners() {
+  RT_COLLECTIONS.forEach(colName => {
+    onSnapshot(collection(db, colName), snap => {
+      realtimeData[colName] = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      renderRealtimeMetrics();
+    });
+  });
+}
+
+function renderRealtimeMetrics() {
+  const el = document.getElementById('realtimeMetrics');
+  if (!el || !Object.keys(realtimeData).length) return;
+
+  const members    = realtimeData.members || [];
+  const gallery    = realtimeData.gallery || [];
+  const forums     = realtimeData.forum || [];
+  const suggestions= realtimeData.suggestions || [];
+  const polls      = realtimeData.polls || [];
+  const approvals  = realtimeData.approved_emails || [];
+
+  // Gallery stats: total views, reactions, comments
+  let totalGallLikes = 0, totalGallComments = 0, totalGallReplies = 0;
+  gallery.forEach(p => {
+    const r = p.reactions || {};
+    totalGallLikes += Object.keys(r).filter(k => r[k]==='like').length;
+    const cmts = p.comments || [];
+    totalGallComments += cmts.length;
+    cmts.forEach(c => { totalGallReplies += (c.replies||[]).length; });
+  });
+
+  // Forum stats
+  let totalForumPosts = 0, totalForumReplies = 0, totalForumLikes = 0;
+  forums.forEach(t => {
+    const posts = t.posts || [];
+    totalForumPosts += posts.length;
+    posts.forEach(p => {
+      const r = p.reactions || {};
+      totalForumLikes += Object.values(r).filter(v=>v==='like').length;
+      totalForumReplies += (p.replies||[]).length;
+    });
+  });
+
+  // Suggestions stats
+  let totalSugVotes = 0;
+  suggestions.forEach(s => { totalSugVotes += (s.likes||0) + (s.dislikes||0); });
+  const topSuggestion = suggestions.length
+    ? suggestions.reduce((a,b) => (a.likes||0) > (b.likes||0) ? a : b)
+    : null;
+
+  // Polls stats
+  let totalPollVotes = 0;
+  polls.forEach(p => { totalPollVotes += (p.options||[]).reduce((s,o)=>s+(o.votes||0),0); });
+
+  // Members approved vs actual
+  const numMembers = members.length;
+  const numApproved = approvals.length;
+
+  el.innerHTML = `
+    <div class="detail-section">
+      <div class="detail-title">Dados em Tempo Real</div>
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">Membros da Banda</div>
+          <div class="metric-value gold">${numMembers}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">${numApproved} e-mail${numApproved!==1?'s':''} aprovado${numApproved!==1?'s':''}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Fotos na Galeria</div>
+          <div class="metric-value gold">${gallery.length}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">👍 ${totalGallLikes} · 💬 ${totalGallComments} comentários · ↩ ${totalGallReplies} respostas</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Tópicos no Fórum</div>
+          <div class="metric-value gold">${forums.length}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">💬 ${totalForumPosts} posts · 👍 ${totalForumLikes} · ↩ ${totalForumReplies} respostas</div>
+        </div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">Sugestões de Músicas</div>
+          <div class="metric-value gold">${suggestions.length}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">🗳 ${totalSugVotes} votos${topSuggestion && topSuggestion.likes ? ` · 🏆 "${topSuggestion.song||'?'}"` : ''}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Enquetes Ativas</div>
+          <div class="metric-value gold">${polls.length}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">🗳 ${totalPollVotes} votos totais · ${polls.filter(p=>p.closed).length} encerrada${polls.filter(p=>p.closed).length!==1?'s':''}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Setlist / Repertório</div>
+          <div class="metric-value gold">${members.length ? 'Ativo' : '—'}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Veja o setlist no site</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-title">Top Conteúdo</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="metric-card">
+          <div class="metric-label">📸 Fotos Mais Curtidas</div>
+          <table class="top-table">
+            ${[...gallery].sort((a,b)=>Object.values(b.reactions||{}).filter(v=>v==='like').length - Object.values(a.reactions||{}).filter(v=>v==='like').length).slice(0,3).map((p,i)=>{
+              const likes = Object.values(p.reactions||{}).filter(v=>v==='like').length;
+              return `<tr><td>${i+1}</td><td>${p.caption||'sem título'}</td><td>👍 ${likes}</td></tr>`;
+            }).join('') || '<tr><td colspan="3" style="color:var(--smoke);text-align:center;font-style:italic">Nenhuma foto</td></tr>'}
+          </table>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">💬 Fotos Mais Comentadas</div>
+          <table class="top-table">
+            ${[...gallery].sort((a,b)=>(b.comments||[]).length - (a.comments||[]).length).slice(0,3).map((p,i)=>{
+              return `<tr><td>${i+1}</td><td>${p.caption||'sem título'}</td><td>💬 ${(p.comments||[]).length}</td></tr>`;
+            }).join('') || '<tr><td colspan="3" style="color:var(--smoke);text-align:center;font-style:italic">Nenhuma foto</td></tr>'}
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
 // ─── LOGS ──────────────────────────────────────────────────────────
 const CAT_LABELS = {
   membros:'Membros', sugestoes:'Sugestões', enquetes:'Enquetes',
@@ -236,6 +380,7 @@ const CAT_LABELS = {
 };
 
 function startListening() {
+  startRTListeners();
   onSnapshot(query(collection(db,'logs'), orderBy('ts','desc'), limit(500)), snap => {
     allLogs = snap.docs.map(d => ({id: d.id, ...d.data()}));
     renderStats();
@@ -258,13 +403,31 @@ function renderStats() {
         </div>`).join('')
     : `<div style="font-size:.8rem;color:var(--smoke);font-style:italic;padding:.5rem 0">Nenhum login registrado ainda.</div>`;
 
-  grid.innerHTML = `
+  // Activity heat by day
+  const dayCounts = {};
+  allLogs.forEach(l => {
+    if (l.tsLocal) {
+      // extract date like "dd/mm/yyyy" or "dd/mm/yyyy, hh:mm:ss"
+      const datePart = l.tsLocal.split(', ')[0];
+      dayCounts[datePart] = (dayCounts[datePart]||0) + 1;
+    }
+  });
+  const dayEntries = Object.entries(dayCounts).slice(-7); // last 7 active days
+  const maxDay = Math.max(...Object.values(dayCounts), 1);
+
+  const gridHtml = `
     <div class="stat-card"><div class="stat-num">${allLogs.length}</div><div class="stat-label">Total de ações</div></div>
     ${Object.entries(CAT_LABELS).map(([k,v]) => `
       <div class="stat-card" style="cursor:pointer" onclick="setFilterById('${k}')">
         <div class="stat-num">${counts[k]||0}</div>
         <div class="stat-label">${v}</div>
       </div>`).join('')}
+    ${dayEntries.length ? `<div class="stat-card" style="grid-column:1/-1;padding:.8rem 1rem">
+      <div class="stat-label" style="margin-bottom:.5rem">Atividade por dia</div>
+      <div style="display:flex;gap:.3rem;align-items:flex-end;height:32px">
+        ${dayEntries.map(([d,c]) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.2rem"><span style="font-size:.55rem;color:var(--smoke)">${c}</span><div style="width:100%;background:linear-gradient(180deg,var(--gold),var(--amber));border-radius:1px;height:${Math.max(c/maxDay*100,8)}%"></div><span style="font-size:.48rem;color:var(--smoke)">${d.split('/').slice(0,2).join('/')}</span></div>`).join('')}
+      </div>
+    </div>` : ''}
     <div style="grid-column:1/-1;background:linear-gradient(135deg,rgba(42,26,8,.7),rgba(19,15,9,.8));border:1px solid rgba(80,200,80,.2);border-radius:1px;padding:1.2rem 1.4rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
         <span style="font-family:'Cinzel',serif;font-size:.85rem;color:#86efac;letter-spacing:.08em">🔑 Últimos Logins</span>
@@ -272,6 +435,8 @@ function renderStats() {
       </div>
       ${loginRows}
     </div>`;
+
+  grid.innerHTML = gridHtml;
 }
 
 window.setFilterById = id => {
