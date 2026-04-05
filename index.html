@@ -465,6 +465,7 @@
           <input type="text" id="editPhotoUrl" placeholder="https://..." oninput="previewUrl(this.value)">
         </div>
       </div>
+      <div id="photoError" style="display:none;font-size:.78rem;margin-top:.4rem;padding:.4rem .6rem;border-radius:1px;background:rgba(10,8,4,.5)"></div>
     </div>
     <div class="form-group" style="margin-bottom:1.5rem">
       <label>Contato (opcional)</label>
@@ -951,16 +952,81 @@ onSnapshot(query(collection(db,'members'), orderBy('createdAt','asc')), snap => 
   renderMembersFromCache();
 });
 
+// Comprime imagem para max 800px e qualidade 0.75 — evita estourar o limite de 1MB do Firestore
+function compressImage(file, maxPx = 800, quality = 0.75) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onerror = () => rej(new Error('Falha ao ler o arquivo. Tente novamente.'));
+    reader.onload = ev => {
+      const img = new Image();
+      img.onerror = () => rej(new Error('Arquivo inválido. Use JPG, PNG ou WebP.'));
+      img.onload = () => {
+        // Calcula proporção
+        let { width, height } = img;
+        if (width > maxPx || height > maxPx) {
+          if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+          else { width = Math.round(width * maxPx / height); height = maxPx; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const b64 = canvas.toDataURL('image/jpeg', quality);
+        // Checa tamanho final (~750KB em base64 = ~562KB real — seguro para Firestore)
+        const kb = Math.round(b64.length * 0.75 / 1024);
+        if (kb > 750) {
+          // Tenta qualidade menor
+          const b64low = canvas.toDataURL('image/jpeg', 0.5);
+          const kblow  = Math.round(b64low.length * 0.75 / 1024);
+          if (kblow > 750) { rej(new Error(`Imagem ainda grande após compressão (${kblow}KB). Use uma foto menor ou cole uma URL.`)); return; }
+          res(b64low);
+        } else {
+          res(b64);
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Mantém fileToBase64 para compatibilidade (galeria usa Storage, não precisa comprimir)
 function fileToBase64(file) {
   return new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
 }
 
 window.previewPhoto = async e => {
   const f = e.target.files[0]; if (!f) return;
-  const b = await fileToBase64(f);
-  const p = document.getElementById('editPhotoPreview');
-  p.src = b; p.style.display = 'block';
-  document.getElementById('editPhotoUrl').value = '';
+  const errEl = document.getElementById('photoError');
+  errEl.style.display = 'none';
+  // Valida tipo
+  if (!f.type.startsWith('image/')) {
+    errEl.textContent = '⚠ Arquivo não é uma imagem. Use JPG, PNG ou WebP.';
+    errEl.style.display = 'block';
+    e.target.value = '';
+    return;
+  }
+  // Valida tamanho bruto (máx 10MB antes de comprimir)
+  if (f.size > 10 * 1024 * 1024) {
+    errEl.textContent = '⚠ Arquivo muito grande (máx 10MB). Escolha uma foto menor.';
+    errEl.style.display = 'block';
+    e.target.value = '';
+    return;
+  }
+  try {
+    const b64 = await compressImage(f);
+    const p = document.getElementById('editPhotoPreview');
+    p.src = b64; p.style.display = 'block';
+    document.getElementById('editPhotoUrl').value = '';
+    const kb = Math.round(b64.length * 0.75 / 1024);
+    errEl.textContent = `✓ Imagem comprimida com sucesso (${kb}KB)`;
+    errEl.style.display = 'block';
+    errEl.style.color = '#6ee7b7';
+  } catch(err) {
+    errEl.textContent = `⚠ ${err.message}`;
+    errEl.style.display = 'block';
+    errEl.style.color = '#fca5a5';
+    e.target.value = '';
+  }
 };
 
 window.previewUrl = url => {
@@ -973,6 +1039,7 @@ function resetEditModal() {
   ['editMemberId','editMemberName','editMemberSince','editMemberContact','editPhotoUrl'].forEach(id => document.getElementById(id).value='');
   document.getElementById('editPhotoFile').value='';
   const p = document.getElementById('editPhotoPreview'); p.src=''; p.style.display='none';
+  const e = document.getElementById('photoError'); e.style.display='none'; e.textContent='';
   INSTRUMENTS.forEach(i => { const cb=document.querySelector(`#editInstrumentsCheck input[value="${i}"]`); if(cb) cb.checked=false; });
 }
 
@@ -1009,17 +1076,57 @@ window.saveMember = async () => {
   const instruments = Array.from(document.querySelectorAll('#editInstrumentsCheck input:checked')).map(cb=>cb.value);
   if (!name) { showToast('⚠ Digite o nome'); return; }
   if (!instruments.length) { showToast('⚠ Selecione ao menos um instrumento'); return; }
+
+  const errEl = document.getElementById('photoError');
+  errEl.style.display = 'none';
+
   let photo = '';
   const fi = document.getElementById('editPhotoFile');
   const ui = document.getElementById('editPhotoUrl').value.trim();
-  if (fi.files[0]) { photo = await fileToBase64(fi.files[0]); }
-  else if (ui) { photo = ui; }
-  else { const eid=document.getElementById('editMemberId').value; if(eid){ const s=await getDoc(doc(db,'members',eid)); if(s.exists()) photo=s.data().photo||''; } }
-  const eid = document.getElementById('editMemberId').value;
+
+  if (fi.files[0]) {
+    try {
+      showToast('⏳ Comprimindo imagem…');
+      photo = await compressImage(fi.files[0]);
+    } catch(err) {
+      errEl.textContent = `⚠ ${err.message}`;
+      errEl.style.color = '#fca5a5';
+      errEl.style.display = 'block';
+      showToast(`⚠ ${err.message}`);
+      return;
+    }
+  } else if (ui) {
+    photo = ui;
+  } else {
+    const eid = document.getElementById('editMemberId').value;
+    if (eid) { const s=await getDoc(doc(db,'members',eid)); if(s.exists()) photo=s.data().photo||''; }
+  }
+
+  const eid  = document.getElementById('editMemberId').value;
   const data = {name, since, contact, instruments, photo};
-  if (eid) { await updateDoc(doc(db,'members',eid),data); await writeLog('Membro editado', `${name} (${instruments.join(', ')})`, 'membros'); showToast(`✓ ${name} atualizado!`); }
-  else { await addDoc(collection(db,'members'),{...data, createdAt:serverTimestamp()}); await writeLog('Membro adicionado', `${name} (${instruments.join(', ')})`, 'membros'); showToast(`✓ ${name} adicionado(a)!`); }
-  closeEditMember();
+
+  try {
+    if (eid) {
+      await updateDoc(doc(db,'members',eid), data);
+      await writeLog('Membro editado', `${name} (${instruments.join(', ')})`, 'membros');
+      showToast(`✓ ${name} atualizado!`);
+    } else {
+      await addDoc(collection(db,'members'), {...data, createdAt:serverTimestamp()});
+      await writeLog('Membro adicionado', `${name} (${instruments.join(', ')})`, 'membros');
+      showToast(`✓ ${name} adicionado(a)!`);
+    }
+    closeEditMember();
+  } catch(err) {
+    console.error('Save member error:', err);
+    let msg = 'Erro ao salvar. ';
+    if (err.code === 'resource-exhausted') msg += 'Documento muito grande — use uma foto menor ou uma URL.';
+    else if (err.code === 'permission-denied') msg += 'Sem permissão. Verifique as regras do Firestore.';
+    else msg += err.message || 'Tente novamente.';
+    errEl.textContent = `⚠ ${msg}`;
+    errEl.style.color = '#fca5a5';
+    errEl.style.display = 'block';
+    showToast(`⚠ ${msg}`);
+  }
 };
 
 window.removeMember = async id => {
