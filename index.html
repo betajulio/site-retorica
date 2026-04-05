@@ -177,6 +177,12 @@
   .post-author{font-family:'Cinzel',serif;font-size:.82rem;color:var(--amber);font-weight:700}
   .post-date{font-size:.7rem;color:var(--smoke);font-style:italic}
   .post-text{font-size:.88rem;color:var(--paper);line-height:1.6}
+  .post-reactions{display:flex;gap:.4rem;margin-top:.5rem}
+  .react-btn{background:none;border:1px solid rgba(200,130,10,.15);color:var(--smoke);padding:.2rem .55rem;cursor:pointer;border-radius:1px;font-size:.78rem;transition:all .2s;display:flex;align-items:center;gap:.25rem;line-height:1}
+  .react-btn:hover{border-color:rgba(200,130,10,.4)}
+  .react-btn.liked{background:rgba(60,180,80,.12);border-color:rgba(60,180,80,.4);color:#6ee7b7}
+  .react-btn.disliked{background:rgba(180,60,60,.12);border-color:rgba(180,60,60,.4);color:#fca5a5}
+  .react-btn:disabled{opacity:.35;cursor:default}
   .forum-reply-form{display:flex;gap:.8rem;flex-wrap:wrap}
 
   /* SUGGESTIONS */
@@ -1592,15 +1598,35 @@ let forumCache = [];
 function renderForum() {
   const c = document.getElementById('forumContainer');
   if (!forumCache.length) { c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhum ensaio registrado ainda.</p>'; return; }
+  const uid = auth.currentUser?.uid || null;
   c.innerHTML = forumCache.map(({id, data: t}) => {
-    const posts = (t.posts||[]).map(p=>`
+    const posts = (t.posts||[]).map((p, pi) => {
+      const reactions = p.reactions || {};
+      const likes     = Object.values(reactions).filter(v=>v==='like').length;
+      const dislikes  = Object.values(reactions).filter(v=>v==='dislike').length;
+      const myReact   = uid ? reactions[uid] : null;
+      const likeBtn = `<button class="react-btn${myReact==='like'?' liked':''}"
+        ${!isLoggedIn?'disabled':''}
+        onclick="votePost('${id}',${pi},'like')"
+        title="${myReact==='like'?'Remover like':'Curtir'}">
+        👍 ${likes||''}
+      </button>`;
+      const dislikeBtn = `<button class="react-btn${myReact==='dislike'?' disliked':''}"
+        ${!isLoggedIn?'disabled':''}
+        onclick="votePost('${id}',${pi},'dislike')"
+        title="${myReact==='dislike'?'Remover dislike':'Não curtir'}">
+        👎 ${dislikes||''}
+      </button>`;
+      return `
       <div class="forum-post">
         <div class="post-avatar">${p.author.charAt(0)}</div>
         <div class="post-content">
           <div class="post-meta"><span class="post-author">${p.author}</span><span class="post-date">${p.date}</span></div>
           <div class="post-text">${p.text}</div>
+          <div class="post-reactions">${likeBtn}${dislikeBtn}</div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     const replyForm = isLoggedIn ? `
       <div class="forum-reply-form">
         <div class="form-group" style="flex:0 0 140px"><input type="text" id="fName_${id}" placeholder="Seu nome"></div>
@@ -1623,6 +1649,22 @@ function renderForum() {
     </div>`;
   }).join('');
 }
+
+window.votePost = async (threadId, postIdx, type) => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
+  const uid  = auth.currentUser?.uid;
+  const snap = await getDoc(doc(db,'forum',threadId));
+  if (!snap.exists()) return;
+  const posts   = [...(snap.data().posts||[])];
+  const post    = posts[postIdx];
+  if (!post) return;
+  const reactions = {...(post.reactions||{})};
+  // Toggle: same type removes, different type switches
+  if (reactions[uid] === type) delete reactions[uid];
+  else reactions[uid] = type;
+  posts[postIdx] = {...post, reactions};
+  await updateDoc(doc(db,'forum',threadId), {posts});
+};
 
 onSnapshot(query(collection(db,'forum'), orderBy('createdAt','desc')), snap => {
   forumCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
