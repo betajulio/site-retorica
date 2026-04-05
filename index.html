@@ -787,6 +787,9 @@ onAuthStateChanged(auth, async user => {
   }
   applyAuth();
   renderMembersFromCache();
+  renderSuggestions();
+  renderPolls();
+  renderForum();
   renderSetlist();
   renderRepFromCache();
 });
@@ -1002,12 +1005,13 @@ window.removeMember = async id => {
 };
 
 // ─── SUGGESTIONS ───────────────────────────────────────────────────
-onSnapshot(query(collection(db,'suggestions'), orderBy('createdAt','desc')), snap => {
+let suggestionsCache = [];
+
+function renderSuggestions() {
   const list = document.getElementById('suggestionsList');
-  if (snap.empty) { list.innerHTML='<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p>'; return; }
-  list.innerHTML = snap.docs.map(d => {
-    const s = d.data();
-    const rmBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${d.id}')">✕</button>` : '';
+  if (!suggestionsCache.length) { list.innerHTML='<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p>'; return; }
+  list.innerHTML = suggestionsCache.map(({id, data: s}) => {
+    const rmBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
     return `<div class="suggestion-item">
       <div class="suggestion-main">
         <div class="suggestion-song">${s.song}</div>
@@ -1021,6 +1025,11 @@ onSnapshot(query(collection(db,'suggestions'), orderBy('createdAt','desc')), sna
       </div>
     </div>`;
   }).join('');
+}
+
+onSnapshot(query(collection(db,'suggestions'), orderBy('createdAt','desc')), snap => {
+  suggestionsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  renderSuggestions();
 });
 
 window.addSuggestion = async () => {
@@ -1046,19 +1055,18 @@ window.removeSuggestion = async id => {
 };
 
 // ─── POLLS ─────────────────────────────────────────────────────────
-onSnapshot(query(collection(db,'polls'), orderBy('createdAt','desc')), snap => {
+let pollsCache = [];
+
+function renderPolls() {
   const c = document.getElementById('pollsContainer');
-  if (snap.empty) { c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhuma enquete ainda.</p>'; return; }
-  c.innerHTML = snap.docs.map(d => {
-    const p = d.data();
-    // find if current user already voted
-    const uid = auth.currentUser?.uid || null;
+  if (!pollsCache.length) { c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhuma enquete ainda.</p>'; return; }
+  const uid = auth.currentUser?.uid || null;
+  c.innerHTML = pollsCache.map(({id, data: p}) => {
     const myVoteIdx = uid && p.voterMap ? p.voterMap[uid] : null;
     const hasVoted  = myVoteIdx !== null && myVoteIdx !== undefined;
     const total = (p.options||[]).reduce((s,o)=>s+(o.votes||0),0);
-    const deleteBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${d.id}')">Excluir</button>` : '';
+    const deleteBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
 
-    // always show results with voter names
     const bars = (p.options||[]).map((o,i) => {
       const pct = total ? Math.round(o.votes/total*100) : 0;
       const voters = (p.voters||[]).filter(v=>v.optIdx===i).map(v=>`<span class="voter-tag">${v.name}</span>`).join('');
@@ -1074,19 +1082,17 @@ onSnapshot(query(collection(db,'polls'), orderBy('createdAt','desc')), snap => {
       </div>`;
     }).join('');
 
-    const myVoteLabel = hasVoted ? `<span class="poll-my-vote">Seu voto: ${p.options[myVoteIdx]?.label}</span>` : '';
+    const myVoteLabel  = hasVoted ? `<span class="poll-my-vote">Seu voto: ${p.options[myVoteIdx]?.label}</span>` : '';
+    const changeVoteBtn = isLoggedIn && hasVoted ? `<button class="btn-ghost btn-sm" onclick="removePollVote('${id}')">Mudar voto</button>` : '';
 
-    // voting form — only for logged-in users who haven't voted yet
     const voteForm = isLoggedIn && !hasVoted ? `
-      <div class="poll-options" style="margin-top:1rem" id="pform_${d.id}">
-        ${(p.options||[]).map((o,i)=>`<div class="poll-option"><input type="radio" id="p${d.id}o${i}" name="poll_${d.id}"><label class="poll-option-label" for="p${d.id}o${i}"><div class="poll-dot"></div>${o.label}</label></div>`).join('')}
+      <div class="poll-options" style="margin-top:1rem">
+        ${(p.options||[]).map((o,i)=>`<div class="poll-option"><input type="radio" id="p${id}o${i}" name="poll_${id}"><label class="poll-option-label" for="p${id}o${i}"><div class="poll-dot"></div>${o.label}</label></div>`).join('')}
         <div style="margin-top:.8rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
-          <div class="form-group" style="flex:1;min-width:120px"><input type="text" id="pname_${d.id}" placeholder="Seu nome"></div>
-          <button class="btn btn-sm" onclick="submitPollVote('${d.id}')">Votar</button>
+          <div class="form-group" style="flex:1;min-width:120px"><input type="text" id="pname_${id}" placeholder="Seu nome"></div>
+          <button class="btn btn-sm" onclick="submitPollVote('${id}')">Votar</button>
         </div>
       </div>` : '';
-
-    const changeVoteBtn = isLoggedIn && hasVoted ? `<button class="btn-ghost btn-sm" onclick="removePollVote('${d.id}')">Mudar voto</button>` : '';
 
     return `<div class="poll-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">
@@ -1100,6 +1106,11 @@ onSnapshot(query(collection(db,'polls'), orderBy('createdAt','desc')), snap => {
       </div>
     </div>`;
   }).join('');
+}
+
+onSnapshot(query(collection(db,'polls'), orderBy('createdAt','desc')), snap => {
+  pollsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  renderPolls();
 });
 
 window.submitPollVote = async id => {
@@ -1320,11 +1331,12 @@ window.removeRepSong = async id => {
 };
 
 // ─── FORUM ─────────────────────────────────────────────────────────
-onSnapshot(query(collection(db,'forum'), orderBy('createdAt','desc')), snap => {
+let forumCache = [];
+
+function renderForum() {
   const c = document.getElementById('forumContainer');
-  if (snap.empty) { c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhum ensaio registrado ainda.</p>'; return; }
-  c.innerHTML = snap.docs.map(d => {
-    const t = d.data();
+  if (!forumCache.length) { c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhum ensaio registrado ainda.</p>'; return; }
+  c.innerHTML = forumCache.map(({id, data: t}) => {
     const posts = (t.posts||[]).map(p=>`
       <div class="forum-post">
         <div class="post-avatar">${p.author.charAt(0)}</div>
@@ -1335,25 +1347,30 @@ onSnapshot(query(collection(db,'forum'), orderBy('createdAt','desc')), snap => {
       </div>`).join('');
     const replyForm = isLoggedIn ? `
       <div class="forum-reply-form">
-        <div class="form-group" style="flex:0 0 140px"><input type="text" id="fName_${d.id}" placeholder="Seu nome"></div>
-        <div class="form-group" style="flex:1"><input type="text" id="fMsg_${d.id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${d.id}')"></div>
-        <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${d.id}')">Enviar</button></div>
+        <div class="form-group" style="flex:0 0 140px"><input type="text" id="fName_${id}" placeholder="Seu nome"></div>
+        <div class="form-group" style="flex:1"><input type="text" id="fMsg_${id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${id}')"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${id}')">Enviar</button></div>
       </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic">Faça login para comentar.</p>`;
-    const delBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${d.id}')">Excluir</button>` : '';
+    const delBtn = isLoggedIn ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
     return `<div class="forum-thread">
-      <div class="forum-thread-header" onclick="toggleThread('${d.id}',this)">
+      <div class="forum-thread-header" onclick="toggleThread('${id}',this)">
         <div>
           <div class="forum-thread-title">${t.title}</div>
           <div class="forum-thread-meta">${(t.posts||[]).length} comentário${(t.posts||[]).length!==1?'s':''} · ${t.date}</div>
         </div>
         <div style="display:flex;align-items:center;gap:.5rem">${delBtn}<span class="forum-chevron${t.open?' open':''}">▼</span></div>
       </div>
-      <div class="forum-body${t.open?' open':''}" id="fb_${d.id}">
+      <div class="forum-body${t.open?' open':''}" id="fb_${id}">
         <div class="forum-posts">${posts||'<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Nenhum comentário ainda.</p>'}</div>
         ${replyForm}
       </div>
     </div>`;
   }).join('');
+}
+
+onSnapshot(query(collection(db,'forum'), orderBy('createdAt','desc')), snap => {
+  forumCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  renderForum();
 });
 
 window.toggleThread = async (id, el) => {
