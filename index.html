@@ -1265,14 +1265,14 @@ function renderSuggestions() {
 
     const likeBtn = `<button class="vote-btn${myVote==='like'?' liked':''}"
       onclick="voteSuggestion('${id}','like')"
-      ${!isLoggedIn?'disabled title="Faça login para votar"':''}
+      ${!isMember?'disabled title="Acesso restrito a membros"':''}
       title="${myVote==='like'?'Remover like':'Curtir'}">
       👍 <span class="score-num">${s.likes||0}</span>
     </button>`;
 
     const dislikeBtn = `<button class="vote-btn${myVote==='dislike'?' disliked':''}"
       onclick="voteSuggestion('${id}','dislike')"
-      ${!isLoggedIn?'disabled title="Faça login para votar"':''}
+      ${!isMember?'disabled title="Acesso restrito a membros"':''}
       title="${myVote==='dislike'?'Remover dislike':'Não curtir'}">
       👎 <span class="score-num">${s.dislikes||0}</span>
     </button>`;
@@ -1302,7 +1302,7 @@ onSnapshot(query(collection(db,'suggestions'), orderBy('createdAt','desc')), sna
 });
 
 window.voteSuggestion = async (id, type) => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para votar'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const uid  = auth.currentUser?.uid;
   const snap = await getDoc(doc(db,'suggestions',id));
   if (!snap.exists()) return;
@@ -1332,7 +1332,7 @@ window.voteSuggestion = async (id, type) => {
 };
 
 window.addSuggestion = async () => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para sugerir músicas'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const song = document.getElementById('sugSong').value.trim();
   const artist = document.getElementById('sugArtist').value.trim();
   const by   = document.getElementById('sugBy').value.trim();
@@ -1369,7 +1369,7 @@ function renderPolls() {
     const myVoteIdx   = uid && p.voterMap ? p.voterMap[uid] : null;
     const hasVoted    = myVoteIdx !== null && myVoteIdx !== undefined;
     const total       = (p.options||[]).reduce((s,o)=>s+(o.votes||0),0);
-    const canVote     = isLoggedIn && !hasVoted && !isClosed;
+    const canVote     = isMember && !hasVoted && !isClosed;
 
     // Deadline label
     let deadlineHtml = '';
@@ -1423,7 +1423,7 @@ function renderPolls() {
       </div>` : '';
 
     const myVoteLabel   = hasVoted ? `<span class="poll-my-vote">Seu voto: ${p.options[myVoteIdx]?.label}</span>` : '';
-    const changeVoteBtn = isLoggedIn && hasVoted && !isClosed ? `<button class="btn-ghost btn-sm" onclick="removePollVote('${id}')">Mudar voto</button>` : '';
+    const changeVoteBtn = isMember && hasVoted && !isClosed ? `<button class="btn-ghost btn-sm" onclick="removePollVote('${id}')">Mudar voto</button>` : '';
     const closeBtn      = isMember && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
     const deleteBtn     = isMember ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
 
@@ -1450,7 +1450,7 @@ onSnapshot(query(collection(db,'polls'), orderBy('createdAt','desc')), snap => {
 });
 
 window.submitPollVote = async id => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para votar'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const uid  = auth.currentUser?.uid;
   const name = auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ') || auth.currentUser?.email?.split('@')[0] || 'Membro';
 
@@ -1564,15 +1564,15 @@ function renderSetlist() {
   const c = document.getElementById('setlistContainer');
   const songs = setlistData[`tab${currentTab}`]||[];
   const items = songs.map((s,i)=>`
-    <li class="setlist-item${isLoggedIn?' editable':''}" ${isLoggedIn?`draggable="true" data-idx="${i}" ondragstart="dStart(event)" ondragover="dOver(event)" ondrop="dDrop(event)" ondragend="dEnd(event)"`:''}">
+    <li class="setlist-item${isMember?' editable':''}" ${isMember?`draggable="true" data-idx="${i}" ondragstart="dStart(event)" ondragover="dOver(event)" ondrop="dDrop(event)" ondragend="dEnd(event)"`:''}">
       <span class="setlist-num">${i+1}</span>
       <div class="setlist-song">${s.song}<div class="setlist-artist">${s.artist}</div></div>
       <div class="setlist-actions">
         ${s.youtube ? `<a href="${s.youtube}" target="_blank" class="btn-icon">▶</a>` : ''}
-        ${isLoggedIn ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
+        ${isMember ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
       </div>
     </li>`).join('');
-  const addRow = isLoggedIn ? `
+  const addRow = isMember ? `
     <div class="setlist-add-row">
       <input class="setlist-input" id="setSong" placeholder="Música">
       <input class="setlist-input" id="setArtist" placeholder="Artista">
@@ -1634,7 +1634,7 @@ function renderRepFromCache() {
   grid.innerHTML = list.map(({id, data: r}, i) => {
     const lvlClass = r.level==='ok' ? 'ok' : 'wip';
     const lvlLabel = r.level==='ok' ? '✅ Dominada' : '🔧 Em desenvolvimento';
-    const rmBtn = isLoggedIn ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
+    const rmBtn = isMember ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
     return `<div class="rep-item">
       <span class="rep-num">${i+1}</span>
       <div class="rep-info">
@@ -1687,7 +1687,7 @@ window.removeRepSong = async id => {
 let forumCache = [];
 
 window.votePost = async (threadId, postIdx, type) => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const uid  = auth.currentUser?.uid;
   const snap = await getDoc(doc(db,'forum',threadId));
   if (!snap.exists()) return;
@@ -1715,7 +1715,7 @@ window.toggleThread = async (id, el) => {
 };
 
 window.addPost = async id => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para comentar'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const text = document.getElementById(`fMsg_${id}`)?.value.trim();
   if (!text) { showToast('⚠ Escreva algo'); return; }
   const snap = await getDoc(doc(db,'forum',id));
@@ -2203,7 +2203,7 @@ function renderForum() {
         const rLikes = Object.values(rr).filter(v=>v==='like').length;
         const rDislikes = Object.values(rr).filter(v=>v==='dislike').length;
         const rMy = uid ? rr[uid] : null;
-        const rpForm = isLoggedIn
+        const rpForm = isMember
           ? `<div class="frp-rform" style="display:none" id="frpForm_${id}_${pi}_${rpi}">
               <input placeholder="Responder..." id="frpInput_${id}_${pi}_${rpi}" onkeydown="if(event.key==='Enter')submitFrpReply('${id}',${pi},${rpi})">
               <button onclick="submitFrpReply('${id}',${pi},${rpi})">Enviar</button>
@@ -2216,28 +2216,28 @@ function renderForum() {
           </div>
           <div class="post-text" style="font-size:.82rem">${rp.text}</div>
           <div class="frp-act">
-            <button class="fr-rbtn${rMy==='like'?' fl':''}" onclick="frpReact('${id}',${pi},${rpi},'like')" ${!isLoggedIn?'disabled':''}>👍 ${rLikes||''}</button>
-            <button class="fr-rbtn${rMy==='dislike'?' fd':''}" onclick="frpReact('${id}',${pi},${rpi},'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${rDislikes||''}</button>
-            ${isLoggedIn?`<button class="frp-rp" onclick="toggleFrpForm('${id}',${pi},${rpi})">Responder</button>`:''}
+            <button class="fr-rbtn${rMy==='like'?' fl':''}" onclick="frpReact('${id}',${pi},${rpi},'like')" ${!isMember?'disabled':''}>👍 ${rLikes||''}</button>
+            <button class="fr-rbtn${rMy==='dislike'?' fd':''}" onclick="frpReact('${id}',${pi},${rpi},'dislike')" ${!isMember?'disabled':''}>👎 ${rDislikes||''}</button>
+            ${isMember?`<button class="frp-rp" onclick="toggleFrpForm('${id}',${pi},${rpi})">Responder</button>`:''}
           </div>
           ${rpForm}
         </div>`;
       }).join('')}</div>` : '';
 
-      const replyForm = isLoggedIn
+      const replyForm = isMember
         ? `<div class="frp-rform" id="frForm_${id}_${pi}">
             <input placeholder="Responder a ${p.author}..." id="frInput_${id}_${pi}" onkeydown="if(event.key==='Enter')submitFrpReply('${id}',${pi},-1)">
             <button onclick="submitFrpReply('${id}',${pi},-1)">Responder</button>
           </div>` : '';
 
       const likeBtn = `<button class="react-btn${myReact==='like'?' liked':''}"
-        ${!isLoggedIn?'disabled':''}
+        ${!isMember?'disabled':''}
         onclick="votePost('${id}',${pi},'like')"
         title="${myReact==='like'?'Remover like':'Curtir'}">
         👍 ${likes||''}
       </button>`;
       const dislikeBtn = `<button class="react-btn${myReact==='dislike'?' disliked':''}"
-        ${!isLoggedIn?'disabled':''}
+        ${!isMember?'disabled':''}
         onclick="votePost('${id}',${pi},'dislike')"
         title="${myReact==='dislike'?'Remover dislike':'Não curtir'}">
         👎 ${dislikes||''}
@@ -2250,18 +2250,18 @@ function renderForum() {
           <div class="post-meta"><span class="post-author">${p.author}</span><span class="post-date">${p.date}</span></div>
           <div class="post-text">${p.text}</div>
           <div class="post-reactions">${likeBtn}${dislikeBtn}
-            ${isLoggedIn?`<button class="reply-btn" onclick="toggleFrForm('${id}',${pi})">Responder</button>`:''}
+            ${isMember?`<button class="reply-btn" onclick="toggleFrForm('${id}',${pi})">Responder</button>`:''}
           </div>
           ${repliesHtml}
           ${replyForm}
         </div>
       </div>`;
     }).join('');
-    const mainReplyForm = isLoggedIn ? `
+    const mainReplyForm = isMember ? `
       <div class="forum-reply-form" style="margin-top:1rem">
         <div class="form-group" style="flex:1"><input type="text" id="fMsg_${id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${id}')"></div>
         <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${id}')">Enviar</button></div>
-      </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-top:.5rem">Faça login para comentar.</p>`;
+      </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-top:.5rem">Apenas membros podem comentar.</p>`;
     const delBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
     return `<div class="forum-thread">
       <div class="forum-thread-header" onclick="toggleThread('${id}',this)">
@@ -2280,7 +2280,7 @@ function renderForum() {
 }
 
 window.submitFrpReply = async (threadId, postIdx, replyIdx) => {
-  if (!isLoggedIn) return;
+  if (!isMember) return;
   const inputId = replyIdx >= 0
     ? `frpInput_${threadId}_${postIdx}_${replyIdx}`
     : `frInput_${threadId}_${postIdx}`;
@@ -2312,7 +2312,7 @@ window.toggleFrForm = (threadId, postIdx) => {
 };
 
 window.frpReact = async (threadId, postIdx, replyIdx, type) => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const uid = auth.currentUser?.uid;
   const snap = await getDoc(doc(db,'forum',threadId));
   if (!snap.exists()) return;
