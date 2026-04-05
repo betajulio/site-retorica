@@ -244,6 +244,10 @@
   body.logged-in .member-only{display:block}
   body.logged-in .member-only-flex{display:flex}
   .member-only-flex{display:none}
+  .member-admin-only{display:none}
+  body.is-member .member-admin-only{display:block}
+  body.is-member .member-admin-only-flex{display:flex}
+  .member-admin-only-flex{display:none}
 
   /* TOCA DO MINEIRO */
   .toca-badge{display:flex;align-items:center;gap:1rem;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.25);border-radius:2px;padding:.8rem 1.2rem;margin-top:2rem;width:fit-content;margin-left:auto;margin-right:auto;animation:fadeUp 1.2s .8s ease both}
@@ -573,7 +577,7 @@
     <li><a onclick="goTo('repertorio')">Repertório</a></li>
     <li><a onclick="goTo('forum')">Fórum</a></li>
     <li><a onclick="goTo('galeria')">Galeria</a></li>
-    <li class="member-only"><a href="logs.html" style="color:var(--amber)">⚙ Admin</a></li>
+    <li class="member-admin-only"><a href="logs.html" style="color:var(--amber)">⚙ Admin</a></li>
   </ul>
   <div class="nav-auth">
     <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
@@ -594,7 +598,7 @@
   <a onclick="mobileGoTo('repertorio')">Repertório</a>
   <a onclick="mobileGoTo('forum')">Fórum</a>
   <a onclick="mobileGoTo('galeria')">Galeria</a>
-  <a href="logs.html" id="adminLinkMobile" class="member-only" style="color:var(--amber)">⚙ Portal Admin</a>
+  <a href="logs.html" id="adminLinkMobile" class="member-admin-only" style="color:var(--amber)">⚙ Portal Admin</a>
   <div class="nav-mobile-auth">
     <span id="navUserMobile" style="display:none;font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif">🎸 Membro</span>
     <button class="btn-ghost btn-sm" id="loginBtnMobile" onclick="openLogin();closeMobileMenu()">Entrar</button>
@@ -920,6 +924,7 @@ onAuthStateChanged(auth, async user => {
 
 function applyAuth() {
   document.body.classList.toggle('logged-in', isLoggedIn);
+  document.body.classList.toggle('is-member', isMember);
   // desktop nav
   document.getElementById('loginBtn').style.display  = isLoggedIn ? 'none' : '';
   document.getElementById('logoutBtn').style.display = isLoggedIn ? '' : 'none';
