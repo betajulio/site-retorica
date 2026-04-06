@@ -2392,7 +2392,9 @@ setTimeout(()=>{
 // Register service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js');
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+      .catch(err => console.error('[PWA] Erro ao registrar SW:', err));
   });
 }
 
@@ -2401,36 +2403,50 @@ const banner  = document.getElementById('installBanner');
 const btn     = document.getElementById('installBtn');
 const dismiss = document.getElementById('dismissBanner');
 
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Wait 3 seconds, then show the banner if not dismissed before
-  if (sessionStorage.getItem('retorica_install_dismissed') !== '1') {
-    setTimeout(() => banner.classList.add('show'), 3000);
-  }
-});
+if (banner && btn && dismiss) {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (localStorage.getItem('retorica_install_dismissed') !== '1') {
+      setTimeout(() => banner.classList.add('show'), 2000);
+    }
+  });
 
-btn.addEventListener('click', async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const result = await deferredPrompt.userChoice;
-  if (result.outcome === 'accepted') {
-    showToast('App installé com sucesso!');
-  }
-  deferredPrompt = null;
-  banner.classList.remove('show');
-  sessionStorage.setItem('retorica_install_dismissed', '1');
-});
+  btn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+      showToast('App instalado com sucesso!');
+    } else {
+      showToast('Instalação cancelada.');
+    }
+    deferredPrompt = null;
+    banner.classList.remove('show');
+    localStorage.setItem('retorica_install_dismissed', '1');
+  });
 
-dismiss.addEventListener('click', () => {
-  banner.classList.remove('show');
-  sessionStorage.setItem('retorica_install_dismissed', '1');
-});
+  dismiss.addEventListener('click', () => {
+    banner.classList.remove('show');
+    localStorage.setItem('retorica_install_dismissed', '1');
+  });
+}
 
 window.addEventListener('appinstalled', () => {
-  banner.classList.remove('show');
+  if (banner) banner.classList.remove('show');
   showToast('App já está instalado!');
+  deferredPrompt = null;
 });
+
+// Fallback desktop: if beforeinstallprompt never fires, show instructions
+if (banner && btn && dismiss && !window.matchMedia('(display-mode: standalone)').matches) {
+  setTimeout(() => {
+    if (!deferredPrompt && localStorage.getItem('retorica_install_dismissed') !== '1') {
+      banner.classList.add('show');
+      btn.innerHTML = 'Para instalar: use o menu &#x22EE; do navegador';
+    }
+  }, 5000);
+}
 </script>
 </body>
 </html>
