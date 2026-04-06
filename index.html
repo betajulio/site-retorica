@@ -485,23 +485,21 @@
   }
 
   /* ── INSTALL BANNER ── */
-  .install-banner{position:fixed;bottom:.5rem;left:50%;right:auto;z-index:9998;transform:translateX(-50%) translateY(100%);width:92%;max-width:420px;background:rgba(19,15,9,.97);border:1px solid rgba(200,130,10,.4);border-radius:6px;padding:.5rem .8rem;display:none;align-items:center;gap:.6rem;backdrop-filter:blur(12px);box-shadow:0 4px 20px rgba(0,0,0,.7);animation:bannerPop .3s ease both}
+  .install-banner{position:fixed;bottom:.8rem;left:50%;right:auto;z-index:9998;transform:translateX(-50%) translateY(100%);width:85%;max-width:320px;background:rgba(19,15,9,.97);border:1px solid rgba(200,130,10,.4);border-radius:8px;padding:1rem 1.2rem 1.4rem;display:none;flex-direction:column;align-items:center;text-align:center;gap:.6rem;backdrop-filter:blur(12px);box-shadow:0 4px 30px rgba(0,0,0,.8);animation:bannerPop .3s ease both}
   .install-banner.show{display:flex;transform:translateX(-50%) translateY(0)}
   @keyframes bannerPop{from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)}}
-  .install-banner-icon{width:28px;height:28px;border-radius:5px;object-fit:cover;flex-shrink:0}
-  .install-banner-text{flex:1;min-width:0}
-  .install-banner-text strong{font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;display:block}
-  .install-banner-text span{font-size:.65rem;color:var(--paper);display:block;margin-top:1px}
-  .install-banner-btn{background:linear-gradient(135deg,var(--amber),var(--gold));color:var(--black);border:none;padding:.35rem .9rem;font-family:'Cinzel',serif;font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:2px;white-space:nowrap;flex-shrink:0}
-  .install-banner-dismiss{background:rgba(139,58,10,.2);border:1px solid rgba(200,130,10,.3);color:var(--cream);width:32px;height:32px;font-size:1.1rem;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;line-height:1}
-  .install-banner-dismiss:hover{background:rgba(139,58,10,.5)}
+  .install-banner-dismiss{position:absolute;top:.5rem;right:.5rem;background:rgba(139,58,10,.25);border:1px solid rgba(200,130,10,.3);color:var(--cream);width:30px;height:30px;font-size:1rem;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
+  .install-banner-dismiss:hover{background:rgba(139,58,10,.6)}
+  .install-banner-icon{width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid rgba(200,130,10,.3)}
+  .install-banner-text strong{font-family:'Cinzel',serif;font-size:.8rem;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;display:block}
+  .install-banner-text span{font-size:.68rem;color:var(--paper);display:block;margin-top:.3rem}
+  .install-banner-btn{background:linear-gradient(135deg,var(--amber),var(--gold));color:var(--black);border:none;padding:.55rem 1.8rem;font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:3px;white-space:nowrap}
 
   @media(max-width:480px){
-    .install-banner{padding:.4rem .6rem;gap:.4rem;width:95%}
-    .install-banner-icon{width:22px;height:22px}
-    .install-banner-text strong{font-size:.62rem}
-    .install-banner-text span{font-size:.58rem}
-    .install-banner-dismiss{width:28px;height:28px;font-size:.95rem}
+    .install-banner{width:90%;padding:.9rem 1rem 1.2rem}
+    .install-banner-text strong{font-size:.7rem}
+    .install-banner-text span{font-size:.6rem}
+    .install-banner-dismiss{width:26px;height:26px;font-size:.85rem;top:.4rem;right:.4rem}
   }
 </style>
 </head>
@@ -868,13 +866,13 @@
 
 <!-- INSTALL BANNER -->
 <div class="install-banner" id="installBanner">
+  <button class="install-banner-dismiss" id="dismissBanner">✕</button>
   <img class="install-banner-icon" src="imagens/Toca_do_Mineiro_logo_final.png" alt="Retórica">
   <div class="install-banner-text">
     <strong>Sugestão</strong>
     <span>Instale o app Retórica na sua tela inicial</span>
   </div>
   <button class="install-banner-btn" id="installBtn">Instalar</button>
-  <button class="install-banner-dismiss" id="dismissBanner">✕</button>
 </div>
 
 <div class="toast" id="toast"></div>
