@@ -485,19 +485,23 @@
   }
 
   /* ── INSTALL BANNER ── */
-  .install-banner{position:fixed;bottom:0;left:0;right:0;z-index:9998;background:linear-gradient(180deg,rgba(19,15,9,.97),rgba(10,8,4,.99));border-top:1px solid rgba(200,130,10,.4);padding:1rem 1.5rem;display:none;align-items:center;justify-content:center;gap:1rem;backdrop-filter:blur(12px);box-shadow:0 -4px 24px rgba(0,0,0,.6);animation:slideUp .4s cubic-bezier(.34,1.56,.64,1)}
-  .install-banner.show{display:flex}
-  @keyframes slideUp{from{transform:translateY(100%)} to{transform:translateY(0)}}
-  .install-banner-icon{width:48px;height:48px;border-radius:12px;object-fit:cover;border:1px solid rgba(200,130,10,.3);flex-shrink:0}
+  .install-banner{position:fixed;bottom:.5rem;left:50%;right:auto;z-index:9998;transform:translateX(-50%) translateY(100%);width:92%;max-width:420px;background:rgba(19,15,9,.97);border:1px solid rgba(200,130,10,.4);border-radius:6px;padding:.5rem .8rem;display:none;align-items:center;gap:.6rem;backdrop-filter:blur(12px);box-shadow:0 4px 20px rgba(0,0,0,.7);animation:bannerPop .3s ease both}
+  .install-banner.show{display:flex;transform:translateX(-50%) translateY(0)}
+  @keyframes bannerPop{from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  .install-banner-icon{width:28px;height:28px;border-radius:5px;object-fit:cover;flex-shrink:0}
   .install-banner-text{flex:1;min-width:0}
-  .install-banner-text strong{font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold);letter-spacing:.02em;display:block}
-  .install-banner-text span{font-size:.8rem;color:var(--paper);margin-top:.2rem;display:block;font-style:italic}
-  .install-banner-btn{background:linear-gradient(135deg,var(--amber),var(--gold));color:var(--black);border:none;padding:.7rem 1.4rem;font-family:'Cinzel',serif;font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:2px;white-space:nowrap;flex-shrink:0}
-  .install-banner-dismiss{background:none;border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.7rem 0;cursor:pointer;font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.08em;transition:all .2s;margin-left:.5rem}
-  .install-banner-dismiss:hover{color:var(--paper);border-color:rgba(200,130,10,.5)}
-  @media(min-width:640px){
-    .install-banner{bottom:1.2rem;left:50%;right:auto;width:max-width;max-width:480px;border-radius:8px;border:1px solid rgba(200,130,10,.4);border-top:1px solid rgba(200,130,10,.4);box-shadow:0 8px 40px rgba(0,0,0,.7);transform:translateX(-50%) translateY(100%)}
-    .install-banner.show{transform:translateX(-50%) translateY(0)}
+  .install-banner-text strong{font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;display:block}
+  .install-banner-text span{font-size:.65rem;color:var(--paper);display:block;margin-top:1px}
+  .install-banner-btn{background:linear-gradient(135deg,var(--amber),var(--gold));color:var(--black);border:none;padding:.35rem .9rem;font-family:'Cinzel',serif;font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:2px;white-space:nowrap;flex-shrink:0}
+  .install-banner-dismiss{background:rgba(139,58,10,.2);border:1px solid rgba(200,130,10,.3);color:var(--cream);width:32px;height:32px;font-size:1.1rem;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;line-height:1}
+  .install-banner-dismiss:hover{background:rgba(139,58,10,.5)}
+
+  @media(max-width:480px){
+    .install-banner{padding:.4rem .6rem;gap:.4rem;width:95%}
+    .install-banner-icon{width:22px;height:22px}
+    .install-banner-text strong{font-size:.62rem}
+    .install-banner-text span{font-size:.58rem}
+    .install-banner-dismiss{width:28px;height:28px;font-size:.95rem}
   }
 </style>
 </head>
@@ -866,8 +870,8 @@
 <div class="install-banner" id="installBanner">
   <img class="install-banner-icon" src="imagens/Toca_do_Mineiro_logo_final.png" alt="Retórica">
   <div class="install-banner-text">
-    <strong>Instalar app Retórica?</strong>
-    <span>Adicione à tela inicial para acesso rápido</span>
+    <strong>Sugestão</strong>
+    <span>Instale o app Retórica na sua tela inicial</span>
   </div>
   <button class="install-banner-btn" id="installBtn">Instalar</button>
   <button class="install-banner-dismiss" id="dismissBanner">✕</button>
@@ -2403,13 +2407,24 @@ const banner  = document.getElementById('installBanner');
 const btn     = document.getElementById('installBtn');
 const dismiss = document.getElementById('dismissBanner');
 
+let bannerHideTimer = null;
+
+function hideBanner() {
+  if (banner) banner.classList.remove('show');
+  if (bannerHideTimer) { clearTimeout(bannerHideTimer); bannerHideTimer = null; }
+}
+
+function showBannerAuto() {
+  if (localStorage.getItem('retorica_install_dismissed') === '1') return;
+  banner.classList.add('show');
+  bannerHideTimer = setTimeout(() => hideBanner(), 5000);
+}
+
 if (banner && btn && dismiss) {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    if (localStorage.getItem('retorica_install_dismissed') !== '1') {
-      setTimeout(() => banner.classList.add('show'), 2000);
-    }
+    showBannerAuto();
   });
 
   btn.addEventListener('click', async () => {
@@ -2422,12 +2437,12 @@ if (banner && btn && dismiss) {
       showToast('Instalação cancelada.');
     }
     deferredPrompt = null;
-    banner.classList.remove('show');
+    hideBanner();
     localStorage.setItem('retorica_install_dismissed', '1');
   });
 
   dismiss.addEventListener('click', () => {
-    banner.classList.remove('show');
+    hideBanner();
     localStorage.setItem('retorica_install_dismissed', '1');
   });
 }
