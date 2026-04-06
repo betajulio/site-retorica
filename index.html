@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0804">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="imagens/Toca_do_Mineiro_logo_final.png">
 <title>Retórica — Classic Rock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
@@ -480,6 +483,22 @@
     .members-grid{grid-template-columns:1fr 1fr}
     .carousel-slide img{height:210px}
   }
+
+  /* ── INSTALL BANNER ── */
+  .install-banner{position:fixed;bottom:0;left:0;right:0;z-index:9998;background:linear-gradient(180deg,rgba(19,15,9,.97),rgba(10,8,4,.99));border-top:1px solid rgba(200,130,10,.4);padding:1rem 1.5rem;display:none;align-items:center;justify-content:center;gap:1rem;backdrop-filter:blur(12px);box-shadow:0 -4px 24px rgba(0,0,0,.6);animation:slideUp .4s cubic-bezier(.34,1.56,.64,1)}
+  .install-banner.show{display:flex}
+  @keyframes slideUp{from{transform:translateY(100%)} to{transform:translateY(0)}}
+  .install-banner-icon{width:48px;height:48px;border-radius:12px;object-fit:cover;border:1px solid rgba(200,130,10,.3);flex-shrink:0}
+  .install-banner-text{flex:1;min-width:0}
+  .install-banner-text strong{font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold);letter-spacing:.02em;display:block}
+  .install-banner-text span{font-size:.8rem;color:var(--paper);margin-top:.2rem;display:block;font-style:italic}
+  .install-banner-btn{background:linear-gradient(135deg,var(--amber),var(--gold));color:var(--black);border:none;padding:.7rem 1.4rem;font-family:'Cinzel',serif;font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:2px;white-space:nowrap;flex-shrink:0}
+  .install-banner-dismiss{background:none;border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.7rem 0;cursor:pointer;font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.08em;transition:all .2s;margin-left:.5rem}
+  .install-banner-dismiss:hover{color:var(--paper);border-color:rgba(200,130,10,.5)}
+  @media(min-width:640px){
+    .install-banner{bottom:1.2rem;left:50%;right:auto;width:max-width;max-width:480px;border-radius:8px;border:1px solid rgba(200,130,10,.4);border-top:1px solid rgba(200,130,10,.4);box-shadow:0 8px 40px rgba(0,0,0,.7);transform:translateX(-50%) translateY(100%)}
+    .install-banner.show{transform:translateX(-50%) translateY(0)}
+  }
 </style>
 </head>
 <body>
@@ -841,6 +860,17 @@
     </div>
     <div class="lb-comments-wrap" id="lbComments"></div>
   </div>
+</div>
+
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="installBanner">
+  <img class="install-banner-icon" src="imagens/Toca_do_Mineiro_logo_final.png" alt="Retórica">
+  <div class="install-banner-text">
+    <strong>Instalar app Retórica?</strong>
+    <span>Adicione à tela inicial para acesso rápido</span>
+  </div>
+  <button class="install-banner-btn" id="installBtn">Instalar</button>
+  <button class="install-banner-dismiss" id="dismissBanner">✕</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -2357,6 +2387,50 @@ setTimeout(()=>{
   document.getElementById('loadingOverlay').classList.add('hidden');
   setTimeout(()=>document.getElementById('loadingOverlay').remove(),600);
 },1800);
+
+// ─── PWA INSTALL ──────────────────────────────────────────────────
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
+
+let deferredPrompt = null;
+const banner  = document.getElementById('installBanner');
+const btn     = document.getElementById('installBtn');
+const dismiss = document.getElementById('dismissBanner');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Wait 3 seconds, then show the banner if not dismissed before
+  if (sessionStorage.getItem('retorica_install_dismissed') !== '1') {
+    setTimeout(() => banner.classList.add('show'), 3000);
+  }
+});
+
+btn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  if (result.outcome === 'accepted') {
+    showToast('App installé com sucesso!');
+  }
+  deferredPrompt = null;
+  banner.classList.remove('show');
+  sessionStorage.setItem('retorica_install_dismissed', '1');
+});
+
+dismiss.addEventListener('click', () => {
+  banner.classList.remove('show');
+  sessionStorage.setItem('retorica_install_dismissed', '1');
+});
+
+window.addEventListener('appinstalled', () => {
+  banner.classList.remove('show');
+  showToast('App já está instalado!');
+});
 </script>
 </body>
 </html>
