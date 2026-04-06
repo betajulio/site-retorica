@@ -1,4 +1,4 @@
-const CACHE_NAME = 'retorica-v1';
+const CACHE_NAME = 'retorica-v2';
 const ASSETS = ['./index.html', './logs.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
