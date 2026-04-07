@@ -194,7 +194,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs,
-  onSnapshot, deleteDoc, orderBy, query, limit, writeBatch
+  onSnapshot, deleteDoc, orderBy, query, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
@@ -218,8 +218,6 @@ const db       = getFirestore(app);
 const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
 const storage  = getStorage(app);
-
-console.log('[Logs] Módulo carregado — auth:', auth.name);
 
 let allLogs      = [];
 let activeFilter = 'all';
@@ -276,10 +274,8 @@ onAuthStateChanged(auth, async user => {
 });
 
 window.doLogin = async () => {
-  console.log('[Logs] doLogin chamado, auth state:', auth.currentUser?.email || 'nao logado');
   try {
     const result = await signInWithPopup(auth, provider);
-    console.log('[Logs] Login ok:', result.user.email);
     const ok = await isApproved(result.user.email);
     if (!ok) {
       await signOut(auth);
@@ -287,7 +283,6 @@ window.doLogin = async () => {
       document.getElementById('deniedMsg').style.display = 'block';
     }
   } catch(e) {
-    console.error('[Logs] Erro no login:', e.code, e.message);
     if (e.code === 'auth/popup-closed-by-user') return;
     showToast('Erro ao entrar: ' + (e.message || 'Tente novamente.'));
   }
@@ -441,6 +436,12 @@ const CAT_LABELS = {
 
 function startListening() {
   startRTListeners();
+  // Listen to logs collection in Firestore
+  onSnapshot(collection(db, 'logs'), snap => {
+    allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() })).reverse();
+    renderStats();
+    renderTable();
+  });
 }
 
 function renderStorageMetric() {
