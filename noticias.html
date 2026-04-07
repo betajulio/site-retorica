@@ -253,58 +253,53 @@ async function loadHistoria() {
     if (!res.ok) throw new Error('API unavailable');
     const data = await res.json();
 
-    // Combine events, births, deaths and filter for music-related or notable
     const allItems = [
       ...(data.events || []),
       ...(data.deaths || []),
       ...(data.births || [])
     ];
 
-    // Filter for events that happened around 40 years ago, or music-related
-    const relevant = allItems.filter(item => {
-      const itemYear = item.year;
-      const isAround40 = Math.abs(itemYear - fortyYearsAgo) <= 20;
-      const text = JSON.stringify(item).toLowerCase();
-      const isMusic = text.includes('rock') || text.includes('banda') || text.includes('m&#250;sica') ||
-                      text.includes('cantor') || text.includes('guitar') || text.includes('album') ||
-                      text.includes('lan&#231;ou') || text.includes('lan&#231;ado') || text.includes('turn&#234;') ||
-                      text.includes('show') || text.includes('festival');
-      return isAround40 || isMusic;
-    });
+    // Filtrar apenas eventos exatos de 40 anos atrás
+    const exactYear = allItems.filter(item => item.year === fortyYearsAgo);
+    const first = exactYear.length > 0 ? exactYear[0] : allItems[0];
 
-    // If we have events near 40 years ago, show those first
-    const targetYear = relevant.filter(item => Math.abs(item.year - fortyYearsAgo) <= 5);
-    const display = targetYear.length >= 3 ? targetYear.slice(0, 4) : relevant.slice(0, 4);
+    if (!first) throw new Error('No events found');
 
-    if (display.length === 0) {
-      // Fallback: show whatever happened on this date
-      document.getElementById('historiaContent').innerHTML = `
-        <p style="color:var(--smoke);font-style:italic;margin-bottom:2rem;padding:.8rem;border:1px solid rgba(200,130,10,.12);border-radius:2px;text-align:center">
-          N&#227;o encontramos eventos espec&#237;ficos sobre rock h&#225; 40 anos nesta data.
-          Mas veja o que mais aconteceu no mundo em <strong style="color:var(--gold)">${day}/${month}/${fortyYearsAgo}</strong>:
-        </p>
-        <div class="historia-grid">${(data.events || []).slice(0, 4).map(ev => `
-          <div class="historia-card">
-            <div class="historia-ano">${ev.year}</div>
-            <div class="historia-desc">${ev.text}</div>
-          </div>
-        `).join('') || '<div class="error-msg">Nenhum dado dispon&#237;vel.</div>'}</div>
-      `;
-      return;
+    // Buscar texto completo da página Wikipedia
+    let fullSummary = first.text;
+    let pageTitle = '';
+    let pageUrl = '';
+
+    if (first.pages && first.pages.length > 0) {
+      const page = first.pages[0];
+      const title = page.titles?.canonical || '';
+      if (title) {
+        pageTitle = page.titles?.normalized || title;
+        pageUrl = `https://pt.wikipedia.org/wiki/${title}`;
+        try {
+          const summaryRes = await fetch(`https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+          if (summaryRes.ok) {
+            const summaryData = await summaryRes.json();
+            // extract é o resumo completo
+            if (summaryData.extract) fullSummary = summaryData.extract;
+          }
+        } catch(e) { console.warn('Wiki summary error:', e); }
+      }
     }
 
+    const dateStr = `${day} de ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][month - 1]} de ${fortyYearsAgo}`;
+
     document.getElementById('historiaContent').innerHTML = `
-      <p style="color:var(--smoke);font-style:italic;margin-bottom:1.5rem;font-size:.85rem">
-        O que acontecia por volta de <strong style="color:var(--gold)">${fortyYearsAgo}</strong> nesta mesma data:
-      </p>
-      <div class="historia-grid">
-        ${display.map(item => `
-          <div class="historia-card">
-            <div class="historia-ano">${item.year}</div>
-            ${item.pages ? `<div class="historia-title">${item.pages[0]?.title || ''}</div>` : ''}
-            <div class="historia-desc">${item.text}</div>
-          </div>
-        `).join('')}
+      <div class="historia-card" style="text-align:center;padding:2.5rem 2rem">
+        <div style="font-size:.72rem;color:var(--smoke);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.3rem">Há 40 anos, em ${dateStr}</div>
+        <div class="historia-ano" style="margin-bottom:.8rem">${fortyYearsAgo}</div>
+        <div class="historia-desc" style="font-size:.92rem;line-height:1.7;color:var(--paper);max-width:600px;margin:0 auto">
+          ${fullSummary}
+        </div>
+        ${pageUrl ? `<a class="news-card-link" href="${pageUrl}" target="_blank" rel="noopener" style="margin-top:1.5rem;font-size:.72rem">
+          Leia mais na Wikipedia
+          <svg viewBox="0 0 24 24" style="width:12px;height:12px"><path d="M14.455 9h-2.126h-.625c-2.26-.106-3.962-.488-5.107-1.147C5.034 6.962 4.245 5.415 4.245 3h1.626c0 1.735.39 2.715 1.262 3.233.87.508 2.228.755 4.072.755h3.55z" fill="currentColor"/></svg>
+        </a>` : ''}
       </div>
     `;
   } catch(e) {
@@ -315,8 +310,7 @@ async function loadHistoria() {
           <div style="font-size:2.5rem;margin-bottom:.5rem">&#9835;</div>
           <div class="historia-ano">${fortyYearsAgo}</div>
           <div class="historia-desc" style="color:var(--smoke);font-style:italic">
-            N&#227;o foi poss&#237;vel conectar &#224; Wikipedia.<br>
-            Volte mais tarde para descobrir o que acontecia no mundo do rock h&#225; 40 anos!
+            N&#227;o foi poss&#237;vel conectar &#224; Wikipedia.
           </div>
         </div>
       </div>
