@@ -197,7 +197,8 @@ import {
   onSnapshot, deleteDoc, orderBy, query, limit, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut,
+  onAuthStateChanged, setPersistence, browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getStorage, ref as storageRef, listAll
@@ -219,6 +220,9 @@ const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
 const storage  = getStorage(app);
 
+// Persistência de sessão (sessão sobrevivente ao recarregar navegar para outra página)
+await setPersistence(auth, browserLocalPersistence);
+
 let allLogs      = [];
 let activeFilter = 'all';
 let activeSearch = '';
@@ -235,43 +239,17 @@ function formatBytes(b) {
   return (b / (1024 * 1024 * 1024)).toFixed(3) + ' GB';
 }
 
-async function fetchStorageStats() {
-  try {
-    const result = await listAll(storageRef(storage, 'gallery'));
-    storageStats.files = result.items.length;
-    let totalBytes = 0;
-    // listAll returns refs, not metadata sizes — so we estimate from gallery data
-    const galleryData = realtimeData.gallery || [];
-    galleryData.forEach(p => {
-      // Use compSize if available, otherwise estimate from the original
-      if (p.compSize) {
-        totalBytes += p.compSize * 1024;
-      } else if (p.origSize) {
-        totalBytes += p.origSize * 1024;
-      }
-    });
-    // Also check for files that were uploaded but might lack size data
-    // If we have Storage refs but no Firestore size, estimate at ~500KB average
-    const firestorePaths = new Set((galleryData).map(p => p.storagePath).filter(Boolean));
-    const orphanItems = result.items.filter(r => !firestorePaths.has(r.fullPath));
-    totalBytes += orphanItems.length * 500 * 1024;
-
-    storageStats.bytes = totalBytes;
-    renderStorageMetric();
-  } catch(e) {
-    console.warn('Storage stats error:', e);
-    // Fallback: estimate from gallery cache only
-    const galleryData = realtimeData.gallery || [];
-    let totalBytes = 0;
-    galleryData.forEach(p => {
-      if (p.compSize) totalBytes += p.compSize * 1024;
-      else if (p.origSize) totalBytes += p.origSize * 1024;
-      else totalBytes += 500 * 1024; // fallback estimate
-    });
-    storageStats.files = galleryData.length;
-    storageStats.bytes = totalBytes;
-    renderStorageMetric();
-  }
+function calcStorageStats() {
+  const galleryData = realtimeData.gallery || [];
+  let totalBytes = 0;
+  galleryData.forEach(p => {
+    if (p.compSize) totalBytes += p.compSize * 1024;
+    else if (p.origSize) totalBytes += p.origSize * 1024;
+    else totalBytes += 500 * 1024; // fallback estimate
+  });
+  storageStats.files = galleryData.length;
+  storageStats.bytes = totalBytes;
+  renderStorageMetric();
 }
 
 // ─── AUTH ──────────────────────────────────────────────────────────
@@ -300,8 +278,19 @@ onAuthStateChanged(auth, async user => {
 });
 
 window.doLogin = async () => {
-  try { await signInWithPopup(auth, provider); }
-  catch(e) { if(e.code!=='auth/popup-closed-by-user') showToast('Erro ao entrar. Tente novamente.'); }
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const ok = await isApproved(result.user.email);
+    if (!ok) {
+      await signOut(auth);
+      document.getElementById('deniedMsg').textContent = `${result.user.email} não está na lista de membros aprovados.`;
+      document.getElementById('deniedMsg').style.display = 'block';
+    }
+  } catch(e) {
+    if (e.code === 'auth/popup-closed-by-user') return;
+    console.error('Login error:', e);
+    showToast('Erro ao entrar: ' + (e.message || 'Tente novamente.'));
+  }
 };
 
 window.doLogout = async () => { await signOut(auth); };
@@ -452,12 +441,6 @@ const CAT_LABELS = {
 
 function startListening() {
   startRTListeners();
-  fetchStorageStats();
-  onSnapshot(query(collection(db,'logs'), orderBy('ts','desc'), limit(500)), snap => {
-    allLogs = snap.docs.map(d => ({id: d.id, ...d.data()}));
-    renderStats();
-    renderTable();
-  });
 }
 
 function renderStorageMetric() {
