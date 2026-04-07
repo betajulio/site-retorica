@@ -196,6 +196,9 @@ import {
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getStorage, ref as storageRef, listAll
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDUgxw6RxmiQJnlo1trXL7l8lLYKuk0984",
@@ -211,11 +214,62 @@ const app      = initializeApp(firebaseConfig);
 const db       = getFirestore(app);
 const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
+const storage  = getStorage(app);
 
 let allLogs      = [];
 let activeFilter = 'all';
 let activeSearch = '';
 let realtimeData = {};
+let storageStats   = { files: 0, bytes: 0 };
+
+// Firebase Storage Spark free tier: 5 GB
+const STORAGE_LIMIT = 5 * 1024 * 1024 * 1024; // 5 GB in bytes
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1024 * 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+  return (b / (1024 * 1024 * 1024)).toFixed(3) + ' GB';
+}
+
+async function fetchStorageStats() {
+  try {
+    const result = await listAll(storageRef(storage, 'gallery'));
+    storageStats.files = result.items.length;
+    let totalBytes = 0;
+    // listAll returns refs, not metadata sizes — so we estimate from gallery data
+    const galleryData = realtimeData.gallery || [];
+    galleryData.forEach(p => {
+      // Use compSize if available, otherwise estimate from the original
+      if (p.compSize) {
+        totalBytes += p.compSize * 1024;
+      } else if (p.origSize) {
+        totalBytes += p.origSize * 1024;
+      }
+    });
+    // Also check for files that were uploaded but might lack size data
+    // If we have Storage refs but no Firestore size, estimate at ~500KB average
+    const firestorePaths = new Set((galleryData).map(p => p.storagePath).filter(Boolean));
+    const orphanItems = result.items.filter(r => !firestorePaths.has(r.fullPath));
+    totalBytes += orphanItems.length * 500 * 1024;
+
+    storageStats.bytes = totalBytes;
+    renderStorageMetric();
+  } catch(e) {
+    console.warn('Storage stats error:', e);
+    // Fallback: estimate from gallery cache only
+    const galleryData = realtimeData.gallery || [];
+    let totalBytes = 0;
+    galleryData.forEach(p => {
+      if (p.compSize) totalBytes += p.compSize * 1024;
+      else if (p.origSize) totalBytes += p.origSize * 1024;
+      else totalBytes += 500 * 1024; // fallback estimate
+    });
+    storageStats.files = galleryData.length;
+    storageStats.bytes = totalBytes;
+    renderStorageMetric();
+  }
+}
 
 // ─── AUTH ──────────────────────────────────────────────────────────
 async function isApproved(email) {
@@ -386,6 +440,48 @@ function startListening() {
     renderStats();
     renderTable();
   });
+}
+
+function renderStorageMetric() {
+  const el = document.getElementById('storageMetric');
+  if (!el) return;
+  const { bytes, files } = storageStats;
+  const pct = Math.min((bytes / STORAGE_LIMIT) * 100, 100).toFixed(2);
+  const remaining = STORAGE_LIMIT - bytes;
+  const isWarn = pct > 70;
+  const isCritical = pct > 85;
+  const barColor = isCritical ? '#f87171' : isWarn ? '#fbbf24' : 'var(--amber)';
+
+  const limitLabel = '5 GB (plano gratuito)';
+
+  el.innerHTML = `
+    <div class="detail-section">
+      <div class="detail-title">☁️ Firebase Storage</div>
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">Espaço utilizado</div>
+          <div class="metric-value ${isCritical ? '' : isWarn ? '' : 'gold'}" style="${isCritical?'color:#f87171':isWarn?'color:#fbbf24':''}">${formatBytes(bytes)}</div>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${barColor},${barColor}dd)"></div></div>
+          <div style="font-size:.68rem;color:var(--smoke);margin-top:.4rem">${pct}% de ${limitLabel} · Restam ${formatBytes(remaining)}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Arquivos na galeria</div>
+          <div class="metric-value gold">${files}</div>
+          <div style="font-size:.68rem;color:var(--smoke);margin-top:.4rem">Média: ${files ? formatBytes(bytes / files) : '—'} por foto</div>
+        </div>
+        ${isWarn ? `<div class="metric-card" style="border-color:rgba(250,180,10,.3)">
+          <div class="metric-label">${isCritical ? '⚠️ Limite crítico!' : '⚠️ Atenção'}</div>
+          <div style="font-size:.82rem;color:${isCritical?'#f87171':'#fbbf24'};margin-top:.3rem">
+            ${isCritical
+              ? `Muito perto do limite! Remova fotos antigas ou limpe a galeria.`
+              : `Acima de 70%, fique atento ao consumo de storage.`}
+          </div>
+        </div>` : `<div class="metric-card">
+          <div class="metric-label">Status</div>
+          <div style="font-size:1rem;color:#6ee7b7;margin-top:.3rem">✓ Dentro do limite</div>
+        </div>`}
+      </div>
+    </div>`;
 }
 
 function renderStats() {
