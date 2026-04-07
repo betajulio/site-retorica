@@ -22,8 +22,8 @@
   .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .7rem;transition:color .2s}
   .nav-links a:hover{color:var(--gold)}
   .nav-links a.active{color:var(--gold);border-bottom:1px solid var(--gold);padding-bottom:.4rem}
-  .back-link{color:var(--smoke);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:color .2s;font-family:'Lora',serif}
-  .back-link:hover{color:var(--gold)}
+  .nav-back{font-family:'Cinzel',serif;font-size:.75rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid rgba(200,130,10,.3);padding:.4rem .9rem;border-radius:1px;transition:all .2s}
+  .nav-back:hover{background:rgba(200,130,10,.1);border-color:var(--amber)}
 
   /* NAV HAMBURGER */
   .nav-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:.4rem;z-index:1100}
@@ -137,7 +137,7 @@
     <li><a href="index.html">Portal</a></li>
     <li><a href="noticias.html" class="active">Not&#237;cias</a></li>
   </ul>
-  <div class="back-link"><a href="index.html">&larr; Voltar ao portal</a></div>
+  <a href="index.html" class="nav-back">&larr; Voltar ao portal</a>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()" aria-label="Menu">
     <span></span><span></span><span></span>
   </button>
@@ -216,9 +216,10 @@ const CACHE_KEY = 'retorica_news_cache';
 const CACHE_TTL = 3600000; // 1 hour
 
 const RSS_FEEDS = [
-  { id: 'whiplash', name: 'Whiplass', url: 'https://www.whiplash.net/rss.xml', type: 'nacional' },
-  { id: 'blabbermouth', name: 'Blabbermouth', url: 'https://www.blabbermouth.net/rss/news.aspx', type: 'internacional' },
-  { id: 'loudwire', name: 'Loudwire', url: 'https://loudwire.com/feed/', type: 'internacional' }
+  { id: 'b9', name: 'B9', url: 'https://www.b9.com.br/feed/', type: 'nacional' },
+  { id: 'loudwire', name: 'Loudwire', url: 'https://loudwire.com/feed/', type: 'internacional' },
+  { id: 'consequence', name: 'Consequence', url: 'https://consequence.net/tag/rock/feed/', type: 'internacional' },
+  { id: 'nme', name: 'NME', url: 'https://www.nme.com/news/feed', type: 'internacional' }
 ];
 
 // ─── NAV ───
@@ -244,8 +245,8 @@ async function loadHistoria() {
   const day = now.getDate();
   const fortyYearsAgo = now.getFullYear() - 40;
 
-  // Try Wikipedia onthisday API
-  const wikiUrl = `https://api.wikimedia.org/feed/v1/wikipedia/pt/onthisday/all/${month}/${day}`;
+  const pad = n => n.toString().padStart(2, '0');
+  const wikiUrl = `https://api.wikimedia.org/feed/v1/wikipedia/pt/onthisday/all/${pad(month)}/${pad(day)}`;
 
   try {
     const res = await fetch(wikiUrl);
@@ -325,25 +326,30 @@ async function loadHistoria() {
 
 // ─── NEWS (RSS via rss2json) ───
 async function fetchFeed(feed) {
-  try {
-    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}&count=12`;
-    const res = await fetch(apiUrl);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.status !== 'ok' || !data.items) throw new Error('Invalid feed');
-    return data.items.map(item => ({
-      title: item.title || '',
-      link: item.link || '#',
-      date: new Date(item.pubDate),
-      excerpt: (item.description || '').replace(/<[^>]*>/g, '').substring(0, 180).trim(),
-      thumbnail: item.thumbnail || item.enclosure?.link || item.thumbnail || '',
-      source: feed.name,
-      id: feed.id,
-      type: feed.type
-    }));
-  } catch(e) {
-    console.warn(`Feed error for ${feed.name}:`, e);
-    return [];
+  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}&count=15`;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch(apiUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.status !== 'ok' || !data.items) throw new Error(data.message || 'Invalid feed');
+      return data.items.filter(i => i.title || i.link).map(item => ({
+        title: item.title || '',
+        link: item.link || '#',
+        date: new Date(item.pubDate),
+        excerpt: (item.description || '').replace(/<[^>]*>/g, '').substring(0, 200).trim(),
+        thumbnail: item.thumbnail || item.enclosure?.link || '',
+        source: feed.name,
+        id: feed.id,
+        type: feed.type
+      }));
+    } catch(e) {
+      if (attempt >= 2) {
+        console.warn(`Feed error for ${feed.name}:`, e.message);
+        return [];
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
   }
 }
 
