@@ -1811,6 +1811,9 @@ function renderGallery() {
     const likes    = Object.values(r).filter(v=>v==='like').length;
     const dislikes = Object.values(r).filter(v=>v==='dislike').length;
     const comments = (p.comments||[]).length;
+    const editBtn = isMember
+      ? `<button onclick="event.stopPropagation();editCaption('${id}')" style="background:rgba(200,130,10,.2);border:1px solid rgba(200,130,10,.4);color:var(--amber);padding:.2rem .5rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-right:.4rem">✏ Descrição</button>`
+      : '';
     const del = isMember
       ? `<button onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
       : '';
@@ -1823,7 +1826,7 @@ function renderGallery() {
       ${statsHtml}
       <div class="carousel-caption">
         <div class="carousel-caption-text">${p.caption||''}</div>
-        <div class="carousel-caption-meta">${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}</div>
+        <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}</div>
       </div>
     </div>`;
   }).join('');
@@ -1884,7 +1887,17 @@ window.handleGalleryFiles = e => {
   });
 };
 
-// Upload to Firebase Storage with progress toast
+// Upload to Firebase Storage with progress toast + compression
+function dataURLtoBlob(dataurl) {
+  const parts = dataurl.split(',');
+  const mime = parts[0].match(/:(.*?);/)[1];
+  const bstr = atob(parts[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) u8arr[n] = bstr.charCodeAt(n);
+  return new Blob([u8arr], {type: mime});
+}
+
 window.uploadGalleryPhotos = async () => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   if (!galleryFilesBuf.length) { showToast('⚠ Selecione ao menos uma foto'); return; }
@@ -1892,18 +1905,34 @@ window.uploadGalleryPhotos = async () => {
   const userName = auth.currentUser?.displayName?.split(' ')[0] || 'Membro';
   const dateStr  = new Date().toLocaleDateString('pt-BR');
   const total    = galleryFilesBuf.length;
+  let totalOrigKB = 0, totalCompKB = 0;
 
   for (let i = 0; i < galleryFilesBuf.length; i++) {
     const file = galleryFilesBuf[i];
+    const origSize = file.size;
+    totalOrigKB += Math.round(origSize / 1024);
+    showToast(`⏳ Comprimindo ${i+1}/${total}…`);
+
+    let blob, compSize;
+    try {
+      const b64 = await compressImage(file, 1024, 0.7);
+      blob = dataURLtoBlob(b64);
+      compSize = blob.size;
+      totalCompKB += Math.round(compSize / 1024);
+    } catch(err) {
+      showToast(`⚠ ${err.message} (${i+1}/${total})`);
+      continue;
+    }
+
     showToast(`⏳ Enviando ${i+1}/${total}…`);
 
-    // Unique path: gallery/timestamp_filename
-    const path = `gallery/${Date.now()}_${file.name.replace(/\s/g,'_')}`;
+    const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+    const name = file.name.replace(/\.[^.]+$/, '');
+    const path = `gallery/${Date.now()}_${name.replace(/\s/g,'_')}.${ext}`;
     const ref  = storageRef(storage, path);
 
-    // Upload with progress
     await new Promise((resolve, reject) => {
-      const task = uploadBytesResumable(ref, file);
+      const task = uploadBytesResumable(ref, blob);
       task.on('state_changed',
         snap => {
           const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
@@ -1914,11 +1943,13 @@ window.uploadGalleryPhotos = async () => {
           const url = await getDownloadURL(task.snapshot.ref);
           await addDoc(collection(db,'gallery'), {
             url,
-            storagePath: path,   // saved so we can delete from Storage later
+            storagePath: path,
             caption,
             addedBy: userName,
             date: dateStr,
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            origSize: Math.round(origSize / 1024),
+            compSize: Math.round(compSize / 1024)
           });
           resolve();
         }
@@ -1927,16 +1958,27 @@ window.uploadGalleryPhotos = async () => {
   }
 
   const n = galleryFilesBuf.length;
-  await writeLog('Foto(s) adicionada(s) à galeria', `${n} foto${n!==1?'s':''} — "${caption||'sem descrição'}"`, 'galeria');
+  await writeLog('Foto(s) adicionada(s) à galeria', `${n} foto${n!==1?'s':''} — "${caption||'sem descrição'}" (${totalCompKB}KB comprimido, ${totalOrigKB}KB original)`, 'galeria');
   galleryFilesBuf = [];
   document.getElementById('galleryCaption').value = '';
   document.getElementById('galleryFileInput').value = '';
   document.getElementById('galleryPreviewWrap').style.display = 'none';
   document.getElementById('galleryPreviewList').innerHTML = '';
-  showToast(`✓ ${n} foto${n!==1?'s':''} publicada${n!==1?'s':''}!`);
+  showToast(`✓ ${n} foto${n!==1?'s':''} publicada${n!==1?'s':''}! (${totalCompKB}KB)`);
 };
 
 // Delete from Storage + Firestore
+window.editCaption = async id => {
+  if (!isMember) return;
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const current = snap.data().caption || '';
+  const newCaption = prompt('Nova descrição da foto:', current);
+  if (newCaption === null) return; // cancelou
+  await updateDoc(doc(db,'gallery',id), {caption: newCaption});
+  showToast('✓ Descrição atualizada!');
+};
+
 window.deleteGalleryPhoto = async (id, path) => {
   if (!isMember) return;
   const snap = await getDoc(doc(db,'gallery',id));
@@ -1964,7 +2006,14 @@ window.openLightbox = async id => {
 
   document.getElementById('lbImg').src = p.url;
   document.getElementById('lbImg').alt = p.caption || '';
-  document.getElementById('lbCaption').textContent = p.caption || '';
+
+  // Caption + edit button
+  const captionEl = document.getElementById('lbCaption');
+  const editHtml = isMember
+    ? `<button onclick="editCaption('${id}')" style="background:none;border:1px solid rgba(200,130,10,.25);color:var(--amber);padding:.15rem .45rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-left:.5rem;vertical-align:middle;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.25)'">✏</button>`
+    : '';
+  captionEl.innerHTML = (p.caption || '') + editHtml;
+
   document.getElementById('lbMeta').textContent = `${p.addedBy||''} · ${p.date||''}`;
 
   renderLightboxReactions(id, p);
