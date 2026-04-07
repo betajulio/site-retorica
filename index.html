@@ -22,6 +22,23 @@
   .badge-new{position:absolute;top:50%;left:calc(100% + 2px);transform:translateY(-50%);background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none}
   @keyframes pulse-badge {0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.1)}}
   .badge-new-mobile{display:none}
+  @media(max-width:768px){
+    .badge-new{display:none!important}
+    .badge-new-mobile{display:inline-block!important;position:static;transform:none;animation:pulse-badge 2s infinite}
+  }
+
+  /* NEWS POPUP */
+  .news-popup{position:fixed;top:72px;left:1.2rem;transform:translateX(-120%);background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.97));border:1px solid var(--amber);color:var(--cream);padding:.45rem .65rem .45rem .8rem;border-radius:2px;z-index:10000;box-shadow:0 4px 24px rgba(0,0,0,.5);transition:transform .4s cubic-bezier(.34,1.56,.64,1);text-decoration:none;display:none;align-items:center;gap:.5rem;white-space:nowrap}
+  .news-popup.show{display:flex;transform:translateX(0)}
+  .news-popup.dismissed{display:none!important}
+  .news-popup-close{background:none;border:none;color:var(--smoke);font-size:1.1rem;cursor:pointer;line-height:1;padding:.1rem .3rem;transition:color .15s;flex-shrink:0}
+  .news-popup-close:hover{color:var(--cream)}
+  .news-popup-new{background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.06rem .3rem;border-radius:1px;animation:pulse-badge 2s infinite;flex-shrink:0}
+  .news-popup-text{color:var(--cream);font-family:'Cinzel',serif;font-size:.75rem;font-weight:700;letter-spacing:.04em}
+  @media(max-width:768px){
+    .news-popup{top:68px;left:50%;transform:translateX(-50%) translateY(-120%);font-size:.85rem}
+    .news-popup.show{transform:translateX(-50%) translateY(0)}
+  }
   .nav-links a:hover{color:var(--gold)}
   .nav-auth{display:flex;align-items:center;gap:.8rem}
   .nav-user{font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif;letter-spacing:.08em}
@@ -622,7 +639,7 @@
   <a onclick="mobileGoTo('setlist')">Setlist</a>
   <a onclick="mobileGoTo('repertorio')">Repertório</a>
   <a onclick="mobileGoTo('forum')">Fórum</a>
-  <a href="noticias.html" style="position:relative;display:inline-flex;align-items:center;">Notícias <span class="badge-new badge-new-mobile">NEW</span></a>
+  <a href="noticias.html">Notícias <span class="badge-new badge-new-mobile">NEW</span></a>
   <a onclick="mobileGoTo('galeria')">Galeria</a>
   <a href="logs.html" id="adminLinkMobile" class="member-admin-only" style="color:var(--amber)">⚙ Portal Admin</a>
   <div class="nav-mobile-auth">
@@ -631,6 +648,13 @@
     <button class="btn-ghost btn-sm" id="logoutBtnMobile" onclick="doLogout();closeMobileMenu()" style="display:none">Sair</button>
   </div>
 </div>
+
+<!-- NEWS POPUP -->
+<a class="news-popup" id="newsPopup" href="noticias.html" onclick="dismissNewsPopup()">
+  <span class="news-popup-new">NEW</span>
+  <span class="news-popup-text">Nova seção Notícias</span>
+  <button class="news-popup-close" onclick="event.preventDefault();event.stopPropagation();dismissNewsPopup()">&times;</button>
+</a>
 
 <!-- HERO -->
 <div id="hero">
@@ -2544,6 +2568,21 @@ if (banner && btn && dismiss && !window.matchMedia('(display-mode: standalone)')
     }
   }, 5000);
 }
+
+// ─── NEWS POPUP ───
+(function showNewsPopup() {
+  if (localStorage.getItem('retorica_news_dismissed') === '1') return;
+  setTimeout(() => {
+    const el = document.getElementById('newsPopup');
+    if (el) el.classList.add('show');
+  }, 3000);
+})();
+
+window.dismissNewsPopup = function() {
+  const el = document.getElementById('newsPopup');
+  if (el) { el.classList.remove('show'); el.classList.add('dismissed'); }
+  localStorage.setItem('retorica_news_dismissed', '1');
+};
 </script>
 </body>
 </html>
