@@ -71,7 +71,17 @@
 
   /* LOG TABLE */
   .log-table{width:100%;border-collapse:collapse}
-  .log-table th{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);padding:.6rem 1rem;border-bottom:1px solid rgba(200,130,10,.25);text-align:left;background:rgba(42,26,8,.4)}
+  .log-table th{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);padding:.6rem 1rem;border-bottom:1px solid rgba(200,130,10,.25);text-align:left;background:rgba(42,26,8,.4);position:relative}
+  .sort-header{cursor:pointer;user-select:none;transition:color .15s}
+  .sort-header:hover{color:var(--gold)!important}
+  .sort-arrow{display:inline-block;font-size:.6rem;margin-left:.2rem;opacity:.4;transition:opacity .15s}
+  .sort-header:hover .sort-arrow{opacity:.8}
+  .sort-active .sort-arrow{opacity:1;color:var(--gold)}
+  .sort-header{cursor:pointer;user-select:none;transition:color .15s}
+  .sort-header:hover{color:var(--gold)!important}
+  .sort-arrow{display:inline-block;font-size:.65rem;margin-left:.2rem;opacity:.35;transition:opacity .15s}
+  .sort-header:hover .sort-arrow{opacity:.7}
+  .sort-active .sort-arrow{opacity:1}
   .log-table td{padding:.7rem 1rem;border-bottom:1px solid rgba(200,130,10,.06);font-size:.82rem;vertical-align:top}
   .log-table tr:hover td{background:rgba(200,130,10,.03)}
   .log-table tr.hidden-row{display:none}
@@ -169,10 +179,10 @@
       <table class="log-table">
         <thead>
           <tr>
-            <th>Ação</th>
-            <th>Detalhe</th>
-            <th>Quem</th>
-            <th>Quando</th>
+            <th class="sort-header" onclick="sortBy('action')" data-sort="action">Ação <span class="sort-arrow"></span></th>
+            <th class="sort-header" onclick="sortBy('detail')" data-sort="detail">Detalhe <span class="sort-arrow"></span></th>
+            <th class="sort-header" onclick="sortBy('who')" data-sort="who">Quem <span class="sort-arrow"></span></th>
+            <th class="sort-header" onclick="sortBy('ts')" data-sort="ts">Quando <span class="sort-arrow"></span></th>
           </tr>
         </thead>
         <tbody id="logBody"></tbody>
@@ -222,8 +232,11 @@ const storage  = getStorage(app);
 let allLogs      = [];
 let activeFilter = 'all';
 let activeSearch = '';
+let sortField    = 'ts';       // 'action','category','who','ts'
+let sortDir      = -1;          // -1 = desc, 1 = asc
 let realtimeData = {};
 let storageStats   = { files: 0, bytes: 0 };
+const TS_FIELDS  = ['ts','createdAt'];
 
 // Firebase Storage Spark free tier: 5 GB
 const STORAGE_LIMIT = 5 * 1024 * 1024 * 1024; // 5 GB in bytes
@@ -545,6 +558,30 @@ window.setFilterById = id => {
   renderTable();
 };
 
+function getSortScore(log) {
+  if (sortField === 'action') return log.action || '';
+  if (sortField === 'detail') return log.detail || '';
+  if (sortField === 'who') return log.who || '';
+  return log.createdAt?.toMillis?.() || log.ts || 0;
+}
+
+window.sortBy = field => {
+  if (sortField === field) { sortDir *= -1; }
+  else { sortField = field; sortDir = field === 'ts' ? -1 : 1; }
+  renderTable();
+  updateSortArrows();
+};
+
+function updateSortArrows() {
+  const arrows = { 1: '&#9650;', '-1': '&#9660;' };
+  document.querySelectorAll('.sort-header').forEach(th => {
+    const f = th.dataset.sort;
+    const active = f === sortField;
+    th.classList.toggle('sort-active', active);
+    th.querySelector('.sort-arrow').innerHTML = active ? arrows[sortDir] : '';
+  });
+}
+
 function renderTable() {
   const body  = document.getElementById('logBody');
   const empty = document.getElementById('emptyState');
@@ -552,11 +589,18 @@ function renderTable() {
 
   const filtered = allLogs.filter(l => {
     const matchCat    = activeFilter === 'all' || l.category === activeFilter;
-    const matchSearch = !activeSearch || 
+    const matchSearch = !activeSearch ||
       l.action?.toLowerCase().includes(activeSearch) ||
       l.detail?.toLowerCase().includes(activeSearch) ||
       l.who?.toLowerCase().includes(activeSearch);
     return matchCat && matchSearch;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    const va = getSortScore(a), vb = getSortScore(b);
+    if (typeof va === 'number') return (va - vb) * sortDir;
+    return String(va).localeCompare(String(vb), 'pt-BR') * sortDir;
   });
 
   count.textContent = `${filtered.length} registro${filtered.length!==1?'s':''}`;
