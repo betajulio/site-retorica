@@ -197,8 +197,7 @@ import {
   onSnapshot, deleteDoc, orderBy, query, limit, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut,
-  onAuthStateChanged, setPersistence, browserLocalPersistence
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getStorage, ref as storageRef, listAll
@@ -220,8 +219,7 @@ const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
 const storage  = getStorage(app);
 
-// Persistência de sessão (sessão sobrevivente ao recarregar navegar para outra página)
-await setPersistence(auth, browserLocalPersistence);
+console.log('[Logs] Módulo carregado — auth:', auth.name);
 
 let allLogs      = [];
 let activeFilter = 'all';
@@ -278,8 +276,10 @@ onAuthStateChanged(auth, async user => {
 });
 
 window.doLogin = async () => {
+  console.log('[Logs] doLogin chamado, auth state:', auth.currentUser?.email || 'nao logado');
   try {
     const result = await signInWithPopup(auth, provider);
+    console.log('[Logs] Login ok:', result.user.email);
     const ok = await isApproved(result.user.email);
     if (!ok) {
       await signOut(auth);
@@ -287,8 +287,8 @@ window.doLogin = async () => {
       document.getElementById('deniedMsg').style.display = 'block';
     }
   } catch(e) {
+    console.error('[Logs] Erro no login:', e.code, e.message);
     if (e.code === 'auth/popup-closed-by-user') return;
-    console.error('Login error:', e);
     showToast('Erro ao entrar: ' + (e.message || 'Tente novamente.'));
   }
 };
