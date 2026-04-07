@@ -1,5 +1,5 @@
-const CACHE_NAME = 'retorica-v2';
-const ASSETS = ['./index.html', './logs.html', './manifest.json'];
+const CACHE_NAME = 'retorica-v3';
+const ASSETS = ['./index.html', './logs.html', './noticias.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
