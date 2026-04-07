@@ -140,6 +140,9 @@
       </div>
     </div>
 
+    <!-- STORAGE METRIC -->
+    <div id="storageMetric"></div>
+
     <!-- REALTIME METRICS -->
     <div id="realtimeMetrics"></div>
 
@@ -316,6 +319,20 @@ function startRTListeners() {
 }
 
 function renderRealtimeMetrics() {
+  // Recalculate storage stats when gallery data arrives
+  const gallery = realtimeData.gallery || [];
+  if (gallery.length) {
+    let totalBytes = 0;
+    gallery.forEach(p => {
+      if (p.compSize) totalBytes += p.compSize * 1024;
+      else if (p.origSize) totalBytes += p.origSize * 1024;
+      else totalBytes += 500 * 1024;
+    });
+    storageStats.files = gallery.length;
+    storageStats.bytes = totalBytes;
+    renderStorageMetric();
+  }
+
   const el = document.getElementById('realtimeMetrics');
   if (!el || !Object.keys(realtimeData).length) return;
 
@@ -435,6 +452,7 @@ const CAT_LABELS = {
 
 function startListening() {
   startRTListeners();
+  fetchStorageStats();
   onSnapshot(query(collection(db,'logs'), orderBy('ts','desc'), limit(500)), snap => {
     allLogs = snap.docs.map(d => ({id: d.id, ...d.data()}));
     renderStats();
