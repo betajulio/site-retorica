@@ -212,14 +212,14 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const CACHE_KEY = 'retorica_news_cache';
+const CACHE_KEY = 'retorica_news_cache_v4';
 const CACHE_TTL = 3600000; // 1 hour
 
 const RSS_FEEDS = [
-  { id: 'b9', name: 'B9', url: 'https://www.b9.com.br/feed/', type: 'nacional' },
+  { id: 'whiplash', name: 'Whiplash', url: 'https://whiplash.net/news.xml', type: 'nacional' },
+  { id: 'rsbrasil', name: 'Rolling Stone BR', url: 'https://rollingstone.com.br/feed/', type: 'nacional' },
   { id: 'loudwire', name: 'Loudwire', url: 'https://loudwire.com/feed/', type: 'internacional' },
-  { id: 'consequence', name: 'Consequence', url: 'https://consequence.net/tag/rock/feed/', type: 'internacional' },
-  { id: 'nme', name: 'NME', url: 'https://www.nme.com/news/feed', type: 'internacional' }
+  { id: 'consequence', name: 'Consequence', url: 'https://consequence.net/tag/rock/feed/', type: 'internacional' }
 ];
 
 // ─── NAV ───
@@ -326,7 +326,7 @@ async function loadHistoria() {
 
 // ─── NEWS (RSS via rss2json) ───
 async function fetchFeed(feed) {
-  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}&count=15`;
+  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const res = await fetch(apiUrl);
@@ -357,6 +357,7 @@ async function loadNews() {
   // Check cache first
   const cached = getCached();
   if (cached) {
+    cached.items.forEach(i => i.date = new Date(i.date));
     renderNews(cached.items);
     updateTimestamp(cached.timestamp);
     return;
@@ -415,7 +416,10 @@ function getCached() {
 
 function setCache(items) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ items, timestamp: Date.now() }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      items: items.map(i => ({ ...i, date: i.date.toISOString() })),
+      timestamp: Date.now()
+    }));
   } catch(e) {}
 }
 
@@ -501,7 +505,7 @@ document.getElementById('newsTabs').addEventListener('click', (e) => {
   e.target.classList.add('active');
   activeTab = e.target.dataset.tab;
   const cached = getCached();
-  if (cached) renderNews(cached.items);
+  if (cached) { cached.items.forEach(i => i.date = new Date(i.date)); renderNews(cached.items); }
 });
 
 // ─── BACKGROUND REFRESH ───
