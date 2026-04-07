@@ -122,6 +122,7 @@
     .tabs{gap:0}
     .tab-btn{padding:.6rem .8rem;font-size:.72rem}
     .section-header{margin-bottom:2rem}
+    .top-rock-grid{grid-template-columns:1fr!important}
   }
 
   .news-section-hidden{display:none}
@@ -451,7 +452,7 @@ function renderTopRock(intlItems, nacItems, metalItems) {
   }
 
   const cols = [intlItems, nacItems, metalItems].filter(x => x && x.length).length;
-  let html = '<div style="display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:1.2rem;">';
+  let html = '<div class="top-rock-grid" style="display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:1.2rem;">';
   html += renderCol('Internacional', intlItems);
   html += renderCol('Nacional', nacItems);
   html += renderCol('Heavy Metal', metalItems);
