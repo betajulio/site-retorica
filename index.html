@@ -886,7 +886,8 @@ import {
   setDoc, getDoc, orderBy, query, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut,
+  onAuthStateChanged, setPersistence, browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject
@@ -907,6 +908,9 @@ const db       = getFirestore(app);
 const auth     = getAuth(app);
 const storage  = getStorage(app);
 const provider = new GoogleAuthProvider();
+
+// Persistência de sessÃ£o (sessÃ£o sobrevivente ao recarregar/navegar para outra pÃ¡gina)
+await setPersistence(auth, browserLocalPersistence);
 
 // ─── STATE ─────────────────────────────────────────────────────────
 let isLoggedIn    = false; // true = qualquer Google user logado
