@@ -877,6 +877,11 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- CONFIRM HELPER (runs before module script) -->
+<script>
+window.confirmAction = (msg) => confirm(msg);
+</script>
+
 <!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -887,7 +892,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
-  onAuthStateChanged, setPersistence, browserLocalPersistence
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject
@@ -908,9 +913,6 @@ const db       = getFirestore(app);
 const auth     = getAuth(app);
 const storage  = getStorage(app);
 const provider = new GoogleAuthProvider();
-
-// Persistência de sessÃ£o (sessÃ£o sobrevivente ao recarregar/navegar para outra pÃ¡gina)
-await setPersistence(auth, browserLocalPersistence);
 
 // ─── STATE ─────────────────────────────────────────────────────────
 let isLoggedIn    = false; // true = qualquer Google user logado
@@ -1268,6 +1270,7 @@ window.saveMember = async () => {
 };
 
 window.removeMember = async id => {
+  if (!confirmAction('Tem certeza que deseja remover este membro?')) return;
   const snap = await getDoc(doc(db,'members',id));
   const name = snap.exists() ? snap.data().name : id;
   await deleteDoc(doc(db,'members',id));
@@ -1387,6 +1390,7 @@ window.addSuggestion = async () => {
 };
 
 window.removeSuggestion = async id => {
+  if (!confirmAction('Tem certeza que deseja remover esta sugestão?')) return;
   const snap = await getDoc(doc(db,'suggestions',id));
   const s = snap.exists() ? snap.data() : {};
   await deleteDoc(doc(db,'suggestions',id));
@@ -1529,6 +1533,7 @@ window.submitPollVote = async id => {
 };
 
 window.removePollVote = async id => {
+  if (!confirmAction('Deseja realmente remover seu voto desta enquete?')) return;
   const uid = auth.currentUser?.uid; if (!uid) return;
   const snap = await getDoc(doc(db,'polls',id)); if (!snap.exists()) return;
   const p = snap.data();
@@ -1542,6 +1547,7 @@ window.removePollVote = async id => {
 };
 
 window.deletePoll = async id => {
+  if (!confirmAction('Tem certeza que deseja excluir esta enquete?')) return;
   const snap = await getDoc(doc(db,'polls',id));
   const q = snap.exists() ? snap.data().question : id;
   await deleteDoc(doc(db,'polls',id));
@@ -1642,6 +1648,7 @@ window.addSetSong = async () => {
 };
 
 window.removeSetSong = async idx => {
+  if (!confirmAction('Deseja realmente remover esta música do setlist?')) return;
   const key = `tab${currentTab}`;
   const arr = [...(setlistData[key]||[])];
   const removed = arr[idx];
@@ -1717,6 +1724,7 @@ window.addRepSong = async () => {
 };
 
 window.removeRepSong = async id => {
+  if (!confirmAction('Deseja realmente remover esta música do repertório?')) return;
   const snap = await getDoc(doc(db,'repertorio',id));
   const r = snap.exists() ? snap.data() : {};
   await deleteDoc(doc(db,'repertorio',id));
@@ -1778,6 +1786,7 @@ window.addForumThread = async () => {
 };
 
 window.deleteThread = async id => {
+  if (!confirmAction('Tem certeza que deseja excluir este tópico do fórum?')) return;
   const snap = await getDoc(doc(db,'forum',id));
   const title = snap.exists() ? snap.data().title : id;
   await deleteDoc(doc(db,'forum',id));
@@ -1985,6 +1994,7 @@ window.editCaption = async id => {
 
 window.deleteGalleryPhoto = async (id, path) => {
   if (!isMember) return;
+  if (!confirmAction('Tem certeza que deseja excluir esta foto da galeria?')) return;
   const snap = await getDoc(doc(db,'gallery',id));
   const caption = snap.exists() ? (snap.data().caption || 'sem descrição') : id;
   await deleteDoc(doc(db,'gallery',id));
@@ -2230,6 +2240,7 @@ window.lbCmtReact = async (id, cIdx, type, rIdx, reaction) => {
 };
 
 window.delLbComment = async (id, cIdx) => {
+  if (!confirmAction('Excluir este comentário?')) return;
   if (!isMember) return;
   const snap = await getDoc(doc(db,'gallery',id));
   if (!snap.exists()) return;
@@ -2241,6 +2252,7 @@ window.delLbComment = async (id, cIdx) => {
 };
 
 window.delLbReply = async (id, cIdx, rIdx) => {
+  if (!confirmAction('Excluir esta resposta?')) return;
   if (!isMember) return;
   const snap = await getDoc(doc(db,'gallery',id));
   if (!snap.exists()) return;
@@ -2422,6 +2434,7 @@ window.frpReact = async (threadId, postIdx, replyIdx, type) => {
 };
 
 window.delFrp = async (threadId, postIdx, replyIdx) => {
+  if (!confirmAction('Excluir esta resposta?')) return;
   if (!isMember) return;
   const snap = await getDoc(doc(db,'forum',threadId));
   if (!snap.exists()) return;
