@@ -19,6 +19,8 @@
   .nav-logo{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.15em}
   .nav-links{display:flex;list-style:none}
   .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .7rem;transition:color .2s;cursor:pointer}
+  .badge-new{display:inline-block;background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;position:relative;top:-3px;margin-left:2px;animation:pulse-badge 2s infinite}
+  @keyframes pulse-badge {0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
   .nav-links a:hover{color:var(--gold)}
   .nav-auth{display:flex;align-items:center;gap:.8rem}
   .nav-user{font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif;letter-spacing:.08em}
@@ -598,6 +600,7 @@
     <li><a onclick="goTo('repertorio')">Repertório</a></li>
     <li><a onclick="goTo('forum')">Fórum</a></li>
     <li><a onclick="goTo('galeria')">Galeria</a></li>
+    <li><a href="noticias.html" style="position:relative;display:inline-flex;align-items:center;">Notícias <span class="badge-new">NEW</span></a></li>
     <li class="member-admin-only"><a href="logs.html" style="color:var(--amber)">⚙ Admin</a></li>
   </ul>
   <div class="nav-auth">
@@ -618,6 +621,7 @@
   <a onclick="mobileGoTo('setlist')">Setlist</a>
   <a onclick="mobileGoTo('repertorio')">Repertório</a>
   <a onclick="mobileGoTo('forum')">Fórum</a>
+  <a href="noticias.html" style="position:relative;display:inline-flex;align-items:center;">Notícias <span class="badge-new badge-new-mobile">NEW</span></a>
   <a onclick="mobileGoTo('galeria')">Galeria</a>
   <a href="logs.html" id="adminLinkMobile" class="member-admin-only" style="color:var(--amber)">⚙ Portal Admin</a>
   <div class="nav-mobile-auth">
