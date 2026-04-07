@@ -1054,6 +1054,17 @@ function nowLabel() {
   return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
 }
 
+function formatTs(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  if (isNaN(d)) return '';
+  const day = String(d.getDate()).padStart(2,'0');
+  const mon = String(d.getMonth()+1).padStart(2,'0');
+  const h   = String(d.getHours()).padStart(2,'0');
+  const m   = String(d.getMinutes()).padStart(2,'0');
+  return `${day}/${mon} ${h}:${m}`;
+}
+
 function ytBtn(url) {
   if (!url) return '';
   return `<a href="${url}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">▶ YouTube</a>`;
@@ -1330,7 +1341,7 @@ function renderSuggestions() {
         <div class="suggestion-artist">${s.artist}</div>
         ${s.note ? `<div class="suggestion-note">${s.note}</div>` : ''}
       </div>
-      <div class="suggestion-by">por ${s.by}</div>
+      <div class="suggestion-by">por ${s.by}${s.createdAt ? ` · <small style="color:var(--smoke)">${formatTs(s.createdAt)}</small>` : ''}</div>
       <div class="suggestion-actions">
         ${ytBtn(s.youtube)}
         <div class="suggestion-score">${likeBtn}${dislikeBtn}</div>
@@ -1472,12 +1483,14 @@ function renderPolls() {
     const closeBtn      = isMember && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
     const deleteBtn     = isMember ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
 
+    const createdLabel = p.createdAt ? `<span style="font-size:.7rem;color:var(--smoke)">Criada em ${formatTs(p.createdAt)}</span>` : '';
+
     return `<div class="poll-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.6rem;flex-wrap:wrap;gap:.4rem">
         <div class="poll-question" style="flex:1">${p.question}</div>
         <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${closeBtn}${deleteBtn}</div>
       </div>
-      <div style="display:flex;gap:.8rem;align-items:center;margin-bottom:.8rem;flex-wrap:wrap">${statusBadge}${deadlineHtml}</div>
+      <div style="display:flex;gap:.8rem;align-items:center;margin-bottom:.8rem;flex-wrap:wrap">${statusBadge}${deadlineHtml}${createdLabel}</div>
       ${bars}
       ${winnerHtml}
       ${voteForm}
@@ -2369,7 +2382,7 @@ function renderForum() {
       <div class="forum-thread-header" onclick="toggleThread('${id}',this)">
         <div>
           <div class="forum-thread-title">${t.title}</div>
-          <div class="forum-thread-meta">${(t.posts||[]).length} comentário${(t.posts||[]).length!==1?'s':''} · ${t.date}</div>
+          <div class="forum-thread-meta">${(t.posts||[]).length} comentário${(t.posts||[]).length!==1?'s':''} · ${t.date}${t.createdAt ? ` às ${formatTs(t.createdAt).split(' ')[1]}` : ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:.5rem">${delBtn}<span class="forum-chevron${t.open?' open':''}">▼</span></div>
       </div>
