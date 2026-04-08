@@ -1394,6 +1394,8 @@ function renderSuggestions() {
 onSnapshot(query(collection(db,'suggestions'), orderBy('createdAt','desc')), snap => {
   suggestionsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   renderSuggestions();
+  // Atualizar countdown após renderizar
+  setTimeout(() => updatePromotionCountdowns(), 100);
 });
 
 window.voteSuggestion = async (id, type) => {
@@ -1458,6 +1460,17 @@ function renderPolls() {
   const uid = auth.currentUser?.uid || null;
   const now = Date.now();
 
+  // Helper function para formatar tempo
+  const formatTime = (ms) => {
+    if (ms <= 0) return 'Encerrando...';
+    const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
   c.innerHTML = pollsCache.map(({id, data: p}) => {
     // Determine if closed: manually OR deadline passed
     const deadlineMs  = p.deadline ? new Date(p.deadline).getTime() : null;
@@ -1467,8 +1480,9 @@ function renderPolls() {
     const total       = (p.options||[]).reduce((s,o)=>s+(o.votes||0),0);
     const canVote     = isMember && !hasVoted && !isClosed;
 
-    // Deadline label
+    // Deadline label + countdown badge
     let deadlineHtml = '';
+    let countdownBadgeHtml = '';
     if (deadlineMs && !isClosed) {
       const diff = deadlineMs - now;
       const hours = Math.floor(diff / 3600000);
@@ -1476,6 +1490,13 @@ function renderPolls() {
       const soon  = diff < 86400000; // less than 24h
       const label = days > 1 ? `Encerra em ${days} dias` : hours > 0 ? `Encerra em ${hours}h` : 'Encerra em breve!';
       deadlineHtml = `<span class="poll-deadline${soon?' soon':''}">${label} · ${new Date(p.deadline).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>`;
+      
+      // Adicionar countdown badge visual
+      const timeRemaining = formatTime(diff);
+      const isUrgent = diff < 48 * 60 * 60 * 1000;
+      countdownBadgeHtml = `<div class="countdown-badge ${isUrgent ? 'urgent' : ''}" style="margin-top:.8rem;margin-bottom:.8rem">
+        <span class="countdown-icon">⏱</span> Tempo restante: ${timeRemaining}
+      </div>`;
     }
 
     // Status badge
@@ -1531,6 +1552,7 @@ function renderPolls() {
         <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${closeBtn}${deleteBtn}</div>
       </div>
       <div style="display:flex;gap:.8rem;align-items:center;margin-bottom:.8rem;flex-wrap:wrap">${statusBadge}${deadlineHtml}${createdLabel}</div>
+      ${countdownBadgeHtml}
       ${bars}
       ${winnerHtml}
       ${voteForm}
@@ -2635,41 +2657,50 @@ function formatTimeRemaining(ms) {
 
 // Atualizar contadores na UI
 async function updatePromotionCountdowns() {
-  const stateSnap = await getDoc(promotionStateRef);
-  if (!stateSnap.exists()) return;
-  
-  const state = stateSnap.data();
-  const now = Date.now();
-  const nextPromo = state.nextPromotionDate.toDate().getTime();
-  const timeUntil = nextPromo - now;
-  
-  // Badge na navegação
-  const navBadge = document.getElementById('promoCountdownNav');
-  if (navBadge && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000) {
-    navBadge.textContent = formatTimeRemaining(timeUntil);
-    navBadge.style.display = 'inline-block';
-  } else if (navBadge) {
-    navBadge.style.display = 'none';
-  }
-  
-  // Contador nas sugestões (inserir antes da lista)
-  if (currentSection === 'sugestoes') {
+  try {
+    const stateSnap = await getDoc(promotionStateRef);
+    if (!stateSnap.exists()) {
+      console.log('[COUNTDOWN] Estado de promoção não existe ainda');
+      return;
+    }
+    
+    const state = stateSnap.data();
+    const now = Date.now();
+    const nextPromo = state.nextPromotionDate.toDate().getTime();
+    const timeUntil = nextPromo - now;
+    
+    console.log('[COUNTDOWN] Tempo até próxima promoção:', formatTimeRemaining(timeUntil));
+    
+    // Badge na navegação
+    const navBadge = document.getElementById('promoCountdownNav');
+    if (navBadge && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000) {
+      navBadge.textContent = formatTimeRemaining(timeUntil);
+      navBadge.style.display = 'inline-block';
+      console.log('[COUNTDOWN] Badge nav atualizado');
+    } else if (navBadge) {
+      navBadge.style.display = 'none';
+    }
+    
+    // Contador nas sugestões (inserir antes da lista)
     const list = document.getElementById('suggestionsList');
-    if (list) {
+    if (list && timeUntil > 0) {
       // Remover countdown existente
-      const existing = list.previousElementSibling;
-      if (existing && existing.classList.contains('countdown-badge')) {
-        existing.remove();
+      let existing = list.previousElementSibling;
+      while (existing && existing.classList && existing.classList.contains('countdown-badge')) {
+        const toRemove = existing;
+        existing = existing.previousElementSibling;
+        toRemove.remove();
       }
       
-      if (timeUntil > 0) {
-        const badge = document.createElement('div');
-        badge.className = `countdown-badge ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}`;
-        badge.innerHTML = `<span class="countdown-icon">⏱</span> Próxima promoção em: ${formatTimeRemaining(timeUntil)}`;
-        badge.style.marginTop = '1.5rem';
-        list.parentNode.insertBefore(badge, list);
-      }
+      const badge = document.createElement('div');
+      badge.className = `countdown-badge ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}`;
+      badge.innerHTML = `<span class="countdown-icon">⏱</span> Próxima promoção em: ${formatTimeRemaining(timeUntil)}`;
+      badge.style.marginTop = '1.5rem';
+      list.parentNode.insertBefore(badge, list);
+      console.log('[COUNTDOWN] Badge sugestões adicionado');
     }
+  } catch (e) {
+    console.error('[COUNTDOWN] Erro ao atualizar:', e);
   }
 }
 
