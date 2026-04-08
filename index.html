@@ -797,27 +797,15 @@
   </div>
   <div class="member-only" style="margin-bottom:1.5rem">
     <div class="form-card">
-      <div class="form-row three">
+      <div class="form-row">
         <div class="form-group"><label>Música</label><input type="text" id="repSong" placeholder="Nome da música"></div>
         <div class="form-group"><label>Artista</label><input type="text" id="repArtist" placeholder="Ex: Deep Purple"></div>
-        <div class="form-group">
-          <label>Domínio</label>
-          <select id="repLevel">
-            <option value="ok">✅ Dominada</option>
-            <option value="wip">🔧 Em desenvolvimento</option>
-          </select>
-        </div>
       </div>
       <div class="form-row full">
         <div class="form-group"><label>Link YouTube (opcional)</label><input type="url" id="repYt" placeholder="https://youtube.com/..."></div>
       </div>
       <button class="btn" onclick="addRepSong()">Adicionar ao Repertório</button>
     </div>
-  </div>
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchRepTab('all',this)">Todas</button>
-    <button class="tab-btn" onclick="switchRepTab('ok',this)">✅ Dominadas</button>
-    <button class="tab-btn" onclick="switchRepTab('wip',this)">🔧 Em desenvolvimento</button>
   </div>
   <div class="repertorio-grid" id="repertorioGrid"></div>
 </section>
@@ -961,6 +949,8 @@ let dragSrc       = null;
 let currentSection = '';
 let membersCache  = [];
 let repCache      = [];
+let setlistExpanded = false;
+let repertorioExpanded = false;
 
 // ─── AUTH ──────────────────────────────────────────────────────────
 // Visitantes com Google login podem interagir (likes, comentários).
@@ -1690,7 +1680,10 @@ window.switchTab = (idx, btn) => {
 function renderSetlist() {
   const c = document.getElementById('setlistContainer');
   const songs = setlistData[`tab${currentTab}`]||[];
-  const items = songs.map((s,i)=>`
+  const totalSongs = songs.length;
+  const displaySongs = setlistExpanded ? songs : songs.slice(0, 5);
+  
+  const items = displaySongs.map((s,i)=>`
     <li class="setlist-item${isMember?' editable':''}" ${isMember?`draggable="true" data-idx="${i}" ondragstart="dStart(event)" ondragover="dOver(event)" ondrop="dDrop(event)" ondragend="dEnd(event)"`:''}">
       <span class="setlist-num">${i+1}</span>
       <div class="setlist-song">${s.song}<div class="setlist-artist">${s.artist}</div></div>
@@ -1699,6 +1692,15 @@ function renderSetlist() {
         ${isMember ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
       </div>
     </li>`).join('');
+  
+  // Botão "Ver mais" / "Ver menos"
+  const toggleBtn = totalSongs > 5 ? `
+    <div style="text-align:center;padding:1rem;border-top:1px solid rgba(200,130,10,.1)">
+      <button class="btn-ghost btn-sm" onclick="toggleSetlistExpand()">
+        ${setlistExpanded ? '▲ Ver menos' : `▼ Ver mais (${totalSongs - 5} ${totalSongs - 5 === 1 ? 'música' : 'músicas'})`}
+      </button>
+    </div>` : '';
+  
   const addRow = isMember ? `
     <div class="setlist-add-row">
       <input class="setlist-input" id="setSong" placeholder="Música">
@@ -1709,10 +1711,15 @@ function renderSetlist() {
   c.innerHTML = `<div class="setlist-panel">
     <div class="setlist-panel-header">
       <span class="setlist-panel-title">${currentTab===0?'Ensaio Atual':'Próximo Ensaio'}</span>
-      <span style="font-size:.75rem;color:var(--smoke)">${songs.length} músicas</span>
+      <span style="font-size:.75rem;color:var(--smoke)">${totalSongs} ${totalSongs === 1 ? 'música' : 'músicas'}</span>
     </div>
-    <ul class="setlist-list">${items}</ul>${addRow}</div>`;
+    <ul class="setlist-list">${items}</ul>${toggleBtn}${addRow}</div>`;
 }
+
+window.toggleSetlistExpand = () => {
+  setlistExpanded = !setlistExpanded;
+  renderSetlist();
+};
 
 window.addSetSong = async () => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
@@ -1753,20 +1760,20 @@ window.dEnd = e=>{ e.currentTarget.classList.remove('dragging'); dragSrc=null; }
 // ─── REPERTÓRIO ────────────────────────────────────────────────────
 function renderRepFromCache() {
   const grid = document.getElementById('repertorioGrid');
-  let list = repCache;
-  if (currentRepTab !== 'all') list = list.filter(r => r.data.level === currentRepTab);
-  if (!list.length) {
-    grid.innerHTML = `<p style="color:var(--smoke);font-style:italic;grid-column:1/-1">Nenhuma música${currentRepTab!=='all'?' nesta categoria':''} ainda.</p>`;
+  if (!repCache.length) {
+    grid.innerHTML = `<p style="color:var(--smoke);font-style:italic;grid-column:1/-1">Nenhuma música ainda.</p>`;
     return;
   }
-  grid.innerHTML = list.map(({id, data: r}, i) => {
-    const lvlClass = r.level==='ok' ? 'ok' : 'wip';
-    const lvlLabel = r.level==='ok' ? '✅ Dominada' : '🔧 Em desenvolvimento';
+  
+  const totalSongs = repCache.length;
+  const displaySongs = repertorioExpanded ? repCache : repCache.slice(0, 5);
+  
+  const items = displaySongs.map(({id, data: r}, i) => {
     const rmBtn = isMember ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
     return `<div class="rep-item">
       <span class="rep-num">${i+1}</span>
       <div class="rep-info">
-        <div class="rep-song">${r.song} <span class="rep-level ${lvlClass}">${lvlLabel}</span></div>
+        <div class="rep-song">${r.song}</div>
         <div class="rep-artist">${r.artist}</div>
       </div>
       <div class="rep-actions">
@@ -1775,31 +1782,37 @@ function renderRepFromCache() {
       </div>
     </div>`;
   }).join('');
+  
+  // Botão "Ver mais" / "Ver menos"
+  const toggleBtn = totalSongs > 5 ? `
+    <div style="text-align:center;padding:1rem;grid-column:1/-1">
+      <button class="btn-ghost btn-sm" onclick="toggleRepertorioExpand()">
+        ${repertorioExpanded ? '▲ Ver menos' : `▼ Ver mais (${totalSongs - 5} ${totalSongs - 5 === 1 ? 'música' : 'músicas'})`}
+      </button>
+    </div>` : '';
+  
+  grid.innerHTML = items + toggleBtn;
 }
 
-onSnapshot(query(collection(db,'repertorio'), orderBy('createdAt','asc')), snap => {
+window.toggleRepertorioExpand = () => {
+  repertorioExpanded = !repertorioExpanded;
+  renderRepFromCache();
+};
+
+onSnapshot(query(collection(db,'repertorio'), orderBy('addedAt','asc')), snap => {
   repCache = snap.docs.map(d=>({id:d.id,data:d.data()}));
   renderRepFromCache();
 });
-
-window.switchRepTab = (tab, btn) => {
-  currentRepTab = tab;
-  document.querySelectorAll('#repertorio .tab-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderRepFromCache();
-};
 
 window.addRepSong = async () => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const song  = document.getElementById('repSong').value.trim();
   const artist= document.getElementById('repArtist').value.trim();
-  const level = document.getElementById('repLevel').value;
   const youtube=document.getElementById('repYt').value.trim();
   if (!song||!artist) { showToast('⚠ Preencha música e artista'); return; }
-  await addDoc(collection(db,'repertorio'),{song,artist,level,youtube,createdAt:serverTimestamp()});
-  await writeLog('Música adicionada ao repertório', `${song} — ${artist} (${level==='ok'?'Dominada':'Em desenvolvimento'})`, 'repertorio');
+  await addDoc(collection(db,'repertorio'),{song,artist,youtube,addedAt:serverTimestamp(),by:auth.currentUser?.displayName||'Membro'});
+  await writeLog('Música adicionada ao repertório', `${song} — ${artist}`, 'repertorio');
   ['repSong','repArtist','repYt'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('repLevel').value='ok';
   showToast(`✓ "${song}" adicionada ao repertório!`);
 };
 
@@ -2746,34 +2759,37 @@ async function checkAndPromote() {
     const topScore = getSuggestionScore(sorted[0].data);
     const topSuggestions = sorted.filter(s => getSuggestionScore(s.data) === topScore);
     
-    if (topSuggestions.length >= 3) {
-      // DESEMPATE: criar enquete de 48h
-      await createTiebreakerPoll(topSuggestions.slice(0, 3));
-    } else if (topSuggestions.length === 1) {
-      // UMA VENCEDORA: criar enquete de repertório
-      await createRepertoryPoll(topSuggestions[0]);
+    if (topSuggestions.length >= 2) {
+      // DESEMPATE: 2 ou mais empatadas → criar enquete de desempate de 48h
+      // Pegar as top 3 se houver 3+, ou as 2 se houver apenas 2
+      const candidates = topSuggestions.slice(0, Math.min(3, topSuggestions.length));
+      await createTiebreakerPoll(candidates);
     } else {
-      // 2 empatadas: escolher a mais antiga
-      topSuggestions.sort((a, b) => a.data.createdAt.toMillis() - b.data.createdAt.toMillis());
+      // UMA VENCEDORA: criar enquete de repertório
       await createRepertoryPoll(topSuggestions[0]);
     }
   }
 }
 
-// Criar enquete de desempate (48h)
-async function createTiebreakerPoll(topThree) {
+// Criar enquete de desempate (48h) - aceita 2 ou 3 músicas
+async function createTiebreakerPoll(topCandidates) {
   const endDate = new Date();
   endDate.setHours(endDate.getHours() + 48);
   
+  const count = topCandidates.length;
+  const titleText = count === 2 
+    ? '⚔️ Desempate: Qual música deve ir para a enquete de repertório?' 
+    : '🏆 Desempate: Qual música deve ir para a enquete de repertório?';
+  
   const pollData = {
-    question: '🏆 Desempate: Qual música deve ir para a enquete de repertório?',
-    options: topThree.map(s => ({ label: `${s.data.song} - ${s.data.artist}`, votes: 0 })),
+    question: titleText,
+    options: topCandidates.map(s => ({ label: `${s.data.song} - ${s.data.artist}`, votes: 0 })),
     createdAt: serverTimestamp(),
     deadline: endDate.toISOString(),
     closed: false,
     voters: [],
     voterMap: {},
-    suggestionIds: topThree.map(s => s.id), // vincular às sugestões
+    suggestionIds: topCandidates.map(s => s.id), // vincular às sugestões
     type: 'tiebreaker'
   };
   
@@ -2783,9 +2799,10 @@ async function createTiebreakerPoll(topThree) {
     activeTiebreakerPoll: pollRef.id
   });
   
-  showToast('⚔️ Enquete de desempate criada! Vote agora.');
+  const musicNames = topCandidates.map(s => s.data.song).join(', ');
+  showToast(`⚔️ Enquete de desempate criada para ${count} músicas! Vote agora.`);
   if (typeof logAdminAction === 'function') {
-    logAdminAction(`Enquete de desempate criada: ${topThree.map(s => s.data.song).join(', ')}`);
+    logAdminAction(`Enquete de desempate criada (${count} músicas): ${musicNames}`);
   }
 }
 
@@ -2908,8 +2925,7 @@ async function completeRepertoryPoll(pollId, pollData) {
       song: songTitle?.trim() || '',
       artist: artist?.trim() || '',
       addedAt: serverTimestamp(),
-      by: 'Sistema Automático',
-      level: 'wip'
+      by: 'Sistema Automático'
     });
     
     showToast(`✅ Música aprovada e adicionada ao repertório!`);
