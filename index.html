@@ -234,10 +234,6 @@
   .countdown-badge.urgent{background:rgba(139,58,10,.2);border-color:var(--rust);color:#ff9966;animation:pulse-urgent 2s infinite}
   @keyframes pulse-urgent{0%,100%{opacity:1}50%{opacity:.7}}
   .countdown-icon{font-size:.9rem}
-  .suggestion-position{position:absolute;top:.5rem;left:.5rem;background:var(--gold);color:var(--black);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;font-weight:700;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-  .suggestion-position.gold{background:linear-gradient(135deg,#ffd700,#ffed4e);box-shadow:0 0 20px rgba(255,215,0,.4)}
-  .suggestion-position.silver{background:linear-gradient(135deg,#c0c0c0,#e8e8e8);color:var(--black)}
-  .suggestion-position.bronze{background:linear-gradient(135deg,#cd7f32,#e89a5c);color:var(--black)}
 
   /* TABS */
   .tabs{display:flex;margin-bottom:2rem;border-bottom:1px solid rgba(200,130,10,.2)}
@@ -957,6 +953,7 @@ let isMember      = false; // true = email aprovado (admin)
 let currentTab    = 0;
 let currentRepTab = 'all';
 let dragSrc       = null;
+let currentSection = '';
 let membersCache  = [];
 let repCache      = [];
 
@@ -1037,7 +1034,13 @@ window.doLogout = async () => {
 };
 
 // ─── UTILS ─────────────────────────────────────────────────────────
-window.goTo = id => document.getElementById(id).scrollIntoView({behavior:'smooth'});
+window.goTo = id => {
+  document.getElementById(id).scrollIntoView({behavior:'smooth'});
+  currentSection = id;
+  if (id === 'sugestoes') {
+    setTimeout(() => updatePromotionCountdowns(), 300);
+  }
+};
 
 window.toggleMobileMenu = () => {
   const menu = document.getElementById('navMobileMenu');
@@ -1347,7 +1350,6 @@ function renderSuggestions() {
   });
 
   const trophies = ['🥇','🥈','🥉'];
-  const topScore = sorted.length > 0 ? getSuggestionScore(sorted[0].data) : 0;
 
   list.innerHTML = sorted.map(({id, data: s}, i) => {
     const score     = getSuggestionScore(s);
@@ -1355,16 +1357,6 @@ function renderSuggestions() {
     const hasVoted  = myVote !== null && myVote !== undefined;
     const rankClass = i < 3 ? ` rank-${i+1}` : '';
     const trophy    = i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
-
-    // Badge de posição (medalha)
-    let positionBadge = '';
-    if (i === 0 && score > 0) {
-      positionBadge = '<div class="suggestion-position gold">1º</div>';
-    } else if (i === 1 && score === topScore && score > 0) {
-      positionBadge = '<div class="suggestion-position silver">2º</div>';
-    } else if (i === 2 && score === topScore && score > 0) {
-      positionBadge = '<div class="suggestion-position bronze">3º</div>';
-    }
 
     const likeBtn = `<button class="vote-btn${myVote==='like'?' liked':''}"
       onclick="voteSuggestion('${id}','like')"
@@ -1382,8 +1374,7 @@ function renderSuggestions() {
 
     const rmBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
 
-    return `<div class="suggestion-item${rankClass}" style="position:relative">
-      ${positionBadge}
+    return `<div class="suggestion-item${rankClass}">
       ${trophy}
       <div class="suggestion-main">
         <div class="suggestion-song">${s.song}</div>
@@ -2657,20 +2648,26 @@ async function updatePromotionCountdowns() {
   if (navBadge && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000) {
     navBadge.textContent = formatTimeRemaining(timeUntil);
     navBadge.style.display = 'inline-block';
+  } else if (navBadge) {
+    navBadge.style.display = 'none';
   }
   
-  // Contador nas sugestões
+  // Contador nas sugestões (inserir antes da lista)
   if (currentSection === 'sugestoes') {
-    const container = document.querySelector('#sugestoes .section-header');
-    if (container) {
-      const existing = container.querySelector('.countdown-badge');
-      if (existing) existing.remove();
+    const list = document.getElementById('suggestionsList');
+    if (list) {
+      // Remover countdown existente
+      const existing = list.previousElementSibling;
+      if (existing && existing.classList.contains('countdown-badge')) {
+        existing.remove();
+      }
       
       if (timeUntil > 0) {
         const badge = document.createElement('div');
         badge.className = `countdown-badge ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}`;
         badge.innerHTML = `<span class="countdown-icon">⏱</span> Próxima promoção em: ${formatTimeRemaining(timeUntil)}`;
-        container.appendChild(badge);
+        badge.style.marginTop = '1.5rem';
+        list.parentNode.insertBefore(badge, list);
       }
     }
   }
