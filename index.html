@@ -230,6 +230,14 @@
   .vote-btn.disliked{background:rgba(180,60,60,.15);border-color:rgba(180,60,60,.5);color:#fca5a5}
   .vote-btn:disabled{opacity:.4;cursor:default}
   .score-num{font-family:'Bebas Neue',sans-serif;font-size:.95rem;min-width:20px;text-align:center}
+  .countdown-badge{background:rgba(200,130,10,.15);border:1px solid rgba(200,130,10,.4);color:var(--gold);font-size:.7rem;letter-spacing:.08em;padding:.3rem .6rem;border-radius:1px;font-family:'Bebas Neue',sans-serif;display:inline-flex;align-items:center;gap:.4rem;margin-bottom:1rem}
+  .countdown-badge.urgent{background:rgba(139,58,10,.2);border-color:var(--rust);color:#ff9966;animation:pulse-urgent 2s infinite}
+  @keyframes pulse-urgent{0%,100%{opacity:1}50%{opacity:.7}}
+  .countdown-icon{font-size:.9rem}
+  .suggestion-position{position:absolute;top:.5rem;left:.5rem;background:var(--gold);color:var(--black);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;font-weight:700;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .suggestion-position.gold{background:linear-gradient(135deg,#ffd700,#ffed4e);box-shadow:0 0 20px rgba(255,215,0,.4)}
+  .suggestion-position.silver{background:linear-gradient(135deg,#c0c0c0,#e8e8e8);color:var(--black)}
+  .suggestion-position.bronze{background:linear-gradient(135deg,#cd7f32,#e89a5c);color:var(--black)}
 
   /* TABS */
   .tabs{display:flex;margin-bottom:2rem;border-bottom:1px solid rgba(200,130,10,.2)}
@@ -612,7 +620,7 @@
   <div class="nav-logo">Retórica</div>
   <ul class="nav-links">
     <li><a onclick="goTo('membros')">Membros</a></li>
-    <li><a onclick="goTo('sugestoes')">Sugestões</a></li>
+    <li style="position:relative"><a onclick="goTo('sugestoes')">Sugestões</a><span id="promoCountdownNav" class="badge-new" style="display:none"></span></li>
     <li><a onclick="goTo('enquetes')">Enquetes</a></li>
     <li><a onclick="goTo('setlist')">Setlist</a></li>
     <li><a onclick="goTo('repertorio')">Repertório</a></li>
@@ -1339,6 +1347,7 @@ function renderSuggestions() {
   });
 
   const trophies = ['🥇','🥈','🥉'];
+  const topScore = sorted.length > 0 ? getSuggestionScore(sorted[0].data) : 0;
 
   list.innerHTML = sorted.map(({id, data: s}, i) => {
     const score     = getSuggestionScore(s);
@@ -1346,6 +1355,16 @@ function renderSuggestions() {
     const hasVoted  = myVote !== null && myVote !== undefined;
     const rankClass = i < 3 ? ` rank-${i+1}` : '';
     const trophy    = i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
+
+    // Badge de posição (medalha)
+    let positionBadge = '';
+    if (i === 0 && score > 0) {
+      positionBadge = '<div class="suggestion-position gold">1º</div>';
+    } else if (i === 1 && score === topScore && score > 0) {
+      positionBadge = '<div class="suggestion-position silver">2º</div>';
+    } else if (i === 2 && score === topScore && score > 0) {
+      positionBadge = '<div class="suggestion-position bronze">3º</div>';
+    }
 
     const likeBtn = `<button class="vote-btn${myVote==='like'?' liked':''}"
       onclick="voteSuggestion('${id}','like')"
@@ -1363,7 +1382,8 @@ function renderSuggestions() {
 
     const rmBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
 
-    return `<div class="suggestion-item${rankClass}">
+    return `<div class="suggestion-item${rankClass}" style="position:relative">
+      ${positionBadge}
       ${trophy}
       <div class="suggestion-main">
         <div class="suggestion-song">${s.song}</div>
@@ -2583,6 +2603,338 @@ window.dismissNewsPopup = function() {
   if (el) { el.classList.remove('show'); el.classList.add('dismissed'); }
   localStorage.setItem('retorica_news_dismissed', '1');
 };
+
+// ─── SISTEMA DE PROMOÇÃO AUTOMÁTICA ──────────────────────────────────
+const promotionStateRef = doc(db, 'promotion_state', 'current');
+
+// Inicializar estado de promoção
+async function initPromotionState() {
+  const snap = await getDoc(promotionStateRef);
+  if (!snap.exists()) {
+    const nextFriday = getNextFriday();
+    await setDoc(promotionStateRef, {
+      nextPromotionDate: Timestamp.fromDate(nextFriday),
+      activeTiebreakerPoll: null,
+      activeRepertoryPoll: null
+    });
+  }
+}
+
+// Calcular próxima sexta-feira às 00:00
+function getNextFriday(fromDate = new Date()) {
+  const date = new Date(fromDate);
+  date.setHours(0, 0, 0, 0);
+  const dayOfWeek = date.getDay();
+  const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
+  date.setDate(date.getDate() + daysUntilFriday);
+  return date;
+}
+
+// Formatar tempo restante
+function formatTimeRemaining(ms) {
+  if (ms <= 0) return 'Encerrando...';
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+// Atualizar contadores na UI
+async function updatePromotionCountdowns() {
+  const stateSnap = await getDoc(promotionStateRef);
+  if (!stateSnap.exists()) return;
+  
+  const state = stateSnap.data();
+  const now = Date.now();
+  const nextPromo = state.nextPromotionDate.toDate().getTime();
+  const timeUntil = nextPromo - now;
+  
+  // Badge na navegação
+  const navBadge = document.getElementById('promoCountdownNav');
+  if (navBadge && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000) {
+    navBadge.textContent = formatTimeRemaining(timeUntil);
+    navBadge.style.display = 'inline-block';
+  }
+  
+  // Contador nas sugestões
+  if (currentSection === 'sugestoes') {
+    const container = document.querySelector('#sugestoes .section-header');
+    if (container) {
+      const existing = container.querySelector('.countdown-badge');
+      if (existing) existing.remove();
+      
+      if (timeUntil > 0) {
+        const badge = document.createElement('div');
+        badge.className = `countdown-badge ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}`;
+        badge.innerHTML = `<span class="countdown-icon">⏱</span> Próxima promoção em: ${formatTimeRemaining(timeUntil)}`;
+        container.appendChild(badge);
+      }
+    }
+  }
+}
+
+// Verificar e executar promoção automática
+async function checkAndPromote() {
+  const stateSnap = await getDoc(promotionStateRef);
+  if (!stateSnap.exists()) return;
+  
+  const state = stateSnap.data();
+  const now = new Date();
+  const nextPromo = state.nextPromotionDate.toDate();
+  
+  if (now >= nextPromo) {
+    // Verificar se já existe enquete de desempate ou repertório ativa
+    if (state.activeTiebreakerPoll || state.activeRepertoryPoll) {
+      console.log('[PROMOÇÃO] Aguardando conclusão de enquete ativa');
+      return;
+    }
+    
+    if (!suggestionsCache.length) {
+      // Sem sugestões, reagendar
+      await updateDoc(promotionStateRef, {
+        nextPromotionDate: Timestamp.fromDate(getNextFriday(now))
+      });
+      return;
+    }
+    
+    // Ordenar por score
+    const sorted = [...suggestionsCache].sort((a,b) => {
+      const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
+      if (sb !== sa) return sb - sa;
+      return (b.data.likes||0) - (a.data.likes||0);
+    });
+    
+    const topScore = getSuggestionScore(sorted[0].data);
+    const topSuggestions = sorted.filter(s => getSuggestionScore(s.data) === topScore);
+    
+    if (topSuggestions.length >= 3) {
+      // DESEMPATE: criar enquete de 48h
+      await createTiebreakerPoll(topSuggestions.slice(0, 3));
+    } else if (topSuggestions.length === 1) {
+      // UMA VENCEDORA: criar enquete de repertório
+      await createRepertoryPoll(topSuggestions[0]);
+    } else {
+      // 2 empatadas: escolher a mais antiga
+      topSuggestions.sort((a, b) => a.data.createdAt.toMillis() - b.data.createdAt.toMillis());
+      await createRepertoryPoll(topSuggestions[0]);
+    }
+  }
+}
+
+// Criar enquete de desempate (48h)
+async function createTiebreakerPoll(topThree) {
+  const endDate = new Date();
+  endDate.setHours(endDate.getHours() + 48);
+  
+  const pollData = {
+    question: '🏆 Desempate: Qual música deve ir para a enquete de repertório?',
+    options: topThree.map(s => ({ label: `${s.data.song} - ${s.data.artist}`, votes: 0 })),
+    createdAt: serverTimestamp(),
+    deadline: endDate.toISOString(),
+    closed: false,
+    voters: [],
+    voterMap: {},
+    suggestionIds: topThree.map(s => s.id), // vincular às sugestões
+    type: 'tiebreaker'
+  };
+  
+  const pollRef = await addDoc(collection(db, 'polls'), pollData);
+  
+  await updateDoc(promotionStateRef, {
+    activeTiebreakerPoll: pollRef.id
+  });
+  
+  showToast('⚔️ Enquete de desempate criada! Vote agora.');
+  if (typeof logAdminAction === 'function') {
+    logAdminAction(`Enquete de desempate criada: ${topThree.map(s => s.data.song).join(', ')}`);
+  }
+}
+
+// Criar enquete de repertório (7 dias)
+async function createRepertoryPoll(suggestion) {
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 7);
+  
+  const pollData = {
+    question: `🎸 ${suggestion.data.song} - ${suggestion.data.artist} deve entrar no repertório?`,
+    options: [
+      { label: '✅ Sim, adicionar ao repertório', votes: 0 },
+      { label: '❌ Não, manter em sugestões', votes: 0 }
+    ],
+    createdAt: serverTimestamp(),
+    deadline: endDate.toISOString(),
+    closed: false,
+    voters: [],
+    voterMap: {},
+    suggestionId: suggestion.id,
+    type: 'repertory'
+  };
+  
+  const pollRef = await addDoc(collection(db, 'polls'), pollData);
+  
+  // Remover da lista de sugestões
+  await deleteDoc(doc(db, 'suggestions', suggestion.id));
+  
+  await updateDoc(promotionStateRef, {
+    activeRepertoryPoll: pollRef.id
+  });
+  
+  showToast(`🎵 "${suggestion.data.song}" agora está em votação para o repertório!`);
+  if (typeof logAdminAction === 'function') {
+    logAdminAction(`Música promovida para enquete de repertório: ${suggestion.data.song} - ${suggestion.data.artist}`);
+  }
+}
+
+// Verificar término de enquetes automáticas
+async function checkPollsCompletion() {
+  const stateSnap = await getDoc(promotionStateRef);
+  if (!stateSnap.exists()) return;
+  
+  const state = stateSnap.data();
+  const now = new Date();
+  
+  // Verificar enquete de desempate
+  if (state.activeTiebreakerPoll) {
+    const pollSnap = await getDoc(doc(db, 'polls', state.activeTiebreakerPoll));
+    if (pollSnap.exists()) {
+      const poll = pollSnap.data();
+      const endDate = new Date(poll.deadline);
+      
+      if (now >= endDate && !poll.closed) {
+        await completeTiebreakerPoll(state.activeTiebreakerPoll, poll);
+      }
+    }
+  }
+  
+  // Verificar enquete de repertório
+  if (state.activeRepertoryPoll) {
+    const pollSnap = await getDoc(doc(db, 'polls', state.activeRepertoryPoll));
+    if (pollSnap.exists()) {
+      const poll = pollSnap.data();
+      const endDate = new Date(poll.deadline);
+      
+      if (now >= endDate && !poll.closed) {
+        await completeRepertoryPoll(state.activeRepertoryPoll, poll);
+      }
+    }
+  }
+}
+
+// Finalizar enquete de desempate
+async function completeTiebreakerPoll(pollId, pollData) {
+  const options = pollData.options || [];
+  const maxVotes = Math.max(...options.map(o => o.votes || 0));
+  const winnerIdx = options.findIndex(o => (o.votes || 0) === maxVotes);
+  
+  if (winnerIdx === -1) return;
+  
+  const suggestionIds = pollData.suggestionIds || [];
+  const winnerId = suggestionIds[winnerIdx];
+  
+  // Buscar dados da sugestão vencedora
+  const sugSnap = await getDoc(doc(db, 'suggestions', winnerId));
+  if (!sugSnap.exists()) return;
+  
+  const winner = { id: winnerId, data: sugSnap.data() };
+  
+  // Marcar enquete como encerrada
+  await updateDoc(doc(db, 'polls', pollId), { closed: true });
+  
+  // Criar enquete de repertório com a vencedora
+  await createRepertoryPoll(winner);
+  
+  // Limpar estado
+  await updateDoc(promotionStateRef, {
+    activeTiebreakerPoll: null
+  });
+  
+  showToast(`🏆 Desempate concluído! "${winner.data.song}" vai para votação de repertório.`);
+}
+
+// Finalizar enquete de repertório
+async function completeRepertoryPoll(pollId, pollData) {
+  const options = pollData.options || [];
+  const yesVotes = options[0]?.votes || 0;
+  const noVotes = options[1]?.votes || 0;
+  
+  // Marcar enquete como encerrada
+  await updateDoc(doc(db, 'polls', pollId), { closed: true });
+  
+  if (yesVotes > noVotes) {
+    // APROVADA: adicionar ao repertório
+    const title = pollData.question.match(/🎸 (.+) deve entrar/)?.[1] || 'Música';
+    const [songTitle, artist] = title.split(' - ');
+    
+    await addDoc(collection(db, 'repertorio'), {
+      song: songTitle?.trim() || '',
+      artist: artist?.trim() || '',
+      addedAt: serverTimestamp(),
+      by: 'Sistema Automático',
+      level: 'wip'
+    });
+    
+    showToast(`✅ Música aprovada e adicionada ao repertório!`);
+    if (typeof logAdminAction === 'function') {
+      logAdminAction(`Música adicionada ao repertório via votação: ${title}`);
+    }
+  } else {
+    // REPROVADA: recriar como sugestão
+    const title = pollData.question.match(/🎸 (.+) deve entrar/)?.[1] || '';
+    const [songTitle, artist] = title.split(' - ');
+    
+    await addDoc(collection(db, 'suggestions'), {
+      song: songTitle?.trim() || '',
+      artist: artist?.trim() || '',
+      by: 'Sistema',
+      createdAt: serverTimestamp(),
+      likes: 0,
+      dislikes: 0,
+      likedBy: [],
+      dislikedBy: [],
+      voterMap: {}
+    });
+    
+    showToast('📋 Música retornou às sugestões para nova oportunidade.');
+  }
+  
+  // Agendar próxima promoção
+  const nextFriday = getNextFriday();
+  await updateDoc(promotionStateRef, {
+    activeRepertoryPoll: null,
+    nextPromotionDate: Timestamp.fromDate(nextFriday)
+  });
+}
+
+// Iniciar sistema de promoção
+(async function startPromotionSystem() {
+  await initPromotionState();
+  
+  // Verificar a cada minuto
+  setInterval(async () => {
+    try {
+      await checkAndPromote();
+      await checkPollsCompletion();
+      await updatePromotionCountdowns();
+    } catch (e) {
+      console.error('[PROMOÇÃO] Erro:', e);
+    }
+  }, 60000); // 1 minuto
+  
+  // Verificação inicial
+  setTimeout(async () => {
+    try {
+      await checkAndPromote();
+      await checkPollsCompletion();
+      await updatePromotionCountdowns();
+    } catch (e) {
+      console.error('[PROMOÇÃO] Erro inicial:', e);
+    }
+  }, 3000);
+})();
+
 </script>
 </body>
-      </html>
+</html>
