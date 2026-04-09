@@ -34,12 +34,11 @@
   .nav-mobile-menu a{color:var(--paper);text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;padding:1rem 2rem;border-bottom:1px solid rgba(200,130,10,.08);transition:color .2s}
 
   /* HERO */
-  #hero{height:45vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:350px}
+  #hero{height:40vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:300px}
   .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
   .hero-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(200,130,10,.04) 59px,rgba(200,130,10,.04) 60px)}
   .hero-content{position:relative;text-align:center;animation:fadeUp 1.2s ease both}
   @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
-  .hero-icon{font-size:3rem;margin-bottom:.5rem;display:block}
   .hero-title{font-family:'Cinzel',serif;font-size:clamp(2.5rem,7vw,5rem);font-weight:900;color:var(--cream);line-height:.9;text-shadow:0 0 80px rgba(200,130,10,.3),3px 3px 0 rgba(139,58,10,.4)}
   .hero-subtitle{font-family:'IM Fell English SC',serif;font-size:.85rem;letter-spacing:.4em;color:var(--smoke);margin-top:1rem;text-transform:uppercase}
 
@@ -55,7 +54,7 @@
   .historia-card{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;overflow:hidden;transition:border-color .3s,transform .3s}
   .historia-card:hover{border-color:rgba(200,130,10,.4);transform:translateY(-2px)}
 
-  /* HISTORIA HEADER (DATA DESTAQUE) */
+  /* HISTORIA TITLES (DATA DESTAQUE) */
   .fatos-header{display:flex;align-items:baseline;font-family:'Cinzel',serif;border-bottom:1px solid rgba(200,130,10,.15);padding-bottom:.5rem;margin-bottom:.8rem}
   .fatos-date{color:var(--gold);font-weight:900;font-size:1.1rem;margin-right:.6rem;letter-spacing:0}
   .fatos-label{color:var(--amber);font-size:.8rem;letter-spacing:.12em;text-transform:uppercase}
@@ -68,7 +67,7 @@
   .col-container{display:flex;flex-direction:column;gap:.6rem}
   .col-label{font-family:'Cinzel',serif;font-size:.7rem;color:var(--amber);border-bottom:1px solid rgba(200,130,10,.2);padding-bottom:.4rem;text-transform:uppercase;letter-spacing:.1em}
 
-  /* MUSIC CARD (HEIGHT FIXED) */
+  /* MUSIC CARD */
   .music-card{height:80px; display:flex; align-items:center; gap:.7rem; padding:0 .7rem}
   .music-item-thumb{width:48px;height:48px;border-radius:2px;object-fit:cover;border:1px solid rgba(200,130,10,0.3);flex-shrink:0}
   .music-rank{font-family:'Bebas Neue',serif;font-size:1.2rem;color:rgba(200,130,10,.3);min-width:20px;text-align:center}
@@ -85,7 +84,7 @@
   .news-card-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--cream);line-height:1.35;margin-bottom:.6rem}
   .news-card-link{display:inline-flex;align-items:center;gap:.4rem;color:var(--amber);font-size:.78rem;text-decoration:none;font-family:'Cinzel',serif;letter-spacing:.08em;text-transform:uppercase;padding:.6rem 0;border-top:1px solid rgba(200,130,10,.12);margin-top:.8rem}
 
-  /* LOADING */
+  /* UTILS */
   .spinner{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:2rem 0}
   .spinner-circle{width:24px;height:24px;border:2px solid rgba(200,130,10,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -99,7 +98,6 @@
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <a href="index.html" class="nav-logo">Retórica</a>
   <ul class="nav-links">
@@ -118,22 +116,20 @@
   <a href="index.html" style="border:none; color:var(--amber)">Voltar ao portal</a>
 </div>
 
-<!-- HERO -->
 <div id="hero">
   <div class="hero-bg"></div>
   <div class="hero-lines"></div>
   <div class="hero-content">
     <span class="hero-icon">♫</span>
     <h1 class="hero-title">Notícias do Rock</h1>
-    <p class="hero-subtitle">Portal Oficial Retórica · Música & História</p>
+    <p class="hero-subtitle">Mundo do Rock · Histórias e Paradas musicais</p>
   </div>
 </div>
 
-<!-- CURIOSIDADES -->
 <section id="historia">
   <div class="section-header">
     <div class="section-number">♦</div>
-    <div class="section-title-wrap"><h2>Curiosidades da Música</h2><p>Memória histórica do rock</p></div>
+    <div class="section-title-wrap"><h2>Curiosidades da Música</h2><p>Memória histórica do dia</p></div>
     <div class="section-line"></div>
   </div>
   <div id="historiaContent"><div class="spinner"><div class="spinner-circle"></div></div></div>
@@ -141,11 +137,10 @@
 
 <hr class="full-divider">
 
-<!-- TOP ROCK -->
 <section id="topRock">
   <div class="section-header">
     <div class="section-number">★</div>
-    <div class="section-title-wrap"><h2>Destaques Musicais</h2><p>Charts oficiais Apple Music</p></div>
+    <div class="section-title-wrap"><h2>Destaques Musicais</h2><p>Lançamentos e rankings oficiais Apple Music</p></div>
     <div class="section-line"></div>
   </div>
   <div class="top-rock-grid">
@@ -158,11 +153,10 @@
 
 <hr class="full-divider">
 
-<!-- NOTICIAS -->
 <section id="noticias">
   <div class="section-header">
     <div class="section-number">♫</div>
-    <div class="section-title-wrap"><h2>Últimas Notícias</h2><p>Agregado global Whiplash, Loudwire e mais</p></div>
+    <div class="section-title-wrap"><h2>Últimas Notícias</h2><p>Feed global atualizado</p></div>
     <button class="refresh-btn" onclick="location.reload()">↻ Atualizar</button>
   </div>
   <div class="tabs" id="newsTabs">
@@ -190,26 +184,23 @@ function escapeHtml(str) {
   div.textContent = str; return div.innerHTML;
 }
 
-// ─── CARREGAR CHARTS (VIA RSS2JSON - MUITO MAIS ESTÁVEL PARA GITHUB PAGES) ───
+// ─── CARREGAR CHARTS (VIA ALLORIGINS - MAIS COMPATÍVEL COM GITHUB PAGES) ───
 async function loadChartColumn(colId, label, url) {
   const container = document.getElementById(colId);
   try {
-    // Usando RSS2JSON para converter feeds da Apple em JSON estável
-    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}&api_key=ymjgmx8z8vxuzrqwyzszjx8ebqkyzszjx8ebqkyz`);
+    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
     const data = await res.json();
+    const feed = JSON.parse(data.contents).feed;
+    const entries = feed.entry ? feed.entry.slice(0, 5) : [];
     
-    if (data.status !== 'ok' || !data.items.length) throw new Error();
+    if (!entries.length) throw new Error();
     
     let html = `<div class="col-label">${label}</div>`;
-    data.items.slice(0, 5).forEach((item, i) => {
-      // Tratar formato do título da Apple
-      const rawTitle = item.title;
-      const parts = rawTitle.includes(" - ") ? rawTitle.split(" - ") : [rawTitle, ""];
-      const song = parts[0].trim();
-      const artist = parts.slice(1).join(" - ").trim();
-      
-      const thumb = item.thumbnail || item.enclosure.link || 'imagens/inst.png';
-      const link = item.link;
+    entries.forEach((entry, i) => {
+      const song = entry['im:name'].label;
+      const artist = entry['im:artist'].label;
+      const thumb = entry['im:image'][2].label;
+      const link = Array.isArray(entry.link) ? entry.link[0].attributes.href : entry.link.attributes.href;
       
       html += `<div class="historia-card music-card">
         <span class="music-rank">${i+1}</span>
@@ -218,7 +209,7 @@ async function loadChartColumn(colId, label, url) {
           <div class="music-title">${escapeHtml(song)}</div>
           <div class="music-artist">${escapeHtml(artist)}</div>
         </div>
-        <a href="${link}" target="_blank" style="text-decoration:none; font-size:.9rem" title="Ouvir">🎧</a>
+        <a href="${link}" target="_blank" style="text-decoration:none; font-size:.9rem">🎧</a>
       </div>`;
     });
     container.innerHTML = html;
@@ -228,10 +219,10 @@ async function loadChartColumn(colId, label, url) {
 }
 
 function loadTopRock() {
-  loadChartColumn('col-new', 'Lançamentos Rock', 'https://itunes.apple.com/us/rss/newreleases/limit=10/genre=21/xml');
-  loadChartColumn('col-intl', 'Top Internacional', 'https://itunes.apple.com/us/rss/topsongs/limit=10/genre=20/xml');
-  loadChartColumn('col-nac', 'Nacional', 'https://itunes.apple.com/br/rss/topsongs/limit=10/genre=21/xml');
-  loadChartColumn('col-metal', 'Heavy Metal', 'https://itunes.apple.com/us/rss/topsongs/limit=10/genre=1153/xml');
+  loadChartColumn('col-new', 'Lançamentos Rock', 'https://itunes.apple.com/us/rss/topalbums/limit=10/genre=21/json');
+  loadChartColumn('col-intl', 'Top Internacional', 'https://itunes.apple.com/us/rss/topsongs/limit=10/json');
+  loadChartColumn('col-nac', 'Nacional', 'https://itunes.apple.com/br/rss/topsongs/limit=10/genre=21/json');
+  loadChartColumn('col-metal', 'Heavy Metal', 'https://itunes.apple.com/us/rss/topsongs/limit=10/genre=1153/json');
 }
 
 // ─── HISTORIA (FATOS COM DATA EM DESTAQUE) ───
@@ -274,10 +265,10 @@ async function loadHistoria() {
       }
     }
   } catch(e) {}
-  document.getElementById('historiaContent').innerHTML = '<p style="color:var(--smoke); text-align:center">Histórico do dia indisponível.</p>';
+  document.getElementById('historiaContent').innerHTML = '<p style="color:var(--smoke); text-align:center">Indisponível no momento.</p>';
 }
 
-// ─── NEWS ───
+// ─── NEWS (WHIPLASH E AFINS) ───
 const RSS_SOURCES = [
   { id: 'whiplash', name: 'Whiplash', url: 'https://whiplash.net/news.xml', type: 'nacional' },
   { id: 'rsbrasil', name: 'Rolling Stone BR', url: 'https://rollingstone.com.br/feed/', type: 'nacional' },
@@ -286,7 +277,7 @@ const RSS_SOURCES = [
 
 async function fetchNews(f) {
   try {
-    const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(f.url));
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(f.url)}`);
     const d = await res.json();
     return d.items.map(it => ({ title: it.title, link: it.link, date: new Date(it.pubDate), source: f.name, type: f.type, thumb: it.thumbnail }));
   } catch(e) { return []; }
