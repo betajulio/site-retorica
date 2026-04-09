@@ -19,12 +19,12 @@
   .nav-logo{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.15em}
   .nav-links{display:flex;list-style:none}
   .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .7rem;transition:color .2s;cursor:pointer}
-  .badge-new{position:absolute;top:50%;left:calc(100% + 2px);transform:translateY(-50%);background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none}
-  @keyframes pulse-badge {0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.1)}}
+  .badge-new{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.5rem;letter-spacing:.05em;padding:.05rem .3rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none;line-height:1}
+  @keyframes pulse-badge {0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.1)}}
   .badge-new-mobile{display:none}
+  .badge-mobile-inline{background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none;margin-left:auto}
   @media(max-width:768px){
     .badge-new{display:none!important}
-    .badge-new-mobile{display:inline-block!important;position:static;transform:none;animation:pulse-badge 2s infinite}
   }
 
   /* NEWS POPUP */
