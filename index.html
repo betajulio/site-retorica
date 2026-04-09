@@ -18,13 +18,13 @@
   nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(180deg,rgba(10,8,4,.98),rgba(10,8,4,.85));border-bottom:1px solid rgba(200,130,10,.3);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;backdrop-filter:blur(10px)}
   .nav-logo{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.15em}
   .nav-links{display:flex;list-style:none}
-  .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .7rem;transition:color .2s;cursor:pointer}
-  .badge-new{position:absolute;top:50%;left:calc(100% + 2px);transform:translateY(-50%);background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none}
+  .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .7rem;transition:color .2s;cursor:pointer;position:relative}
+  .badge-new{position:absolute;top:50%;left:calc(100% + 4px);transform:translateY(-50%);background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none;max-width:80px;overflow:hidden;text-overflow:ellipsis}
   @keyframes pulse-badge {0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.1)}}
   .badge-new-mobile{display:none}
   @media(max-width:768px){
     .badge-new{display:none!important}
-    .badge-new-mobile{display:inline-block!important;position:static;transform:none;animation:pulse-badge 2s infinite}
+    .badge-new-mobile{display:inline-block!important;position:relative;transform:none;animation:pulse-badge 2s infinite;margin-left:.3rem;vertical-align:middle}
   }
 
   /* NEWS POPUP */
@@ -491,10 +491,13 @@
     .gallery-thumb-del{display:flex} /* always visible on mobile (no hover) */
 
     /* Lightbox */
-    .lightbox-inner{flex-direction:column;max-height:92vh;overflow-y:auto}
-    .lb-img-panel{max-width:100%;max-height:45vh;flex:none}
-    .lb-img-panel .lightbox-img{max-height:40vh}
-    .lb-comments-wrap{width:100%;max-height:35vh;border:1px solid rgba(200,130,10,.1);border-top:2px solid rgba(200,130,10,.2)}
+    .lightbox-inner{flex-direction:column;max-height:92vh;overflow-y:auto;padding-bottom:1rem}
+    .lb-img-panel{max-width:100%;max-height:50vh;flex:none;padding-bottom:1rem}
+    .lb-img-panel .lightbox-img{max-height:45vh;margin-bottom:.8rem}
+    .lb-caption-block{margin-top:.5rem;padding-bottom:.8rem}
+    .lightbox-reactions{flex-wrap:wrap;justify-content:center;padding:.5rem 0}
+    .lb-rbtn{padding:.4rem .7rem;font-size:.85rem}
+    .lb-comments-wrap{width:100%;max-height:35vh;border:1px solid rgba(200,130,10,.1);border-top:2px solid rgba(200,130,10,.2);margin-top:.5rem}
 
     /* Modals */
     .modal{padding:1.5rem}
@@ -643,7 +646,7 @@
 <!-- MOBILE MENU -->
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a onclick="mobileGoTo('membros')">Membros</a>
-  <a onclick="mobileGoTo('sugestoes')">Sugestões</a>
+  <a onclick="mobileGoTo('sugestoes')" style="position:relative">Sugestões <span id="promoCountdownNavMobile" class="badge-new badge-new-mobile" style="display:none"></span></a>
   <a onclick="mobileGoTo('enquetes')">Enquetes</a>
   <a onclick="mobileGoTo('setlist')">Setlist</a>
   <a onclick="mobileGoTo('repertorio')">Repertório</a>
@@ -2689,14 +2692,24 @@ async function updatePromotionCountdowns() {
     
     console.log('[COUNTDOWN] Tempo até próxima promoção:', formatTimeRemaining(timeUntil));
     
-    // Badge na navegação
+    // Badge na navegação desktop
     const navBadge = document.getElementById('promoCountdownNav');
     if (navBadge && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000) {
       navBadge.textContent = formatTimeRemaining(timeUntil);
       navBadge.style.display = 'inline-block';
-      console.log('[COUNTDOWN] Badge nav atualizado');
+      console.log('[COUNTDOWN] Badge nav desktop atualizado');
     } else if (navBadge) {
       navBadge.style.display = 'none';
+    }
+    
+    // Badge na navegação mobile
+    const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
+    if (navBadgeMobile && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000) {
+      navBadgeMobile.textContent = formatTimeRemaining(timeUntil);
+      navBadgeMobile.style.display = 'inline-block';
+      console.log('[COUNTDOWN] Badge nav mobile atualizado');
+    } else if (navBadgeMobile) {
+      navBadgeMobile.style.display = 'none';
     }
     
     // Contador nas sugestões (inserir antes da lista) - DESTAQUE MAIOR E DIVERTIDO
