@@ -193,8 +193,11 @@
     <!-- DANGER ZONE -->
     <div class="danger-zone" style="gap:1rem;flex-wrap:wrap">
       <div style="display:flex;flex-direction:column;gap:.4rem">
-        <span style="font-size:.78rem;color:var(--smoke);font-style:italic">Ações de manutenção do sistema:</span>
-        <button class="btn-ghost" style="width:fit-content;border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
+        <span style="font-size:.78rem;color:var(--smoke);font-style:italic">Manutenção e Comunicação:</span>
+        <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+          <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
+          <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
+        </div>
       </div>
       <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
     </div>
@@ -707,6 +710,26 @@ window.runSuggestionsCleanup = async () => {
   } catch (e) {
     console.error('Cleanup error:', e);
     showToast('❌ Erro durante a varredura. Veja o console.');
+  }
+};
+
+window.triggerManualRehearsalZap = async () => {
+  if (!confirm('Deseja enviar a lista do "Ensaio Atual" para o WhatsApp agora?')) return;
+  
+  showToast('⏳ Disparando WhatsApp…');
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Disparar Zap Ensaio',
+      detail: 'Solicitação manual via painel de logs',
+      category: 'setlist',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    showToast('🚀 Comando enviado!');
+  } catch (e) {
+    console.error('Manual zap error:', e);
+    showToast('❌ Erro ao disparar. Veja o console.');
   }
 };
 
