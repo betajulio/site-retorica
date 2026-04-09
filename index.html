@@ -417,7 +417,7 @@
   .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
   .nav-mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;background:rgba(10,8,4,.98);border-bottom:1px solid rgba(200,130,10,.3);backdrop-filter:blur(16px);z-index:999;flex-direction:column;padding:.5rem 0}
   .nav-mobile-menu.open{display:flex}
-  .nav-mobile-menu a{color:var(--paper);text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;padding:1rem 2rem;border-bottom:1px solid rgba(200,130,10,.08);transition:color .2s;cursor:pointer}
+  .nav-mobile-menu a{color:var(--paper);text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;padding:1rem 2rem;border-bottom:1px solid rgba(200,130,10,.08);transition:color .2s;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
   .nav-mobile-menu a:last-child{border-bottom:none}
   .nav-mobile-menu a:hover{color:var(--gold);background:rgba(200,130,10,.05)}
   .nav-mobile-auth{padding:.8rem 2rem 1rem;display:flex;gap:.8rem;align-items:center;border-top:1px solid rgba(200,130,10,.15);margin-top:.3rem}
@@ -501,10 +501,10 @@
     .gallery-thumb-del{display:flex} /* always visible on mobile (no hover) */
 
     /* Lightbox */
-    .lightbox-inner{flex-direction:column;max-height:92vh;overflow-y:auto}
-    .lb-img-panel{max-width:100%;max-height:45vh;flex:none}
-    .lb-img-panel .lightbox-img{max-height:40vh}
-    .lb-comments-wrap{width:100%;max-height:35vh;border:1px solid rgba(200,130,10,.1);border-top:2px solid rgba(200,130,10,.2)}
+    .lightbox-inner{flex-direction:column;max-height:92vh;overflow-y:auto;justify-content:flex-start}
+    .lb-img-panel{max-width:100%;max-height:none;flex:none;padding-right:0;margin-bottom:1rem}
+    .lb-img-panel .lightbox-img{max-height:50vh}
+    .lb-comments-wrap{width:100%;max-height:none;flex:none;border:1px solid rgba(200,130,10,.1);border-top:2px solid rgba(200,130,10,.2)}
 
     /* Modals */
     .modal{padding:1.5rem}
@@ -653,12 +653,12 @@
 <!-- MOBILE MENU -->
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a onclick="mobileGoTo('membros')">Membros</a>
-  <a onclick="mobileGoTo('sugestoes')">Sugestões</a>
+  <a onclick="mobileGoTo('sugestoes')">Sugestões <span id="promoCountdownNavMobile" class="badge-mobile-inline" style="display:none"></span></a>
   <a onclick="mobileGoTo('enquetes')">Enquetes</a>
   <a onclick="mobileGoTo('setlist')">Setlist</a>
   <a onclick="mobileGoTo('repertorio')">Repertório</a>
   <a onclick="mobileGoTo('forum')">Fórum</a>
-  <a href="noticias.html">Notícias <span class="badge-new badge-new-mobile">NEW</span></a>
+  <a href="noticias.html">Notícias <span class="badge-mobile-inline">NEW</span></a>
   <a onclick="mobileGoTo('galeria')">Galeria</a>
   <a href="logs.html" id="adminLinkMobile" class="member-admin-only" style="color:var(--amber)">⚙ Portal Admin</a>
   <div class="nav-mobile-auth">
@@ -2742,15 +2742,21 @@ async function updatePromotionCountdowns() {
     
     console.log('[COUNTDOWN] Tempo até próxima promoção:', formatTimeRemaining(timeUntil));
     
-    // Badge na navegação
+    // Badge na navegação (Desktop e Mobile)
     const navBadge = document.getElementById('promoCountdownNav');
-    if (navBadge && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000) {
-      navBadge.textContent = formatTimeRemaining(timeUntil);
-      navBadge.style.display = 'inline-block';
-      console.log('[COUNTDOWN] Badge nav atualizado');
-    } else if (navBadge) {
-      navBadge.style.display = 'none';
+    const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
+    const timeLabel = formatTimeRemaining(timeUntil);
+    const shouldShow = timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+
+    if (navBadge) {
+      navBadge.textContent = timeLabel;
+      navBadge.style.display = shouldShow ? 'inline-block' : 'none';
     }
+    if (navBadgeMobile) {
+      navBadgeMobile.textContent = timeLabel;
+      navBadgeMobile.style.display = shouldShow ? 'inline-block' : 'none';
+    }
+    if (shouldShow) console.log('[COUNTDOWN] Badges nav atualizados');
     
     // Contador nas sugestões (inserir antes da lista) - DESTAQUE MAIOR E DIVERTIDO
     const list = document.getElementById('suggestionsList');
