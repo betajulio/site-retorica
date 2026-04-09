@@ -1,823 +1,108 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0a0804">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="imagens/Toca_do_Mineiro_logo_final.png">
-<title>Not&#237;cias do Rock — Ret&#243;rica</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<!-- SEÇÃO: Curiosidades da Música -->
+<section class="curiosidades-section">
+  <h2>Curiosidades da Música</h2>
+  <p class="section-subtitle">O que aconteceu na história do rock nesta data</p>
+  
+  <div class="curiosidades-grid">
+    <!-- BLOCO ESQUERDO: Título corrigido para FATOS -->
+    <div class="info-card">
+      <h3>FATOS</h3>
+      <div class="loading-text">Buscando na memória do rock…</div>
+    </div>
+    
+    <!-- BLOCO DIREITO (mantido para equilíbrio do layout) -->
+    <div class="info-card">
+      <h3>DESTAQUE</h3>
+      <p>Conteúdo complementar ou imagem histórica.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SEÇÃO: Top Rock Internacional -->
+<section class="top-rock-section">
+  <h2>Top Rock Internacional</h2>
+  <p class="section-subtitle">O que está tocando agora · Apple Music Alternative Chart</p>
+  
+  <!-- GRID DE 4 COLUNAS IGUAIS E ALINHADAS -->
+  <div class="albuns-grid">
+    <div class="album-card">
+      <img src="capa1.jpg" alt="Capa do álbum 1" loading="lazy">
+      <h4>Nome do Álbum</h4>
+      <p>Banda / Artista</p>
+    </div>
+    <div class="album-card">
+      <img src="capa2.jpg" alt="Capa do álbum 2" loading="lazy">
+      <h4>Nome do Álbum</h4>
+      <p>Banda / Artista</p>
+    </div>
+    <div class="album-card">
+      <img src="capa3.jpg" alt="Capa do álbum 3" loading="lazy">
+      <h4>Nome do Álbum</h4>
+      <p>Banda / Artista</p>
+    </div>
+    <!-- NOVA COLUNA ADICIONADA -->
+    <div class="album-card">
+      <img src="capa4.jpg" alt="Capa do álbum 4" loading="lazy">
+      <h4>Nome do Álbum</h4>
+      <p>Banda / Artista</p>
+    </div>
+  </div>
+</section>
+
 <style>
-  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050}
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
-  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
-
-  /* NAV */
-  nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(180deg,rgba(10,8,4,.98),rgba(10,8,4,.85));border-bottom:1px solid rgba(200,130,10,.3);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;backdrop-filter:blur(10px)}
-  .nav-logo{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.15em;text-decoration:none}
-  .nav-logo:hover{color:var(--amber)}
-  .nav-links{display:flex;list-style:none;gap:0}
-  .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .7rem;transition:color .2s}
-  .nav-links a:hover{color:var(--gold)}
-  .nav-links a.active{color:var(--gold);border-bottom:1px solid var(--gold);padding-bottom:.4rem}
-  .nav-back{font-family:'Cinzel',serif;font-size:.75rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid rgba(200,130,10,.3);padding:.4rem .9rem;border-radius:1px;transition:all .2s}
-  .nav-back:hover{background:rgba(200,130,10,.1);border-color:var(--amber)}
-
-  /* NAV HAMBURGER */
-  .nav-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:.4rem;z-index:1100}
-  .nav-hamburger span{display:block;width:22px;height:2px;background:var(--gold);border-radius:1px;transition:all .3s}
-  .nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
-  .nav-hamburger.open span:nth-child(2){opacity:0}
-  .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-  .nav-mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;background:rgba(10,8,4,.98);border-bottom:1px solid rgba(200,130,10,.3);backdrop-filter:blur(16px);z-index:999;flex-direction:column;padding:.5rem 0}
-  .nav-mobile-menu.open{display:flex}
-  .nav-mobile-menu a{color:var(--paper);text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;padding:1rem 2rem;border-bottom:1px solid rgba(200,130,10,.08);transition:color .2s}
-  .nav-mobile-menu a:last-child{border-bottom:none}
-  .nav-mobile-menu a:hover{color:var(--gold);background:rgba(200,130,10,.05)}
-  .nav-mobile-menu a.active-link{color:var(--gold)}
-
-  /* HERO */
-  #hero{height:50vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:300px}
-  .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
-  .hero-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(200,130,10,.04) 59px,rgba(200,130,10,.04) 60px)}
-  .hero-content{position:relative;text-align:center;animation:fadeUp 1.2s ease both}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
-  .hero-icon{font-size:3rem;margin-bottom:1rem;animation:fadeUp 1.2s .1s ease both}
-  .hero-title{font-family:'Cinzel',serif;font-size:clamp(2.5rem,7vw,5rem);font-weight:900;color:var(--cream);line-height:.9;text-shadow:0 0 80px rgba(200,130,10,.3),3px 3px 0 rgba(139,58,10,.4)}
-  .hero-subtitle{font-family:'IM Fell English SC',serif;font-size:.85rem;letter-spacing:.4em;color:var(--smoke);margin-top:1rem;text-transform:uppercase}
-
-  /* SECTIONS */
-  section{padding:4rem 2rem;max-width:1100px;margin:0 auto}
-  .section-header{display:flex;align-items:center;gap:1.5rem;margin-bottom:2.5rem}
-  .section-number{font-family:'Bebas Neue',sans-serif;font-size:3rem;color:rgba(200,130,10,.2);line-height:1;min-width:50px}
-  .section-title-wrap h2{font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;color:var(--cream);letter-spacing:.05em}
-  .section-title-wrap p{color:var(--smoke);font-size:.8rem;letter-spacing:.1em;margin-top:.25rem;text-transform:uppercase}
-  .section-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(200,130,10,.4),transparent)}
-  .full-divider{border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(200,130,10,.2),transparent);max-width:1100px;margin:0 auto}
-
-  /* TABS */
-  .tabs{display:flex;margin-bottom:2rem;border-bottom:1px solid rgba(200,130,10,.2);flex-wrap:wrap;gap:0}
-  .tab-btn{background:none;border:none;color:var(--smoke);padding:.7rem 1.2rem;font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.1em;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;margin-bottom:-1px}
-  .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
-  .tab-btn:hover:not(.active){color:var(--paper)}
-
-  /* HISTORIA / CURIOSIDADES */
-  .historia-card{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;overflow:hidden;transition:border-color .3s,transform .3s}
-  .historia-card:hover{border-color:rgba(200,130,10,.4);transform:translateY(-2px)}
-  .historia-ano{font-family:'Bebas Neue',sans-serif;font-size:2.5rem;color:rgba(200,130,10,.25);line-height:1;margin-bottom:.5rem}
-  .historia-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--amber);margin-bottom:.5rem;line-height:1.3}
-  .historia-desc{font-size:.88rem;color:var(--paper);line-height:1.6}
-
-  /* NEWS CARDS */
-  .news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.2rem}
-  .news-card{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;overflow:hidden;transition:border-color .3s,transform .3s;display:flex;flex-direction:column}
-  .news-card:hover{border-color:rgba(200,130,10,.4);transform:translateY(-2px)}
-  .news-card-thumb{width:100%;height:180px;object-fit:cover;background:rgba(10,8,4,.5)}
-  .news-card-body{padding:1.2rem;flex:1;display:flex;flex-direction:column}
-  .news-card-source{font-size:.68rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;font-family:'Cinzel',serif;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
-  .news-card-date{color:var(--smoke);font-size:.72rem;font-style:italic}
-  .news-card-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--cream);line-height:1.35;margin-bottom:.6rem}
-  .news-card-excerpt{font-size:.85rem;color:var(--paper);line-height:1.55;flex:1}
-  .news-card-excerpt img{display:none}
-  .news-card-link{display:inline-flex;align-items:center;gap:.4rem;color:var(--amber);font-size:.78rem;text-decoration:none;font-family:'Cinzel',serif;letter-spacing:.08em;text-transform:uppercase;padding:.6rem 0;border-top:1px solid rgba(200,130,10,.12);margin-top:.8rem;transition:color .2s}
-  .news-card-link:hover{color:var(--gold)}
-  .news-card-link svg{width:14px;height:14px;fill:currentColor}
-
-  /* LOADING */
-  .spinner{display:flex;flex-direction:column;align-items:center;gap:1rem;padding:3rem 0}
-  .spinner-circle{width:40px;height:40px;border:3px solid rgba(200,130,10,.15);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .spinner-text{font-size:.85rem;color:var(--smoke);font-style:italic}
-  .error-msg{text-align:center;padding:2rem;color:var(--smoke);font-style:italic}
-  .error-msg a{color:var(--amber);text-decoration:underline;cursor:pointer}
-  .refresh-btn{background:none;border:1px solid rgba(200,130,10,.3);color:var(--amber);font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.1em;text-transform:uppercase;padding:.4rem .9rem;cursor:pointer;border-radius:1px;transition:all .2s;margin-left:auto}
-  .refresh-btn:hover{background:rgba(200,130,10,.1);border-color:var(--amber)}
-
-  /* UPDATE INFO */
-  .update-info{text-align:center;padding:3rem 2rem 2rem;color:var(--smoke);font-size:.78rem;font-style:italic;border-top:1px solid rgba(200,130,10,.08)}
-  .update-info span{color:var(--paper)}
-
-  /* FOOTER */
-  .site-footer{text-align:center;padding:2rem;border-top:1px solid rgba(200,130,10,.1);color:var(--smoke);font-size:.72rem;letter-spacing:.1em}
-  .site-footer a{color:var(--amber);text-decoration:none}
-
-  /* TOAST */
-  .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 32px rgba(0,0,0,.5)}
-  .toast.show{transform:translateY(0);opacity:1}
-
-  /* MOBILE */
-  @media(max-width:768px){
-    .nav-links{display:none}
-    .nav-hamburger{display:flex}
-    nav{padding:0 1.2rem}
-    .nav-logo{font-size:1.15rem}
-    .hero-title{font-size:clamp(2rem,10vw,3rem)!important}
-    .hero-subtitle{font-size:.72rem;letter-spacing:.25em}
-    section{padding:3rem 1.2rem}
-    .section-number{font-size:2.2rem}
-    .news-grid{grid-template-columns:1fr}
-    .historia-grid{grid-template-columns:1fr}
-    .tabs{gap:0}
-    .tab-btn{padding:.6rem .8rem;font-size:.72rem}
-    .section-header{margin-bottom:2rem}
-    .top-rock-grid{grid-template-columns:1fr!important}
+  /* Reset e variáveis para facilitar manutenção */
+  :root {
+    --bg-card: #1a1a1a;
+    --text-primary: #ffffff;
+    --text-secondary: #b3b3b3;
+    --accent-color: #e63946;
+    --gap-size: 1.25rem;
   }
 
-  .news-section-hidden{display:none}
+  .curiosidades-grid, .albuns-grid {
+    display: grid;
+    gap: var(--gap-size);
+    margin-top: 1rem;
+  }
+
+  /* 2 colunas para curiosidades */
+  .curiosidades-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* 4 colunas iguais para o Top Rock */
+  .albuns-grid { grid-template-columns: repeat(4, 1fr); }
+
+  /* Responsividade: empilha em telas menores */
+  @media (max-width: 900px) {
+    .curiosidades-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .albuns-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .albuns-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Estilos dos cartões */
+  .info-card, .album-card {
+    background: var(--bg-card);
+    padding: 1.2rem;
+    border-radius: 8px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .album-card img {
+    width: 100%;
+    aspect-ratio: 1 / 1; /* Mantém capas quadradas e alinhadas */
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 0.8rem;
+    display: block;
+  }
+
+  h2 { color: var(--text-primary); margin-bottom: 0.25rem; }
+  .section-subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem; }
+  h3, h4 { color: var(--accent-color); margin: 0.5rem 0; }
+  p { color: var(--text-secondary); font-size: 0.9rem; margin: 0; }
+  .loading-text { font-style: italic; color: #666; margin-top: 0.5rem; }
 </style>
-</head>
-<body>
-
-<!-- NAV -->
-<nav>
-  <a href="index.html" class="nav-logo">Ret&#243;rica</a>
-  <ul class="nav-links">
-    <li><a href="index.html">Portal</a></li>
-    <li><a href="noticias.html" class="active">Not&#237;cias</a></li>
-  </ul>
-  <a href="index.html" class="nav-back">&larr; Voltar ao portal</a>
-  <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()" aria-label="Menu">
-    <span></span><span></span><span></span>
-  </button>
-</nav>
-
-<!-- MOBILE MENU -->
-<div class="nav-mobile-menu" id="navMobileMenu">
-  <a href="index.html">Portal</a>
-  <a href="noticias.html" class="active-link">Not&#237;cias</a>
-  <a href="index.html" class="nav-back" style="border:none;margin:.5rem 2rem;padding:.5rem">&larr; Voltar ao portal</a>
-</div>
-
-<!-- HERO -->
-<div id="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-lines"></div>
-  <div class="hero-content">
-    <div class="hero-icon">&#9835;</div>
-    <h1 class="hero-title">Not&#237;cias do Rock</h1>
-    <p class="hero-subtitle">O que rola no mundo do rock &#183; Atualizado diariamente</p>
-  </div>
-</div>
-
-<!-- CURIOSIDADES -->
-<section id="historia">
-  <div class="section-header">
-    <div class="section-number">&#9670;</div>
-    <div class="section-title-wrap">
-      <h2>Curiosidades da M&#250;sica</h2>
-      <p>O que aconteceu na hist&#243;ria do rock nesta data</p>
-    </div>
-    <div class="section-line"></div>
-  </div>
-  <div id="historiaContent">
-    <div class="spinner"><div class="spinner-circle"></div><div class="spinner-text">Buscando na mem&#243;ria do rock&#8230;</div></div>
-  </div>
-</section>
-
-<hr class="full-divider">
-
-<!-- TOP ROCK INTERNACIONAL -->
-<section id="topRock">
-  <div class="section-header">
-    <div class="section-number">&#9733;</div>
-    <div class="section-title-wrap">
-      <h2>Top Rock Internacional</h2>
-      <p>O que est&#225; tocando agora &middot; Apple Music Alternative Chart</p>
-    </div>
-    <div class="section-line"></div>
-  </div>
-  <div id="topRockContent"></div>
-</section>
-
-<hr class="full-divider">
-
-<!-- NOTICIAS -->
-<section id="noticias">
-  <div class="section-header">
-    <div class="section-number">&#9835;</div>
-    <div class="section-title-wrap">
-      <h2>&#218;ltimas Not&#237;cias</h2>
-      <p>Agregado das melhores fontes de rock</p>
-    </div>
-    <button class="refresh-btn" id="refreshBtn" onclick="forceRefresh()">&#x21bb; Atualizar</button>
-  </div>
-
-  <!-- TABS -->
-  <div class="tabs" id="newsTabs">
-    <button class="tab-btn active" data-tab="all">Todas</button>
-    <button class="tab-btn" data-tab="nacional">&#x1F1E7;&#x1F1F7; Nacional</button>
-    <button class="tab-btn" data-tab="internacional">&#x1F30D; Internacional</button>
-  </div>
-
-  <div id="newsContent">
-    <div class="spinner"><div class="spinner-circle"></div><div class="spinner-text">Buscando not&#237;cias&#8230;</div></div>
-  </div>
-</section>
-
-<!-- UPDATE INFO -->
-<div class="update-info" id="updateInfo"></div>
-
-<!-- FOOTER -->
-<div class="site-footer">
-  <p>&#169; 2026 <a href="index.html">Ret&#243;rica</a> &#183; Classic Rock</p>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-const CACHE_KEY = 'retorica_news_cache_v4';
-const CACHE_TTL = 3600000; // 1 hour
-
-const RSS_FEEDS = [
-  { id: 'whiplash', name: 'Whiplash', url: 'https://whiplash.net/news.xml', type: 'nacional' },
-  { id: 'rsbrasil', name: 'Rolling Stone BR', url: 'https://rollingstone.com.br/feed/', type: 'nacional' },
-  { id: 'loudwire', name: 'Loudwire', url: 'https://loudwire.com/feed/', type: 'internacional' },
-  { id: 'consequence', name: 'Consequence', url: 'https://consequence.net/tag/rock/feed/', type: 'internacional' }
-];
-
-// ─── NAV ───
-function toggleMobileMenu() {
-  const menu = document.getElementById('navMobileMenu');
-  const btn  = document.getElementById('navHamburger');
-  menu.classList.toggle('open');
-  btn.classList.toggle('open');
-}
-
-// ─── TOAST ───
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// ─── ANIVERSÁRIOS DO DIA (Wikidata SPARQL - Rock/Music) ───
-async function loadAniversarios() {
-  const now = new Date();
-  const day = now.getDate();
-  const month = now.getMonth() + 1;
-
-  const sparql = `
-    SELECT DISTINCT ?person ?personLabel ?dob ?occupationLabel ?countryLabel ?genreLabel WHERE {
-      ?person wdt:P569 ?dob.
-      FILTER(MONTH(?dob) = ${month} && DAY(?dob) = ${day}).
-      ?person wdt:P106 ?occupation.
-      VALUES ?occupation {
-        wd:Q177220 wd:Q183945 wd:Q10800557 wd:Q639669 wd:Q158852 wd:Q2516586
-        wd:Q488205 wd:Q901103 wd:Q130857 wd:Q488066 wd:Q6161029 wd:Q158852
-      }
-      OPTIONAL { ?person wdt:P136 ?genre. }
-      OPTIONAL { ?person wdt:P27 ?country. }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "pt,en,es,de,fr". }
-    }
-    LIMIT 500
-  `;
-
-  try {
-    const url = 'https://query.wikidata.org/sparql?query=' + encodeURIComponent(sparql) + '&format=json';
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    renderAniversarios(data.results.bindings, now);
-  } catch(e) {
-    console.warn('Wikidata aniversários error:', e);
-  }
-}
-
-function renderAniversarios(bindings, refDate) {
-  if (!bindings || bindings.length === 0) return;
-
-  // Deduplicate
-  const seen = new Map();
-  for (const b of bindings) {
-    const uri = b.person?.value;
-    if (!uri) continue;
-    if (!seen.has(uri)) {
-      seen.set(uri, {
-        name: b.personLabel?.value || 'Desconhecido',
-        dob: b.dob?.value || '',
-        occ: b.occupationLabel?.value || '',
-        country: b.countryLabel?.value || '',
-        genre: b.genreLabel?.value || ''
-      });
-    }
-  }
-
-  const people = Array.from(seen.values());
-
-  // Keywords para occupations musicais
-  const musicKw = ['m\u00FAsico', 'cantor', 'cantora', 'compositor', 'guitarrista', 'baterista',
-    'violinista', 'pianista', 'baixista', 'tecladista', 'saxofonista', 'trompetista',
-    'musician', 'singer', 'songwriter', 'guitarist', 'drummer', 'bassist',
-    'keyboardist', 'pianist', 'vocalist', 'rapper', 'produtor musical',
-    'harpista', 'flautista', 'organista', 'clarinetista', 'trombonista',
-    'contrabaixista', 'violinist', 'cellist', 'harpist', 'flutist',
-    'trumpeter', 'conductor', 'maestro', 'beatmaker'];
-
-  // Rock genres
-  const rockGenres = ['rock', 'hard rock', 'punk', 'metal', 'heavy metal', 'black metal',
-    'death metal', 'grunge', 'alternative rock', 'indie rock', 'post-rock',
-    'rock alternativo', 'garage rock', 'psychedelic rock', 'progressive rock',
-    'rock progressivo', 'garage punk', 'post-punk', 'new wave', 'blues rock',
-    'rock and roll', 'rockabilly', 'stoner rock', 'doom metal', 'thrash metal'];
-
-  // Países com tradição em rock
-  const rockCountries = ['estados unidos', 'united states', 'united kingdom', 'reino unido',
-    'alemanha', 'germany', 'austr\u00E1lia', 'australia', 'canad\u00E1', 'canada',
-    'finl\u00E2ndia', 'finland', 'brasil', 'brazil', 'argentina', 'su\u00E9cia', 'sweden',
-    'noruega', 'norway', 'holanda', 'netherlands', 'b\u00E9lgica', 'belgium',
-    'jap\u00E3o', 'japan', 'fran\u00E7a', 'france', 'it\u00E1lia', 'italy'];
-
-  const isMusic = p => musicKw.some(kw => p.occ.toLowerCase().includes(kw.toLowerCase()));
-  const isRock = p => rockGenres.some(g => (p.occ + ' ' + p.genre).toLowerCase().includes(g.toLowerCase()));
-  const isRockCountry = p => rockCountries.some(c => p.country.toLowerCase().includes(c.toLowerCase()));
-
-  // Filtrar: só músicos; prioridade 1=rock, 2=música + país rock, 3=música
-  const musicians = people.filter(isMusic);
-  const rockPeople = musicians.filter(isRock);
-  const rockCountry = musicians.filter(p => isRockCountry(p) && !isRock(p));
-  const others = musicians.filter(p => !isRock(p) && !isRockCountry(p));
-
-  const top10 = [...rockPeople, ...rockCountry, ...others].slice(0, 10);
-  if (top10.length === 0) return;
-
-  const monthNames = ['janeiro','fevereiro','mar\u00E7o','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  const dateLabel = String(day).padStart(2,'0') + ' de ' + monthNames[month - 1];
-
-  let html = '<div style="margin-bottom:2.5rem">';
-  html += '<div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem">' +
-    '<div class="section-number" style="font-size:2rem">&#9733;</div>' +
-    '<div class="section-title-wrap">' +
-      '<h2 style="font-family:\'Cinzel\',serif;font-size:1.05rem;font-weight:700;color:var(--cream)">Anivers\u00E1rios \u2013 ' + dateLabel + '</h2>' +
-    '</div>' +
-    '<div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(200,130,10,.4),transparent)"></div>' +
-  '</div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">';
-
-  top10.forEach(p => {
-    const year = p.dob ? new Date(p.dob).getFullYear() : '';
-    const age = year ? (refDate.getFullYear() - year) : '';
-    const personUri = p.person?.value?.split('/').pop() || '';
-
-    html += '<div class="historia-card" style="padding:1rem 1.2rem;text-align:left">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-        '<div style="min-width:0">' +
-          '<div style="font-family:\'Cinzel\',serif;font-size:.85rem;font-weight:700;color:var(--cream);line-height:1.3;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(p.name) + '</div>' +
-          '<div style="font-size:.7rem;color:var(--amber);margin-top:.15rem;font-style:italic">' + escapeHtml(p.occ) + (p.country ? ' \u2014 ' + escapeHtml(p.country) : '') + (p.genre ? ' (' + escapeHtml(p.genre) + ')' : '') + '</div>' +
-        '</div>' +
-        '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.6rem;color:rgba(200,130,10,.2);line-height:1;min-width:45px;text-align:right">' + year + '</div>' +
-      '</div>' +
-      (age ? '<div style="font-size:.65rem;color:var(--smoke);margin-top:.2rem">' + age + ' anos</div>' : '');
-
-    if (personUri) {
-      html += '<a class="news-card-link" href="https://www.wikidata.org/wiki/' + personUri + '" target="_blank" rel="noopener" style="font-size:.65rem;margin-top:.4rem;padding-top:.3rem">Wikidata <svg viewBox="0 0 24 24" style="width:10px;height:10px"><path d="M14.455 9h-2.126h-.625c-2.26-.106-3.962-.488-5.107-1.147C5.034 6.962 4.245 5.415 4.245 3h1.626c0 1.735.39 2.715 1.262 3.233.87.508 2.228.755 4.072.755h3.55z" fill="currentColor"/></svg></a>';
-    }
-    html += '</div>';
-  });
-
-  html += '</div></div>';
-
-  // Inserir antes da seção #noticias
-  const noticiasSection = document.getElementById('noticias');
-  if (noticiasSection) {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    noticiasSection.parentNode.insertBefore(div, noticiasSection);
-  }
-}
-
-// ─── TOP ROCK (Internacional + Nacional + Heavy Metal) ───
-async function loadTopRock() {
-  try {
-    const [intlRes, nacRes, metalRes] = await Promise.all([
-      fetch('https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fitunes.apple.com%2Fus%2Frss%2Ftopsongs%2Flimit%3D5%2Fgenre%3D20%2Fxml'),
-      fetch('https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fitunes.apple.com%2Fbr%2Frss%2Ftopsongs%2Flimit%3D5%2Fgenre%3D21%2Fxml'),
-      fetch('https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fitunes.apple.com%2Fus%2Frss%2Ftopsongs%2Flimit%3D5%2Fgenre%3D1153%2Fxml')
-    ]);
-    const hasErr = [intlRes, nacRes, metalRes].some(r => !r.ok);
-    if (hasErr) throw new Error('HTTP error');
-    const intlData = await intlRes.json();
-    const nacData = await nacRes.json();
-    const metalData = await metalRes.json();
-    const ok = [intlData, nacData, metalData].every(d => d.status === 'ok');
-    if (!ok) throw new Error('Bad status');
-    renderTopRock(intlData.items.slice(0, 5), nacData.items.slice(0, 5), metalData.items.slice(0, 5));
-  } catch(e) {
-    console.warn('Top Rock chart error:', e);
-    const el = document.getElementById('topRock');
-    if (el) el.style.display = 'none';
-  }
-}
-
-function renderTopRowItem(item, i) {
-  const rawTitle = (item.title || '').trim();
-  let song = rawTitle, artist = '';
-  const dashIdx = rawTitle.lastIndexOf(' - ');
-  if (dashIdx > 0) {
-    song = rawTitle.substring(0, dashIdx);
-    artist = rawTitle.substring(dashIdx + 3);
-  }
-  const link = item.link || '#';
-  const m = item.description && item.description.match(/<img[^>]+src="([^"]+)"/);
-  const thumb = (item.thumbnail || '') || (m ? m[1] : '');
-
-  return '<div class="historia-card" style="padding:.7rem 1rem;display:flex;align-items:center;gap:.8rem;">' +
-    '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.4rem;color:rgba(200,130,10,.3);min-width:30px;text-align:center;">' + (i + 1) + '</div>' +
-    (thumb ? '<img src="' + thumb + '" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:2px;flex-shrink:0;" onerror="this.style.display=\'none\'">' : '') +
-    '<div style="flex:1;min-width:0">' +
-      '<div style="font-family:\'Cinzel\',serif;font-size:.78rem;font-weight:700;color:var(--cream);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHtml(song + ' — ' + artist) + '">' + escapeHtml(song) + '</div>' +
-      (artist ? '<div style="font-size:.68rem;color:var(--smoke);margin-top:.08rem;">' + escapeHtml(artist) + '</div>' : '') +
-    '</div>' +
-    '<a class="news-card-link" href="' + escapeHtml(link) + '" target="_blank" rel="noopener" style="margin:0;border:none;padding:0;font-size:.68rem">Play <svg viewBox="0 0 24 24" style="width:11px;height:11px"><path d="M8 5v14l11-7z"/></svg></a>' +
-  '</div>';
-}
-
-function renderTopRock(intlItems, nacItems, metalItems) {
-  const allEmpty = [intlItems, nacItems, metalItems].every(it => !it || it.length === 0);
-  if (allEmpty) {
-    const el = document.getElementById('topRock');
-    if (el) el.style.display = 'none';
-    return;
-  }
-
-  function renderCol(label, items) {
-    if (!items || items.length === 0) return '';
-    let html = '<div style="display:flex;flex-direction:column;gap:.5rem;">';
-    html += '<div style="font-family:\'Cinzel\',serif;font-size:.7rem;color:var(--amber);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem;padding-bottom:.4rem;border-bottom:1px solid rgba(200,130,10,.2)">' + label + '</div>';
-    items.forEach((item, i) => { html += renderTopRowItem(item, i); });
-    html += '</div>';
-    return html;
-  }
-
-  const cols = [intlItems, nacItems, metalItems].filter(x => x && x.length).length;
-  let html = '<div class="top-rock-grid" style="display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:1.2rem;">';
-  html += renderCol('Internacional', intlItems);
-  html += renderCol('Nacional', nacItems);
-  html += renderCol('Heavy Metal', metalItems);
-  html += '</div>';
-
-  document.getElementById('topRockContent').innerHTML = html;
-}
-
-// ─── HISTORIA (Almanaque da Música UCSFM + WordPress API) ───
-async function loadHistoria() {
-  const now = new Date();
-  const day = now.getDate();
-  const month = now.getMonth() + 1;
-
-  try {
-    // 1) Buscar no RSS para achar o link do Almanaque de hoje
-    const rssRes = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fucsfm.com.br%2Ffeed%2F');
-    if (!rssRes.ok) throw new Error('RSS unavailable');
-    const rssData = await rssRes.json();
-    if (rssData.status !== 'ok' || !rssData.items) throw new Error('Empty RSS');
-
-    let almanaque = null;
-    for (const item of rssData.items) {
-      const title = (item.title || '').toLowerCase();
-      if (title.includes('almanaque') && title.includes('| ' + String(day).padStart(2,'0'))) {
-        almanaque = item;
-        break;
-      }
-    }
-    if (!almanaque) {
-      almanaque = rssData.items.find(item => (item.title || '').toLowerCase().includes('almanaque'));
-    }
-    if (!almanaque) throw new Error('No almanaque found');
-
-    // 2) Buscar conteúdo completo via WordPress REST API
-    const slugMatch = almanaque.link ? almanaque.link.match(/ucsfm\.com\.br\/([^/]+)\//) : null;
-
-    if (slugMatch && slugMatch[1]) {
-      const search = encodeURIComponent(slugMatch[1].replace(/-/g, ' '));
-      const wpRes = await fetch('https://ucsfm.com.br/wp-json/wp/v2/posts?search=' + search + '&per_page=1');
-      if (wpRes.ok) {
-        const posts = await wpRes.json();
-        if (posts.length > 0 && posts[0].content && posts[0].content.rendered) {
-          renderHistoriaBlocks(posts[0].content.rendered, almanaque.link, now.getFullYear(), day, month);
-          return;
-        }
-      }
-    }
-
-    // Fallback: usar descrição do RSS
-    renderHistoriaFallback(almanaque);
-  } catch(e) {
-    console.warn('UCSFM feed error:', e);
-    const yr = now.getFullYear() - 40;
-    document.getElementById('historiaContent').innerHTML =
-      '<div class="historia-grid">' +
-        '<div class="historia-card" style="text-align:center;padding:2.5rem 1.5rem">' +
-          '<div style="font-size:2.5rem;margin-bottom:.5rem">&#9835;</div>' +
-          '<div class="historia-ano">' + yr + '</div>' +
-          '<div class="historia-desc" style="color:var(--smoke);font-style:italic">' +
-            'N&#227;o foi poss&#237;vel carregar o Almanaque da Música.<br>Volte mais tarde!' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-  }
-}
-
-function renderHistoriaBlocks(rawHtml, linkUrl, year, day, month) {
-  const monthNames = ['janeiro','fevereiro','mar\xc3\xa7o','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  // Strip all data-* attributes globally
-  let cleanHtml = rawHtml
-    .replace(/\s*data-[a-zA-Z0-9-]+="[^"]*"/g, '')
-    .replace(/<!--.*?-->/g, '');
-
-  // Split sections by <hr>
-  const parts = cleanHtml.split(/<hr\s*\/?>/i).map(s => s.trim()).filter(s => s.length > 10);
-
-  if (parts.length === 0) {
-    document.getElementById('historiaContent').innerHTML =
-      '<div class="historia-card" style="padding:1.5rem">' +
-        '<div class="historia-desc">' + cleanHtml + '</div></div>';
-    return;
-  }
-
-  const dateLabel = String(day).padStart(2,'0') + ' de ' + monthNames[month - 1];
-  const labels = ['', 'Lan\xc3\xa7amentos – ' + dateLabel, 'Outros fatos – ' + dateLabel];
-  // Skip first part (idx 0 = Aniversários — handled by Wikidata section)
-  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.2rem;">';
-
-  for (let idx = 1; idx < parts.length; idx++) {
-    const part = parts[idx];
-    // Extract <li> items
-    const liRegex = /<li[^>]*>([\s\S]*?)<\/li>/g;
-    let match;
-    const items = [];
-    while ((match = liRegex.exec(part)) !== null) {
-      let itemContent = match[1].trim();
-      // Wrap unwrapped text in <p>
-      if (!itemContent.startsWith('<')) {
-        itemContent = '<p>' + itemContent + '</p>';
-      }
-      items.push(itemContent);
-    }
-
-    if (items.length === 0) {
-      // If no <li> found, treat entire part as content
-      items.push(part);
-    }
-
-    const sectionLabel = labels[idx] || 'Mais fatos';
-
-    html += '<div class="historia-card" style="padding:1.2rem 1.5rem;text-align:left">';
-    html += '<div style="font-family:\'Cinzel\',serif;font-size:.78rem;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.8rem;padding-bottom:.5rem;border-bottom:1px solid rgba(200,130,10,.15)">' + sectionLabel + '</div>';
-    html += '<div style="display:flex;flex-direction:column;gap:0">';
-
-    for (let j = 0; j < items.length; j++) {
-      const borderStyle = j < items.length - 1 ? 'border-bottom:1px solid rgba(200,130,10,.05);' : '';
-      html += '<div style="font-size:.88rem;color:var(--paper);line-height:1.65;padding:.55rem 0;' + borderStyle + '">' + items[j] + '</div>';
-    }
-
-    html += '</div></div>';
-  }
-
-  html += '</div>';
-
-  document.getElementById('historiaContent').innerHTML =
-    '<div style="display:flex;flex-direction:column;gap:1rem;">' +
-      '<div style="text-align:center;margin-bottom:.5rem">' +
-        '<div style="font-size:.72rem;color:var(--smoke);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.3rem">Almanaque da Música – UCSfm</div>' +
-        '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:3rem;color:rgba(200,130,10,.25);line-height:1">' + year + '</div>' +
-      '</div>' +
-      html +
-      '<a class="news-card-link" href="' + linkUrl + '" target="_blank" rel="noopener" style="margin-top:.5rem;font-size:.72rem">' +
-        'Acesse a UCSfm para mais conteúdo' +
-        '<svg viewBox="0 0 24 24" style="width:12px;height:12px"><path d="M14.455 9h-2.126h-.625c-2.26-.106-3.962-.488-5.107-1.147C5.034 6.962 4.245 5.415 4.245 3h1.626c0 1.735.39 2.715 1.262 3.233.87.508 2.228.755 4.072.755h3.55z" fill="currentColor"/></svg>' +
-      '</a>' +
-    '</div>';
-}
-
-function renderHistoriaFallback(almanaque) {
-  let cleanText = (almanaque.description || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-  document.getElementById('historiaContent').innerHTML =
-    '<div class="historia-card" style="padding:1.5rem">' +
-      '<div class="historia-desc">' + cleanText + '</div></div>';
-}
-
-// ─── NEWS (RSS via rss2json) ───
-async function fetchFeed(feed) {
-  const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feed.url);
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const res = await fetch(apiUrl);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      if (data.status !== 'ok' || !data.items) throw new Error(data.message || 'Invalid feed');
-      return data.items.filter(i => i.title || i.link).map(item => ({
-        title: item.title || '',
-        link: item.link || '#',
-        date: new Date(item.pubDate),
-        excerpt: (item.description || '').replace(/<[^>]*>/g, '').substring(0, 200).trim(),
-        thumbnail: item.thumbnail || (item.enclosure && item.enclosure.link) || '',
-        source: feed.name,
-        id: feed.id,
-        type: feed.type
-      }));
-    } catch(e) {
-      if (attempt >= 2) {
-        console.warn('Feed error for ' + feed.name + ': ' + e.message);
-        return [];
-      }
-      await new Promise(r => setTimeout(r, 1500));
-    }
-  }
-  return [];
-}
-
-async function loadNews() {
-  const cached = getCached();
-  if (cached) {
-    cached.items.forEach(i => i.date = new Date(i.date));
-    renderNews(cached.items);
-    updateTimestamp(cached.timestamp);
-    return;
-  }
-  await refreshNews();
-}
-
-async function refreshNews() {
-  const btn = document.getElementById('refreshBtn');
-  btn.style.opacity = '0.5';
-  btn.textContent = '...Atualizando';
-
-  const allItems = [];
-  const promises = RSS_FEEDS.map(feed => fetchFeed(feed));
-  const results = await Promise.allSettled(promises);
-
-  results.forEach((result) => {
-    if (result.status === 'fulfilled') {
-      allItems.push(...result.value);
-    }
-  });
-
-  allItems.sort((a, b) => b.date - a.date);
-  setCache(allItems);
-  renderNews(allItems);
-  updateTimestamp(new Date());
-
-  btn.style.opacity = '1';
-  btn.textContent = '\u21bb Atualizar';
-
-  if (allItems.length === 0) {
-    document.getElementById('newsContent').innerHTML =
-      '<div class="error-msg">' +
-        'N&#227;o foi poss&#237;vel carregar as not&#237;cias no momento.<br><br>' +
-        '<a onclick="forceRefresh()">Tentar novamente</a>' +
-      '</div>';
-  }
-}
-
-function getCached() {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const age = Date.now() - parsed.timestamp;
-    if (age > CACHE_TTL) return null;
-    return parsed;
-  } catch(e) { return null; }
-}
-
-function setCache(items) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      items: items.map(i => ({ ...i, date: i.date.toISOString() })),
-      timestamp: Date.now()
-    }));
-  } catch(e) {}
-}
-
-function forceRefresh() {
-  localStorage.removeItem(CACHE_KEY);
-  document.getElementById('newsContent').innerHTML =
-    '<div class="spinner"><div class="spinner-circle"></div><div class="spinner-text">Atualizando not&#237;cias&#8230;</div></div>';
-  showToast('Atualizando not&#237;cias...');
-  refreshNews();
-}
-
-let activeTab = 'all';
-
-function renderNews(items) {
-  if (items.length === 0) return;
-
-  const filtered = activeTab === 'all' ? items : items.filter(i => i.type === activeTab);
-
-  if (filtered.length === 0) {
-    document.getElementById('newsContent').innerHTML = '<div class="error-msg">Nenhuma not&#237;cia encontrada para esta categoria.</div>';
-    return;
-  }
-
-  let html = '<div class="news-grid">';
-  filtered.forEach(item => {
-    html +=
-      '<div class="news-card" data-source="' + item.id + '">' +
-        (item.thumbnail ? '<img class="news-card-thumb" src="' + item.thumbnail + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '') +
-        '<div class="news-card-body">' +
-          '<div class="news-card-source">' +
-            item.source +
-            '<span class="news-card-date">' + formatDate(item.date) + '</span>' +
-          '</div>' +
-          '<div class="news-card-title">' + escapeHtml(item.title) + '</div>' +
-          '<div class="news-card-excerpt">' + escapeHtml(item.excerpt) + '</div>' +
-          '<a class="news-card-link" href="' + escapeHtml(item.link) + '" target="_blank" rel="noopener noreferrer">' +
-            'Leia mais ' +
-            '<svg viewBox="0 0 24 24"><path d="M14.455 9h-2.126h-.625c-2.26-.106-3.962-.488-5.107-1.147C5.034 6.962 4.245 5.415 4.245 3h1.626c0 1.735.39 2.715 1.262 3.233.87.508 2.228.755 4.072.755h3.55zM14.75 10h-2.562l-.488 2h2.25l.8-2zM14.75 10h1.688l-.8 2h-2.25l.562-2h.8zM16.438 10l-.7 1.75h-1.75l.312-1.75h4.812l-2.875 7h-2.188l-2.875-7h4.812l-1.25 3.125h-2.5l-.7-1.75h-1.75l.125-.312c.313-.75.938-1.25 1.875-1.5.625-.188 1.375-.313 2.25-.313.875 0 1.625.125 2.25.313.938.25 1.563.75 1.875 1.5l.125.312z"/></svg>' +
-          '</a>' +
-        '</div>' +
-      '</div>';
-  });
-  html += '</div>';
-
-  document.getElementById('newsContent').innerHTML = html;
-}
-
-function updateTimestamp(ts) {
-  const date = new Date(ts);
-  const formatted = date.toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  });
-  document.getElementById('updateInfo').innerHTML = '<span>&#9202; Atualizado em: ' + formatted + '</span>';
-}
-
-function formatDate(d) {
-  const now = new Date();
-  const diffMs = now - d;
-  const diffH = Math.floor(diffMs / 3600000);
-  const diffD = Math.floor(diffMs / 86400000);
-
-  if (diffH < 1) return 'agora';
-  if (diffH < 24) return diffH + 'h atr&#225;s';
-  if (diffD < 7) return diffD + 'd atr&#225;s';
-  return d.toLocaleDateString('pt-BR');
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// ─── TABS ───
-document.getElementById('newsTabs').addEventListener('click', (e) => {
-  if (!e.target.classList.contains('tab-btn')) return;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
-  activeTab = e.target.dataset.tab;
-  const cached = getCached();
-  if (cached) { cached.items.forEach(i => i.date = new Date(i.date)); renderNews(cached.items); }
-});
-
-// ─── BACKGROUND REFRESH ───
-async function backgroundRefresh() {
-  try {
-    const allItems = [];
-    const promises = RSS_FEEDS.map(feed => fetchFeed(feed));
-    const results = await Promise.allSettled(promises);
-    results.forEach((result) => {
-      if (result.status === 'fulfilled') allItems.push(...result.value);
-    });
-    allItems.sort((a, b) => b.date - a.date);
-    if (allItems.length > 0) {
-      setCache(allItems);
-      const existing = getCached();
-      if (existing) { existing.items.forEach(i => i.date = new Date(i.date)); renderNews(existing.items); }
-      updateTimestamp(new Date());
-    }
-  } catch(e) { console.warn('Background refresh failed:', e); }
-}
-
-// ─── INIT ───
-async function init() {
-  loadHistoria();
-  loadAniversarios();
-  loadTopRock();
-  await loadNews();
-
-  const cached = getCached();
-  if (cached) {
-    const cacheAge = Date.now() - cached.timestamp;
-    if (cacheAge < CACHE_TTL) {
-      const timeLeft = CACHE_TTL - cacheAge;
-      setTimeout(() => { backgroundRefresh(); }, Math.min(timeLeft, 1800000));
-    }
-  }
-}
-
-init();
-</script>
-
-<!-- SERVICE WORKER registration -->
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
-</script>
-
-</body>
-</html>
