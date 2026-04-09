@@ -18,13 +18,13 @@
   nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(180deg,rgba(10,8,4,.98),rgba(10,8,4,.85));border-bottom:1px solid rgba(200,130,10,.3);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;backdrop-filter:blur(10px)}
   .nav-logo{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.15em}
   .nav-links{display:flex;list-style:none}
-  .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .7rem;transition:color .2s;cursor:pointer;position:relative}
-  .badge-new{position:absolute;top:50%;left:calc(100% + 4px);transform:translateY(-50%);background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none;max-width:80px;overflow:hidden;text-overflow:ellipsis}
+  .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .7rem;transition:color .2s;cursor:pointer}
+  .badge-new{position:absolute;top:50%;left:calc(100% + 2px);transform:translateY(-50%);background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none}
   @keyframes pulse-badge {0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.1)}}
   .badge-new-mobile{display:none}
   @media(max-width:768px){
     .badge-new{display:none!important}
-    .badge-new-mobile{display:inline-block!important;position:relative;transform:none;animation:pulse-badge 2s infinite;margin-left:.3rem;vertical-align:middle}
+    .badge-new-mobile{display:inline-block!important;position:static;transform:none;animation:pulse-badge 2s infinite}
   }
 
   /* NEWS POPUP */
@@ -219,6 +219,7 @@
   .suggestion-rank{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:rgba(200,130,10,.3);min-width:24px;flex-shrink:0}
   .suggestion-main{flex:1;min-width:160px}
   .suggestion-song{color:var(--cream);font-weight:600}
+  .tie-tag{display:inline-block;background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--amber);font-size:.6rem;letter-spacing:.05em;text-transform:uppercase;padding:.1rem .4rem;border-radius:1px;margin-left:.5rem;vertical-align:middle;font-family:'Cinzel',serif;font-weight:700}
   .suggestion-artist{font-size:.78rem;color:var(--smoke);font-style:italic;margin-top:.15rem}
   .suggestion-note{font-size:.75rem;color:var(--smoke);font-style:italic;margin-top:.15rem}
   .suggestion-by{font-size:.72rem;color:var(--amber);min-width:80px}
@@ -324,6 +325,15 @@
   .lb-cr:disabled{opacity:.35;cursor:default}
   .lb-cdel{background:none;border:none;color:rgba(139,58,10,.4);cursor:pointer;font-size:.7rem;transition:color .2s;padding:.1rem .3rem}
   .lb-cdel:hover{color:var(--rust)}
+  .lb-nav-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(10,8,4,.7);border:1px solid rgba(200,130,10,.3);color:var(--gold);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.1rem;transition:all .2s;display:flex;align-items:center;justify-content:center;z-index:8010}
+  .lb-nav-btn:hover{background:rgba(200,130,10,.2);border-color:var(--amber)}
+  .lb-prev{left:1rem}
+  .lb-next{right:1rem}
+  @media(max-width:768px){
+    .lb-nav-btn{width:36px;height:36px;font-size:.9rem}
+    .lb-prev{left:.4rem}
+    .lb-next{right:.4rem}
+  }
   .lb-rpbtn{background:none;border:1px solid rgba(200,130,10,.15);color:var(--smoke);padding:.1rem .4rem;cursor:pointer;border-radius:1px;font-size:.65rem;transition:all .2s;font-family:'Cinzel',serif}
   .lb-rpbtn:hover{border-color:rgba(200,130,10,.5);color:var(--paper)}
   .lb-rpform{margin-top:.4rem;display:flex;gap:.4rem}
@@ -491,13 +501,10 @@
     .gallery-thumb-del{display:flex} /* always visible on mobile (no hover) */
 
     /* Lightbox */
-    .lightbox-inner{flex-direction:column;max-height:92vh;overflow-y:auto;padding-bottom:1rem}
-    .lb-img-panel{max-width:100%;max-height:50vh;flex:none;padding-bottom:1rem}
-    .lb-img-panel .lightbox-img{max-height:45vh;margin-bottom:.8rem}
-    .lb-caption-block{margin-top:.5rem;padding-bottom:.8rem}
-    .lightbox-reactions{flex-wrap:wrap;justify-content:center;padding:.5rem 0}
-    .lb-rbtn{padding:.4rem .7rem;font-size:.85rem}
-    .lb-comments-wrap{width:100%;max-height:35vh;border:1px solid rgba(200,130,10,.1);border-top:2px solid rgba(200,130,10,.2);margin-top:.5rem}
+    .lightbox-inner{flex-direction:column;max-height:92vh;overflow-y:auto}
+    .lb-img-panel{max-width:100%;max-height:45vh;flex:none}
+    .lb-img-panel .lightbox-img{max-height:40vh}
+    .lb-comments-wrap{width:100%;max-height:35vh;border:1px solid rgba(200,130,10,.1);border-top:2px solid rgba(200,130,10,.2)}
 
     /* Modals */
     .modal{padding:1.5rem}
@@ -646,7 +653,7 @@
 <!-- MOBILE MENU -->
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a onclick="mobileGoTo('membros')">Membros</a>
-  <a onclick="mobileGoTo('sugestoes')" style="position:relative">Sugestões <span id="promoCountdownNavMobile" class="badge-new badge-new-mobile" style="display:none"></span></a>
+  <a onclick="mobileGoTo('sugestoes')">Sugestões</a>
   <a onclick="mobileGoTo('enquetes')">Enquetes</a>
   <a onclick="mobileGoTo('setlist')">Setlist</a>
   <a onclick="mobileGoTo('repertorio')">Repertório</a>
@@ -880,6 +887,8 @@
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
   <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-nav-btn lb-prev" id="lbPrev" onclick="changeLightboxPhoto(-1)">‹</button>
+  <button class="lb-nav-btn lb-next" id="lbNext" onclick="changeLightboxPhoto(1)">›</button>
   <div class="lightbox-inner" onclick="event.stopPropagation()">
     <div class="lb-img-panel">
       <img id="lbImg" class="lightbox-img" src="" alt="">
@@ -1356,6 +1365,15 @@ function renderSuggestions() {
     const rankClass = i < 3 ? ` rank-${i+1}` : '';
     const trophy    = i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
 
+    // Lógica de Empate para o Top 3
+    let isTie = false;
+    if (i < 3) {
+      isTie = sorted.some((other, idx) => {
+        if (idx === i) return false;
+        return getSuggestionScore(other.data) === score && (other.data.likes || 0) === (s.likes || 0);
+      });
+    }
+
     const likeBtn = `<button class="vote-btn${myVote==='like'?' liked':''}"
       onclick="voteSuggestion('${id}','like')"
       ${!isMember?'disabled title="Acesso restrito a membros"':''}
@@ -1375,7 +1393,7 @@ function renderSuggestions() {
     return `<div class="suggestion-item${rankClass}">
       ${trophy}
       <div class="suggestion-main">
-        <div class="suggestion-song">${s.song}</div>
+        <div class="suggestion-song">${s.song}${isTie ? '<span class="tie-tag">Empate</span>' : ''}</div>
         <div class="suggestion-artist">${s.artist}</div>
         ${s.note ? `<div class="suggestion-note">${s.note}</div>` : ''}
       </div>
@@ -1409,43 +1427,60 @@ window.voteSuggestion = async (id, type) => {
   let dislikes = s.dislikes || 0;
 
   if (current === type) {
-    // Toggle off — remove vote
     if (type === 'like')    likes--;
     if (type === 'dislike') dislikes--;
     delete voterMap[uid];
   } else {
-    // Undo previous vote first
     if (current === 'like')    likes--;
     if (current === 'dislike') dislikes--;
-    // Apply new vote
     if (type === 'like')    likes++;
     if (type === 'dislike') dislikes++;
     voterMap[uid] = type;
   }
 
-  await updateDoc(doc(db,'suggestions',id), {likes, dislikes, voterMap});
-};
+  // EXCLUSÃO AUTOMÁTICA
+  if (dislikes >= 3) {
+    await deleteDoc(doc(db, 'suggestions', id));
+    await addDoc(collection(db,'logs'), {
+      action: 'Sugestão Removida',
+      song: s.song,
+      artist: s.artist,
+      by: s.by,
+      likes: likes,
+      dislikes: dislikes,
+      reason: 'Atingiu o limite de 3 dislikes',
+      removedBy: 'Sistema',
+      category: 'sugestoes',
+      ts: serverTimestamp()
+    });
+    showToast('🗑 Sugestão removida (3+ dislikes)');
+    return;
+  }
 
-window.addSuggestion = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
-  const song = document.getElementById('sugSong').value.trim();
-  const artist = document.getElementById('sugArtist').value.trim();
-  const by   = document.getElementById('sugBy').value.trim();
-  const note = document.getElementById('sugNote').value.trim();
-  const youtube = document.getElementById('sugYt').value.trim();
-  if (!song||!artist||!by) { showToast('⚠ Preencha música, artista e seu nome'); return; }
-  await addDoc(collection(db,'suggestions'),{song,artist,by,note,youtube,createdAt:serverTimestamp()});
-  await writeLog('Música sugerida', `${song} — ${artist} (por ${by})`, 'sugestoes');
-  ['sugSong','sugArtist','sugNote','sugYt'].forEach(id=>document.getElementById(id).value='');
-  showToast(`✓ "${song}" sugerida!`);
+  await updateDoc(doc(db, 'suggestions', id), { likes, dislikes, voterMap });
 };
 
 window.removeSuggestion = async id => {
-  if (!confirmAction('Tem certeza que deseja remover esta sugestão?')) return;
   const snap = await getDoc(doc(db,'suggestions',id));
-  const s = snap.exists() ? snap.data() : {};
+  if (!snap.exists()) return;
+  const s = snap.data();
+
+  const reason = prompt(`Removendo: ${s.song}\nMotivo da remoção (opcional):`);
+  if (reason === null) return; // cancelou
+
   await deleteDoc(doc(db,'suggestions',id));
-  await writeLog('Sugestão removida', `${s.song||id} — ${s.artist||''}`, 'sugestoes');
+  await addDoc(collection(db,'logs'), {
+    action: 'Sugestão Removida',
+    song: s.song,
+    artist: s.artist,
+    by: s.by,
+    likes: s.likes || 0,
+    dislikes: s.dislikes || 0,
+    reason: reason || 'Removido pelo moderador',
+    removedBy: auth.currentUser?.displayName?.split(' ')[0] || 'Membro',
+    category: 'sugestoes',
+    ts: serverTimestamp()
+  });
   showToast('Sugestão removida.');
 };
 
@@ -2129,6 +2164,11 @@ window.openLightbox = async id => {
   renderLightboxReactions(id, p);
   renderLightboxComments(id, p);
 
+  // Show/hide nav buttons
+  const idx = galleryCache.findIndex(item => item.id === id);
+  document.getElementById('lbPrev').style.display = idx > 0 ? 'flex' : 'none';
+  document.getElementById('lbNext').style.display = idx < galleryCache.length - 1 ? 'flex' : 'none';
+
   const lb = document.getElementById('lightbox');
   lb.dataset.id = id;
   lb.classList.add('open');
@@ -2138,7 +2178,17 @@ window.openLightbox = async id => {
 window.closeLightbox = () => {
   document.body.classList.remove('lb-no-scroll');
   document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lbPrev').style.display = 'none';
+  document.getElementById('lbNext').style.display = 'none';
   currentLbId = null;
+};
+
+window.changeLightboxPhoto = dir => {
+  const idx = galleryCache.findIndex(item => item.id === currentLbId);
+  const nextIdx = idx + dir;
+  if (nextIdx >= 0 && nextIdx < galleryCache.length) {
+    openLightbox(galleryCache[nextIdx].id);
+  }
 };
 
 // close on Escape
@@ -2692,24 +2742,14 @@ async function updatePromotionCountdowns() {
     
     console.log('[COUNTDOWN] Tempo até próxima promoção:', formatTimeRemaining(timeUntil));
     
-    // Badge na navegação desktop
+    // Badge na navegação
     const navBadge = document.getElementById('promoCountdownNav');
     if (navBadge && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000) {
       navBadge.textContent = formatTimeRemaining(timeUntil);
       navBadge.style.display = 'inline-block';
-      console.log('[COUNTDOWN] Badge nav desktop atualizado');
+      console.log('[COUNTDOWN] Badge nav atualizado');
     } else if (navBadge) {
       navBadge.style.display = 'none';
-    }
-    
-    // Badge na navegação mobile
-    const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
-    if (navBadgeMobile && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000) {
-      navBadgeMobile.textContent = formatTimeRemaining(timeUntil);
-      navBadgeMobile.style.display = 'inline-block';
-      console.log('[COUNTDOWN] Badge nav mobile atualizado');
-    } else if (navBadgeMobile) {
-      navBadgeMobile.style.display = 'none';
     }
     
     // Contador nas sugestões (inserir antes da lista) - DESTAQUE MAIOR E DIVERTIDO
