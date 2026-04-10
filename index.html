@@ -28,16 +28,32 @@
   }
 
   /* NEWS POPUP */
-  .news-popup{position:fixed;top:72px;left:1.2rem;transform:translateX(-120%);background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.97));border:1px solid var(--amber);color:var(--cream);padding:.45rem .65rem .45rem .8rem;border-radius:2px;z-index:10000;box-shadow:0 4px 24px rgba(0,0,0,.5);transition:transform .4s cubic-bezier(.34,1.56,.64,1);text-decoration:none;display:none;align-items:center;gap:.5rem;white-space:nowrap}
-  .news-popup.show{display:flex;transform:translateX(0)}
+  .news-popup{position:fixed;top:72px;left:1.2rem;transform:translateX(-120%);background:
+    linear-gradient(135deg,rgba(42,26,8,.98),rgba(19,15,9,.98)),
+    radial-gradient(circle at top left,rgba(200,130,10,.16),transparent 42%);
+    border:1px solid rgba(200,130,10,.42);color:var(--cream);padding:.8rem .95rem .8rem 1rem;border-radius:10px;z-index:10000;
+    box-shadow:0 14px 34px rgba(0,0,0,.45),0 0 0 1px rgba(200,130,10,.08) inset;transition:transform .42s cubic-bezier(.34,1.56,.64,1),opacity .25s ease;
+    text-decoration:none;display:none;align-items:center;gap:.85rem;white-space:nowrap;min-width:280px;opacity:0;overflow:hidden}
+  .news-popup::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,220,140,.08),transparent);transform:translateX(-100%);transition:transform .9s ease}
+  .news-popup:hover::before{transform:translateX(100%)}
+  .news-popup.show{display:flex;transform:translateX(0);opacity:1}
   .news-popup.dismissed{display:none!important}
-  .news-popup-close{background:none;border:none;color:var(--smoke);font-size:1.1rem;cursor:pointer;line-height:1;padding:.1rem .3rem;transition:color .15s;flex-shrink:0}
-  .news-popup-close:hover{color:var(--cream)}
-  .news-popup-new{background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.06rem .3rem;border-radius:1px;animation:pulse-badge 2s infinite;flex-shrink:0}
-  .news-popup-text{color:var(--cream);font-family:'Cinzel',serif;font-size:.75rem;font-weight:700;letter-spacing:.04em}
+  .news-popup-close{background:rgba(139,58,10,.16);border:1px solid rgba(200,130,10,.22);color:var(--smoke);font-size:1rem;cursor:pointer;line-height:1;padding:.2rem .45rem;transition:all .15s;flex-shrink:0;border-radius:999px;position:relative;z-index:1}
+  .news-popup-close:hover{color:var(--cream);border-color:rgba(200,130,10,.45);background:rgba(139,58,10,.34)}
+  .news-popup-pill{display:flex;align-items:center;justify-content:center;min-width:52px;height:52px;position:relative;z-index:1;flex-shrink:0}
+  .news-popup-pill img{width:52px;height:52px;border-radius:50%;object-fit:cover}
+  .news-popup-new{position:absolute;top:-6px;right:-10px;background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.58rem;letter-spacing:.12em;padding:.08rem .36rem;border-radius:999px;animation:pulse-badge 2s infinite;line-height:1;box-shadow:0 4px 10px rgba(0,0,0,.28)}
+  .news-popup-copy{display:flex;flex-direction:column;gap:.15rem;position:relative;z-index:1;min-width:0}
+  .news-popup-text{color:var(--cream);font-family:'Cinzel',serif;font-size:.82rem;font-weight:700;letter-spacing:.04em}
+  .news-popup-sub{color:var(--smoke);font-size:.67rem;letter-spacing:.08em;text-transform:uppercase}
   @media(max-width:768px){
-    .news-popup{top:68px;left:50%;transform:translateX(-50%) translateY(-120%);font-size:.85rem}
+    .news-popup{top:68px;left:50%;transform:translateX(-50%) translateY(-120%);font-size:.85rem;min-width:min(92vw,320px);padding:.75rem .85rem}
     .news-popup.show{transform:translateX(-50%) translateY(0)}
+    .news-popup-pill{min-width:44px;height:44px}
+    .news-popup-pill img{width:44px;height:44px}
+    .news-popup-new{top:-5px;right:-8px;font-size:.52rem}
+    .news-popup-text{font-size:.78rem}
+    .news-popup-sub{font-size:.62rem}
   }
   .nav-links a:hover{color:var(--gold)}
   .nav-auth{display:flex;align-items:center;gap:.8rem}
@@ -704,8 +720,14 @@
 
 <!-- NEWS POPUP -->
 <a class="news-popup" id="newsPopup" href="noticias.html" onclick="dismissNewsPopup()">
-  <span class="news-popup-new">NEW</span>
-  <span class="news-popup-text">Nova seção Notícias</span>
+  <span class="news-popup-pill">
+    <img src="imagens/Toca_do_Mineiro_logo_final.png" alt="Toca do Mineiro">
+    <span class="news-popup-new">NEW</span>
+  </span>
+  <span class="news-popup-copy">
+    <span class="news-popup-text">Notícias do Rock no ar</span>
+    <span class="news-popup-sub">Paradas, matérias e curiosidades</span>
+  </span>
   <button class="news-popup-close" onclick="event.preventDefault();event.stopPropagation();dismissNewsPopup()">&times;</button>
 </a>
 
@@ -2830,8 +2852,16 @@ if (banner && btn && dismiss && dismissSecondary && !window.matchMedia('(display
 }
 
 // ─── NEWS POPUP ───
+const NEWS_POPUP_DISMISS_KEY = 'retorica_news_dismissed_date';
+
 (function showNewsPopup() {
-  if (localStorage.getItem('retorica_news_dismissed') === '1') return;
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const dismissedToday = localStorage.getItem(NEWS_POPUP_DISMISS_KEY) === today;
+  const dayNumber = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86400000);
+  const isPopupDay = dayNumber % 2 === 0;
+  if (!isPopupDay || dismissedToday) return;
+
   setTimeout(() => {
     const el = document.getElementById('newsPopup');
     if (el) el.classList.add('show');
@@ -2841,7 +2871,7 @@ if (banner && btn && dismiss && dismissSecondary && !window.matchMedia('(display
 window.dismissNewsPopup = function() {
   const el = document.getElementById('newsPopup');
   if (el) { el.classList.remove('show'); el.classList.add('dismissed'); }
-  localStorage.setItem('retorica_news_dismissed', '1');
+  localStorage.setItem(NEWS_POPUP_DISMISS_KEY, new Date().toISOString().slice(0, 10));
 };
 
 // ─── SISTEMA DE PROMOÇÃO AUTOMÁTICA ──────────────────────────────────
