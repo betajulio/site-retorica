@@ -44,10 +44,12 @@
   .nav-user{font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif;letter-spacing:.08em}
 
   /* HERO */
-  #hero{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  #hero{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;padding-top:72px}
   .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
   .hero-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(200,130,10,.04) 59px,rgba(200,130,10,.04) 60px)}
-  .hero-content{position:relative;text-align:center;animation:fadeUp 1.2s ease both}
+  .hero-content{position:relative;text-align:center;animation:fadeUp 1.2s ease both;padding:1rem 0 6.6rem}
+  .hero-inst-wrap{display:flex;justify-content:center;margin:.5rem 0 .75rem;animation:fadeUp 1.2s .1s ease both}
+  .hero-inst-img{width:214px;max-width:63.75vw;height:auto;object-fit:contain;filter:drop-shadow(0 0 24px rgba(200,130,10,0.25))}
   @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
   .hero-tag{font-family:'IM Fell English SC',serif;font-size:.85rem;letter-spacing:.4em;color:var(--amber);text-transform:uppercase;margin-bottom:1.5rem}
   .hero-title{font-family:'Cinzel',serif;font-size:clamp(5rem,14vw,12rem);font-weight:900;color:var(--cream);line-height:.85;text-shadow:0 0 80px rgba(200,130,10,.3),3px 3px 0 rgba(139,58,10,.4);animation:fadeUp 1.2s .2s ease both}
@@ -60,7 +62,7 @@
   .hero-divider::before{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--amber))}
   .hero-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--amber),transparent)}
   .hero-diamond{width:8px;height:8px;background:var(--gold);transform:rotate(45deg)}
-  .scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;color:var(--smoke);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;animation:bounce 2s infinite}
+  .scroll-hint{position:absolute;bottom:.3rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;color:var(--smoke);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;animation:bounce 2s infinite}
   .scroll-arrow{width:1px;height:30px;background:linear-gradient(180deg,transparent,var(--amber))}
   @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
 
@@ -283,11 +285,23 @@
   .member-admin-only-flex{display:none}
 
   /* TOCA DO MINEIRO */
-  .toca-badge{display:flex;align-items:center;gap:1rem;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.25);border-radius:2px;padding:.8rem 1.2rem;margin-top:2rem;width:fit-content;margin-left:auto;margin-right:auto;animation:fadeUp 1.2s .8s ease both}
-  .toca-badge img{width:52px;height:52px;border-radius:50%;object-fit:cover;border:1px solid rgba(200,130,10,.35)}
-  .toca-badge-text{text-align:left}
-  .toca-badge-name{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);letter-spacing:.08em}
-  .toca-badge-sub{font-size:.7rem;color:var(--smoke);font-style:italic;margin-top:.15rem}
+  .toca-badge{position:relative;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:1.6rem;background:
+    linear-gradient(135deg,rgba(42,26,8,.94),rgba(19,15,9,.9)),
+    radial-gradient(circle at top left,rgba(200,130,10,.16),transparent 42%);
+    border:1px solid rgba(200,130,10,.28);border-radius:3px;padding:1.4rem 1.6rem;margin:0 0 1.8rem;cursor:pointer;overflow:hidden;
+    box-shadow:0 18px 40px rgba(0,0,0,.28),0 0 0 1px rgba(200,130,10,.06) inset;transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+  .toca-badge::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,215,120,.08),transparent);transform:translateX(-100%);transition:transform .8s ease}
+  .toca-badge::after{content:'';position:absolute;left:1.4rem;right:1.4rem;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(200,130,10,.75),transparent)}
+  .toca-badge:hover{transform:translateY(-3px);border-color:rgba(200,130,10,.5);box-shadow:0 24px 44px rgba(0,0,0,.34),0 0 28px rgba(200,130,10,.12)}
+  .toca-badge:hover::before{transform:translateX(100%)}
+  .toca-badge-mark{position:relative;display:flex;align-items:center;justify-content:center;width:132px;height:132px}
+  .toca-badge-mark img{width:132px;height:132px;border-radius:50%;object-fit:cover}
+  .toca-badge-text{text-align:left;position:relative;z-index:1}
+  .toca-badge-kicker{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.18em;color:var(--amber);text-transform:uppercase;margin-bottom:.35rem}
+  .toca-badge-name{font-family:'Cinzel',serif;font-size:1.45rem;color:var(--cream);letter-spacing:.08em;line-height:1.1}
+  .toca-badge-sub{font-size:.82rem;color:var(--smoke);font-style:italic;margin-top:.35rem;max-width:34rem;line-height:1.6}
+  .toca-badge-meta{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem}
+  .toca-chip{background:rgba(200,130,10,.11);border:1px solid rgba(200,130,10,.24);color:var(--gold);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:.28rem .55rem;border-radius:999px}
 
   /* ── LIGHTBOX ── */
   .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:8000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:1rem;opacity:0;transition:opacity .3s}
@@ -432,13 +446,20 @@
     .nav-logo{font-size:1.15rem}
 
     /* Hero */
-    #hero{height:100svh}
+    #hero{height:100svh;padding-top:78px}
     .hero-title{font-size:clamp(2.8rem,18vw,5.5rem)!important}
     .hero-tag{font-size:.72rem;letter-spacing:.25em}
     .hero-subtitle{font-size:.78rem;letter-spacing:.25em}
     .hero-divider{width:200px;margin:1.2rem auto}
-    .toca-badge{flex-direction:column;text-align:center;padding:.7rem 1rem;gap:.6rem;margin-top:1.2rem}
+    .hero-content{padding:2.4rem 0 7.2rem}
+    .hero-inst-wrap{margin:.9rem 0 .9rem}
+    .hero-inst-img{max-width:66.3vw}
+    .toca-badge{grid-template-columns:1fr;justify-items:center;text-align:center;padding:1.15rem 1rem;gap:.9rem}
+    .toca-badge-mark{width:108px;height:108px}
+    .toca-badge-mark img{width:108px;height:108px}
     .toca-badge-text{text-align:center}
+    .toca-badge-sub{max-width:none}
+    .toca-badge-meta{justify-content:center}
 
     /* Sections */
     section{padding:3.5rem 1.2rem}
@@ -523,22 +544,35 @@
     .carousel-slide img{height:210px}
   }
 
-  /* ── INSTALL BANNER ── */
-  .install-banner{position:fixed;bottom:.8rem;left:50%;right:auto;z-index:9998;transform:translateX(-50%) translateY(100%);width:85%;max-width:320px;background:rgba(19,15,9,.97);border:1px solid rgba(200,130,10,.4);border-radius:8px;padding:1rem 1.2rem 1.4rem;display:none;flex-direction:column;align-items:center;text-align:center;gap:.6rem;backdrop-filter:blur(12px);box-shadow:0 4px 30px rgba(0,0,0,.8);animation:bannerPop .3s ease both}
-  .install-banner.show{display:flex;transform:translateX(-50%) translateY(0)}
-  @keyframes bannerPop{from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)}}
-  .install-banner-dismiss{position:absolute;top:.5rem;right:.5rem;background:rgba(139,58,10,.25);border:1px solid rgba(200,130,10,.3);color:var(--cream);width:30px;height:30px;font-size:1rem;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
-  .install-banner-dismiss:hover{background:rgba(139,58,10,.6)}
-  .install-banner-icon{width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid rgba(200,130,10,.3)}
-  .install-banner-text strong{font-family:'Cinzel',serif;font-size:.8rem;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;display:block}
-  .install-banner-text span{font-size:.68rem;color:var(--paper);display:block;margin-top:.3rem}
-  .install-banner-btn{background:linear-gradient(135deg,var(--amber),var(--gold));color:var(--black);border:none;padding:.55rem 1.8rem;font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:3px;white-space:nowrap}
+  /* ── INSTALL POPUP ── */
+  .install-banner{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;padding:1.2rem;background:rgba(5,4,2,.72);backdrop-filter:blur(10px)}
+  .install-banner.show{display:flex}
+  .install-banner-panel{position:relative;width:min(92vw,430px);background:
+    linear-gradient(145deg,rgba(31,21,10,.98),rgba(14,11,7,.98)),
+    radial-gradient(circle at top,rgba(200,130,10,.12),transparent 48%);
+    border:1px solid rgba(200,130,10,.34);border-radius:14px;padding:1.5rem 1.4rem 1.35rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.85rem;
+    box-shadow:0 24px 70px rgba(0,0,0,.6),0 0 0 1px rgba(200,130,10,.08) inset;animation:installPopupIn .28s ease both}
+  @keyframes installPopupIn{from{opacity:0;transform:translateY(24px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .install-banner-dismiss{position:absolute;top:.7rem;right:.7rem;background:rgba(139,58,10,.22);border:1px solid rgba(200,130,10,.28);color:var(--cream);width:32px;height:32px;font-size:1rem;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
+  .install-banner-dismiss:hover{background:rgba(139,58,10,.52);border-color:rgba(200,130,10,.5)}
+  .install-banner-icon-wrap{width:86px;height:86px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(200,130,10,.28);background:rgba(200,130,10,.06);box-shadow:0 0 0 10px rgba(200,130,10,.04)}
+  .install-banner-icon{width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid rgba(200,130,10,.34)}
+  .install-banner-text strong{font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;display:block}
+  .install-banner-text span{font-size:.84rem;color:var(--paper);display:block;margin-top:.45rem;line-height:1.65}
+  .install-banner-note{font-size:.68rem;color:var(--smoke);letter-spacing:.1em;text-transform:uppercase}
+  .install-banner-actions{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;width:100%;margin-top:.15rem}
+  .install-banner-btn{background:linear-gradient(135deg,var(--amber),var(--gold));color:var(--black);border:none;padding:.72rem 1.5rem;font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:4px;white-space:nowrap;min-width:160px}
+  .install-banner-btn.secondary{background:transparent;color:var(--amber);border:1px solid rgba(200,130,10,.32)}
+  .install-banner-btn.secondary:hover{background:rgba(200,130,10,.08)}
 
   @media(max-width:480px){
-    .install-banner{width:90%;padding:.9rem 1rem 1.2rem}
-    .install-banner-text strong{font-size:.7rem}
-    .install-banner-text span{font-size:.6rem}
-    .install-banner-dismiss{width:26px;height:26px;font-size:.85rem;top:.4rem;right:.4rem}
+    .install-banner-panel{padding:1.25rem 1rem 1.1rem}
+    .install-banner-icon-wrap{width:76px;height:76px}
+    .install-banner-icon{width:58px;height:58px}
+    .install-banner-text strong{font-size:.88rem}
+    .install-banner-text span{font-size:.76rem}
+    .install-banner-dismiss{width:28px;height:28px;font-size:.85rem}
+    .install-banner-btn{width:100%}
   }
 </style>
 </head>
@@ -683,21 +717,13 @@
     <p class="hero-tag">Classic Rock</p>
 
     <!-- Band instruments image -->
-    <div style="display:flex;justify-content:center;margin-bottom:.5rem;animation:fadeUp 1.2s .1s ease both">
-      <img src="imagens/inst.png" alt="Instrumentos Retórica"
-           style="width:280px;max-width:75vw;height:auto;object-fit:contain;filter:drop-shadow(0 0 24px rgba(200,130,10,0.25))">
+    <div class="hero-inst-wrap">
+      <img class="hero-inst-img" src="imagens/inst.png" alt="Instrumentos Retórica">
     </div>
 
     <h1 class="hero-title">Retórica</h1>
     <div class="hero-divider"><div class="hero-diamond"></div></div>
-    <p class="hero-subtitle">Ensaia com paixão &nbsp;·&nbsp; Toca com alma</p>
-    <div class="toca-badge" onclick="goTo('galeria')" style="cursor:pointer">
-      <img src="imagens/Toca_do_Mineiro_logo_final.png" alt="Toca do Mineiro">
-      <div class="toca-badge-text">
-        <div class="toca-badge-name">Toca do Mineiro</div>
-        <div class="toca-badge-sub">Home Studio · Nosso espaço de ensaio</div>
-      </div>
-    </div>
+    <p class="hero-subtitle">Banda de garagem &nbsp;·&nbsp; Classic rock na veia</p>
   </div>
   <div class="scroll-hint"><span>Explorar</span><div class="scroll-arrow"></div></div>
 </div>
@@ -731,7 +757,7 @@
         <div class="form-group"><label>Artista / Banda</label><input type="text" id="sugArtist" placeholder="Ex: Led Zeppelin"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Quem sugere</label><input type="text" id="sugBy" placeholder="Seu nome"></div>
+        <div class="form-group"><label>Quem sugere</label><input type="text" id="sugBy" readonly style="background:rgba(200,130,10,0.05);color:var(--smoke);cursor:not-allowed"></div>
         <div class="form-group"><label>Link YouTube (opcional)</label><input type="url" id="sugYt" placeholder="https://youtube.com/..."></div>
       </div>
       <div class="form-row full">
@@ -786,12 +812,8 @@
 <section id="setlist">
   <div class="section-header">
     <div class="section-number">04</div>
-    <div class="section-title-wrap"><h2>Setlist dos Ensaios</h2><p>Arraste para reordenar (membros)</p></div>
+    <div class="section-title-wrap"><h2>Setlist do Próximo Ensaio</h2><p>Arraste para reordenar e gerencie links de apoio</p></div>
     <div class="section-line"></div>
-  </div>
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab(0,this)">Ensaio Atual</button>
-    <button class="tab-btn" onclick="switchTab(1,this)">Próximo Ensaio</button>
   </div>
   <div id="setlistContainer"></div>
 </section>
@@ -849,6 +871,22 @@
     <div class="section-line"></div>
   </div>
 
+  <div class="toca-badge" onclick="goTo('galeria')">
+    <div class="toca-badge-mark">
+      <img src="imagens/Toca_do_Mineiro_logo_final.png" alt="Toca do Mineiro">
+    </div>
+    <div class="toca-badge-text">
+      <div class="toca-badge-kicker">Quartel-general</div>
+      <div class="toca-badge-name">Toca do Mineiro</div>
+      <div class="toca-badge-sub">Nosso home studio, onde os ensaios viram registro, bagunça boa e memória antes de entrar no carrossel.</div>
+      <div class="toca-badge-meta">
+        <span class="toca-chip">Home Studio</span>
+        <span class="toca-chip">Ensaios</span>
+        <span class="toca-chip">Bastidores</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Carrossel principal -->
   <div class="carousel-wrap" id="carouselWrap">
     <div class="carousel-track" id="carouselTrack"></div>
@@ -904,13 +942,21 @@
 
 <!-- INSTALL BANNER -->
 <div class="install-banner" id="installBanner">
-  <button class="install-banner-dismiss" id="dismissBanner">✕</button>
-  <img class="install-banner-icon" src="imagens/Toca_do_Mineiro_logo_final.png" alt="Retórica">
-  <div class="install-banner-text">
-    <strong>Sugestão</strong>
-    <span>Instale o app Retórica na sua tela inicial</span>
+  <div class="install-banner-panel">
+    <button class="install-banner-dismiss" id="dismissBanner">✕</button>
+    <div class="install-banner-icon-wrap">
+      <img class="install-banner-icon" src="imagens/Toca_do_Mineiro_logo_final.png" alt="Retórica">
+    </div>
+    <div class="install-banner-text">
+      <strong>Instale o Retórica</strong>
+      <span>Adicione o app na tela inicial para abrir mais rápido, com cara de aplicativo e acesso direto aos ensaios, fórum e galeria.</span>
+    </div>
+    <div class="install-banner-note" id="installBannerNote">Sugestão exibida periodicamente</div>
+    <div class="install-banner-actions">
+      <button class="install-banner-btn" id="installBtn">Instalar app</button>
+      <button class="install-banner-btn secondary" id="dismissInstallBtn">Agora não</button>
+    </div>
   </div>
-  <button class="install-banner-btn" id="installBtn">Instalar</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1013,6 +1059,12 @@ function applyAuth() {
   document.getElementById('logoutBtnMobile').style.display = isLoggedIn ? '' : 'none';
   document.getElementById('navUserMobile').style.display   = isLoggedIn ? '' : 'none';
   document.getElementById('suggestionsNotice').style.display = isLoggedIn ? 'none' : '';
+
+  if (isLoggedIn) {
+    const userName = auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ') || auth.currentUser?.email?.split('@')[0] || 'Membro';
+    const sugByEl = document.getElementById('sugBy');
+    if (sugByEl) sugByEl.value = userName;
+  }
 }
 
 window.openLogin  = () => { showStep1(); document.getElementById('loginModal').classList.add('show'); };
@@ -1115,6 +1167,11 @@ function formatTs(ts) {
 function ytBtn(url) {
   if (!url) return '';
   return `<a href="${url}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">▶ YouTube</a>`;
+}
+
+function cifraBtn(url) {
+  if (!url) return '';
+  return `<a href="${url}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">♫ Cifra</a>`;
 }
 
 // ─── MEMBERS ───────────────────────────────────────────────────────
@@ -1443,6 +1500,7 @@ window.voteSuggestion = async (id, type) => {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 3 dislikes`,
       song: s.song,
       artist: s.artist,
       by: s.by,
@@ -1451,7 +1509,10 @@ window.voteSuggestion = async (id, type) => {
       reason: 'Atingiu o limite de 3 dislikes',
       removedBy: 'Sistema',
       category: 'sugestoes',
-      ts: serverTimestamp()
+      who: 'Sistema',
+      whoEmail: '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
     });
     showToast('🗑 Sugestão removida (3+ dislikes)');
     return;
@@ -1471,6 +1532,7 @@ window.removeSuggestion = async id => {
   await deleteDoc(doc(db,'suggestions',id));
   await addDoc(collection(db,'logs'), {
     action: 'Sugestão Removida',
+    detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: ${reason || 'Removido pelo moderador'}`,
     song: s.song,
     artist: s.artist,
     by: s.by,
@@ -1479,9 +1541,39 @@ window.removeSuggestion = async id => {
     reason: reason || 'Removido pelo moderador',
     removedBy: auth.currentUser?.displayName?.split(' ')[0] || 'Membro',
     category: 'sugestoes',
-    ts: serverTimestamp()
+    who: auth.currentUser?.displayName || auth.currentUser?.email || 'Membro',
+    whoEmail: auth.currentUser?.email || '',
+    ts: serverTimestamp(),
+    tsLocal: new Date().toLocaleString('pt-BR')
   });
   showToast('Sugestão removida.');
+};
+
+window.addSuggestion = async () => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para sugerir músicas'); return; }
+  const song   = document.getElementById('sugSong').value.trim();
+  const artist = document.getElementById('sugArtist').value.trim();
+  const by     = document.getElementById('sugBy').value.trim();
+  const youtube= document.getElementById('sugYt').value.trim();
+  const note   = document.getElementById('sugNote').value.trim();
+
+  if (!song || !artist) { showToast('⚠ Preencha música e artista'); return; }
+
+  try {
+    await addDoc(collection(db, 'suggestions'), {
+      song, artist, by, youtube, note,
+      createdAt: serverTimestamp(),
+      likes: 0,
+      dislikes: 0,
+      voterMap: {}
+    });
+    await writeLog('Sugestão enviada', `${song} — ${artist} (por ${by})`, 'sugestoes');
+    ['sugSong','sugArtist','sugYt','sugNote'].forEach(id => document.getElementById(id).value = '');
+    showToast('✓ Sugestão enviada com sucesso!');
+  } catch (e) {
+    console.error('Add suggestion error:', e);
+    showToast('⚠ Erro ao enviar sugestão');
+  }
 };
 
 // ─── POLLS ─────────────────────────────────────────────────────────
@@ -1698,26 +1790,42 @@ setInterval(() => { if (pollsCache.length) renderPolls(); }, 60000);
 
 // ─── SETLIST ───────────────────────────────────────────────────────
 let setlistData = {tab0:[],tab1:[]};
+const NEXT_SETLIST_KEY = 'tab0';
+const LEGACY_SETLIST_KEY = 'tab1';
 
 onSnapshot(doc(db,'setlists','data'), snap => {
-  if (snap.exists()) { setlistData = snap.data(); renderSetlist(); }
+  if (snap.exists()) {
+    setlistData = snap.data();
+    renderSetlist();
+  }
 });
 
 async function loadSetlist() {
   const ref  = doc(db,'setlists','data');
   const snap = await getDoc(ref);
-  if (!snap.exists()) await setDoc(ref,{tab0:[],tab1:[]});
+  if (!snap.exists()) {
+    await setDoc(ref,{tab0:[],tab1:[]});
+    return;
+  }
+
+  const data = snap.data() || {};
+  const primarySongs = Array.isArray(data[NEXT_SETLIST_KEY]) ? data[NEXT_SETLIST_KEY] : [];
+  const legacySongs = Array.isArray(data[LEGACY_SETLIST_KEY]) ? data[LEGACY_SETLIST_KEY] : [];
+
+  if (!primarySongs.length && legacySongs.length) {
+    await updateDoc(ref, {[NEXT_SETLIST_KEY]: legacySongs});
+  }
 }
 
-window.switchTab = (idx, btn) => {
-  currentTab = idx;
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
-  renderSetlist();
-};
+function getActiveSetlistSongs() {
+  const nextSongs = Array.isArray(setlistData[NEXT_SETLIST_KEY]) ? setlistData[NEXT_SETLIST_KEY] : [];
+  const legacySongs = Array.isArray(setlistData[LEGACY_SETLIST_KEY]) ? setlistData[LEGACY_SETLIST_KEY] : [];
+  return nextSongs.length ? nextSongs : legacySongs;
+}
 
 function renderSetlist() {
   const c = document.getElementById('setlistContainer');
-  const songs = setlistData[`tab${currentTab}`]||[];
+  const songs = getActiveSetlistSongs();
   const totalSongs = songs.length;
   const displaySongs = setlistExpanded ? songs : songs.slice(0, 5);
   
@@ -1726,7 +1834,9 @@ function renderSetlist() {
       <span class="setlist-num">${i+1}</span>
       <div class="setlist-song">${s.song}<div class="setlist-artist">${s.artist}</div></div>
       <div class="setlist-actions">
-        ${s.youtube ? `<a href="${s.youtube}" target="_blank" class="btn-icon">▶</a>` : ''}
+        ${ytBtn(s.youtube)}
+        ${cifraBtn(s.cifra)}
+        ${isMember ? `<button class="btn-icon" onclick="editSetSongLinks(${i});event.stopPropagation()">✎ Links</button>` : ''}
         ${isMember ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
       </div>
     </li>`).join('');
@@ -1744,11 +1854,12 @@ function renderSetlist() {
       <input class="setlist-input" id="setSong" placeholder="Música">
       <input class="setlist-input" id="setArtist" placeholder="Artista">
       <input class="setlist-input" id="setYt" placeholder="YouTube (opcional)" style="flex:.8">
+      <input class="setlist-input" id="setCifra" placeholder="Link de cifra (opcional)" style="flex:.8">
       <button class="setlist-add-btn" onclick="addSetSong()">+</button>
     </div>` : '';
   c.innerHTML = `<div class="setlist-panel">
     <div class="setlist-panel-header">
-      <span class="setlist-panel-title">${currentTab===0?'Ensaio Atual':'Próximo Ensaio'}</span>
+      <span class="setlist-panel-title">Músicas</span>
       <span style="font-size:.75rem;color:var(--smoke)">${totalSongs} ${totalSongs === 1 ? 'música' : 'músicas'}</span>
     </div>
     <ul class="setlist-list">${items}</ul>${toggleBtn}${addRow}</div>`;
@@ -1764,22 +1875,37 @@ window.addSetSong = async () => {
   const song = document.getElementById('setSong').value.trim();
   const artist = document.getElementById('setArtist').value.trim();
   const youtube = document.getElementById('setYt').value.trim();
+  const cifra = document.getElementById('setCifra').value.trim();
   if (!song) { showToast('⚠ Digite o nome da música'); return; }
-  const key = `tab${currentTab}`;
-  const arr = [...(setlistData[key]||[]),{song,artist:artist||'—',youtube}];
-  await updateDoc(doc(db,'setlists','data'),{[key]:arr});
-  await writeLog('Música adicionada ao setlist', `${song} — ${artist||'—'} (${currentTab===0?'Ensaio Atual':'Próximo Ensaio'})`, 'setlist');
+  const arr = [...(setlistData[NEXT_SETLIST_KEY]||[]),{song,artist:artist||'—',youtube,cifra}];
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  await writeLog('Música adicionada ao setlist', `${song} — ${artist||'—'} (Próximo Ensaio)`, 'setlist');
+  ['setSong','setArtist','setYt','setCifra'].forEach(id => document.getElementById(id).value = '');
   showToast(`✓ "${song}" adicionada!`);
+};
+
+window.editSetSongLinks = async idx => {
+  if (!isMember) return;
+  const arr = [...getActiveSetlistSongs()];
+  const current = arr[idx];
+  if (!current) return;
+  const youtube = prompt(`Link do YouTube para "${current.song}"`, current.youtube || '');
+  if (youtube === null) return;
+  const cifra = prompt(`Link de cifra para "${current.song}"`, current.cifra || '');
+  if (cifra === null) return;
+  arr[idx] = {...current, youtube: youtube.trim(), cifra: cifra.trim()};
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  await writeLog('Links do setlist atualizados', `${current.song} · YouTube: ${youtube.trim() ? 'sim' : 'nao'} · Cifra: ${cifra.trim() ? 'sim' : 'nao'}`, 'setlist');
+  showToast('Links atualizados.');
 };
 
 window.removeSetSong = async idx => {
   if (!confirmAction('Deseja realmente remover esta música do setlist?')) return;
-  const key = `tab${currentTab}`;
-  const arr = [...(setlistData[key]||[])];
+  const arr = [...getActiveSetlistSongs()];
   const removed = arr[idx];
   arr.splice(idx,1);
-  await updateDoc(doc(db,'setlists','data'),{[key]:arr});
-  await writeLog('Música removida do setlist', `${removed?.song||'?'} (${currentTab===0?'Ensaio Atual':'Próximo Ensaio'})`, 'setlist');
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  await writeLog('Música removida do setlist', `${removed?.song||'?'} (Próximo Ensaio)`, 'setlist');
 };
 
 window.dStart = e=>{ dragSrc=e.currentTarget; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; };
@@ -1788,10 +1914,10 @@ window.dDrop  = async e=>{
   e.preventDefault(); const t=e.currentTarget;
   if(!dragSrc||dragSrc===t) return;
   const fi=parseInt(dragSrc.dataset.idx), ti=parseInt(t.dataset.idx);
-  const key=`tab${currentTab}`; const arr=[...(setlistData[key]||[])];
+  const arr=[...getActiveSetlistSongs()];
   const [item]=arr.splice(fi,1); arr.splice(ti,0,item);
-  await updateDoc(doc(db,'setlists','data'),{[key]:arr});
-  await writeLog('Setlist reordenado', `${item?.song||'?'}: posição ${fi+1} → ${ti+1} (${currentTab===0?'Ensaio Atual':'Próximo Ensaio'})`, 'setlist');
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  await writeLog('Setlist reordenado', `${item?.song||'?'}: posição ${fi+1} → ${ti+1} (Próximo Ensaio)`, 'setlist');
 };
 window.dEnd = e=>{ e.currentTarget.classList.remove('dragging'); dragSrc=null; };
 
@@ -2616,44 +2742,73 @@ let deferredPrompt = null;
 const banner  = document.getElementById('installBanner');
 const btn     = document.getElementById('installBtn');
 const dismiss = document.getElementById('dismissBanner');
+const dismissSecondary = document.getElementById('dismissInstallBtn');
+const bannerNote = document.getElementById('installBannerNote');
 
-let bannerHideTimer = null;
+const INSTALL_PROMPT_INTERVAL_DAYS = 7;
+const INSTALL_PROMPT_DELAY_MS = 5000;
+const INSTALL_PROMPT_KEY = 'retorica_install_next_prompt_at';
 
 function hideBanner() {
   if (banner) banner.classList.remove('show');
-  if (bannerHideTimer) { clearTimeout(bannerHideTimer); bannerHideTimer = null; }
 }
 
-function showBannerAuto() {
-  if (localStorage.getItem('retorica_install_dismissed') === '1') return;
+function scheduleNextInstallPrompt(days = INSTALL_PROMPT_INTERVAL_DAYS) {
+  const nextAt = Date.now() + (days * 24 * 60 * 60 * 1000);
+  localStorage.setItem(INSTALL_PROMPT_KEY, String(nextAt));
+}
+
+function canShowInstallPrompt() {
+  if (window.matchMedia('(display-mode: standalone)').matches) return false;
+  const nextAt = Number(localStorage.getItem(INSTALL_PROMPT_KEY) || '0');
+  return !nextAt || Date.now() >= nextAt;
+}
+
+function showBannerAuto(noteText = 'Sugestão exibida novamente em 7 dias se você fechar agora') {
+  if (!canShowInstallPrompt()) return;
+  if (bannerNote) bannerNote.textContent = noteText;
   banner.classList.add('show');
-  bannerHideTimer = setTimeout(() => hideBanner(), 5000);
 }
 
-if (banner && btn && dismiss) {
+async function handleInstallButtonClick() {
+  if (!deferredPrompt) {
+    showToast('Para instalar: use o menu do navegador e escolha "Instalar app" ou "Adicionar à tela inicial".');
+    scheduleNextInstallPrompt();
+    hideBanner();
+    return;
+  }
+
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  if (result.outcome === 'accepted') {
+    showToast('App instalado com sucesso!');
+  } else {
+    showToast('Instalação cancelada.');
+    scheduleNextInstallPrompt();
+  }
+  deferredPrompt = null;
+  hideBanner();
+}
+
+if (banner && btn && dismiss && dismissSecondary) {
+  btn.onclick = handleInstallButtonClick;
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
+    btn.innerHTML = 'Instalar app';
     showBannerAuto();
   });
 
-  btn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const result = await deferredPrompt.userChoice;
-    if (result.outcome === 'accepted') {
-      showToast('App instalado com sucesso!');
-    } else {
-      showToast('Instalação cancelada.');
-    }
-    deferredPrompt = null;
+  const dismissInstallPrompt = () => {
     hideBanner();
-    localStorage.setItem('retorica_install_dismissed', '1');
-  });
+    scheduleNextInstallPrompt();
+  };
 
-  dismiss.addEventListener('click', () => {
-    hideBanner();
-    localStorage.setItem('retorica_install_dismissed', '1');
+  dismiss.addEventListener('click', dismissInstallPrompt);
+  dismissSecondary.addEventListener('click', dismissInstallPrompt);
+  banner.addEventListener('click', (e) => {
+    if (e.target === banner) dismissInstallPrompt();
   });
 }
 
@@ -2661,16 +2816,17 @@ window.addEventListener('appinstalled', () => {
   if (banner) banner.classList.remove('show');
   showToast('App já está instalado!');
   deferredPrompt = null;
+  localStorage.removeItem(INSTALL_PROMPT_KEY);
 });
 
 // Fallback desktop: if beforeinstallprompt never fires, show instructions
-if (banner && btn && dismiss && !window.matchMedia('(display-mode: standalone)').matches) {
+if (banner && btn && dismiss && dismissSecondary && !window.matchMedia('(display-mode: standalone)').matches) {
   setTimeout(() => {
-    if (!deferredPrompt && localStorage.getItem('retorica_install_dismissed') !== '1') {
-      banner.classList.add('show');
-      btn.innerHTML = 'Para instalar: use o menu &#x22EE; do navegador';
+    if (!deferredPrompt && canShowInstallPrompt()) {
+      btn.innerHTML = 'Como instalar';
+      showBannerAuto('Se fechar agora, este lembrete reaparece em 7 dias');
     }
-  }, 5000);
+  }, INSTALL_PROMPT_DELAY_MS);
 }
 
 // ─── NEWS POPUP ───
