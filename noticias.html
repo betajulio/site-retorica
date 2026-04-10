@@ -31,7 +31,9 @@
   .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
   .nav-mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;background:rgba(10,8,4,.98);border-bottom:1px solid rgba(200,130,10,.3);backdrop-filter:blur(16px);z-index:999;flex-direction:column;padding:.5rem 0}
   .nav-mobile-menu.open{display:flex}
-  .nav-mobile-menu a{color:var(--paper);text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;padding:1rem 2rem;border-bottom:1px solid rgba(200,130,10,.08);transition:color .2s}
+  .nav-mobile-menu a{color:var(--paper);text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;padding:1rem 2rem;border-bottom:1px solid rgba(200,130,10,.08);transition:color .2s;display:flex;align-items:center;justify-content:space-between}
+  .badge-mobile-inline{background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none;margin-left:auto}
+  @keyframes pulse-badge {0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 
   /* HERO */
   #hero{height:40vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:300px}
@@ -112,7 +114,7 @@
 
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a href="index.html">Portal</a>
-  <a href="noticias.html">Notícias</a>
+  <a href="noticias.html">Notícias <span class="badge-mobile-inline">NEW</span></a>
   <a href="index.html" style="border:none; color:var(--amber)">Voltar ao portal</a>
 </div>
 
@@ -184,13 +186,25 @@ function escapeHtml(str) {
   div.textContent = str; return div.innerHTML;
 }
 
-// ─── CARREGAR CHARTS (VIA ALLORIGINS - MAIS COMPATÍVEL COM GITHUB PAGES) ───
+// ─── CARREGAR CHARTS ───────────────────────────────────────────────
+async function fetchAppleChart(url) {
+  try {
+    const directRes = await fetch(url, { cache: 'no-store' });
+    if (directRes.ok) return await directRes.json();
+  } catch(e) {}
+
+  const proxyRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { cache: 'no-store' });
+  if (!proxyRes.ok) throw new Error('Proxy indisponivel');
+  const proxyData = await proxyRes.json();
+  if (!proxyData?.contents) throw new Error('Resposta vazia do proxy');
+  return JSON.parse(proxyData.contents);
+}
+
 async function loadChartColumn(colId, label, url) {
   const container = document.getElementById(colId);
   try {
-    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-    const data = await res.json();
-    const feed = JSON.parse(data.contents).feed;
+    const data = await fetchAppleChart(url);
+    const feed = data.feed;
     const entries = feed.entry ? feed.entry.slice(0, 5) : [];
     
     if (!entries.length) throw new Error();
@@ -214,6 +228,7 @@ async function loadChartColumn(colId, label, url) {
     });
     container.innerHTML = html;
   } catch(e) {
+    console.warn(`[TOP ROCK] Falha ao carregar ${label}:`, e);
     container.innerHTML = `<div class="col-label">${label}</div><p style="font-size:.7rem; color:var(--smoke); font-style:italic; padding:1rem">Indisponível</p>`;
   }
 }
