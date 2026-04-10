@@ -9,7 +9,28 @@
   :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--cream);font-family:'Lora',serif;min-height:100vh}
+  body.auth-resolved #authBoot{opacity:0;pointer-events:none}
   body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+
+  /* AUTH BOOT */
+  #authBoot{position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;background:
+    radial-gradient(circle at top,rgba(200,130,10,.12),transparent 35%),
+    linear-gradient(180deg,#140d07 0%,#090603 100%);
+    transition:opacity .35s ease}
+  .auth-boot-panel{width:min(88vw,520px);border:1px solid rgba(200,130,10,.32);background:linear-gradient(180deg,rgba(36,23,10,.96),rgba(14,10,6,.96));box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 2px rgba(200,130,10,.08) inset;padding:1.4rem 1.2rem 1.2rem;position:relative;overflow:hidden}
+  .auth-boot-panel::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);opacity:.25;pointer-events:none}
+  .auth-boot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;font-family:'Bebas Neue',sans-serif;letter-spacing:.18em;color:var(--gold);font-size:1rem}
+  .auth-boot-disc{width:84px;height:84px;border-radius:50%;margin:0 auto .9rem;background:
+    radial-gradient(circle at center,#f7d76f 0 8%,#1a1208 8% 17%,#d7a02a 17% 21%,#0c0905 21% 52%,#b57614 52% 56%,#080603 56% 100%);
+    border:1px solid rgba(200,130,10,.3);box-shadow:0 0 0 10px rgba(200,130,10,.05);animation:psxSpin 2.8s linear infinite}
+  .auth-boot-title{font-family:'Cinzel',serif;text-align:center;color:var(--cream);font-size:1.3rem;letter-spacing:.08em}
+  .auth-boot-sub{margin-top:.45rem;text-align:center;color:var(--smoke);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+  .auth-boot-bar{margin:1.1rem 0 .7rem;height:12px;border:1px solid rgba(200,130,10,.28);background:rgba(8,6,3,.95);position:relative;overflow:hidden}
+  .auth-boot-fill{height:100%;width:34%;background:linear-gradient(90deg,var(--rust),var(--amber),#f3cf62);box-shadow:0 0 12px rgba(200,130,10,.35);animation:psxLoad 1.2s steps(12,end) infinite}
+  .auth-boot-status{display:flex;justify-content:space-between;gap:1rem;font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.12em;color:var(--paper)}
+  .auth-boot-status span:last-child{color:var(--gold)}
+  @keyframes psxSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes psxLoad{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
 
   /* NAV */
   nav{background:linear-gradient(180deg,rgba(10,8,4,.98),rgba(10,8,4,.85));border-bottom:1px solid rgba(200,130,10,.3);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
@@ -120,6 +141,23 @@
 </head>
 <body>
 
+<div id="authBoot">
+  <div class="auth-boot-panel">
+    <div class="auth-boot-head">
+      <span>Retorica System</span>
+      <span>PSX-LOG 01</span>
+    </div>
+    <div class="auth-boot-disc"></div>
+    <div class="auth-boot-title">Carregando Portal Admin</div>
+    <div class="auth-boot-sub">Verificando sessao e permissoes</div>
+    <div class="auth-boot-bar"><div class="auth-boot-fill"></div></div>
+    <div class="auth-boot-status">
+      <span>Autenticando</span>
+      <span>Please wait...</span>
+    </div>
+  </div>
+</div>
+
 <nav>
   <a class="nav-logo" href="index.html">Retórica</a>
   <a class="nav-back" href="index.html">← Voltar ao site</a>
@@ -127,7 +165,7 @@
 
 <main>
   <!-- LOGIN WALL -->
-  <div id="loginWall">
+  <div id="loginWall" style="display:none">
     <div class="lock-icon">🔒</div>
     <div class="login-title">Área restrita a membros</div>
     <div class="login-sub">Faça login com sua conta Google aprovada para ver os logs</div>
@@ -155,9 +193,6 @@
 
     <!-- REALTIME METRICS -->
     <div id="realtimeMetrics"></div>
-
-    <!-- STATS -->
-    <div class="stats-grid" id="statsGrid"></div>
 
     <!-- FILTERS -->
     <div class="filters">
@@ -236,6 +271,7 @@ const db       = getFirestore(app);
 const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
 const storage  = getStorage(app);
+let authResolved = false;
 
 let allLogs      = [];
 let activeFilter = 'all';
@@ -282,6 +318,8 @@ onAuthStateChanged(auth, async user => {
       await signOut(auth);
       document.getElementById('deniedMsg').textContent = `${user.email} não está na lista de membros aprovados.`;
       document.getElementById('deniedMsg').style.display = 'block';
+      document.body.classList.add('auth-resolved');
+      authResolved = true;
       return;
     }
     document.getElementById('loginWall').style.display    = 'none';
@@ -292,6 +330,8 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('loginWall').style.display  = 'flex';
     document.getElementById('logContent').style.display = 'none';
   }
+  if (!authResolved) authResolved = true;
+  document.body.classList.add('auth-resolved');
 });
 
 window.doLogin = async () => {
@@ -416,34 +456,6 @@ function renderRealtimeMetrics() {
           <div class="metric-value gold">${polls.length}</div>
           <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">🗳 ${totalPollVotes} votos totais · ${polls.filter(p=>p.closed).length} encerrada${polls.filter(p=>p.closed).length!==1?'s':''}</div>
         </div>
-        <div class="metric-card">
-          <div class="metric-label">Setlist / Repertório</div>
-          <div class="metric-value gold">${members.length ? 'Ativo' : '—'}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Veja o setlist no site</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-title">Top Conteúdo</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-        <div class="metric-card">
-          <div class="metric-label">📸 Fotos Mais Curtidas</div>
-          <table class="top-table">
-            ${[...gallery].sort((a,b)=>Object.values(b.reactions||{}).filter(v=>v==='like').length - Object.values(a.reactions||{}).filter(v=>v==='like').length).slice(0,3).map((p,i)=>{
-              const likes = Object.values(p.reactions||{}).filter(v=>v==='like').length;
-              return `<tr><td>${i+1}</td><td>${p.caption||'sem título'}</td><td>👍 ${likes}</td></tr>`;
-            }).join('') || '<tr><td colspan="3" style="color:var(--smoke);text-align:center;font-style:italic">Nenhuma foto</td></tr>'}
-          </table>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">💬 Fotos Mais Comentadas</div>
-          <table class="top-table">
-            ${[...gallery].sort((a,b)=>(b.comments||[]).length - (a.comments||[]).length).slice(0,3).map((p,i)=>{
-              return `<tr><td>${i+1}</td><td>${p.caption||'sem título'}</td><td>💬 ${(p.comments||[]).length}</td></tr>`;
-            }).join('') || '<tr><td colspan="3" style="color:var(--smoke);text-align:center;font-style:italic">Nenhuma foto</td></tr>'}
-          </table>
-        </div>
       </div>
     </div>`;
 }
@@ -460,7 +472,6 @@ function startListening() {
   // Listen to logs collection in Firestore
   onSnapshot(collection(db, 'logs'), snap => {
     allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() })).reverse();
-    renderStats();
     renderTable();
   });
 }
@@ -507,57 +518,6 @@ function renderStorageMetric() {
     </div>`;
 }
 
-function renderStats() {
-  const counts = {};
-  allLogs.forEach(l => { counts[l.category] = (counts[l.category]||0) + 1; });
-  const grid = document.getElementById('statsGrid');
-
-  // Recent logins list
-  const logins = allLogs.filter(l => l.category === 'acesso').slice(0, 8);
-  const loginRows = logins.length
-    ? logins.map(l => `
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:.45rem 0;border-bottom:1px solid rgba(200,130,10,.07);gap:.8rem">
-          <span style="font-size:.82rem;color:var(--cream)">${l.who||'?'}</span>
-          <span style="font-size:.72rem;color:var(--smoke);font-style:italic;white-space:nowrap">${l.tsLocal||'—'}</span>
-        </div>`).join('')
-    : `<div style="font-size:.8rem;color:var(--smoke);font-style:italic;padding:.5rem 0">Nenhum login registrado ainda.</div>`;
-
-  // Activity heat by day
-  const dayCounts = {};
-  allLogs.forEach(l => {
-    if (l.tsLocal) {
-      // extract date like "dd/mm/yyyy" or "dd/mm/yyyy, hh:mm:ss"
-      const datePart = l.tsLocal.split(', ')[0];
-      dayCounts[datePart] = (dayCounts[datePart]||0) + 1;
-    }
-  });
-  const dayEntries = Object.entries(dayCounts).slice(-7); // last 7 active days
-  const maxDay = Math.max(...Object.values(dayCounts), 1);
-
-  const gridHtml = `
-    <div class="stat-card"><div class="stat-num">${allLogs.length}</div><div class="stat-label">Total de ações</div></div>
-    ${Object.entries(CAT_LABELS).map(([k,v]) => `
-      <div class="stat-card" style="cursor:pointer" onclick="setFilterById('${k}')">
-        <div class="stat-num">${counts[k]||0}</div>
-        <div class="stat-label">${v}</div>
-      </div>`).join('')}
-    ${dayEntries.length ? `<div class="stat-card" style="grid-column:1/-1;padding:.8rem 1rem">
-      <div class="stat-label" style="margin-bottom:.5rem">Atividade por dia</div>
-      <div style="display:flex;gap:.3rem;align-items:flex-end;height:32px">
-        ${dayEntries.map(([d,c]) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.2rem"><span style="font-size:.55rem;color:var(--smoke)">${c}</span><div style="width:100%;background:linear-gradient(180deg,var(--gold),var(--amber));border-radius:1px;height:${Math.max(c/maxDay*100,8)}%"></div><span style="font-size:.48rem;color:var(--smoke)">${d.split('/').slice(0,2).join('/')}</span></div>`).join('')}
-      </div>
-    </div>` : ''}
-    <div style="grid-column:1/-1;background:linear-gradient(135deg,rgba(42,26,8,.7),rgba(19,15,9,.8));border:1px solid rgba(80,200,80,.2);border-radius:1px;padding:1.2rem 1.4rem">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
-        <span style="font-family:'Cinzel',serif;font-size:.85rem;color:#86efac;letter-spacing:.08em">🔑 Últimos Logins</span>
-        <button class="filter-btn" onclick="setFilterById('acesso')" style="font-size:.65rem;padding:.2rem .6rem">${counts['acesso']||0} total</button>
-      </div>
-      ${loginRows}
-    </div>`;
-
-  grid.innerHTML = gridHtml;
-}
-
 window.setFilterById = id => {
   activeFilter = id;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -568,9 +528,32 @@ window.setFilterById = id => {
 
 function getSortScore(log) {
   if (sortField === 'action') return log.action || '';
-  if (sortField === 'detail') return log.detail || '';
-  if (sortField === 'who') return log.who || '';
-  return log.createdAt?.toMillis?.() || log.ts || 0;
+  if (sortField === 'detail') return getLogDetail(log);
+  if (sortField === 'who') return getLogWho(log);
+  return log.createdAt?.toMillis?.() || log.ts?.toMillis?.() || log.ts || 0;
+}
+
+function getLogDetail(log) {
+  if (log.detail) return log.detail;
+  if (log.category === 'sugestoes') {
+    const parts = [];
+    if (log.song || log.artist) parts.push(`${log.song || '?'}${log.artist ? ` — ${log.artist}` : ''}`);
+    if (log.likes !== undefined || log.dislikes !== undefined) parts.push(`${log.likes || 0}👍 ${log.dislikes || 0}👎`);
+    if (log.reason) parts.push(`Motivo: ${log.reason}`);
+    if (log.by) parts.push(`Sugerida por ${log.by}`);
+    return parts.join(' · ') || '—';
+  }
+  return '—';
+}
+
+function getLogWho(log) {
+  return log.who || log.removedBy || log.by || '?';
+}
+
+function getLogWhen(log) {
+  if (log.tsLocal) return log.tsLocal;
+  const ts = log.ts?.toDate?.() || log.createdAt?.toDate?.() || null;
+  return ts ? ts.toLocaleString('pt-BR') : '—';
 }
 
 window.sortBy = field => {
@@ -597,10 +580,12 @@ function renderTable() {
 
   const filtered = allLogs.filter(l => {
     const matchCat    = activeFilter === 'all' || l.category === activeFilter;
+    const detailText  = getLogDetail(l).toLowerCase();
+    const whoText     = getLogWho(l).toLowerCase();
     const matchSearch = !activeSearch ||
       l.action?.toLowerCase().includes(activeSearch) ||
-      l.detail?.toLowerCase().includes(activeSearch) ||
-      l.who?.toLowerCase().includes(activeSearch);
+      detailText.includes(activeSearch) ||
+      whoText.includes(activeSearch);
     return matchCat && matchSearch;
   });
 
@@ -625,9 +610,9 @@ function renderTable() {
     const badge = `<span class="cat-badge cat-${cat}">${CAT_LABELS[cat]||cat}</span>`;
     return `<tr>
       <td>${badge}<div class="log-action" style="margin-top:.3rem">${l.action||'—'}</div></td>
-      <td><div class="log-detail">${l.detail||'—'}</div></td>
-      <td><span class="log-who">${l.who||'?'}</span>${l.whoEmail ? `<div style="font-size:.68rem;color:var(--smoke)">${l.whoEmail}</div>` : ''}</td>
-      <td><span class="log-ts">${l.tsLocal||'—'}</span></td>
+      <td><div class="log-detail">${getLogDetail(l)}</div></td>
+      <td><span class="log-who">${getLogWho(l)}</span>${l.whoEmail ? `<div style="font-size:.68rem;color:var(--smoke)">${l.whoEmail}</div>` : ''}</td>
+      <td><span class="log-ts">${getLogWhen(l)}</span></td>
     </tr>`;
   }).join('');
 }
@@ -693,6 +678,7 @@ window.runSuggestionsCleanup = async () => {
       // Cria o log que dispara o WhatsApp
       await addDoc(collection(db, 'logs'), {
         action: 'Sugestão Removida',
+        detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: Atingiu o limite de 3 dislikes (Varredura de manutenção)`,
         song: s.song,
         artist: s.artist,
         by: s.by || 'Membro',
@@ -701,7 +687,10 @@ window.runSuggestionsCleanup = async () => {
         reason: 'Atingiu o limite de 3 dislikes (Varredura de manutenção)',
         removedBy: 'Varredura Automática',
         category: 'sugestoes',
-        ts: serverTimestamp()
+        who: 'Varredura Automática',
+        whoEmail: '',
+        ts: serverTimestamp(),
+        tsLocal: new Date().toLocaleString('pt-BR')
       });
       
       removedCount++;
