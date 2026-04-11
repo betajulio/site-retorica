@@ -230,7 +230,7 @@
       <div style="display:flex;flex-direction:column;gap:.4rem">
         <span style="font-size:.78rem;color:var(--smoke);font-style:italic">Manutenção e Comunicação:</span>
         <div style="display:flex;gap:.8rem;flex-wrap:wrap">
-          <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
+          <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 4+ dislikes</button>
           <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
           <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
         </div>
@@ -651,20 +651,30 @@ async function clearAllLogs() {
 }
 
 window.runSuggestionsCleanup = async () => {
-  if (!confirm('Deseja iniciar a varredura? Todas as músicas com 3 ou mais dislikes serão removidas e as mensagens de motivação serão enviadas ao WhatsApp.')) return;
+  if (!confirm('Deseja iniciar a varredura? Todas as músicas com 4 ou mais dislikes serão removidas e as mensagens de motivação serão enviadas ao WhatsApp.')) return;
   
   showToast('⏳ Iniciando varredura…');
   let removedCount = 0;
   
   try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Varredura Manual de Sugestões',
+      detail: 'Solicitação manual via painel de logs para remover sugestões com 4 ou mais dislikes',
+      category: 'sugestoes',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+
     const snap = await getDocs(collection(db, 'suggestions'));
     const toRemove = snap.docs.filter(d => {
       const s = d.data();
-      return (s.dislikes || 0) >= 3;
+      return (s.dislikes || 0) >= 4;
     });
     
     if (toRemove.length === 0) {
-      showToast('✨ Nenhuma música com 3+ dislikes encontrada.');
+      showToast('✨ Nenhuma música com 4+ dislikes encontrada.');
       return;
     }
     
@@ -678,13 +688,13 @@ window.runSuggestionsCleanup = async () => {
       // Cria o log que dispara o WhatsApp
       await addDoc(collection(db, 'logs'), {
         action: 'Sugestão Removida',
-        detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: Atingiu o limite de 3 dislikes (Varredura de manutenção)`,
+        detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: Atingiu o limite de 4 dislikes (Varredura de manutenção)`,
         song: s.song,
         artist: s.artist,
         by: s.by || 'Membro',
         likes: s.likes || 0,
         dislikes: s.dislikes || 0,
-        reason: 'Atingiu o limite de 3 dislikes (Varredura de manutenção)',
+        reason: 'Atingiu o limite de 4 dislikes (Varredura de manutenção)',
         removedBy: 'Varredura Automática',
         category: 'sugestoes',
         who: 'Varredura Automática',
