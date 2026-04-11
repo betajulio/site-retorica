@@ -994,7 +994,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc,
   onSnapshot, addDoc, deleteDoc, updateDoc,
-  setDoc, getDoc, orderBy, query, serverTimestamp
+  setDoc, getDoc, orderBy, query, serverTimestamp, runTransaction, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
@@ -1518,17 +1518,17 @@ window.voteSuggestion = async (id, type) => {
   }
 
   // EXCLUSÃO AUTOMÁTICA
-  if (dislikes >= 3) {
+  if (dislikes >= 4) {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 3 dislikes`,
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 4 dislikes`,
       song: s.song,
       artist: s.artist,
       by: s.by,
       likes: likes,
       dislikes: dislikes,
-      reason: 'Atingiu o limite de 3 dislikes',
+      reason: 'Atingiu o limite de 4 dislikes',
       removedBy: 'Sistema',
       category: 'sugestoes',
       who: 'Sistema',
@@ -1536,7 +1536,7 @@ window.voteSuggestion = async (id, type) => {
       ts: serverTimestamp(),
       tsLocal: new Date().toLocaleString('pt-BR')
     });
-    showToast('🗑 Sugestão removida (3+ dislikes)');
+    showToast('🗑 Sugestão removida (4+ dislikes)');
     return;
   }
 
@@ -2876,6 +2876,7 @@ window.dismissNewsPopup = function() {
 
 // ─── SISTEMA DE PROMOÇÃO AUTOMÁTICA ──────────────────────────────────
 const promotionStateRef = doc(db, 'promotion_state', 'current');
+const PROMOTION_LOCK_MS = 2 * 60 * 1000;
 
 // Inicializar estado de promoção
 async function initPromotionState() {
@@ -2898,6 +2899,96 @@ function getNextFriday(fromDate = new Date()) {
   const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
   date.setDate(date.getDate() + daysUntilFriday);
   return date;
+}
+
+function createPromotionLockToken() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `promo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function toDateOrNull(value) {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') return value.toDate();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+async function claimPromotionExecution() {
+  const lockToken = createPromotionLockToken();
+
+  return runTransaction(db, async transaction => {
+    const stateSnap = await transaction.get(promotionStateRef);
+    if (!stateSnap.exists()) return { action: 'noop' };
+
+    const state = stateSnap.data();
+    const now = new Date();
+    const nextPromo = toDateOrNull(state.nextPromotionDate);
+    if (!nextPromo || now < nextPromo) return { action: 'noop' };
+
+    if (state.activeTiebreakerPoll || state.activeRepertoryPoll) {
+      return { action: 'noop' };
+    }
+
+    const lockUntil = toDateOrNull(state.promotionLockUntil);
+    if (state.promotionLockToken && lockUntil && lockUntil > now) {
+      return { action: 'noop' };
+    }
+
+    if (!suggestionsCache.length) {
+      transaction.update(promotionStateRef, {
+        nextPromotionDate: Timestamp.fromDate(getNextFriday(now)),
+        promotionLockToken: null,
+        promotionLockUntil: null
+      });
+      return { action: 'rescheduled' };
+    }
+
+    const sorted = [...suggestionsCache].sort((a, b) => {
+      const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
+      if (sb !== sa) return sb - sa;
+      return (b.data.likes || 0) - (a.data.likes || 0);
+    });
+
+    const topScore = getSuggestionScore(sorted[0].data);
+    const topSuggestions = sorted.filter(s => getSuggestionScore(s.data) === topScore);
+    const lockUntilDate = new Date(now.getTime() + PROMOTION_LOCK_MS);
+
+    transaction.update(promotionStateRef, {
+      promotionLockToken: lockToken,
+      promotionLockUntil: Timestamp.fromDate(lockUntilDate)
+    });
+
+    if (topSuggestions.length >= 2) {
+      return {
+        action: 'tiebreaker',
+        lockToken,
+        candidates: topSuggestions.slice(0, Math.min(3, topSuggestions.length))
+      };
+    }
+
+    return {
+      action: 'repertory',
+      lockToken,
+      suggestion: topSuggestions[0]
+    };
+  });
+}
+
+async function releasePromotionLock(lockToken) {
+  if (!lockToken) return;
+
+  await runTransaction(db, async transaction => {
+    const stateSnap = await transaction.get(promotionStateRef);
+    if (!stateSnap.exists()) return;
+
+    const state = stateSnap.data();
+    if (state.promotionLockToken !== lockToken) return;
+
+    transaction.update(promotionStateRef, {
+      promotionLockToken: null,
+      promotionLockUntil: null
+    });
+  });
 }
 
 // Formatar tempo restante
@@ -2972,52 +3063,25 @@ async function updatePromotionCountdowns() {
 
 // Verificar e executar promoção automática
 async function checkAndPromote() {
-  const stateSnap = await getDoc(promotionStateRef);
-  if (!stateSnap.exists()) return;
-  
-  const state = stateSnap.data();
-  const now = new Date();
-  const nextPromo = state.nextPromotionDate.toDate();
-  
-  if (now >= nextPromo) {
-    // Verificar se já existe enquete de desempate ou repertório ativa
-    if (state.activeTiebreakerPoll || state.activeRepertoryPoll) {
-      console.log('[PROMOÇÃO] Aguardando conclusão de enquete ativa');
-      return;
+  const promotion = await claimPromotionExecution();
+  if (!promotion || promotion.action === 'noop' || promotion.action === 'rescheduled') {
+    return;
+  }
+
+  try {
+    if (promotion.action === 'tiebreaker') {
+      await createTiebreakerPoll(promotion.candidates, promotion.lockToken);
+    } else if (promotion.action === 'repertory') {
+      await createRepertoryPoll(promotion.suggestion, promotion.lockToken);
     }
-    
-    if (!suggestionsCache.length) {
-      // Sem sugestões, reagendar
-      await updateDoc(promotionStateRef, {
-        nextPromotionDate: Timestamp.fromDate(getNextFriday(now))
-      });
-      return;
-    }
-    
-    // Ordenar por score
-    const sorted = [...suggestionsCache].sort((a,b) => {
-      const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
-      if (sb !== sa) return sb - sa;
-      return (b.data.likes||0) - (a.data.likes||0);
-    });
-    
-    const topScore = getSuggestionScore(sorted[0].data);
-    const topSuggestions = sorted.filter(s => getSuggestionScore(s.data) === topScore);
-    
-    if (topSuggestions.length >= 2) {
-      // DESEMPATE: 2 ou mais empatadas → criar enquete de desempate de 48h
-      // Pegar as top 3 se houver 3+, ou as 2 se houver apenas 2
-      const candidates = topSuggestions.slice(0, Math.min(3, topSuggestions.length));
-      await createTiebreakerPoll(candidates);
-    } else {
-      // UMA VENCEDORA: criar enquete de repertório
-      await createRepertoryPoll(topSuggestions[0]);
-    }
+  } catch (e) {
+    await releasePromotionLock(promotion.lockToken);
+    throw e;
   }
 }
 
 // Criar enquete de desempate (48h) - aceita 2 ou 3 músicas
-async function createTiebreakerPoll(topCandidates) {
+async function createTiebreakerPoll(topCandidates, lockToken = null) {
   const endDate = new Date();
   endDate.setHours(endDate.getHours() + 48);
   
@@ -3041,7 +3105,9 @@ async function createTiebreakerPoll(topCandidates) {
   const pollRef = await addDoc(collection(db, 'polls'), pollData);
   
   await updateDoc(promotionStateRef, {
-    activeTiebreakerPoll: pollRef.id
+    activeTiebreakerPoll: pollRef.id,
+    promotionLockToken: null,
+    promotionLockUntil: null
   });
   
   const musicNames = topCandidates.map(s => s.data.song).join(', ');
@@ -3052,7 +3118,7 @@ async function createTiebreakerPoll(topCandidates) {
 }
 
 // Criar enquete de repertório (7 dias)
-async function createRepertoryPoll(suggestion) {
+async function createRepertoryPoll(suggestion, lockToken = null) {
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + 7);
   
@@ -3077,7 +3143,9 @@ async function createRepertoryPoll(suggestion) {
   await deleteDoc(doc(db, 'suggestions', suggestion.id));
   
   await updateDoc(promotionStateRef, {
-    activeRepertoryPoll: pollRef.id
+    activeRepertoryPoll: pollRef.id,
+    promotionLockToken: null,
+    promotionLockUntil: null
   });
   
   showToast(`🎵 "${suggestion.data.song}" agora está em votação para o repertório!`);
