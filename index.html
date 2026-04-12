@@ -814,6 +814,12 @@
     <div class="section-line"></div>
   </div>
   <div id="pollsContainer"></div>
+  <div id="pollsHistoryWrap" style="margin-top:1.5rem">
+    <button class="btn-ghost btn-sm" id="pollsHistoryBtn" onclick="togglePollsHistory()" style="display:none">
+      🗂 Histórico de enquetes encerradas (<span id="pollsClosedCount">0</span>)
+    </button>
+    <div id="pollsHistoryContainer" style="display:none;margin-top:1rem"></div>
+  </div>
   <div class="member-only" style="margin-top:2rem">
     <div class="form-card">
       <p style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold);margin-bottom:1rem">Criar Nova Enquete</p>
@@ -1633,7 +1639,14 @@ let pollsCache = [];
 
 function renderPolls() {
   const c = document.getElementById('pollsContainer');
-  if (!pollsCache.length) { c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhuma enquete ainda.</p>'; return; }
+  const hc = document.getElementById('pollsHistoryContainer');
+  const hBtn = document.getElementById('pollsHistoryBtn');
+  const hCount = document.getElementById('pollsClosedCount');
+  if (!pollsCache.length) {
+    c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhuma enquete ainda.</p>';
+    if (hBtn) hBtn.style.display = 'none';
+    return;
+  }
   const uid = auth.currentUser?.uid || null;
   const now = Date.now();
 
@@ -1648,7 +1661,17 @@ function renderPolls() {
     return `${minutes}m`;
   };
 
-  c.innerHTML = pollsCache.map(({id, data: p}) => {
+  const now2 = Date.now();
+  const openPolls   = pollsCache.filter(({data:p}) => { const dl = p.deadline ? new Date(p.deadline).getTime() : null; return p.closed !== true && !(dl && now2 > dl); });
+  const closedPolls = pollsCache.filter(({data:p}) => { const dl = p.deadline ? new Date(p.deadline).getTime() : null; return p.closed === true || (dl && now2 > dl); });
+
+  // Show/hide history button
+  if (hBtn) {
+    hBtn.style.display = closedPolls.length ? 'inline-flex' : 'none';
+    if (hCount) hCount.textContent = closedPolls.length;
+  }
+
+  const buildPollCard = ({id, data: p}) => {
     // Determine if closed: manually OR deadline passed
     const deadlineMs  = p.deadline ? new Date(p.deadline).getTime() : null;
     const isClosed    = p.closed === true || (deadlineMs && now > deadlineMs);
@@ -1738,8 +1761,36 @@ function renderPolls() {
         <div style="display:flex;gap:.5rem;align-items:center">${myVoteLabel}${changeVoteBtn}</div>
       </div>
     </div>`;
-  }).join('');
+  };  // end buildPollCard
+
+  // Render open polls
+  if (openPolls.length) {
+    c.innerHTML = openPolls.map(buildPollCard).join('');
+  } else {
+    c.innerHTML = '<p style="color:var(--smoke);font-style:italic">Nenhuma enquete aberta no momento.</p>';
+  }
+
+  // Render closed polls in history container (preserving open/close state)
+  if (hc) {
+    if (closedPolls.length) {
+      hc.innerHTML = closedPolls.map(buildPollCard).join('');
+    } else {
+      hc.innerHTML = '';
+    }
+  }
 }
+
+window.togglePollsHistory = () => {
+  const hc   = document.getElementById('pollsHistoryContainer');
+  const hBtn = document.getElementById('pollsHistoryBtn');
+  if (!hc) return;
+  const opening = hc.style.display === 'none';
+  hc.style.display = opening ? 'block' : 'none';
+  if (hBtn) hBtn.innerHTML = opening
+    ? `📂 Ocultar histórico`
+    : `🗂 Histórico de enquetes encerradas (<span id="pollsClosedCount">${document.getElementById('pollsClosedCount')?.textContent||''}</span>)`;
+};
+
 
 onSnapshot(query(collection(db,'polls'), orderBy('createdAt','desc')), snap => {
   pollsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
@@ -2107,9 +2158,11 @@ window.deleteThread = async id => {
 let galleryCache    = [];
 let carouselIndex   = 0;
 let galleryFilesBuf = [];
-let galleryTags     = ['Ensaio', 'Show', 'Bastidores', 'Outros'];  // default tags
-let activeTagFilter = 'Todas';
-let selectedUploadTag = '';
+let galleryTags         = ['Ensaio', 'Show', 'Bastidores', 'Outros'];  // default tags
+let activeTagFilter     = 'Todas';
+let selectedUploadTag   = '';
+let galleryCompQuality  = 0.7;   // lido do Firestore config/galleryCompression
+let galleryCompMaxPx    = 1920;
 
 function renderGallery() {
   const track = document.getElementById('carouselTrack');
@@ -2249,7 +2302,7 @@ window.uploadGalleryPhotos = async () => {
 
     let blob, compSize;
     try {
-      const b64 = await compressImage(file, 1024, 0.7);
+      const b64 = await compressImage(file, galleryCompMaxPx, galleryCompQuality);
       blob = dataURLtoBlob(b64);
       compSize = blob.size;
       totalCompKB += Math.round(compSize / 1024);
@@ -2803,6 +2856,25 @@ onSnapshot(doc(db, 'config', 'galleryTags'), snap => {
       activeTagFilter = 'Todas';
       renderGallery();
     }
+  }
+});
+
+// Load gallery compression config from Firestore
+(async () => {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
+    if (snap.exists()) {
+      galleryCompQuality = (snap.data().quality || 70) / 100;
+      galleryCompMaxPx   = snap.data().maxPx   || 1920;
+    }
+  } catch(e) { /* use defaults */ }
+})();
+
+// Listen for real-time config changes (se admin atualizar enquanto membro tem a galeria aberta)
+onSnapshot(doc(db, 'config', 'galleryCompression'), snap => {
+  if (snap.exists()) {
+    galleryCompQuality = (snap.data().quality || 70) / 100;
+    galleryCompMaxPx   = snap.data().maxPx   || 1920;
   }
 });
 
