@@ -2160,15 +2160,16 @@ window.deleteThread = async id => {
 };
 
 // ─── GALERIA ───────────────────────────────────────────────────────
-let galleryCache    = [];
-let carouselIndex   = 0;
-let galleryFilesBuf = [];
-let selectedTags    = ['todas']; // Tags selecionadas para filtragem
-let allTags        = ['todas', 'home-studio', 'ensaios', 'bastidores']; // Todas as tags disponíveis
-let photoTagsMap   = {}; // Mapeia ID da foto para suas tags
+// Variáveis globais
+window.galleryCache    = [];
+window.carouselIndex   = 0;
+window.galleryFilesBuf = [];
+window.selectedTags    = ['todas']; // Tags selecionadas para filtragem
+window.allTags        = ['todas', 'home-studio', 'ensaios', 'bastidores']; // Todas as tags disponíveis
+window.photoTagsMap   = {}; // Mapeia ID da foto para suas tags
 
 // Funções para gerenciar tags
-function filterByTag(tag, event) {
+window.filterByTag = function(tag, event) {
   event.stopPropagation();
   console.log('filterByTag called with:', tag);
 
@@ -2192,16 +2193,16 @@ function filterByTag(tag, event) {
   }
 
   console.log('Selected tags now:', selectedTags);
-  updateTagsUI();
-  renderGallery();
+  window.updateTagsUI();
+  window.renderGallery();
 }
 
-function updateTagsUI() {
+window.updateTagsUI = function() {
   const chips = document.querySelectorAll('#galleryTags .toca-chip');
   chips.forEach(chip => {
     const tag = chip.dataset.tag;
     if (tag === 'todas') {
-      chip.classList.toggle('active', selectedTags.includes('todos'));
+      chip.classList.toggle('active', selectedTags.includes('todas'));
       // Sempre mostra a tag 'todas'
       chip.style.display = '';
     } else {
@@ -2214,35 +2215,21 @@ function updateTagsUI() {
 
 function clearAllFilters() {
   selectedTags = ['todas'];
-  updateTagsUI();
-  renderGallery();
+  window.updateTagsUI();
+  window.renderGallery();
 }
 
-function getFilteredPhotos() {
+window.getFilteredPhotos = function() {
   console.log('getFilteredPhotos called with selectedTags:', selectedTags);
 
-  // Se 'todas' estiver selecionado, mostra todas as fotos
-  if (selectedTags.includes('todas')) {
-    console.log('Showing all photos (todas selected)');
-    return galleryCache;
-  }
+  // TEMPORÁRIO: Descomente a próxima linha para ativar a filtragem real
+  // return galleryCache.filter(item => {
+  //   const photoTags = photoTagsMap[item.id] || [];
+  //   return selectedTags.some(tag => photoTags.includes(tag));
+  // });
 
-  // Se nenhuma tag for selecionada, mostra todas
-  if (selectedTags.length === 0) {
-    console.log('Showing all photos (no tags selected)');
-    return galleryCache;
-  }
-
-  // Filtra fotos que têm pelo menos uma das tags selecionadas
-  const filtered = galleryCache.filter(item => {
-    const photoTags = photoTagsMap[item.id] || [];
-    const hasTag = selectedTags.some(tag => photoTags.includes(tag));
-    console.log(`Photo ${item.id}: tags=${photoTags}, matches=${hasTag}`);
-    return hasTag;
-  });
-
-  console.log('Filtered photos count:', filtered.length);
-  return filtered;
+  // Até a filtragem real estar pronta, mostra todas as fotos
+  return galleryCache;
 }
 
 // Modal de gerenciamento de tags
@@ -2400,29 +2387,95 @@ async function deleteTag(tagToDelete) {
   renderTagsManagement();
 }
 
-function renderGallery() {
+window.renderGallery = function() {
   const track = document.getElementById('carouselTrack');
   const dots  = document.getElementById('carouselDots');
   const grid  = document.getElementById('galleryGrid');
 
-  // Filtra fotos com base nas tags selecionadas
-  const filteredPhotos = getFilteredPhotos();
+  // Para depuração, sempre mostra todas as fotos por agora
+  const filteredPhotos = window.galleryCache;
 
-  // Debug: log para ver o que está acontecendo
   console.log('renderGallery called:', {
-    galleryCacheLength: galleryCache.length,
-    selectedTags: selectedTags,
+    galleryCacheLength: window.galleryCache ? window.galleryCache.length : 0,
+    selectedTags: window.selectedTags,
     filteredPhotosLength: filteredPhotos.length
   });
 
-  if (!galleryCache.length) {
-    track.innerHTML = `<div class="carousel-empty" style="min-width:100%">Nenhuma foto ainda. Seja o primeiro a postar! 📷</div>`;
+  if (!filteredPhotos || filteredPhotos.length === 0) {
+    track.innerHTML = `<div class="carousel-empty" style="min-width:100%">Nenhuma foto encontrada. 📷</div>`;
     dots.innerHTML  = '';
     grid.innerHTML  = '';
-    document.querySelector('.carousel-prev').style.display = 'none';
-    document.querySelector('.carousel-next').style.display = 'none';
+    const prevBtn = document.querySelector('.carousel-prev');
+    const nextBtn = document.querySelector('.carousel-next');
+    if (prevBtn) prevBtn.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
     return;
   }
+
+  // Mostra os botões do carrossel
+  const prevBtn = document.querySelector('.carousel-prev');
+  const nextBtn = document.querySelector('.carousel-next');
+  if (prevBtn) prevBtn.style.display = '';
+  if (nextBtn) nextBtn.style.display = '';
+
+  // Atualiza o carousel index se necessário
+  if (window.carouselIndex >= filteredPhotos.length) {
+    window.carouselIndex = 0;
+  }
+  if (window.carouselIndex < 0) {
+    window.carouselIndex = filteredPhotos.length - 1;
+  }
+
+  track.innerHTML = filteredPhotos.map(({id, data: p}) => {
+    const r = p.reactions || {};
+    const likes    = Object.values(r).filter(v=>v==='like').length;
+    const dislikes = Object.values(r).filter(v=>v==='dislike').length;
+    const comments = (p.comments||[]).length;
+    const editBtn = window.isMember
+      ? `<button onclick="event.stopPropagation();window.editCaption('${id}')" style="background:rgba(200,130,10,.2);border:1px solid rgba(200,130,10,.4);color:var(--amber);padding:.2rem .5rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-right:.4rem">✏ Descrição</button>`
+      : '';
+    const del = window.isMember
+      ? `<button onclick="event.stopPropagation();window.deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
+      : '';
+    const statsHtml = `<div class="img-stats">
+      <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
+      <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
+    </div>`;
+    return `<div class="carousel-slide" onclick="window.openLightbox('${id}')" style="cursor:pointer">
+      <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
+      ${statsHtml}
+      <div class="carousel-caption">
+        <div class="carousel-caption-text">${p.caption||''}</div>
+        <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  dots.innerHTML = filteredPhotos.map((_,i) =>
+    `<button class="carousel-dot${i===window.carouselIndex?' active':''}" onclick="window.carouselGo(${i})"></button>`
+  ).join('');
+
+  track.style.transform = `translateX(-${window.carouselIndex * 100}%)`;
+
+  grid.innerHTML = filteredPhotos.map(({id, data: p}, i) => {
+    const r = p.reactions || {};
+    const likes    = Object.values(r).filter(v=>v==='like').length;
+    const dislikes = Object.values(r).filter(v=>v==='dislike').length;
+    const comments = (p.comments||[]).length;
+    const del = window.isMember
+      ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();window.deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
+      : '';
+    const statsHtml = `<div class="img-stats">
+      <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
+      <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
+    </div>`;
+    return `<div class="gallery-thumb${i===window.carouselIndex?' gallery-thumb-active':''}" onclick="window.openLightbox('${id}')">
+      <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
+      ${statsHtml}
+      ${del}
+    </div>`;
+  }).join('');
+};
 
   document.querySelector('.carousel-prev').style.display = '';
   document.querySelector('.carousel-next').style.display = '';
@@ -2768,7 +2821,13 @@ document.addEventListener('wheel', e => {
 
 // Inicialização das tags quando a página carrega
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded, initializing tags...');
   updateTagsUI();
+
+  // Força a renderização da galeria
+  setTimeout(() => {
+    renderGallery();
+  }, 1000);
 });
 
 function renderLightboxReactions(id, p) {
@@ -3041,8 +3100,8 @@ onSnapshot(query(collection(db,'gallery'), orderBy('createdAt','desc')), snap =>
     }
   });
 
-  console.log('photoTagsMap after update:', photoTagsMap);
-  renderGallery();
+  console.log('photoTagsMap after update:', window.photoTagsMap);
+  window.renderGallery();
   // se tem lightbox aberto, atualiza
   if (currentLbId) {
     const found = snap.docs.find(d => d.id === currentLbId);
