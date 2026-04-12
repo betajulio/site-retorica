@@ -1,4 +1,4 @@
-const CACHE_NAME = 'retorica-v3';
+const CACHE_NAME = 'retorica-v4';
 const ASSETS = ['./index.html', './logs.html', './noticias.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
@@ -16,6 +16,15 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  
+  // Não cachear requisições ao Firebase/Firestore
+  if (e.request.url.includes('firebase') || 
+      e.request.url.includes('firestore') ||
+      e.request.url.includes('googleapis')) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
+  
   e.respondWith(
     fetch(e.request)
       .then((res) => {
