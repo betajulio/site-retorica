@@ -917,15 +917,17 @@
     </div>
   </div>
 
-  <!-- Gerenciar Tags (apenas membros) -->
-  <div class="member-only" id="tagManagerWrap" style="margin:.6rem 0 1rem">
-    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
-      <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase">Tags:</span>
+  <!-- Gerenciar Tags (apenas membros — oculto por padrão) -->
+  <div class="member-only" id="tagManagerWrap" style="display:none;margin:.8rem 0 1rem;padding:.9rem 1.1rem;background:rgba(10,8,4,.5);border:1px solid rgba(200,130,10,.18);border-radius:2px">
+    <p style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.7rem">Editar Tags</p>
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem">
+      <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase">Tags existentes:</span>
       <div class="tag-manager-row" id="tagManagerChips"></div>
-      <div style="display:flex;gap:.4rem;align-items:center">
-        <input type="text" id="newTagInput" placeholder="Nova tag…" style="width:110px;padding:.25rem .5rem;font-size:.72rem;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.25);color:var(--cream);border-radius:1px;font-family:inherit" onkeydown="if(event.key==='Enter')addGalleryTag()">
-        <button class="btn-ghost btn-sm" onclick="addGalleryTag()">+ Tag</button>
-      </div>
+    </div>
+    <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+      <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase">Nova tag:</span>
+      <input type="text" id="newTagInput" placeholder="Nome da tag…" style="width:130px;padding:.28rem .6rem;font-size:.72rem;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.25);color:var(--cream);border-radius:1px;font-family:inherit" onkeydown="if(event.key==='Enter')addGalleryTag()">
+      <button class="btn-ghost btn-sm" onclick="addGalleryTag()">+ Adicionar</button>
     </div>
   </div>
   <!-- Carrossel principal -->
@@ -2639,14 +2641,27 @@ function renderTagBar() {
   const bar = document.getElementById('galleryTagBar');
   if (!bar) return;
   const allTags = ['Todas', ...galleryTags];
-  bar.innerHTML = allTags.map(t => {
+  let html = allTags.map(t => {
     const isActive = activeTagFilter === t;
     const style = isActive
       ? 'background:rgba(200,130,10,.28);border-color:var(--amber);color:var(--gold);cursor:pointer'
       : 'cursor:pointer';
     return `<span class="toca-chip" style="${style};user-select:none;transition:all .2s" onclick="setTagFilter('${t}')">${t}</span>`;
   }).join('');
+  if (isMember) {
+    const isOpen = document.getElementById('tagManagerWrap')?.style.display !== 'none';
+    html += `<span class="toca-chip" id="editTagsToggleChip" onclick="toggleTagManager()" style="cursor:pointer;border-style:dashed;opacity:.7;user-select:none;transition:all .2s${isOpen ? ';background:rgba(200,130,10,.18);opacity:1' : ''}">${isOpen ? '✕ Fechar' : '✎ Editar Tags'}</span>`;
+  }
+  bar.innerHTML = html;
 }
+
+window.toggleTagManager = () => {
+  const wrap = document.getElementById('tagManagerWrap');
+  if (!wrap) return;
+  const opening = wrap.style.display === 'none';
+  wrap.style.display = opening ? 'block' : 'none';
+  renderTagBar(); // re-render to flip button label
+};
 
 window.setTagFilter = tag => {
   activeTagFilter = tag;
