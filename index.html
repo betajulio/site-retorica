@@ -317,7 +317,50 @@
   .toca-badge-name{font-family:'Cinzel',serif;font-size:1.45rem;color:var(--cream);letter-spacing:.08em;line-height:1.1}
   .toca-badge-sub{font-size:.82rem;color:var(--smoke);font-style:italic;margin-top:.35rem;max-width:34rem;line-height:1.6}
   .toca-badge-meta{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem}
-  .toca-chip{background:rgba(200,130,10,.11);border:1px solid rgba(200,130,10,.24);color:var(--gold);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:.28rem .55rem;border-radius:999px}
+  .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);z-index:9000;display:none;align-items:center;justify-content:center}
+  .modal.open{display:flex}
+  .modal-content{background:var(--bg);border:1px solid rgba(200,130,10,.2);border-radius:2px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto;position:relative}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;padding:1.5rem;border-bottom:1px solid rgba(200,130,10,.1)}
+  .modal-header h2{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--cream);margin:0}
+  .modal-close{background:none;border:none;color:var(--smoke);font-size:1.5rem;cursor:pointer;transition:color .2s;padding:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center}
+  .modal-close:hover{color:var(--gold)}
+  .modal-body{padding:1.5rem}
+  .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:8999;display:none}
+  .modal-overlay.active{display:block}
+  .tags-management{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+  .tags-list-section,.tags-form-section{background:rgba(200,130,10,.05);border:1px solid rgba(200,130,10,.1);border-radius:2px;padding:1.2rem}
+  .tags-list-section h3,.tags-form-section h3{font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);margin:0 0 1rem 0}
+  .tags-edit-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);border:1px solid rgba(200,130,10,.2);border-radius:2px;padding:2rem;z-index:10000;min-width:300px}
+  .tags-edit-modal h3{font-family:'Cinzel',serif;font-size:1.1rem;color:var(--cream);margin:0 0 1rem 0}
+  .tags-edit-modal .tags-list{display:flex;flex-direction:column;gap:.5rem}
+  .tags-edit-modal .tag-item{display:flex;align-items:center;gap:.5rem;padding:.5rem;background:rgba(200,130,10,.08);border-radius:1px}
+  .tags-edit-modal .tag-item input[type="checkbox"]{width:18px;height:18px}
+  .tags-edit-modal .tag-item label{color:var(--paper);cursor:pointer;font-size:.9rem}
+  .tags-edit-modal .actions{display:flex;gap:1rem;margin-top:1.5rem;justify-content:flex-end}
+  .tags-edit-modal button{background:var(--amber);border:none;color:var(--brown);padding:.5rem 1.2rem;border-radius:1px;cursor:pointer;font-size:.9rem;font-weight:600;transition:all .2s}
+  .tags-edit-modal button:hover{background:var(--gold)}
+  .tags-edit-modal button.secondary{background:none;border:1px solid rgba(200,130,10,.5);color:var(--smoke)}
+  .tags-list{display:flex;flex-direction:column;gap:.5rem}
+  .tag-item{display:flex;justify-content:space-between;align-items:center;padding:.5rem;background:rgba(200,130,10,.08);border-radius:1px}
+  .tag-name{color:var(--paper);font-size:.85rem}
+  .tag-actions{display:flex;gap:.5rem}
+  .tag-actions button{background:none;border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.2rem .4rem;border-radius:1px;cursor:pointer;font-size:.75rem;transition:all .2s}
+  .tag-actions button:hover{border-color:var(--amber);color:var(--amber)}
+  .tag-actions button.delete{border-color:rgba(139,58,10,.5);color:rgba(139,58,10,.8)}
+  .tag-actions button.delete:hover{border-color:var(--rust);color:var(--rust)}
+  .form-group{display:flex;flex-direction:column;gap:.5rem}
+  .form-group input{background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.2);color:var(--paper);padding:.5rem;border-radius:1px;font-size:.9rem}
+  .form-group input:focus{outline:none;border-color:var(--amber)}
+  .btn-primary{background:var(--amber);border:none;color:var(--brown);padding:.5rem 1.2rem;border-radius:1px;cursor:pointer;font-size:.9rem;font-weight:600;transition:all .2s;align-self:flex-start}
+  .btn-primary:hover{background:var(--gold)}
+  .tags-selection{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
+  .tags-selection .tag-checkbox{background:rgba(200,130,10,.1);border:1px solid rgba(200,130,10,.2);color:var(--gold);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:.28rem .55rem;border-radius:999px;cursor:pointer;transition:all .2s;position:relative}
+  .tags-selection .tag-checkbox:hover{background:rgba(200,130,10,.2);border-color:var(--amber)}
+  .tags-selection .tag-checkbox input[type="checkbox"]{display:none}
+  .tags-selection .tag-checkbox.selected{background:var(--amber);color:var(--brown);border-color:var(--amber)}
+  .toca-chip{background:rgba(200,130,10,.11);border:1px solid rgba(200,130,10,.24);color:var(--gold);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:.28rem .55rem;border-radius:999px;cursor:pointer;transition:all .2s;position:relative;z-index:1}
+  .toca-chip:hover{background:rgba(200,130,10,.2);border-color:var(--amber)}
+  .toca-chip.active{background:var(--amber);color:var(--brown);border-color:var(--amber)}
 
   /* ── LIGHTBOX ── */
   .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:8000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:1rem;opacity:0;transition:opacity .3s}
@@ -893,7 +936,7 @@
     <div class="section-line"></div>
   </div>
 
-  <div class="toca-badge" onclick="goTo('galeria')">
+  <div class="toca-badge">
     <div class="toca-badge-mark">
       <img src="imagens/Toca_do_Mineiro_logo_final.png" alt="Toca do Mineiro">
     </div>
@@ -901,8 +944,14 @@
       <div class="toca-badge-kicker">Quartel-general</div>
       <div class="toca-badge-name">Toca do Mineiro</div>
       <div class="toca-badge-sub">Nosso home studio, onde os ensaios viram registro, bagunça boa e memória antes de entrar no carrossel.</div>
-      <div class="toca-badge-meta" id="tagFilterContainer">
-        <!-- Tags will be dynamically loaded here -->
+      <div class="toca-badge-meta" id="galleryTags">
+        <span class="toca-chip active" data-tag="todas" onclick="event.stopPropagation(); filterByTag('todas', event)">Todas</span>
+        <span class="toca-chip" data-tag="home-studio" onclick="event.stopPropagation(); filterByTag('home-studio', event)">Home Studio</span>
+        <span class="toca-chip" data-tag="ensaios" onclick="event.stopPropagation(); filterByTag('ensaios', event)">Ensaios</span>
+        <span class="toca-chip" data-tag="bastidores" onclick="event.stopPropagation(); filterByTag('bastidores', event)">Bastidores</span>
+        <span class="toca-chip member-only" id="manageTagsChip" style="cursor:pointer;position:relative" onclick="event.stopPropagation(); openManageTags(event)">
+          <span style="background:rgba(139,58,10,.3);padding:.1rem .4rem;border-radius:1px;margin-left:.5rem">✏ Gerenciar</span>
+        </span>
       </div>
     </div>
   </div>
@@ -935,8 +984,11 @@
       </div>
       <div class="form-row full" style="margin-bottom:.8rem">
         <div class="form-group">
-          <label>Tags (opcional, separadas por vírgula)</label>
-          <input type="text" id="galleryTags" placeholder="Ex: bastidores, ensaio, show">
+          <label>Tags</label>
+          <div class="tags-selection" id="tagsSelection">
+            <!-- Tags serão inseridas dinamicamente -->
+          </div>
+          <small style="color:var(--smoke);font-size:.75rem">Selecione as tags para esta foto (a tag 'Todas' é automática)</small>
         </div>
       </div>
       <div id="galleryPreviewWrap" style="display:none;margin-bottom:1rem">
@@ -987,6 +1039,36 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Modal de Gerenciamento de Tags -->
+<div class="modal" id="tagsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Gerenciar Tags</h2>
+      <button class="modal-close" onclick="closeManageTags()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="tags-management">
+        <div class="tags-list-section">
+          <h3>Tags existentes</h3>
+          <div class="tags-list" id="tagsList">
+            <!-- Tags serão listadas aqui -->
+          </div>
+        </div>
+        <div class="tags-form-section">
+          <h3>Adicionar nova tag</h3>
+          <div class="form-group">
+            <input type="text" id="newTagName" placeholder="Nome da nova tag" maxlength="50">
+            <button class="btn-primary" onclick="addNewTag()">Adicionar Tag</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay do Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeManageTags()"></div>
+
 <!-- CONFIRM HELPER (runs before module script) -->
 <script>
 window.confirmAction = (msg) => confirm(msg);
@@ -998,7 +1080,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc,
   onSnapshot, addDoc, deleteDoc, updateDoc,
-  setDoc, getDoc, getDocs, orderBy, query, serverTimestamp, runTransaction, Timestamp
+  setDoc, getDoc, orderBy, query, serverTimestamp, runTransaction, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
@@ -1117,11 +1199,6 @@ window.doLogout = async () => {
   await signOut(auth);
   showToast('Até logo!');
 };
-
-// Initialize tag system when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  renderTagFilter();
-});
 
 // ─── UTILS ─────────────────────────────────────────────────────────
 window.goTo = id => {
@@ -2086,18 +2163,259 @@ window.deleteThread = async id => {
 let galleryCache    = [];
 let carouselIndex   = 0;
 let galleryFilesBuf = [];
+let selectedTags    = ['todas']; // Tags selecionadas para filtragem
+let allTags        = ['todas', 'home-studio', 'ensaios', 'bastidores']; // Todas as tags disponíveis
+let photoTagsMap   = {}; // Mapeia ID da foto para suas tags
+
+// Funções para gerenciar tags
+function filterByTag(tag, event) {
+  event.stopPropagation();
+  console.log('filterByTag called with:', tag);
+
+  if (tag === 'todas') {
+    selectedTags = ['todas'];
+  } else {
+    // Remove 'todas' das seleções
+    selectedTags = selectedTags.filter(t => t !== 'todas');
+
+    // Toggle da tag clicada
+    if (selectedTags.includes(tag)) {
+      selectedTags = selectedTags.filter(t => t !== tag);
+    } else {
+      selectedTags.push(tag);
+    }
+
+    // Se nenhuma tag selecionada, volta para 'todas'
+    if (selectedTags.length === 0) {
+      selectedTags = ['todas'];
+    }
+  }
+
+  console.log('Selected tags now:', selectedTags);
+  updateTagsUI();
+  renderGallery();
+}
+
+function updateTagsUI() {
+  const chips = document.querySelectorAll('#galleryTags .toca-chip');
+  chips.forEach(chip => {
+    const tag = chip.dataset.tag;
+    if (tag === 'todas') {
+      chip.classList.toggle('active', selectedTags.includes('todos'));
+      // Sempre mostra a tag 'todas'
+      chip.style.display = '';
+    } else {
+      chip.classList.toggle('active', selectedTags.includes(tag));
+      // Nunca esconde as tags - sempre mostra todas
+      chip.style.display = '';
+    }
+  });
+}
+
+function clearAllFilters() {
+  selectedTags = ['todas'];
+  updateTagsUI();
+  renderGallery();
+}
+
+function getFilteredPhotos() {
+  console.log('getFilteredPhotos called with selectedTags:', selectedTags);
+
+  // Se 'todas' estiver selecionado, mostra todas as fotos
+  if (selectedTags.includes('todas')) {
+    console.log('Showing all photos (todas selected)');
+    return galleryCache;
+  }
+
+  // Se nenhuma tag for selecionada, mostra todas
+  if (selectedTags.length === 0) {
+    console.log('Showing all photos (no tags selected)');
+    return galleryCache;
+  }
+
+  // Filtra fotos que têm pelo menos uma das tags selecionadas
+  const filtered = galleryCache.filter(item => {
+    const photoTags = photoTagsMap[item.id] || [];
+    const hasTag = selectedTags.some(tag => photoTags.includes(tag));
+    console.log(`Photo ${item.id}: tags=${photoTags}, matches=${hasTag}`);
+    return hasTag;
+  });
+
+  console.log('Filtered photos count:', filtered.length);
+  return filtered;
+}
+
+// Modal de gerenciamento de tags
+function openManageTags(event) {
+  if (event) event.stopPropagation();
+  document.getElementById('tagsModal').classList.add('open');
+  document.getElementById('modalOverlay').classList.add('active');
+  renderTagsManagement();
+}
+
+function closeManageTags() {
+  document.getElementById('tagsModal').classList.remove('open');
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+
+function renderTagsManagement() {
+  const tagsList = document.getElementById('tagsList');
+  tagsList.innerHTML = '';
+
+  allTags.filter(tag => tag !== 'todas').forEach(tag => {
+    const tagItem = document.createElement('div');
+    tagItem.className = 'tag-item';
+    tagItem.innerHTML = `
+      <span class="tag-name">${tag}</span>
+      <div class="tag-actions">
+        <button onclick="editTagName('${tag}')" class="edit">Editar</button>
+        <button onclick="deleteTag('${tag}')" class="delete">Excluir</button>
+      </div>
+    `;
+    tagsList.appendChild(tagItem);
+  });
+}
+
+function addNewTag() {
+  const input = document.getElementById('newTagName');
+  const tagName = input.value.trim().toLowerCase().replace(/\s+/g, '-');
+
+  if (!tagName) {
+    showToast('⚠ Nome da tag não pode ser vazio');
+    return;
+  }
+
+  if (allTags.includes(tagName)) {
+    showToast('⚠ Tag já existe');
+    return;
+  }
+
+  allTags.push(tagName);
+
+  // Adiciona a nova tag ao UI principal
+  const tagsContainer = document.getElementById('galleryTags');
+  const newChip = document.createElement('span');
+  newChip.className = 'toca-chip';
+  newChip.dataset.tag = tagName;
+  newChip.textContent = tagName.replace('-', ' ');
+  newChip.onclick = (e) => filterByTag(tagName, e);
+  tagsContainer.insertBefore(newChip, tagsContainer.lastElementChild);
+
+  input.value = '';
+  showToast(`✓ Tag "${tagName}" adicionada`);
+  renderTagsManagement();
+}
+
+function editTagName(oldTag) {
+  const newTag = prompt('Novo nome da tag:', oldTag);
+  if (!newTag || newTag.trim() === '') return;
+
+  const newTagNormalized = newTag.trim().toLowerCase().replace(/\s+/g, '-');
+
+  if (newTagNormalized === oldTag) return;
+  if (allTags.includes(newTagNormalized)) {
+    showToast('⚠ Tag já existe');
+    return;
+  }
+
+  // Atualiza na lista de tags
+  const index = allTags.indexOf(oldTag);
+  allTags[index] = newTagNormalized;
+
+  // Atualiza o mapeamento de fotos
+  Object.keys(photoTagsMap).forEach(photoId => {
+    if (photoTagsMap[photoId].includes(oldTag)) {
+      photoTagsMap[photoId] = photoTagsMap[photoId].map(t => t === oldTag ? newTagNormalized : t);
+    }
+  });
+
+  // Atualiza UI
+  const chips = document.querySelectorAll('#galleryTags .toca-chip');
+  chips.forEach(chip => {
+    if (chip.dataset.tag === oldTag) {
+      chip.dataset.tag = newTagNormalized;
+      chip.textContent = newTag.replace('-', ' ');
+    }
+  });
+
+  showToast(`✓ Tag renomeada para "${newTag}"`);
+  renderTagsManagement();
+}
+
+async function deleteTag(tagToDelete) {
+  // Verifica se há fotos com esta tag
+  const photosWithTag = Object.keys(photoTagsMap).filter(photoId =>
+    photoTagsMap[photoId].includes(tagToDelete)
+  );
+
+  if (photosWithTag.length > 0) {
+    // Mostra lista de fotos e pede para qual tag migrar
+    const photoCount = photosWithTag.length;
+    const targetTag = prompt(`Existem ${photoCount} foto(s) com esta tag. Para qual tag deseja migrar essas fotos?\nTags disponíveis: ${allTags.filter(t => t !== tagToDelete).join(', ')}`);
+
+    if (!targetTag) return;
+
+    const targetTagNormalized = targetTag.trim().toLowerCase().replace(/\s+/g, '-');
+
+    if (!allTags.includes(targetTagNormalized)) {
+      showToast('⚠ Tag inválida');
+      return;
+    }
+
+    if (!confirmAction(`Tem certeza que deseja excluir a tag "${tagToDelete}" e migrar ${photoCount} foto(s) para "${targetTag}"?`)) {
+      return;
+    }
+
+    // Atualiza o mapeamento de fotos
+    photosWithTag.forEach(photoId => {
+      photoTagsMap[photoId] = photoTagsMap[photoId].filter(t => t !== tagToDelete);
+      if (targetTagNormalized !== 'todas') {
+        photoTagsMap[photoId].push(targetTagNormalized);
+      }
+    });
+
+    // Remove a tag da lista
+    allTags = allTags.filter(t => t !== tagToDelete);
+
+    // Atualiza UI
+    const chipToDelete = document.querySelector(`#galleryTags .toca-chip[data-tag="${tagToDelete}"]`);
+    if (chipToDelete) chipToDelete.remove();
+
+    showToast(`✓ Tag "${tagToDelete}" excluída e ${photoCount} foto(s) migradas para "${targetTag}"`);
+  } else {
+    if (!confirmAction(`Tem certeza que deseja excluir a tag "${tagToDelete}"?`)) {
+      return;
+    }
+
+    // Remove a tag da lista
+    allTags = allTags.filter(t => t !== tagToDelete);
+
+    // Atualiza UI
+    const chipToDelete = document.querySelector(`#galleryTags .toca-chip[data-tag="${tagToDelete}"]`);
+    if (chipToDelete) chipToDelete.remove();
+
+    showToast(`✓ Tag "${tagToDelete}" excluída`);
+  }
+
+  renderTagsManagement();
+}
 
 function renderGallery() {
   const track = document.getElementById('carouselTrack');
   const dots  = document.getElementById('carouselDots');
   const grid  = document.getElementById('galleryGrid');
 
-  // Filter gallery by tag if a filter is active
-  const filteredGallery = window.currentTagFilter
-    ? galleryCache.filter(item => item.data.tags && item.data.tags.includes(window.currentTagFilter))
-    : galleryCache;
+  // Filtra fotos com base nas tags selecionadas
+  const filteredPhotos = getFilteredPhotos();
 
-  if (!filteredGallery.length) {
+  // Debug: log para ver o que está acontecendo
+  console.log('renderGallery called:', {
+    galleryCacheLength: galleryCache.length,
+    selectedTags: selectedTags,
+    filteredPhotosLength: filteredPhotos.length
+  });
+
+  if (!galleryCache.length) {
     track.innerHTML = `<div class="carousel-empty" style="min-width:100%">Nenhuma foto ainda. Seja o primeiro a postar! 📷</div>`;
     dots.innerHTML  = '';
     grid.innerHTML  = '';
@@ -2109,10 +2427,10 @@ function renderGallery() {
   document.querySelector('.carousel-prev').style.display = '';
   document.querySelector('.carousel-next').style.display = '';
 
-  if (carouselIndex >= filteredGallery.length) carouselIndex = 0;
-  if (carouselIndex < 0) carouselIndex = filteredGallery.length - 1;
+  if (carouselIndex >= galleryCache.length) carouselIndex = 0;
+  if (carouselIndex < 0) carouselIndex = galleryCache.length - 1;
 
-  track.innerHTML = filteredGallery.map(({id, data: p}) => {
+  track.innerHTML = filteredPhotos.map(({id, data: p}) => {
     const r = p.reactions || {};
     const likes    = Object.values(r).filter(v=>v==='like').length;
     const dislikes = Object.values(r).filter(v=>v==='dislike').length;
@@ -2132,18 +2450,18 @@ function renderGallery() {
       ${statsHtml}
       <div class="carousel-caption">
         <div class="carousel-caption-text">${p.caption||''}</div>
-        <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}${p.tags && p.tags.length ? `<br>#${p.tags.map(t => t).join(' #')}` : ''}<br style="margin-bottom:.3rem">${del}</div>
+        <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}</div>
       </div>
     </div>`;
   }).join('');
 
-  dots.innerHTML = filteredGallery.map((_,i) =>
+  dots.innerHTML = galleryCache.map((_,i) =>
     `<button class="carousel-dot${i===carouselIndex?' active':''}" onclick="carouselGo(${i})"></button>`
   ).join('');
 
   track.style.transform = `translateX(-${carouselIndex * 100}%)`;
 
-  grid.innerHTML = filteredGallery.map(({id, data: p}, i) => {
+  grid.innerHTML = filteredPhotos.map(({id, data: p}, originalIndex) => {
     const r = p.reactions || {};
     const likes    = Object.values(r).filter(v=>v==='like').length;
     const dislikes = Object.values(r).filter(v=>v==='dislike').length;
@@ -2155,11 +2473,9 @@ function renderGallery() {
       <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
       <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
     </div>`;
-    const tagsHtml = p.tags && p.tags.length ? `<div style="margin-top:.3rem;display:flex;flex-wrap:wrap;gap:.2rem">${p.tags.map(t => `<span class="toca-chip" style="font-size:.5rem;padding:.1rem .3rem;">#${t}</span>`).join('')}</div>` : '';
     return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
       <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
       ${statsHtml}
-      ${tagsHtml}
       ${del}
     </div>`;
   }).join('');
@@ -2176,6 +2492,30 @@ setInterval(() => {
 }, 5000);
 
 // Preview files before upload
+function renderTagsSelection() {
+  const container = document.getElementById('tagsSelection');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const tagsExceptTodas = allTags.filter(t => t !== 'todas');
+
+  tagsExceptTodas.forEach(tag => {
+    const tagEl = document.createElement('label');
+    tagEl.className = 'tag-checkbox selected';
+    tagEl.innerHTML = `
+      <input type="checkbox" value="${tag}" checked>
+      ${tag.replace('-', ' ')}
+    `;
+    tagEl.onclick = (e) => {
+      e.preventDefault();
+      const checkbox = tagEl.querySelector('input');
+      checkbox.checked = !checkbox.checked;
+      tagEl.classList.toggle('selected', checkbox.checked);
+    };
+    container.appendChild(tagEl);
+  });
+}
+
 window.handleGalleryFiles = e => {
   galleryFilesBuf = Array.from(e.target.files);
   if (!galleryFilesBuf.length) return;
@@ -2193,6 +2533,9 @@ window.handleGalleryFiles = e => {
     };
     reader.readAsDataURL(f);
   });
+
+  // Renderiza seleção de tags
+  renderTagsSelection();
 };
 
 // Upload to Firebase Storage with progress toast + compression
@@ -2210,8 +2553,6 @@ window.uploadGalleryPhotos = async () => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   if (!galleryFilesBuf.length) { showToast('⚠ Selecione ao menos uma foto'); return; }
   const caption  = document.getElementById('galleryCaption').value.trim();
-  const tagsInput = document.getElementById('galleryTags').value.trim();
-  const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
   const userName = auth.currentUser?.displayName?.split(' ')[0] || 'Membro';
   const dateStr  = new Date().toLocaleDateString('pt-BR');
   const total    = galleryFilesBuf.length;
@@ -2251,17 +2592,27 @@ window.uploadGalleryPhotos = async () => {
         reject,
         async () => {
           const url = await getDownloadURL(task.snapshot.ref);
-          await addDoc(collection(db,'gallery'), {
+
+          // Pega tags selecionadas pelo usuário, adiciona 'todas'
+          const selectedTags = getSelectedUploadTags() || [];
+          const photoTags = ['todas', ...selectedTags]; // 'todas' é sempre incluída
+
+          const photoData = {
             url,
             storagePath: path,
             caption,
-            tags: tags,
             addedBy: userName,
             date: dateStr,
             createdAt: serverTimestamp(),
             origSize: Math.round(origSize / 1024),
-            compSize: Math.round(compSize / 1024)
-          });
+            compSize: Math.round(compSize / 1024),
+            tags: photoTags
+          };
+
+          const docRef = await addDoc(collection(db,'gallery'), photoData);
+
+          // Atualiza o mapeamento local
+          photoTagsMap[docRef.id] = ['bastidores', 'todas'];
           resolve();
         }
       );
@@ -2279,6 +2630,15 @@ window.uploadGalleryPhotos = async () => {
 };
 
 // Delete from Storage + Firestore
+// Pega as tags selecionadas no upload
+function getSelectedUploadTags() {
+  const container = document.getElementById('tagsSelection');
+  if (!container) return [];
+
+  const checkboxes = container.querySelectorAll('.tag-checkbox input[type="checkbox"]:checked');
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
 window.editCaption = async id => {
   if (!isMember) return;
   const snap = await getDoc(doc(db,'gallery',id));
@@ -2288,6 +2648,39 @@ window.editCaption = async id => {
   if (newCaption === null) return; // cancelou
   await updateDoc(doc(db,'gallery',id), {caption: newCaption});
   showToast('✓ Descrição atualizada!');
+};
+
+window.editPhotoTags = async id => {
+  if (!isMember) return;
+
+  // Pega as tags atuais da foto
+  const currentTags = photoTagsMap[id] || [];
+
+  // Cria uma interface para selecionar tags
+  const allTagsExceptTodas = allTags.filter(t => t !== 'todas');
+  const selectedTags = currentTags.slice(); // cópia
+
+  const message = `Selecione as tags para esta foto:\n\n` +
+    `Tags disponíveis:\n${allTagsExceptTodas.map(t =>
+      selectedTags.includes(t) ? `✓ ${t}` : `  ${t}`
+    ).join('\n')}\n\n` +
+    `Digite os números das tags separados por vírgula (ex: 1,3,5):`;
+
+  const input = prompt(message);
+  if (input === null) return;
+
+  // Processa a seleção
+  const selectedIndices = input.split(',').map(s => parseInt(s.trim()) - 1).filter(i => i >= 0 && i < allTagsExceptTodas.length);
+  const newTags = selectedIndices.map(i => allTagsExceptTodas[i]);
+
+  // Atualiza o mapeamento local
+  photoTagsMap[id] = newTags;
+
+  // Atualiza o Firestore
+  await updateDoc(doc(db,'gallery',id), {tags: newTags});
+
+  showToast(`✓ Tags atualizadas: ${newTags.join(', ') || 'nenhuma'}`);
+  renderGallery(); // Atualiza a visualização
 };
 
 window.deleteGalleryPhoto = async (id, path) => {
@@ -2319,13 +2712,15 @@ window.openLightbox = async id => {
   document.getElementById('lbImg').src = p.url;
   document.getElementById('lbImg').alt = p.caption || '';
 
-  // Caption + edit button
+  // Caption + edit buttons
   const captionEl = document.getElementById('lbCaption');
-  const editHtml = isMember
-    ? `<button onclick="editCaption('${id}')" style="background:none;border:1px solid rgba(200,130,10,.25);color:var(--amber);padding:.15rem .45rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-left:.5rem;vertical-align:middle;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.25)'">✏</button>`
+  const editButtonsHtml = isMember
+    ? `
+      <button onclick="editCaption('${id}')" style="background:none;border:1px solid rgba(200,130,10,.25);color:var(--amber);padding:.15rem .45rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-left:.5rem;vertical-align:middle;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.25)'">✏ Descrição</button>
+      <button onclick="editPhotoTags('${id}')" style="background:none;border:1px solid rgba(200,130,10,.25);color:var(--amber);padding:.15rem .45rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-left:.5rem;vertical-align:middle;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.25)'">🏷️ Tags</button>
+    `
     : '';
-  const tagsHtml = p.tags && p.tags.length ? `<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.3rem">${p.tags.map(t => `<span class="toca-chip" style="font-size:.6rem;padding:.2rem .4rem;">#${t}</span>`).join('')}</div>` : '';
-  captionEl.innerHTML = (p.caption || '') + editHtml + tagsHtml;
+  captionEl.innerHTML = (p.caption || '') + editButtonsHtml;
 
   document.getElementById('lbMeta').textContent = `${p.addedBy||''} · ${p.date||''}`;
 
@@ -2370,6 +2765,11 @@ document.addEventListener('wheel', e => {
     e.preventDefault();
   }
 }, { passive: false });
+
+// Inicialização das tags quando a página carrega
+document.addEventListener('DOMContentLoaded', () => {
+  updateTagsUI();
+});
 
 function renderLightboxReactions(id, p) {
   const el = document.getElementById('lbReactions');
@@ -2581,143 +2981,67 @@ window.delLbReply = async (id, cIdx, rIdx) => {
   showToast('Resposta excluída.');
 };
 
-// Tag management functions
-async function loadAllTags() {
-  try {
-    const snapshot = await getDocs(collection(db, 'gallery'));
-    const tagsSet = new Set();
-
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.tags && Array.isArray(data.tags)) {
-        data.tags.forEach(tag => {
-          if (tag && typeof tag === 'string') {
-            tagsSet.add(tag.trim().toLowerCase());
-          }
-        });
-      }
-    });
-
-    return Array.from(tagsSet).sort();
-  } catch (error) {
-    console.error('Error loading tags:', error);
-    return [];
-  }
-}
-
-function renderTagFilter() {
-  const container = document.getElementById('tagFilterContainer');
-  if (!container) return;
-
-  container.innerHTML = `
-    <div style="margin-bottom: 1rem;">
-      <button id="manageTagsBtn" class="btn" style="background:rgba(200,130,10,.2);border:1px solid rgba(200,130,10,.3);color:var(--amber);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;">
-        Gerenciar Tags
-      </button>
-    </div>
-    <div id="tagsList" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem;"></div>
-  `;
-
-  loadAllTags().then(tags => {
-    const tagsList = document.getElementById('tagsList');
-    if (!tagsList) return;
-
-    tagsList.innerHTML = tags.map(tag => `
-      <span class="toca-chip" data-tag="${tag}" style="cursor:pointer;">
-        #${tag}
-      </span>
-    `).join('');
-
-    // Add click handlers to tags
-    tags.forEach(tag => {
-      const tagElement = document.querySelector(`[data-tag="${tag}"]`);
-      if (tagElement) {
-        tagElement.onclick = () => filterGalleryByTag(tag);
-      }
-    });
-  });
-
-  // Add click handler to manage tags button
-  const manageTagsBtn = document.getElementById('manageTagsBtn');
-  if (manageTagsBtn) {
-    manageTagsBtn.onclick = manageTags;
-  }
-}
-
-function filterGalleryByTag(tag) {
-  // Add visual feedback for active filter
-  document.querySelectorAll('.toca-chip').forEach(chip => {
-    chip.style.opacity = chip.dataset.tag === tag ? '1' : '0.5';
-  });
-
-  // Store current filter in state (you could use a global variable)
-  window.currentTagFilter = tag;
-  renderGallery(); // This will need to be updated to respect the filter
-}
-
-async function manageTags() {
-  const tags = await loadAllTags();
-  if (!tags.length) {
-    showToast('Nenhuma tag encontrada.');
-    return;
-  }
-
-  const tagList = tags.map((tag, index) => `${index + 1}. #${tag}`).join('\n');
-  const tagToDelete = prompt(`Tags disponíveis:\n${tagList}\n\nDigite o número da tag que deseja excluir (ou 0 para cancelar):`);
-
-  if (!tagToDelete || tagToDelete.trim() === '0') return;
-
-  const tagIndex = parseInt(tagToDelete) - 1;
-  if (isNaN(tagIndex) || tagIndex < 0 || tagIndex >= tags.length) {
-    showToast('Número inválido.');
-    return;
-  }
-
-  const tagToDeleteName = tags[tagIndex];
-
-  // Ask what to do with photos that have this tag
-  const migrateOption = prompt(`Deseja migrar as fotos com a tag "#${tagToDeleteName}" para outra tag antes de excluí-la?\nDigite o nome da nova tag (ou deixe vazio para remover a tag das fotos):`);
-
-  if (migrateOption === null) return; // User cancelled
-
-  try {
-    const gallerySnapshot = await getDocs(collection(db, 'gallery'));
-    const updates = [];
-
-    gallerySnapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.tags && Array.isArray(data.tags) && data.tags.includes(tagToDeleteName)) {
-        const newTags = migrateOption !== null && migrateOption.trim() !== ''
-          ? [...new Set([...data.tags.filter(t => t !== tagToDeleteName), migrateOption.trim()])]
-          : data.tags.filter(t => t !== tagToDeleteName);
-
-        if (newTags.length !== data.tags.length) {
-          updates.push(updateDoc(doc.ref, {tags: newTags}));
-        }
-      }
-    });
-
-    if (updates.length > 0) {
-      await Promise.all(updates);
-      showToast(`Tag "#${tagToDeleteName}" processada em ${updates.length} foto(s).`);
-    }
-
-    // Reload tags and refresh UI
-    await loadAllTags();
-    renderTagFilter();
-    renderGallery();
-
-  } catch (error) {
-    console.error('Error managing tags:', error);
-    showToast('Erro ao gerenciar tags.');
-  }
-}
-
 // Refresh lightbox when gallery doc updates (real-time comments/reactions)
 const lbSnapshots = {};
 
+// Função para garantir que todas as fotos tenham as tags necessárias
+async function ensurePhotoTags(photoId, currentTags) {
+  let tags = currentTags || [];
+  if (!tags.includes('todas')) {
+    tags = [...tags, 'todas'];
+  }
+  if (!tags.includes('bastidores')) {
+    tags = [...tags, 'bastidores'];
+  }
+
+  if (JSON.stringify(tags) !== JSON.stringify(currentTags)) {
+    await updateDoc(doc(db, 'gallery', photoId), { tags: tags });
+    photoTagsMap[photoId] = tags;
+  }
+}
+
 onSnapshot(query(collection(db,'gallery'), orderBy('createdAt','desc')), snap => {
-  galleryCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  console.log('Gallery snapshot received:', snap.docs.length);
+  galleryCache = snap.docs.map(d => {
+    const data = d.data();
+    // Garante que todas as fotos tenham 'todas' e 'bastidores'
+    let tags = data.tags || [];
+    if (!tags.includes('todas')) {
+      tags = [...tags, 'todas'];
+    }
+    if (!tags.includes('bastidores')) {
+      tags = [...tags, 'bastidores'];
+    }
+    // Atualiza o mapeamento de tags
+    photoTagsMap[d.id] = tags;
+    return {id: d.id, data: {...data, tags: tags}};
+  });
+
+  // Atualiza fotos antigas no Firestore se necessário
+  snap.docs.forEach(async d => {
+    const data = d.data();
+    let needsUpdate = false;
+    let updateData = {};
+
+    if (!data.tags || !data.tags.includes('todas')) {
+      updateData.tags = data.tags ? [...data.tags, 'todas', 'bastidores'] : ['todas', 'bastidores'];
+      needsUpdate = true;
+    } else if (!data.tags.includes('bastidores')) {
+      updateData.tags = [...data.tags, 'bastidores'];
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      try {
+        await updateDoc(doc(db, 'gallery', d.id), updateData);
+        console.log(`Updated tags for photo ${d.id}`);
+      } catch (e) {
+        console.error(`Error updating tags for photo ${d.id}:`, e);
+      }
+    }
+  });
+
+  console.log('photoTagsMap after update:', photoTagsMap);
   renderGallery();
   // se tem lightbox aberto, atualiza
   if (currentLbId) {
@@ -2727,9 +3051,6 @@ onSnapshot(query(collection(db,'gallery'), orderBy('createdAt','desc')), snap =>
       renderLightboxComments(currentLbId, found.data());
     }
   }
-
-  // Update tag filter when gallery data changes
-  renderTagFilter();
 });
 
 // ═══════════════════════════════════════════════════════════════════
