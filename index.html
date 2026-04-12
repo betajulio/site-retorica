@@ -416,48 +416,6 @@
   .gallery-thumb:hover{border-color:rgba(200,130,10,.5)}
   .gallery-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
   .gallery-thumb:hover img{transform:scale(1.05)}
-  /* NOVA GALERIA COM SISTEMA DE TAGS */
-  .gallery-item{position:relative;aspect-ratio:1;overflow:hidden;border:1px solid rgba(200,130,10,.2);border-radius:2px;cursor:pointer;transition:transform .3s,border-color .3s;background:rgba(19,15,9,.5)}
-  .gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
-  .gallery-item:hover{transform:scale(1.02);border-color:rgba(200,130,10,.5)}
-  .gallery-item:hover img{transform:scale(1.05)}
-  .gallery-item-overlay{position:absolute;inset:0;background:rgba(10,8,4,.4);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:1rem;backdrop-filter:blur(4px)}
-  .gallery-item:hover .gallery-item-overlay{opacity:1}
-  .gallery-item-title{font-family:'Cinzel',serif;font-size:.8rem;color:var(--gold);letter-spacing:.08em}
-  .gallery-item-tags{display:flex;flex-wrap:wrap;gap:.3rem}
-  .gallery-item-tag-label{background:rgba(200,130,10,.3);color:var(--cream);font-size:.65rem;padding:.2rem .4rem;border-radius:1px;font-family:'Cinzel',serif;letter-spacing:.05em}
-  
-  .gallery-tags-wrapper{margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:1px solid rgba(200,130,10,.15)}
-  .gallery-tags-label{font-family:'Cinzel',serif;font-size:.85rem;color:var(--smoke);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.8rem;display:block}
-  .gallery-tags-container{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
-  .gallery-tag-btn{background:rgba(200,130,10,.08);border:1px solid rgba(200,130,10,.3);color:var(--smoke);padding:.4rem .8rem;border-radius:2px;cursor:pointer;transition:all .2s;font-family:'Lora',serif;font-size:.8rem;letter-spacing:.05em;white-space:nowrap;position:relative}
-  .gallery-tag-btn:hover{background:rgba(200,130,10,.12);border-color:rgba(200,130,10,.5);color:var(--amber)}
-  .gallery-tag-btn.active{background:rgba(200,130,10,.25);border-color:var(--gold);color:var(--cream);box-shadow:0 0 12px rgba(200,130,10,.2)}
-  .gallery-tag-btn.all-btn{background:rgba(139,58,10,.12);border-color:rgba(139,58,10,.4)}
-  .gallery-tag-btn.all-btn.active{background:rgba(139,58,10,.3);border-color:var(--rust);color:var(--cream)}
-  .gallery-tag-delete{position:absolute;top:-8px;right:-8px;background:rgba(200,130,10,.3);color:var(--cream);border:none;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:.65rem;display:none;align-items:center;justify-content:center;transition:all .2s;padding:0;line-height:1;z-index:10}
-  .gallery-tag-btn:hover .gallery-tag-delete{display:flex}
-  .gallery-tag-delete:hover{background:var(--rust);transform:scale(1.1)}
-  .gallery-tag-add-btn{background:rgba(200,130,10,.12);border:1px dashed rgba(200,130,10,.4);color:var(--amber);padding:.4rem .6rem;cursor:pointer;transition:all .2s;font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;border-radius:2px}
-  .gallery-tag-add-btn:hover{background:rgba(200,130,10,.2);border-color:var(--gold);color:var(--gold)}
-  
-  .gallery-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;align-items:center;justify-content:center;padding:2rem;backdrop-filter:blur(10px)}
-  .gallery-modal.active{display:flex}
-  .gallery-modal-content{background:linear-gradient(135deg,rgba(42,26,8,.95),rgba(19,15,9,.95));border:1px solid rgba(200,130,10,.3);max-width:90vw;max-height:90vh;border-radius:2px;overflow:auto;position:relative}
-  .gallery-modal-close{position:absolute;top:1rem;right:1rem;background:rgba(200,130,10,.1);border:1px solid rgba(200,130,10,.3);color:var(--cream);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;transition:all .2s;font-size:1.2rem}
-  .gallery-modal-close:hover{background:rgba(200,130,10,.3);border-color:var(--amber)}
-  .gallery-modal-img{width:100%;height:auto;display:block;max-height:70vh;object-fit:contain;max-width:100%;padding:1rem}
-  .gallery-modal-info{padding:2rem}
-  .gallery-modal-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);margin-bottom:1rem;letter-spacing:.08em}
-  .gallery-modal-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1rem;margin-bottom:1.5rem}
-  .gallery-modal-tag{background:rgba(200,130,10,.15);border:1px solid rgba(200,130,10,.3);color:var(--cream);padding:.35rem .7rem;border-radius:2px;font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.05em}
-  .gallery-modal-edit-section{margin-top:2rem;padding-top:2rem;border-top:1px solid rgba(200,130,10,.2)}
-  .gallery-modal-edit-label{font-family:'Cinzel',serif;font-size:.8rem;color:var(--smoke);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.8rem;display:block}
-  .gallery-modal-tags-edit{display:flex;flex-wrap:wrap;gap:.5rem}
-  .gallery-modal-tag-cb{display:none}
-  .gallery-modal-tag-label{background:rgba(200,130,10,.08);border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.35rem .7rem;border-radius:2px;cursor:pointer;transition:all .2s;font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.05em;user-select:none}
-  .gallery-modal-tag-cb:checked+.gallery-modal-tag-label{background:rgba(200,130,10,.2);border-color:var(--amber);color:var(--amber)}
-
   .gallery-thumb-active{border-color:var(--amber)!important;box-shadow:0 0 0 2px rgba(200,130,10,.3)}
   .gallery-thumb-del{position:absolute;top:.3rem;right:.3rem;background:rgba(10,8,4,.8);border:none;color:var(--rust);cursor:pointer;border-radius:50%;width:22px;height:22px;font-size:.7rem;display:none;align-items:center;justify-content:center;transition:all .2s}
   .gallery-thumb:hover .gallery-thumb-del{display:flex}
@@ -943,10 +901,8 @@
       <div class="toca-badge-kicker">Quartel-general</div>
       <div class="toca-badge-name">Toca do Mineiro</div>
       <div class="toca-badge-sub">Nosso home studio, onde os ensaios viram registro, bagunça boa e memória antes de entrar no carrossel.</div>
-      <div class="toca-badge-meta">
-        <span class="toca-chip">Home Studio</span>
-        <span class="toca-chip">Ensaios</span>
-        <span class="toca-chip">Bastidores</span>
+      <div class="toca-badge-meta" id="tagFilterContainer">
+        <!-- Tags will be dynamically loaded here -->
       </div>
     </div>
   </div>
@@ -975,6 +931,12 @@
         <div class="form-group">
           <label>Descrição (opcional)</label>
           <input type="text" id="galleryCaption" placeholder="Ex: Ensaio do dia 10/05 — aquecimento">
+        </div>
+      </div>
+      <div class="form-row full" style="margin-bottom:.8rem">
+        <div class="form-group">
+          <label>Tags (opcional, separadas por vírgula)</label>
+          <input type="text" id="galleryTags" placeholder="Ex: bastidores, ensaio, show">
         </div>
       </div>
       <div id="galleryPreviewWrap" style="display:none;margin-bottom:1rem">
@@ -1036,7 +998,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc,
   onSnapshot, addDoc, deleteDoc, updateDoc,
-  setDoc, getDoc, orderBy, query, serverTimestamp, runTransaction, Timestamp
+  setDoc, getDoc, getDocs, orderBy, query, serverTimestamp, runTransaction, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
@@ -1155,6 +1117,11 @@ window.doLogout = async () => {
   await signOut(auth);
   showToast('Até logo!');
 };
+
+// Initialize tag system when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  renderTagFilter();
+});
 
 // ─── UTILS ─────────────────────────────────────────────────────────
 window.goTo = id => {
@@ -2125,7 +2092,12 @@ function renderGallery() {
   const dots  = document.getElementById('carouselDots');
   const grid  = document.getElementById('galleryGrid');
 
-  if (!galleryCache.length) {
+  // Filter gallery by tag if a filter is active
+  const filteredGallery = window.currentTagFilter
+    ? galleryCache.filter(item => item.data.tags && item.data.tags.includes(window.currentTagFilter))
+    : galleryCache;
+
+  if (!filteredGallery.length) {
     track.innerHTML = `<div class="carousel-empty" style="min-width:100%">Nenhuma foto ainda. Seja o primeiro a postar! 📷</div>`;
     dots.innerHTML  = '';
     grid.innerHTML  = '';
@@ -2137,10 +2109,10 @@ function renderGallery() {
   document.querySelector('.carousel-prev').style.display = '';
   document.querySelector('.carousel-next').style.display = '';
 
-  if (carouselIndex >= galleryCache.length) carouselIndex = 0;
-  if (carouselIndex < 0) carouselIndex = galleryCache.length - 1;
+  if (carouselIndex >= filteredGallery.length) carouselIndex = 0;
+  if (carouselIndex < 0) carouselIndex = filteredGallery.length - 1;
 
-  track.innerHTML = galleryCache.map(({id, data: p}) => {
+  track.innerHTML = filteredGallery.map(({id, data: p}) => {
     const r = p.reactions || {};
     const likes    = Object.values(r).filter(v=>v==='like').length;
     const dislikes = Object.values(r).filter(v=>v==='dislike').length;
@@ -2160,18 +2132,18 @@ function renderGallery() {
       ${statsHtml}
       <div class="carousel-caption">
         <div class="carousel-caption-text">${p.caption||''}</div>
-        <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}</div>
+        <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}${p.tags && p.tags.length ? `<br>#${p.tags.map(t => t).join(' #')}` : ''}<br style="margin-bottom:.3rem">${del}</div>
       </div>
     </div>`;
   }).join('');
 
-  dots.innerHTML = galleryCache.map((_,i) =>
+  dots.innerHTML = filteredGallery.map((_,i) =>
     `<button class="carousel-dot${i===carouselIndex?' active':''}" onclick="carouselGo(${i})"></button>`
   ).join('');
 
   track.style.transform = `translateX(-${carouselIndex * 100}%)`;
 
-  grid.innerHTML = galleryCache.map(({id, data: p}, i) => {
+  grid.innerHTML = filteredGallery.map(({id, data: p}, i) => {
     const r = p.reactions || {};
     const likes    = Object.values(r).filter(v=>v==='like').length;
     const dislikes = Object.values(r).filter(v=>v==='dislike').length;
@@ -2183,9 +2155,11 @@ function renderGallery() {
       <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
       <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
     </div>`;
+    const tagsHtml = p.tags && p.tags.length ? `<div style="margin-top:.3rem;display:flex;flex-wrap:wrap;gap:.2rem">${p.tags.map(t => `<span class="toca-chip" style="font-size:.5rem;padding:.1rem .3rem;">#${t}</span>`).join('')}</div>` : '';
     return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
       <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
       ${statsHtml}
+      ${tagsHtml}
       ${del}
     </div>`;
   }).join('');
@@ -2236,6 +2210,8 @@ window.uploadGalleryPhotos = async () => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   if (!galleryFilesBuf.length) { showToast('⚠ Selecione ao menos uma foto'); return; }
   const caption  = document.getElementById('galleryCaption').value.trim();
+  const tagsInput = document.getElementById('galleryTags').value.trim();
+  const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
   const userName = auth.currentUser?.displayName?.split(' ')[0] || 'Membro';
   const dateStr  = new Date().toLocaleDateString('pt-BR');
   const total    = galleryFilesBuf.length;
@@ -2279,6 +2255,7 @@ window.uploadGalleryPhotos = async () => {
             url,
             storagePath: path,
             caption,
+            tags: tags,
             addedBy: userName,
             date: dateStr,
             createdAt: serverTimestamp(),
@@ -2347,7 +2324,8 @@ window.openLightbox = async id => {
   const editHtml = isMember
     ? `<button onclick="editCaption('${id}')" style="background:none;border:1px solid rgba(200,130,10,.25);color:var(--amber);padding:.15rem .45rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-left:.5rem;vertical-align:middle;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.25)'">✏</button>`
     : '';
-  captionEl.innerHTML = (p.caption || '') + editHtml;
+  const tagsHtml = p.tags && p.tags.length ? `<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.3rem">${p.tags.map(t => `<span class="toca-chip" style="font-size:.6rem;padding:.2rem .4rem;">#${t}</span>`).join('')}</div>` : '';
+  captionEl.innerHTML = (p.caption || '') + editHtml + tagsHtml;
 
   document.getElementById('lbMeta').textContent = `${p.addedBy||''} · ${p.date||''}`;
 
@@ -2603,6 +2581,138 @@ window.delLbReply = async (id, cIdx, rIdx) => {
   showToast('Resposta excluída.');
 };
 
+// Tag management functions
+async function loadAllTags() {
+  try {
+    const snapshot = await getDocs(collection(db, 'gallery'));
+    const tagsSet = new Set();
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.tags && Array.isArray(data.tags)) {
+        data.tags.forEach(tag => {
+          if (tag && typeof tag === 'string') {
+            tagsSet.add(tag.trim().toLowerCase());
+          }
+        });
+      }
+    });
+
+    return Array.from(tagsSet).sort();
+  } catch (error) {
+    console.error('Error loading tags:', error);
+    return [];
+  }
+}
+
+function renderTagFilter() {
+  const container = document.getElementById('tagFilterContainer');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="margin-bottom: 1rem;">
+      <button id="manageTagsBtn" class="btn" style="background:rgba(200,130,10,.2);border:1px solid rgba(200,130,10,.3);color:var(--amber);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;">
+        Gerenciar Tags
+      </button>
+    </div>
+    <div id="tagsList" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem;"></div>
+  `;
+
+  loadAllTags().then(tags => {
+    const tagsList = document.getElementById('tagsList');
+    if (!tagsList) return;
+
+    tagsList.innerHTML = tags.map(tag => `
+      <span class="toca-chip" data-tag="${tag}" style="cursor:pointer;">
+        #${tag}
+      </span>
+    `).join('');
+
+    // Add click handlers to tags
+    tags.forEach(tag => {
+      const tagElement = document.querySelector(`[data-tag="${tag}"]`);
+      if (tagElement) {
+        tagElement.onclick = () => filterGalleryByTag(tag);
+      }
+    });
+  });
+
+  // Add click handler to manage tags button
+  const manageTagsBtn = document.getElementById('manageTagsBtn');
+  if (manageTagsBtn) {
+    manageTagsBtn.onclick = manageTags;
+  }
+}
+
+function filterGalleryByTag(tag) {
+  // Add visual feedback for active filter
+  document.querySelectorAll('.toca-chip').forEach(chip => {
+    chip.style.opacity = chip.dataset.tag === tag ? '1' : '0.5';
+  });
+
+  // Store current filter in state (you could use a global variable)
+  window.currentTagFilter = tag;
+  renderGallery(); // This will need to be updated to respect the filter
+}
+
+async function manageTags() {
+  const tags = await loadAllTags();
+  if (!tags.length) {
+    showToast('Nenhuma tag encontrada.');
+    return;
+  }
+
+  const tagList = tags.map((tag, index) => `${index + 1}. #${tag}`).join('\n');
+  const tagToDelete = prompt(`Tags disponíveis:\n${tagList}\n\nDigite o número da tag que deseja excluir (ou 0 para cancelar):`);
+
+  if (!tagToDelete || tagToDelete.trim() === '0') return;
+
+  const tagIndex = parseInt(tagToDelete) - 1;
+  if (isNaN(tagIndex) || tagIndex < 0 || tagIndex >= tags.length) {
+    showToast('Número inválido.');
+    return;
+  }
+
+  const tagToDeleteName = tags[tagIndex];
+
+  // Ask what to do with photos that have this tag
+  const migrateOption = prompt(`Deseja migrar as fotos com a tag "#${tagToDeleteName}" para outra tag antes de excluí-la?\nDigite o nome da nova tag (ou deixe vazio para remover a tag das fotos):`);
+
+  if (migrateOption === null) return; // User cancelled
+
+  try {
+    const gallerySnapshot = await getDocs(collection(db, 'gallery'));
+    const updates = [];
+
+    gallerySnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.tags && Array.isArray(data.tags) && data.tags.includes(tagToDeleteName)) {
+        const newTags = migrateOption !== null && migrateOption.trim() !== ''
+          ? [...new Set([...data.tags.filter(t => t !== tagToDeleteName), migrateOption.trim()])]
+          : data.tags.filter(t => t !== tagToDeleteName);
+
+        if (newTags.length !== data.tags.length) {
+          updates.push(updateDoc(doc.ref, {tags: newTags}));
+        }
+      }
+    });
+
+    if (updates.length > 0) {
+      await Promise.all(updates);
+      showToast(`Tag "#${tagToDeleteName}" processada em ${updates.length} foto(s).`);
+    }
+
+    // Reload tags and refresh UI
+    await loadAllTags();
+    renderTagFilter();
+    renderGallery();
+
+  } catch (error) {
+    console.error('Error managing tags:', error);
+    showToast('Erro ao gerenciar tags.');
+  }
+}
+
 // Refresh lightbox when gallery doc updates (real-time comments/reactions)
 const lbSnapshots = {};
 
@@ -2617,6 +2727,9 @@ onSnapshot(query(collection(db,'gallery'), orderBy('createdAt','desc')), snap =>
       renderLightboxComments(currentLbId, found.data());
     }
   }
+
+  // Update tag filter when gallery data changes
+  renderTagFilter();
 });
 
 // ═══════════════════════════════════════════════════════════════════
