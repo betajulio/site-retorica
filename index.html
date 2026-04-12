@@ -905,7 +905,7 @@
     <div class="section-line"></div>
   </div>
 
-  <div class="toca-badge" onclick="goTo('galeria')">
+  <div class="toca-badge">
     <div class="toca-badge-mark">
       <img src="imagens/Toca_do_Mineiro_logo_final.png" alt="Toca do Mineiro">
     </div>
@@ -913,22 +913,14 @@
       <div class="toca-badge-kicker">Quartel-general</div>
       <div class="toca-badge-name">Toca do Mineiro</div>
       <div class="toca-badge-sub">Nosso home studio, onde os ensaios viram registro, bagunça boa e memória antes de entrar no carrossel.</div>
-      <div class="toca-badge-meta">
-        <span class="toca-chip">Home Studio</span>
-        <span class="toca-chip">Ensaios</span>
-        <span class="toca-chip">Bastidores</span>
-      </div>
+      <div class="toca-badge-meta" id="galleryTagBar"></div>
     </div>
   </div>
 
-
-  <!-- Filtro de Tags -->
-  <div class="gallery-tag-bar" id="galleryTagBar"></div>
-
   <!-- Gerenciar Tags (apenas membros) -->
-  <div class="member-only" id="tagManagerWrap" style="margin-bottom:.6rem">
+  <div class="member-only" id="tagManagerWrap" style="margin:.6rem 0 1rem">
     <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
-      <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase">Gerenciar tags:</span>
+      <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase">Tags:</span>
       <div class="tag-manager-row" id="tagManagerChips"></div>
       <div style="display:flex;gap:.4rem;align-items:center">
         <input type="text" id="newTagInput" placeholder="Nova tag…" style="width:110px;padding:.25rem .5rem;font-size:.72rem;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.25);color:var(--cream);border-radius:1px;font-family:inherit" onkeydown="if(event.key==='Enter')addGalleryTag()">
@@ -1030,7 +1022,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc,
   onSnapshot, addDoc, deleteDoc, updateDoc,
-  setDoc, getDoc, orderBy, query, serverTimestamp, runTransaction, Timestamp
+  setDoc, getDoc, getDocs, orderBy, query, serverTimestamp, runTransaction, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
@@ -2647,9 +2639,13 @@ function renderTagBar() {
   const bar = document.getElementById('galleryTagBar');
   if (!bar) return;
   const allTags = ['Todas', ...galleryTags];
-  bar.innerHTML = allTags.map(t =>
-    `<button class="gallery-tag-btn${activeTagFilter===t?' active':''}" onclick="setTagFilter('${t}')">${t}</button>`
-  ).join('');
+  bar.innerHTML = allTags.map(t => {
+    const isActive = activeTagFilter === t;
+    const style = isActive
+      ? 'background:rgba(200,130,10,.28);border-color:var(--amber);color:var(--gold);cursor:pointer'
+      : 'cursor:pointer';
+    return `<span class="toca-chip" style="${style};user-select:none;transition:all .2s" onclick="setTagFilter('${t}')">${t}</span>`;
+  }).join('');
 }
 
 window.setTagFilter = tag => {
@@ -2662,7 +2658,9 @@ function renderTagManagerChips() {
   const el = document.getElementById('tagManagerChips');
   if (!el) return;
   el.innerHTML = galleryTags.map((t, i) =>
-    `<span class="tag-manager-chip">${t}<button onclick="removeGalleryTag(${i})" title="Excluir tag">✕</button></span>`
+    `<span class="tag-manager-chip">${t
+    }<button onclick="renameGalleryTag(${i})" title="Renomear tag" style="color:var(--amber);margin-left:.1rem">✎</button
+    ><button onclick="removeGalleryTag(${i})" title="Excluir tag">✕</button></span>`
   ).join('');
 }
 
@@ -2700,6 +2698,36 @@ window.removeGalleryTag = async idx => {
   if (selectedUploadTag === tag) { selectedUploadTag = ''; }
   await saveGalleryTags();
   showToast(`Tag "${tag}" excluída.`);
+};
+
+window.renameGalleryTag = async idx => {
+  if (!isMember) return;
+  const oldName = galleryTags[idx];
+  const newName = prompt(`Renomear tag "${oldName}" para:`, oldName);
+  if (!newName || !newName.trim()) return;
+  const trimmed = newName.trim();
+  if (trimmed === oldName) return;
+  if (galleryTags.includes(trimmed)) { showToast('⚠ Já existe uma tag com esse nome'); return; }
+
+  // Update tag list
+  galleryTags = galleryTags.map((t, i) => i === idx ? trimmed : t);
+
+  // Update activeTagFilter and selectedUploadTag if they pointed to old name
+  if (activeTagFilter === oldName) activeTagFilter = trimmed;
+  if (selectedUploadTag === oldName) selectedUploadTag = trimmed;
+
+  // Batch-update all gallery photos that have the old tag
+  showToast('⏳ Renomeando tag nas fotos…');
+  const q = query(collection(db,'gallery'));
+  const snap = await getDocs(q);
+  const toUpdate = snap.docs.filter(d => (d.data().tags||[]).includes(oldName));
+  for (const d of toUpdate) {
+    const tags = (d.data().tags||[]).map(t => t === oldName ? trimmed : t);
+    await updateDoc(doc(db,'gallery',d.id), { tags });
+  }
+
+  await saveGalleryTags();
+  showToast(`✓ Tag renomeada para "${trimmed}" (${toUpdate.length} foto${toUpdate.length!==1?'s':''} atualizadas)`);
 };
 
 async function saveGalleryTags() {
