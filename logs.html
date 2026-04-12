@@ -225,6 +225,54 @@
       <div class="empty-state" id="emptyState" style="display:none">Nenhum log encontrado.</div>
     </div>
 
+    <!-- CONFIGURAÇÕES DA GALERIA -->
+    <div class="detail-section" style="margin-top:2.5rem">
+      <div class="detail-title">⚙️ Configurações da Galeria</div>
+      <div style="background:linear-gradient(135deg,rgba(42,26,8,.5),rgba(19,15,9,.7));border:1px solid rgba(200,130,10,.15);border-radius:2px;padding:1.2rem 1.4rem">
+        <p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-bottom:1.2rem">
+          Controla a compressão aplicada a todas as fotos enviadas para a galeria.<br>
+          Quanto maior a qualidade, maior o arquivo enviado ao Storage.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div>
+            <label style="font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;color:var(--amber);text-transform:uppercase;display:block;margin-bottom:.5rem">
+              Qualidade da compressão: <span id="qualityLabel" style="color:var(--gold)">carregando…</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+              <input type="range" id="qualitySlider" min="30" max="100" step="5" value="70"
+                style="flex:1;min-width:180px;max-width:360px;accent-color:var(--amber);cursor:pointer"
+                oninput="onQualitySlide(this.value)">
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="qualityPresets">
+                <button class="filter-btn" onclick="setQualityPreset(50)">Baixa (50%)</button>
+                <button class="filter-btn" onclick="setQualityPreset(70)">Média (70%)</button>
+                <button class="filter-btn" onclick="setQualityPreset(85)">Alta (85%)</button>
+                <button class="filter-btn" onclick="setQualityPreset(95)">Máxima (95%)</button>
+              </div>
+            </div>
+            <p style="font-size:.72rem;color:var(--smoke);margin-top:.5rem;font-style:italic" id="qualityHint"></p>
+          </div>
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+            <label style="font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;color:var(--amber);text-transform:uppercase">
+              Resolução máxima:
+            </label>
+            <select id="maxPxSelect" onchange="onMaxPxChange(this.value)"
+              style="background:rgba(10,8,4,.8);border:1px solid rgba(200,130,10,.3);color:var(--cream);padding:.3rem .6rem;font-family:'Lora',serif;font-size:.82rem;border-radius:1px;cursor:pointer">
+              <option value="1280">1280px (compacto)</option>
+              <option value="1920" selected>1920px (recomendado)</option>
+              <option value="2560">2560px (grande)</option>
+              <option value="4096">4096px (original)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
+            <button class="btn-ghost" onclick="saveGalleryConfig()" style="border-color:var(--amber);color:var(--gold)">
+              💾 Salvar configurações
+            </button>
+            <span id="configSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- DANGER ZONE -->
     <div class="danger-zone" style="gap:1rem;flex-wrap:wrap">
       <div style="display:flex;flex-direction:column;gap:.4rem">
@@ -247,7 +295,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc, getDoc, getDocs,
   onSnapshot, deleteDoc, orderBy, query, writeBatch,
-  addDoc, serverTimestamp
+  addDoc, setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
@@ -734,6 +782,97 @@ window.triggerManualRehearsalZap = async () => {
 };
 
 // ─── UTILS ─────────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════════
+// GALLERY COMPRESSION CONFIG
+// ═══════════════════════════════════════════════════════════════════
+
+const QUALITY_HINTS = {
+  30: 'Compressão máxima — arquivos bem pequenos, qualidade visivelmente reduzida.',
+  40: 'Compressão alta — boa para economizar storage, perda perceptível em detalhes.',
+  50: 'Baixa qualidade — arquivos compactos, aceitável para fotos de bastidores.',
+  55: 'Qualidade baixa-média.',
+  60: 'Qualidade moderada — bom equilíbrio para a maioria dos usos.',
+  65: 'Qualidade moderada-boa.',
+  70: 'Qualidade média (padrão anterior) — redução de 30%, boa relação tamanho/visual.',
+  75: 'Qualidade boa — compressão suave, perda mínima.',
+  80: 'Qualidade alta — arquivos maiores, detalhes bem preservados.',
+  85: 'Alta qualidade — recomendado para fotos de shows e apresentações.',
+  90: 'Qualidade muito alta — pouca compressão, arquivos grandes.',
+  95: 'Qualidade máxima — quase sem perda, arquivos bem pesados.',
+  100: 'Sem compressão JPEG — arquivos muito grandes, não recomendado.',
+};
+
+async function loadGalleryConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
+    if (snap.exists()) {
+      const { quality = 70, maxPx = 1920 } = snap.data();
+      applyConfigToUI(quality, maxPx);
+    } else {
+      applyConfigToUI(70, 1920);
+    }
+  } catch(e) {
+    applyConfigToUI(70, 1920);
+  }
+}
+
+function applyConfigToUI(quality, maxPx) {
+  const slider = document.getElementById('qualitySlider');
+  const label  = document.getElementById('qualityLabel');
+  const hint   = document.getElementById('qualityHint');
+  const sel    = document.getElementById('maxPxSelect');
+  if (slider) slider.value = quality;
+  if (label)  label.textContent = `${quality}%`;
+  if (hint)   hint.textContent  = QUALITY_HINTS[quality] || '';
+  if (sel)    sel.value = String(maxPx);
+  updatePresetHighlight(quality);
+}
+
+function updatePresetHighlight(quality) {
+  document.querySelectorAll('#qualityPresets .filter-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('onclick').match(/\d+/)?.[0]);
+    btn.classList.toggle('active', val === quality);
+  });
+}
+
+window.onQualitySlide = val => {
+  const q = parseInt(val);
+  const label = document.getElementById('qualityLabel');
+  const hint  = document.getElementById('qualityHint');
+  if (label) label.textContent = `${q}%`;
+  if (hint)  hint.textContent  = QUALITY_HINTS[q] || '';
+  updatePresetHighlight(q);
+};
+
+window.setQualityPreset = val => {
+  const slider = document.getElementById('qualitySlider');
+  if (slider) { slider.value = val; onQualitySlide(val); }
+};
+
+window.onMaxPxChange = val => {
+  // nothing extra needed, value read on save
+};
+
+window.saveGalleryConfig = async () => {
+  const slider  = document.getElementById('qualitySlider');
+  const sel     = document.getElementById('maxPxSelect');
+  const status  = document.getElementById('configSaveStatus');
+  const quality = parseInt(slider?.value || 70);
+  const maxPx   = parseInt(sel?.value || 1920);
+  try {
+    await setDoc(doc(db, 'config', 'galleryCompression'), { quality, maxPx, updatedAt: new Date().toISOString() });
+    if (status) { status.textContent = '✓ Salvo! Próximos uploads já usam a nova configuração.'; status.style.color = 'var(--gold)'; }
+    showToast(`✓ Configuração salva — qualidade ${quality}%, max ${maxPx}px`);
+    setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+  } catch(e) {
+    if (status) { status.textContent = '⚠ Erro ao salvar.'; status.style.color = '#fca5a5'; }
+    showToast('⚠ Erro ao salvar configuração');
+  }
+};
+
+loadGalleryConfig();
+
 window.showToast = msg => {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
