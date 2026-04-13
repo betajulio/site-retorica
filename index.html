@@ -1102,6 +1102,11 @@ let membersCache  = [];
 let repCache      = [];
 let setlistExpanded = false;
 let repertorioExpanded = false;
+let membersLoaded = false;
+let setlistLoaded = false;
+let repertorioLoaded = false;
+let suggestionsLoaded = false;
+let pollsLoaded = false;
 
 // ─── AUTH ──────────────────────────────────────────────────────────
 // Visitantes com Google login podem interagir (likes, comentários).
@@ -1135,6 +1140,13 @@ onAuthStateChanged(auth, async user => {
   if (isMember) {
     ensureUpcomingRehearsalForum().catch(err => console.warn('Upcoming forum ensure error:', err));
   }
+  if (currentSection === 'membros') loadMembersSnapshot();
+  if (currentSection === 'setlist') loadSetlistSnapshot();
+  if (currentSection === 'repertorio') loadRepertorioSnapshot();
+  if (currentSection === 'sugestoes') loadSuggestionsSnapshot();
+  if (currentSection === 'enquetes') loadPollsSnapshot();
+  if (currentSection === 'forum') ensureForumSubscription();
+  if (currentSection === 'galeria') ensureGallerySubscription();
   renderMembersFromCache();
   renderSuggestions();
   renderPolls();
@@ -1192,6 +1204,11 @@ window.doLogout = async () => {
 window.goTo = id => {
   document.getElementById(id).scrollIntoView({behavior:'smooth'});
   currentSection = id;
+  if (id === 'membros') loadMembersSnapshot();
+  if (id === 'setlist') loadSetlistSnapshot();
+  if (id === 'repertorio') loadRepertorioSnapshot();
+  if (id === 'sugestoes') loadSuggestionsSnapshot();
+  if (id === 'enquetes') loadPollsSnapshot();
   if (id === 'forum') ensureForumSubscription();
   if (id === 'galeria') ensureGallerySubscription();
   if (id === 'sugestoes') {
@@ -1213,6 +1230,12 @@ window.closeMobileMenu = () => {
 
 window.mobileGoTo = id => {
   closeMobileMenu();
+  currentSection = id;
+  if (id === 'membros') loadMembersSnapshot();
+  if (id === 'setlist') loadSetlistSnapshot();
+  if (id === 'repertorio') loadRepertorioSnapshot();
+  if (id === 'sugestoes') loadSuggestionsSnapshot();
+  if (id === 'enquetes') loadPollsSnapshot();
   if (id === 'forum') ensureForumSubscription();
   if (id === 'galeria') ensureGallerySubscription();
   setTimeout(() => document.getElementById(id).scrollIntoView({behavior:'smooth'}), 80);
@@ -1507,10 +1530,13 @@ function renderMembersFromCache() {
   }).join('');
 }
 
-onSnapshot(query(collection(db,'members'), orderBy('createdAt','asc')), snap => {
+async function loadMembersSnapshot(force = false) {
+  if (membersLoaded && !force) return;
+  const snap = await getDocs(query(collection(db,'members'), orderBy('createdAt','asc')));
   membersCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  membersLoaded = true;
   renderMembersFromCache();
-});
+}
 
 // Comprime imagem para max 800px e qualidade 0.75 — evita estourar o limite de 1MB do Firestore
 function compressImage(file, maxPx = 800, quality = 0.75) {
@@ -1668,10 +1694,12 @@ window.saveMember = async () => {
   try {
     if (eid) {
       await updateDoc(doc(db,'members',eid), data);
+      await loadMembersSnapshot(true);
       await writeLog('Membro editado', `${name} (${instruments.join(', ')})`, 'membros');
       showToast(`✓ ${name} atualizado!`);
     } else {
       await addDoc(collection(db,'members'), {...data, createdAt:serverTimestamp()});
+      await loadMembersSnapshot(true);
       await writeLog('Membro adicionado', `${name} (${instruments.join(', ')})`, 'membros');
       showToast(`✓ ${name} adicionado(a)!`);
     }
@@ -1694,6 +1722,7 @@ window.removeMember = async id => {
   const snap = await getDoc(doc(db,'members',id));
   const name = snap.exists() ? snap.data().name : id;
   await deleteDoc(doc(db,'members',id));
+  await loadMembersSnapshot(true);
   await writeLog('Membro removido', name, 'membros');
   showToast('Membro removido.');
 };
@@ -1703,6 +1732,15 @@ let suggestionsCache = [];
 
 function getSuggestionScore(s) {
   return (s.likes||0) - (s.dislikes||0);
+}
+
+async function loadSuggestionsSnapshot(force = false) {
+  if (suggestionsLoaded && !force) return;
+  const snap = await getDocs(query(collection(db,'suggestions'), orderBy('createdAt','desc')));
+  suggestionsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  suggestionsLoaded = true;
+  renderSuggestions();
+  setTimeout(() => updatePromotionCountdowns(), 100);
 }
 
 function renderSuggestions() {
@@ -1769,13 +1807,6 @@ function renderSuggestions() {
   }).join('');
 }
 
-onSnapshot(query(collection(db,'suggestions'), orderBy('createdAt','desc')), snap => {
-  suggestionsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
-  renderSuggestions();
-  // Atualizar countdown após renderizar
-  setTimeout(() => updatePromotionCountdowns(), 100);
-});
-
 window.voteSuggestion = async (id, type) => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const uid  = auth.currentUser?.uid;
@@ -1819,11 +1850,13 @@ window.voteSuggestion = async (id, type) => {
       ts: serverTimestamp(),
       tsLocal: new Date().toLocaleString('pt-BR')
     });
+    await refreshSuggestionsIfNeeded();
     showToast('🗑 Sugestão removida (4+ dislikes)');
     return;
   }
 
   await updateDoc(doc(db, 'suggestions', id), { likes, dislikes, voterMap });
+  await refreshSuggestionsIfNeeded();
 };
 
 window.removeSuggestion = async id => {
@@ -1851,6 +1884,7 @@ window.removeSuggestion = async id => {
     ts: serverTimestamp(),
     tsLocal: new Date().toLocaleString('pt-BR')
   });
+  await refreshSuggestionsIfNeeded();
   showToast('Sugestão removida.');
 };
 
@@ -1872,6 +1906,7 @@ window.addSuggestion = async () => {
       dislikes: 0,
       voterMap: {}
     });
+    await refreshSuggestionsIfNeeded();
     await writeLog('Sugestão enviada', `${song} — ${artist} (por ${by})`, 'sugestoes');
     ['sugSong','sugArtist','sugYt','sugNote'].forEach(id => document.getElementById(id).value = '');
     showToast('✓ Sugestão enviada com sucesso!');
@@ -1883,6 +1918,24 @@ window.addSuggestion = async () => {
 
 // ─── POLLS ─────────────────────────────────────────────────────────
 let pollsCache = [];
+
+async function loadPollsSnapshot(force = false) {
+  if (pollsLoaded && !force) return;
+  const snap = await getDocs(query(collection(db,'polls'), orderBy('createdAt','desc')));
+  pollsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  pollsLoaded = true;
+  renderPolls();
+}
+
+function refreshSuggestionsIfNeeded() {
+  if (suggestionsLoaded || currentSection === 'sugestoes') return loadSuggestionsSnapshot(true);
+  return Promise.resolve();
+}
+
+function refreshPollsIfNeeded() {
+  if (pollsLoaded || currentSection === 'enquetes') return loadPollsSnapshot(true);
+  return Promise.resolve();
+}
 
 function renderPolls() {
   const c = document.getElementById('pollsContainer');
@@ -2039,11 +2092,6 @@ window.togglePollsHistory = () => {
 };
 
 
-onSnapshot(query(collection(db,'polls'), orderBy('createdAt','desc')), snap => {
-  pollsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
-  renderPolls();
-});
-
 window.submitPollVote = async id => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const uid  = auth.currentUser?.uid;
@@ -2074,6 +2122,7 @@ window.submitPollVote = async id => {
 
   try {
     await updateDoc(doc(db,'polls',id), {options, voters, voterMap});
+    await refreshPollsIfNeeded();
     await writeLog('Voto registrado', `"${p.question}" → ${p.options[chosen].label} (${name})`, 'enquetes');
     showToast('✓ Voto registrado!');
   } catch(e) {
@@ -2093,6 +2142,7 @@ window.removePollVote = async id => {
   const voterMap= {...(p.voterMap||{})};
   delete voterMap[uid];
   await updateDoc(doc(db,'polls',id),{options,voters,voterMap});
+  await refreshPollsIfNeeded();
   showToast('Voto removido. Vote novamente!');
 };
 
@@ -2101,6 +2151,7 @@ window.deletePoll = async id => {
   const snap = await getDoc(doc(db,'polls',id));
   const q = snap.exists() ? snap.data().question : id;
   await deleteDoc(doc(db,'polls',id));
+  await refreshPollsIfNeeded();
   await writeLog('Enquete excluída', q, 'enquetes');
   showToast('Enquete excluída.');
 };
@@ -2121,6 +2172,7 @@ window.createPoll = async () => {
     deadline: deadline || null,
     createdAt: serverTimestamp()
   });
+  await refreshPollsIfNeeded();
   await writeLog('Enquete criada', `${q}${deadline?' (encerra '+new Date(deadline).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')':''}`, 'enquetes');
   document.getElementById('pollQuestion').value='';
   document.getElementById('pollDeadline').value='';
@@ -2131,6 +2183,7 @@ window.createPoll = async () => {
 window.closePoll = async id => {
   if (!isMember) return;
   await updateDoc(doc(db,'polls',id), {closed: true});
+  await refreshPollsIfNeeded();
   await writeLog('Enquete encerrada manualmente', pollsCache.find(p=>p.id===id)?.data.question||id, 'enquetes');
   showToast('Enquete encerrada.');
 };
@@ -2143,28 +2196,34 @@ let setlistData = {tab0:[],tab1:[]};
 const NEXT_SETLIST_KEY = 'tab0';
 const LEGACY_SETLIST_KEY = 'tab1';
 
-onSnapshot(doc(db,'setlists','data'), snap => {
-  if (snap.exists()) {
-    setlistData = snap.data();
-    renderSetlist();
-  }
-});
+async function loadSetlistSnapshot(force = false) {
+  if (setlistLoaded && !force) return renderSetlist();
+  await loadSetlist(force);
+  renderSetlist();
+}
 
-async function loadSetlist() {
+async function loadSetlist(force = false) {
+  if (setlistLoaded && !force) return;
   const ref  = doc(db,'setlists','data');
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
+  const baseSnap = await getDoc(ref);
+  if (!baseSnap.exists()) {
     await setDoc(ref,{tab0:[],tab1:[]});
+    setlistData = {tab0:[],tab1:[]};
+    setlistLoaded = true;
     return;
   }
 
-  const data = snap.data() || {};
+  const data = baseSnap.data() || {};
   const primarySongs = Array.isArray(data[NEXT_SETLIST_KEY]) ? data[NEXT_SETLIST_KEY] : [];
   const legacySongs = Array.isArray(data[LEGACY_SETLIST_KEY]) ? data[LEGACY_SETLIST_KEY] : [];
 
   if (!primarySongs.length && legacySongs.length) {
     await updateDoc(ref, {[NEXT_SETLIST_KEY]: legacySongs});
+    setlistData = { ...data, [NEXT_SETLIST_KEY]: legacySongs };
+  } else {
+    setlistData = data;
   }
+  setlistLoaded = true;
 }
 
 function getActiveSetlistSongs() {
@@ -2228,7 +2287,9 @@ window.addSetSong = async () => {
   const cifra = document.getElementById('setCifra').value.trim();
   if (!song) { showToast('⚠ Digite o nome da música'); return; }
   const arr = [...(setlistData[NEXT_SETLIST_KEY]||[]),{song,artist:artist||'—',youtube,cifra}];
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
   await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  renderSetlist();
   await writeLog('Música adicionada ao setlist', `${song} — ${artist||'—'} (Próximo Ensaio)`, 'setlist');
   ['setSong','setArtist','setYt','setCifra'].forEach(id => document.getElementById(id).value = '');
   showToast(`✓ "${song}" adicionada!`);
@@ -2244,7 +2305,9 @@ window.editSetSongLinks = async idx => {
   const cifra = prompt(`Link de cifra para "${current.song}"`, current.cifra || '');
   if (cifra === null) return;
   arr[idx] = {...current, youtube: youtube.trim(), cifra: cifra.trim()};
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
   await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  renderSetlist();
   await writeLog('Links do setlist atualizados', `${current.song} · YouTube: ${youtube.trim() ? 'sim' : 'nao'} · Cifra: ${cifra.trim() ? 'sim' : 'nao'}`, 'setlist');
   showToast('Links atualizados.');
 };
@@ -2254,8 +2317,10 @@ window.removeSetSong = async idx => {
   const arr = [...getActiveSetlistSongs()];
   const removed = arr[idx];
   arr.splice(idx,1);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
   await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
   await writeLog('Música removida do setlist', `${removed?.song||'?'} (Próximo Ensaio)`, 'setlist');
+  renderSetlist();
 };
 
 window.dStart = e=>{ dragSrc=e.currentTarget; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; };
@@ -2266,8 +2331,10 @@ window.dDrop  = async e=>{
   const fi=parseInt(dragSrc.dataset.idx), ti=parseInt(t.dataset.idx);
   const arr=[...getActiveSetlistSongs()];
   const [item]=arr.splice(fi,1); arr.splice(ti,0,item);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
   await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
   await writeLog('Setlist reordenado', `${item?.song||'?'}: posição ${fi+1} → ${ti+1} (Próximo Ensaio)`, 'setlist');
+  renderSetlist();
 };
 window.dEnd = e=>{ e.currentTarget.classList.remove('dragging'); dragSrc=null; };
 
@@ -2316,10 +2383,13 @@ window.toggleRepertorioExpand = () => {
   renderRepFromCache();
 };
 
-onSnapshot(query(collection(db,'repertorio'), orderBy('addedAt','asc')), snap => {
+async function loadRepertorioSnapshot(force = false) {
+  if (repertorioLoaded && !force) return;
+  const snap = await getDocs(query(collection(db,'repertorio'), orderBy('addedAt','asc')));
   repCache = snap.docs.map(d=>({id:d.id,data:d.data()}));
+  repertorioLoaded = true;
   renderRepFromCache();
-});
+}
 
 window.addRepSong = async () => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
@@ -2329,6 +2399,7 @@ window.addRepSong = async () => {
   const cifra  = document.getElementById('repCifra').value.trim();
   if (!song||!artist) { showToast('⚠ Preencha música e artista'); return; }
   await addDoc(collection(db,'repertorio'),{song,artist,youtube,cifra,addedAt:serverTimestamp(),by:auth.currentUser?.displayName||'Membro'});
+  await loadRepertorioSnapshot(true);
   await writeLog('Música adicionada ao repertório', `${song} — ${artist}`, 'repertorio');
   ['repSong','repArtist','repYt','repCifra'].forEach(id=>document.getElementById(id).value='');
   showToast(`✓ "${song}" adicionada ao repertório!`);
@@ -2377,6 +2448,7 @@ window.saveRepEdit = async (id, btn) => {
   const cifra   = overlay.querySelector('#repEditCifra').value.trim();
   if (!song||!artist) { showToast('⚠ Preencha música e artista'); return; }
   await updateDoc(doc(db,'repertorio',id), {song, artist, youtube, cifra});
+  await loadRepertorioSnapshot(true);
   await writeLog('Música do repertório editada', `${song} — ${artist}`, 'repertorio');
   overlay.remove();
   showToast(`✓ "${song}" atualizada!`);
@@ -2387,6 +2459,7 @@ window.removeRepSong = async id => {
   const snap = await getDoc(doc(db,'repertorio',id));
   const r = snap.exists() ? snap.data() : {};
   await deleteDoc(doc(db,'repertorio',id));
+  await loadRepertorioSnapshot(true);
   await writeLog('Música removida do repertório', `${r.song||id} — ${r.artist||''}`, 'repertorio');
   showToast('Música removida.');
 };
@@ -2406,6 +2479,7 @@ window.importSetlistToRep = async () => {
       addedAt: serverTimestamp(), by: userName
     });
   }
+  await loadRepertorioSnapshot(true);
   await writeLog('Músicas importadas do setlist', `${toAdd.length} música${toAdd.length!==1?'s':''}`, 'repertorio');
   showToast(`✓ ${toAdd.length} música${toAdd.length!==1?'s':''} importada${toAdd.length!==1?'s':''} para o repertório!`);
 };
@@ -2417,25 +2491,20 @@ let forumSubscribed = false;
 const forumPostsCache = {};
 const forumPostSubscriptions = {};
 
-function ensureForumSubscription() {
-  if (forumSubscribed) return;
+async function ensureForumSubscription(force = false) {
+  if (forumSubscribed && !force) return;
+  const snap = await getDocs(query(collection(db,'forum'), orderBy('createdAt','desc')));
+  forumCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   forumSubscribed = true;
-  onSnapshot(query(collection(db,'forum'), orderBy('createdAt','desc')), snap => {
-    forumCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
-    forumCache.forEach(({id}) => ensureForumPostsSubscription(id));
-    renderForum();
-  });
+  renderForum();
 }
 
-function ensureForumPostsSubscription(threadId) {
-  if (forumPostSubscriptions[threadId]) return;
-  forumPostSubscriptions[threadId] = onSnapshot(
-    query(collection(db,'forum',threadId,'posts'), orderBy('createdAt','asc')),
-    snap => {
-      forumPostsCache[threadId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
-      renderForum();
-    }
-  );
+async function ensureForumPostsSubscription(threadId, force = false) {
+  if (forumPostSubscriptions[threadId] && !force) return;
+  const snap = await getDocs(query(collection(db,'forum',threadId,'posts'), orderBy('createdAt','asc')));
+  forumPostsCache[threadId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+  forumPostSubscriptions[threadId] = true;
+  renderForum();
 }
 
 function getForumPostsForRender(threadId, threadData) {
@@ -2498,6 +2567,7 @@ window.votePost = async (threadId, postIdx, type) => {
   };
   if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
   else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
 };
 
 window.toggleThread = async (id, el) => {
@@ -2505,6 +2575,10 @@ window.toggleThread = async (id, el) => {
   const open = body.classList.toggle('open');
   el.querySelector('.forum-chevron').classList.toggle('open',open);
   await updateDoc(doc(db,'forum',id),{open});
+  const thread = forumCache.find(t => t.id === id);
+  if (thread) thread.data = { ...thread.data, open };
+  if (open) await ensureForumPostsSubscription(id, true);
+  renderForum();
 };
 
 window.addPost = async id => {
@@ -2522,6 +2596,7 @@ window.addPost = async id => {
     authorUid: auth.currentUser?.uid,
     createdAt: serverTimestamp()
   });
+  await ensureForumPostsSubscription(id, true);
   const input = document.getElementById(`fMsg_${id}`);
   if (input) input.value = '';
   showToast('✓ Comentário enviado!');
@@ -2532,6 +2607,7 @@ window.addForumThread = async () => {
   const title=document.getElementById('newThreadTitle').value.trim();
   if (!title) { showToast('⚠ Digite o título'); return; }
   await addDoc(collection(db,'forum'),{title,date:new Date().toLocaleDateString('pt-BR'),open:true,closed:false,closedAt:null,createdAt:serverTimestamp()});
+  await ensureForumSubscription(true);
   await writeLog('Tópico de fórum criado', title, 'forum');
   document.getElementById('newThreadTitle').value='';
   showToast('✓ Tópico criado!');
@@ -2546,6 +2622,9 @@ window.deleteThread = async id => {
     await deleteDoc(postDoc.ref);
   }
   await deleteDoc(doc(db,'forum',id));
+  delete forumPostsCache[id];
+  delete forumPostSubscriptions[id];
+  await ensureForumSubscription(true);
   await writeLog('Tópico excluído', title, 'forum');
   showToast('Tópico excluído.');
 };
@@ -2562,6 +2641,8 @@ let galleryCompQuality  = 0.7;   // lido do Firestore config/galleryCompression
 let galleryCompMaxPx    = 1920;
 let galleryLastGridIds  = '';    // ids da última grade renderizada, evita re-render desnecessário
 let bulkTagOriginalIds  = [];
+let galleryTagsLoaded   = false;
+let galleryCompressionLoaded = false;
 
 function getGalleryCommentCount(photoData) {
   if (typeof photoData?.commentCount === 'number') return photoData.commentCount;
@@ -2573,30 +2654,28 @@ function getGalleryReplyCount(photoData) {
   return (photoData?.comments || []).reduce((sum, comment) => sum + ((comment.replies || []).length), 0);
 }
 
-function ensureGallerySubscription() {
-  if (gallerySubscribed) return;
+async function ensureGallerySubscription(force = false) {
+  await Promise.all([
+    loadGalleryTags(force),
+    loadGalleryCompression(force),
+    loadGallerySnapshot(force)
+  ]);
+}
+
+async function loadGallerySnapshot(force = false) {
+  if (gallerySubscribed && !force) return;
+  const snap = await getDocs(query(collection(db,'gallery'), orderBy('createdAt','desc')));
+  galleryCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   gallerySubscribed = true;
-  onSnapshot(query(collection(db,'gallery'), orderBy('createdAt','desc')), snap => {
-    galleryCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
-    renderGallery();
-    loadBulkPhotoGrid();
-    if (currentLbId) {
-      const found = snap.docs.find(d => d.id === currentLbId);
-      if (found) {
-        const fd = found.data();
-        renderLightboxReactions(currentLbId, fd);
-        renderLightboxComments(currentLbId, fd);
-        const photoTagsEl = document.getElementById('lbPhotoTags');
-        if (photoTagsEl) {
-          const photoTags = (fd.tags||['Todas']).filter(t => t !== 'Todas');
-          const editTagsHtml = isMember
-            ? `<button onclick="editPhotoTags('${currentLbId}')" style="background:none;border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.15rem .45rem;cursor:pointer;border-radius:999px;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;margin-left:.3rem;transition:all .2s" title="Editar tags">✏ tags</button>`
-            : '';
-          photoTagsEl.innerHTML = photoTags.map(t => `<span class="lb-photo-tag">${t}</span>`).join('') + editTagsHtml;
-        }
-      }
+  renderGallery();
+  loadBulkPhotoGrid();
+  if (currentLbId) {
+    const found = galleryCache.find(item => item.id === currentLbId);
+    if (found) {
+      renderLightboxReactions(currentLbId, found.data);
+      renderLightboxComments(currentLbId, found.data);
     }
-  });
+  }
 }
 
 function renderGallery() {
@@ -2806,6 +2885,7 @@ window.uploadGalleryPhotos = async () => {
   }
 
   const n = galleryFilesBuf.length;
+  await loadGallerySnapshot(true);
   await writeLog('Foto(s) adicionada(s) à galeria', `${n} foto${n!==1?'s':''} — "${caption||'sem descrição'}" [${selectedUploadTag}] (${totalCompKB}KB comprimido, ${totalOrigKB}KB original)`, 'galeria');
   galleryFilesBuf = [];
   selectedUploadTag = '';
@@ -2825,6 +2905,7 @@ window.editCaption = async id => {
   const newCaption = prompt('Nova descrição da foto:', current);
   if (newCaption === null) return; // cancelou
   await updateDoc(doc(db,'gallery',id), {caption: newCaption});
+  await loadGallerySnapshot(true);
   showToast('✓ Descrição atualizada!');
 };
 
@@ -2839,6 +2920,7 @@ window.deleteGalleryPhoto = async (id, path) => {
   }
   await deleteDoc(doc(db,'gallery',id));
   if (path) { try { await deleteObject(storageRef(storage, path)); } catch {} }
+  await loadGallerySnapshot(true);
   await writeLog('Foto excluída da galeria', `"${caption}"`, 'galeria');
   if (carouselIndex >= galleryCache.length - 1) carouselIndex = Math.max(0, galleryCache.length - 2);
   showToast('Foto excluída.');
@@ -2852,7 +2934,6 @@ window.deleteGalleryPhoto = async (id, path) => {
 // ═══════════════════════════════════════════════════════════════════
 let currentLbId = null;
 const galleryCommentsCache = {};
-const galleryCommentSubscriptions = {};
 
 async function syncGalleryCounts(photoId, updater) {
   const photoRef = doc(db,'gallery',photoId);
@@ -2868,16 +2949,20 @@ async function syncGalleryCounts(photoId, updater) {
   });
 }
 
-function ensureGalleryCommentsSubscription(photoId) {
-  if (galleryCommentSubscriptions[photoId]) return;
-  galleryCommentSubscriptions[photoId] = onSnapshot(
-    query(collection(db,'gallery',photoId,'comments'), orderBy('createdAt','asc')),
-    snap => {
-      galleryCommentsCache[photoId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
-      const photo = galleryCache.find(item => item.id === photoId)?.data;
-      if (currentLbId === photoId && photo) renderLightboxComments(photoId, photo);
-    }
-  );
+async function loadGalleryCommentsSnapshot(photoId, force = false) {
+  if (galleryCommentsCache[photoId] && !force) return;
+  const snap = await getDocs(query(collection(db,'gallery',photoId,'comments'), orderBy('createdAt','asc')));
+  galleryCommentsCache[photoId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+}
+
+async function refreshGalleryPhotoCache(photoId) {
+  const snap = await getDoc(doc(db,'gallery',photoId));
+  if (!snap.exists()) return null;
+  const updated = { id: photoId, data: snap.data() };
+  const idx = galleryCache.findIndex(item => item.id === photoId);
+  if (idx >= 0) galleryCache[idx] = updated;
+  else galleryCache.unshift(updated);
+  return updated.data;
 }
 
 function getGalleryCommentsForRender(photoId, photoData) {
@@ -2919,7 +3004,7 @@ window.openLightbox = async id => {
   if (!snap.exists()) return;
   const p = snap.data();
   currentLbId = id;
-  ensureGalleryCommentsSubscription(id);
+  await loadGalleryCommentsSnapshot(id, true);
 
   document.getElementById('lbImg').src = p.url;
   document.getElementById('lbImg').alt = p.caption || '';
@@ -3013,6 +3098,8 @@ window.lbReact = async (id, type) => {
   if (r[uid] === type) delete r[uid];
   else r[uid] = type;
   await updateDoc(doc(db,'gallery',id), {reactions: r});
+  await loadGallerySnapshot(true);
+  if (currentLbId === id) openLightbox(id);
 };
 
 function getMemberName() {
@@ -3123,7 +3210,10 @@ window.addLbComment = async id => {
   await syncGalleryCounts(id, counts => ({
     commentCount: counts.commentCount + 1
   }));
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
   input.value = '';
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
   showToast('✓ Comentário adicionado!');
 };
 
@@ -3145,7 +3235,10 @@ window.submitLbReply = async (id, commentKey) => {
   await syncGalleryCounts(id, counts => ({
     replyCount: counts.replyCount + 1
   }));
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
   if (input) input.value = '';
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
   showToast('✓ Resposta adicionada!');
 };
 
@@ -3174,6 +3267,9 @@ window.lbCmtReact = async (id, commentKey, type, rIdx, reaction) => {
   };
   if (comment.__legacy) await updateLegacyGalleryComment(id, comment.__legacyIndex, mutateComment);
   else await updateModernGalleryComment(id, comment.__commentKey, mutateComment);
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
 };
 
 window.delLbComment = async (id, commentKey) => {
@@ -3197,6 +3293,9 @@ window.delLbComment = async (id, commentKey) => {
     commentCount: Math.max(0, counts.commentCount - 1),
     replyCount: Math.max(0, counts.replyCount - removedReplies)
   }));
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
   showToast('Comentário excluído.');
 };
 
@@ -3216,27 +3315,46 @@ window.delLbReply = async (id, commentKey, rIdx) => {
   await syncGalleryCounts(id, counts => ({
     replyCount: Math.max(0, counts.replyCount - 1)
   }));
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
   showToast('Resposta excluída.');
 };
-
-// Refresh lightbox when gallery doc updates (real-time comments/reactions)
-const lbSnapshots = {};
 
 // ═══════════════════════════════════════════════════════════════════
 // GALLERY TAGS SYSTEM
 // ═══════════════════════════════════════════════════════════════════
 
 // Load tags from Firestore (config doc) — fallback to defaults
-async function loadGalleryTags() {
+async function loadGalleryTags(force = false) {
+  if (galleryTagsLoaded && !force) return;
   try {
     const snap = await getDoc(doc(db, 'config', 'galleryTags'));
     if (snap.exists() && Array.isArray(snap.data().tags)) {
       galleryTags = snap.data().tags;
     }
   } catch(e) { /* use defaults */ }
+  galleryTagsLoaded = true;
   renderTagBar();
   renderTagManagerChips();
   renderUploadTagSelect();
+  loadBulkPhotoGrid();
+  if (activeTagFilter !== 'Todas' && !galleryTags.includes(activeTagFilter)) {
+    activeTagFilter = 'Todas';
+    renderGallery();
+  }
+}
+
+async function loadGalleryCompression(force = false) {
+  if (galleryCompressionLoaded && !force) return;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
+    if (snap.exists()) {
+      galleryCompQuality = (snap.data().quality || 70) / 100;
+      galleryCompMaxPx   = snap.data().maxPx   || 1920;
+    }
+  } catch(e) { /* use defaults */ }
+  galleryCompressionLoaded = true;
 }
 
 function renderTagBar() {
@@ -3596,41 +3714,6 @@ window.bulkMigratePhotos = async () => {
   loadBulkPhotoGrid();
 };
 
-// Ouvir mudanças de tags em tempo real (para todos os membros verem alterações ao vivo)
-onSnapshot(doc(db, 'config', 'galleryTags'), snap => {
-  if (snap.exists() && Array.isArray(snap.data().tags)) {
-    galleryTags = snap.data().tags;
-    renderTagBar();
-    renderTagManagerChips();
-    renderUploadTagSelect();
-    loadBulkPhotoGrid();
-    // Se o filtro ativo foi removido, reset para Todas
-    if (activeTagFilter !== 'Todas' && !galleryTags.includes(activeTagFilter)) {
-      activeTagFilter = 'Todas';
-      renderGallery();
-    }
-  }
-});
-
-// Load gallery compression config from Firestore
-(async () => {
-  try {
-    const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
-    if (snap.exists()) {
-      galleryCompQuality = (snap.data().quality || 70) / 100;
-      galleryCompMaxPx   = snap.data().maxPx   || 1920;
-    }
-  } catch(e) { /* use defaults */ }
-})();
-
-// Listen for real-time config changes (se admin atualizar enquanto membro tem a galeria aberta)
-onSnapshot(doc(db, 'config', 'galleryCompression'), snap => {
-  if (snap.exists()) {
-    galleryCompQuality = (snap.data().quality || 70) / 100;
-    galleryCompMaxPx   = snap.data().maxPx   || 1920;
-  }
-});
-
 // Load tags on init
 loadGalleryTags();
 
@@ -3654,6 +3737,11 @@ function renderForum() {
 
   const buildThread = ({id, data: t}) => {
     const threadClosed = t.closed === true;
+    const needsPostLoad = t.open && !forumPostsCache[id] && !forumPostSubscriptions[id];
+    if (needsPostLoad) {
+      forumPostSubscriptions[id] = 'loading';
+      setTimeout(() => ensureForumPostsSubscription(id, true), 0);
+    }
     const threadPosts = getForumPostsForRender(id, t);
     const posts = threadPosts.map((p, pi) => {
       const reactions = p.reactions || {};
@@ -3722,6 +3810,9 @@ function renderForum() {
         </div>
       </div>`;
     }).join('');
+    const emptyPostsHtml = needsPostLoad
+      ? '<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Carregando comentários…</p>'
+      : '<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Nenhum comentário ainda.</p>';
     const mainReplyForm = isMember && !threadClosed ? `
       <div class="forum-reply-form" style="margin-top:1rem">
         <div class="form-group" style="flex:1"><input type="text" id="fMsg_${id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${id}')"></div>
@@ -3740,7 +3831,7 @@ function renderForum() {
         <div style="display:flex;align-items:center;gap:.5rem">${delBtn}<span class="forum-chevron${t.open?' open':''}">▼</span></div>
       </div>
       <div class="forum-body${t.open?' open':''}" id="fb_${id}">
-        <div class="forum-posts">${posts||'<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Nenhum comentário ainda.</p>'}</div>
+        <div class="forum-posts">${posts||emptyPostsHtml}</div>
         ${mainReplyForm}
       </div>
     </div>`;
@@ -3788,6 +3879,7 @@ window.submitFrpReply = async (threadId, postKey, replyIdx) => {
   };
   if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
   else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
   if (input) input.value = '';
   showToast('✓ Resposta adicionada!');
 };
@@ -3822,6 +3914,7 @@ window.frpReact = async (threadId, postKey, replyIdx, type) => {
   };
   if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
   else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
 };
 
 window.delFrp = async (threadId, postKey, replyIdx) => {
@@ -3837,11 +3930,17 @@ window.delFrp = async (threadId, postKey, replyIdx) => {
   };
   if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
   else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
   showToast('Resposta excluída.');
 };
 
 function initLazySectionSubscriptions() {
   const targets = [
+    { id: 'membros', load: loadMembersSnapshot },
+    { id: 'setlist', load: loadSetlistSnapshot },
+    { id: 'repertorio', load: loadRepertorioSnapshot },
+    { id: 'sugestoes', load: loadSuggestionsSnapshot },
+    { id: 'enquetes', load: loadPollsSnapshot },
     { id: 'forum', load: ensureForumSubscription },
     { id: 'galeria', load: ensureGallerySubscription }
   ];
@@ -3868,8 +3967,12 @@ function initLazySectionSubscriptions() {
 }
 
 // ─── INIT ──────────────────────────────────────────────────────────
-await loadSetlist();
 initLazySectionSubscriptions();
+window.addEventListener('focus', () => {
+  if (currentSection === 'sugestoes') loadSuggestionsSnapshot(true);
+  if (currentSection === 'enquetes') loadPollsSnapshot(true);
+  if (currentSection === 'galeria') ensureGallerySubscription(true);
+});
 setTimeout(()=>{
   document.getElementById('loadingOverlay').classList.add('hidden');
   setTimeout(()=>document.getElementById('loadingOverlay').remove(),600);
@@ -4278,6 +4381,7 @@ async function createTiebreakerPoll(topCandidates, lockToken = null) {
   };
   
   const pollRef = await addDoc(collection(db, 'polls'), pollData);
+  await refreshPollsIfNeeded();
   
   await updateDoc(promotionStateRef, {
     activeTiebreakerPoll: pollRef.id,
@@ -4313,9 +4417,11 @@ async function createRepertoryPoll(suggestion, lockToken = null) {
   };
   
   const pollRef = await addDoc(collection(db, 'polls'), pollData);
+  await refreshPollsIfNeeded();
   
   // Remover da lista de sugestões
   await deleteDoc(doc(db, 'suggestions', suggestion.id));
+  await refreshSuggestionsIfNeeded();
   
   await updateDoc(promotionStateRef, {
     activeRepertoryPoll: pollRef.id,
@@ -4391,6 +4497,7 @@ async function completeTiebreakerPoll(pollId, pollData) {
   
   // Marcar enquete como encerrada
   await updateDoc(doc(db, 'polls', pollId), { closed: true });
+  await refreshPollsIfNeeded();
   
   // Criar enquete de repertório com a vencedora
   await createRepertoryPoll(winner);
@@ -4413,6 +4520,7 @@ async function completeRepertoryPoll(pollId, pollData) {
   
   // Marcar enquete como encerrada
   await updateDoc(doc(db, 'polls', pollId), { closed: true });
+  await refreshPollsIfNeeded();
   
   if (yesVotes > noVotes) {
     // APROVADA: adicionar ao repertório
@@ -4446,6 +4554,7 @@ async function completeRepertoryPoll(pollId, pollData) {
       dislikedBy: [],
       voterMap: {}
     });
+    await refreshSuggestionsIfNeeded();
     
     showToast('📋 Música retornou às sugestões para nova oportunidade.');
   }

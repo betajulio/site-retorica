@@ -309,8 +309,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs,
-  deleteDoc, orderBy, query, writeBatch, limit, startAfter,
-  addDoc, setDoc, serverTimestamp
+  deleteDoc, orderBy, query, where, writeBatch, limit, startAfter,
+  addDoc, setDoc, serverTimestamp, getCountFromServer
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
@@ -341,11 +341,12 @@ let activeFilter = 'all';
 let activeSearch = '';
 let sortField    = 'ts';       // 'action','category','who','ts'
 let sortDir      = -1;          // -1 = desc, 1 = asc
-let realtimeData = {};
 let lastLogDoc   = null;
 let hasMoreLogs  = true;
 const LOGS_PAGE_SIZE = 200;
 let storageStats   = { files: 0, bytes: 0 };
+let metricsSnapshot = null;
+let metricsLoadedAt = null;
 const TS_FIELDS  = ['ts','createdAt'];
 
 // Firebase Storage Spark free tier: 5 GB
@@ -358,8 +359,7 @@ function formatBytes(b) {
   return (b / (1024 * 1024 * 1024)).toFixed(3) + ' GB';
 }
 
-function calcStorageStats() {
-  const galleryData = realtimeData.gallery || [];
+function calcStorageStats(galleryData = []) {
   let totalBytes = 0;
   galleryData.forEach(p => {
     if (p.compSize) totalBytes += p.compSize * 1024;
@@ -417,113 +417,103 @@ window.doLogin = async () => {
 
 window.doLogout = async () => { await signOut(auth); };
 
-// ─── REALTIME COLLECTIONS ─────────────────────────────────────────
-const RT_COLLECTIONS = ['members','gallery','forum','suggestions','polls','approved_emails'];
-
 async function loadAdminMetricsSnapshot() {
-  const results = await Promise.all(
-    RT_COLLECTIONS.map(async colName => {
-      const snap = await getDocs(collection(db, colName));
-      return [colName, snap.docs.map(d => ({id: d.id, ...d.data()}))];
-    })
-  );
-  realtimeData = Object.fromEntries(results);
-  renderRealtimeMetrics();
-}
+  const [
+    membersCountSnap,
+    approvedCountSnap,
+    forumCountSnap,
+    suggestionsCountSnap,
+    pollsCountSnap,
+    closedPollsCountSnap,
+    gallerySnap
+  ] = await Promise.all([
+    getCountFromServer(collection(db, 'members')),
+    getCountFromServer(collection(db, 'approved_emails')),
+    getCountFromServer(collection(db, 'forum')),
+    getCountFromServer(collection(db, 'suggestions')),
+    getCountFromServer(collection(db, 'polls')),
+    getCountFromServer(query(collection(db, 'polls'), where('closed', '==', true))),
+    getDocs(collection(db, 'gallery'))
+  ]);
 
-function renderRealtimeMetrics() {
-  // Recalculate storage stats when gallery data arrives
-  const galForStorage = realtimeData.gallery || [];
-  if (galForStorage.length) {
-    let totalBytes = 0;
-    galForStorage.forEach(p => {
-      if (p.compSize) totalBytes += p.compSize * 1024;
-      else if (p.origSize) totalBytes += p.origSize * 1024;
-      else totalBytes += 500 * 1024;
-    });
-    storageStats.files = galForStorage.length;
-    storageStats.bytes = totalBytes;
-    renderStorageMetric();
-  }
+  const galleryDocs = gallerySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  calcStorageStats(galleryDocs);
 
-  const el = document.getElementById('realtimeMetrics');
-  if (!el || !Object.keys(realtimeData).length) return;
-
-  const members    = realtimeData.members || [];
-  const gallery    = realtimeData.gallery || [];
-  const forums     = realtimeData.forum || [];
-  const suggestions= realtimeData.suggestions || [];
-  const polls      = realtimeData.polls || [];
-  const approvals  = realtimeData.approved_emails || [];
-
-  // Gallery stats: total views, reactions, comments
   let totalGallLikes = 0, totalGallComments = 0, totalGallReplies = 0;
-  gallery.forEach(p => {
+  galleryDocs.forEach(p => {
     const r = p.reactions || {};
-    totalGallLikes += Object.keys(r).filter(k => r[k]==='like').length;
+    totalGallLikes += Object.keys(r).filter(k => r[k] === 'like').length;
     totalGallComments += typeof p.commentCount === 'number' ? p.commentCount : (p.comments || []).length;
     totalGallReplies += typeof p.replyCount === 'number'
       ? p.replyCount
       : (p.comments || []).reduce((sum, c) => sum + ((c.replies || []).length), 0);
   });
 
-  // Forum stats
-  let totalForumPosts = 0, totalForumReplies = 0, totalForumLikes = 0;
-  forums.forEach(t => {
-    const posts = t.posts || [];
-    totalForumPosts += posts.length;
-    posts.forEach(p => {
-      const r = p.reactions || {};
-      totalForumLikes += Object.values(r).filter(v=>v==='like').length;
-      totalForumReplies += (p.replies||[]).length;
-    });
-  });
+  metricsSnapshot = {
+    members: membersCountSnap.data().count,
+    approvals: approvedCountSnap.data().count,
+    forums: forumCountSnap.data().count,
+    suggestions: suggestionsCountSnap.data().count,
+    polls: pollsCountSnap.data().count,
+    closedPolls: closedPollsCountSnap.data().count,
+    gallery: galleryDocs.length,
+    totalGallLikes,
+    totalGallComments,
+    totalGallReplies
+  };
+  metricsLoadedAt = new Date();
+  renderRealtimeMetrics();
+}
 
-  // Suggestions stats
-  let totalSugVotes = 0;
-  suggestions.forEach(s => { totalSugVotes += (s.likes||0) + (s.dislikes||0); });
-  const topSuggestion = suggestions.length
-    ? suggestions.reduce((a,b) => (a.likes||0) > (b.likes||0) ? a : b)
-    : null;
-
-  // Polls stats
-  let totalPollVotes = 0;
-  polls.forEach(p => { totalPollVotes += (p.options||[]).reduce((s,o)=>s+(o.votes||0),0); });
-
-  // Members approved vs actual
-  const numMembers = members.length;
-  const numApproved = approvals.length;
+function renderRealtimeMetrics() {
+  const el = document.getElementById('realtimeMetrics');
+  if (!el || !metricsSnapshot) return;
+  const {
+    members,
+    approvals,
+    forums,
+    suggestions,
+    polls,
+    closedPolls,
+    gallery,
+    totalGallLikes,
+    totalGallComments,
+    totalGallReplies
+  } = metricsSnapshot;
+  const updatedLabel = metricsLoadedAt
+    ? metricsLoadedAt.toLocaleString('pt-BR')
+    : '—';
 
   el.innerHTML = `
     <div class="detail-section">
-      <div class="detail-title">Resumo Atual</div>
+      <div class="detail-title">Resumo Atual <span style="font-size:.68rem;color:var(--smoke);font-style:italic;font-weight:400;letter-spacing:.04em">Atualizado em ${updatedLabel}</span></div>
       <div class="metric-row">
         <div class="metric-card">
           <div class="metric-label">Membros da Banda</div>
-          <div class="metric-value gold">${numMembers}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">${numApproved} e-mail${numApproved!==1?'s':''} aprovado${numApproved!==1?'s':''}</div>
+          <div class="metric-value gold">${members}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">${approvals} e-mail${approvals!==1?'s':''} aprovado${approvals!==1?'s':''}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Fotos na Galeria</div>
-          <div class="metric-value gold">${gallery.length}</div>
+          <div class="metric-value gold">${gallery}</div>
           <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">👍 ${totalGallLikes} · 💬 ${totalGallComments} comentários · ↩ ${totalGallReplies} respostas</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Tópicos no Fórum</div>
-          <div class="metric-value gold">${forums.length}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">💬 ${totalForumPosts} posts · 👍 ${totalForumLikes} · ↩ ${totalForumReplies} respostas</div>
+          <div class="metric-value gold">${forums}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Contagem de tópicos cadastrados</div>
         </div>
       </div>
       <div class="metric-row">
         <div class="metric-card">
           <div class="metric-label">Sugestões de Músicas</div>
-          <div class="metric-value gold">${suggestions.length}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">🗳 ${totalSugVotes} votos${topSuggestion && topSuggestion.likes ? ` · 🏆 "${topSuggestion.song||'?'}"` : ''}</div>
+          <div class="metric-value gold">${suggestions}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Total atual de sugestões abertas</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Enquetes Ativas</div>
-          <div class="metric-value gold">${polls.length}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">🗳 ${totalPollVotes} votos totais · ${polls.filter(p=>p.closed).length} encerrada${polls.filter(p=>p.closed).length!==1?'s':''}</div>
+          <div class="metric-value gold">${polls}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">${closedPolls} encerrada${closedPolls!==1?'s':''} registradas</div>
         </div>
       </div>
     </div>`;
