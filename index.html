@@ -4286,17 +4286,40 @@ function formatTimeRemaining(ms) {
   return `${minutes}m`;
 }
 
+function renderPromotionBanner(timeUntil) {
+  const navBadge = document.getElementById('promoCountdownNav');
+  const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
+  const bannerHost = document.getElementById('promotionCountdownBanner');
+  const timeLabel = formatTimeRemaining(timeUntil);
+  const shouldShow = timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+
+  if (navBadge) {
+    navBadge.textContent = timeLabel;
+    navBadge.style.display = shouldShow ? 'inline-block' : 'none';
+  }
+  if (navBadgeMobile) {
+    navBadgeMobile.textContent = timeLabel;
+    navBadgeMobile.style.display = shouldShow ? 'inline-block' : 'none';
+  }
+  if (!bannerHost) return;
+
+  if (!shouldShow) {
+    bannerHost.innerHTML = '';
+    return;
+  }
+
+  bannerHost.innerHTML = `
+    <div class="countdown-badge-big ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}">
+      <div style="font-size:2rem;margin-bottom:.3rem">🏆</div>
+      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;letter-spacing:.08em;margin-bottom:.4rem">VENCEDOR IRÁ PARA ENQUETE EM</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:.15em;color:var(--gold)">${timeLabel}</div>
+    </div>
+  `;
+}
+
 // Atualizar contadores na UI
 async function updatePromotionCountdowns() {
   try {
-    const navBadge = document.getElementById('promoCountdownNav');
-    const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
-    const bannerHost = document.getElementById('promotionCountdownBanner');
-    const clearSectionBadge = () => {
-      if (!bannerHost) return;
-      bannerHost.innerHTML = '';
-    };
-
     const stateSnap = await getDoc(promotionStateRef);
     const state = stateSnap.exists() ? stateSnap.data() : null;
     const now = Date.now();
@@ -4305,38 +4328,11 @@ async function updatePromotionCountdowns() {
     const timeUntil = nextPromo - now;
     
     console.log('[COUNTDOWN] Tempo até próxima promoção:', formatTimeRemaining(timeUntil));
-    
-    // Badge na navegação (Desktop e Mobile)
-    const timeLabel = formatTimeRemaining(timeUntil);
-    const shouldShow = timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
-
-    if (navBadge) {
-      navBadge.textContent = timeLabel;
-      navBadge.style.display = shouldShow ? 'inline-block' : 'none';
-    }
-    if (navBadgeMobile) {
-      navBadgeMobile.textContent = timeLabel;
-      navBadgeMobile.style.display = shouldShow ? 'inline-block' : 'none';
-    }
-    if (shouldShow) console.log('[COUNTDOWN] Badges nav atualizados');
-    
-    // Contador nas sugestões (logo abaixo do cabeçalho da seção)
-    if (bannerHost && timeUntil > 0) {
-      clearSectionBadge();
-      
-      bannerHost.innerHTML = `
-        <div class="countdown-badge-big ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}">
-        <div style="font-size:2rem;margin-bottom:.3rem">🏆</div>
-        <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;letter-spacing:.08em;margin-bottom:.4rem">VENCEDOR IRÁ PARA ENQUETE EM</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:.15em;color:var(--gold)">${formatTimeRemaining(timeUntil)}</div>
-        </div>
-      `;
-      console.log('[COUNTDOWN] Badge sugestões adicionado');
-    } else {
-      clearSectionBadge();
-    }
+    renderPromotionBanner(timeUntil);
   } catch (e) {
     console.error('[COUNTDOWN] Erro ao atualizar:', e);
+    const fallbackTimeUntil = getNextFriday().getTime() - Date.now();
+    renderPromotionBanner(fallbackTimeUntil);
   }
 }
 
@@ -4614,6 +4610,7 @@ async function completeRepertoryPoll(pollId, pollData) {
 
 // Iniciar sistema de promoção
 (async function startPromotionSystem() {
+  renderPromotionBanner(getNextFriday().getTime() - Date.now());
   await initPromotionState();
   
   // Verificar a cada minuto
