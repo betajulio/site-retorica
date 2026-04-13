@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retórica — Logs</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--black);color:var(--cream);font-family:'Lora',serif;min-height:100vh}
+  body.auth-resolved #authBoot{opacity:0;pointer-events:none}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+
+  /* AUTH BOOT */
+  #authBoot{position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;background:
+    radial-gradient(circle at top,rgba(200,130,10,.12),transparent 35%),
+    linear-gradient(180deg,#140d07 0%,#090603 100%);
+    transition:opacity .35s ease}
+  .auth-boot-panel{width:min(88vw,520px);border:1px solid rgba(200,130,10,.32);background:linear-gradient(180deg,rgba(36,23,10,.96),rgba(14,10,6,.96));box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 2px rgba(200,130,10,.08) inset;padding:1.4rem 1.2rem 1.2rem;position:relative;overflow:hidden}
+  .auth-boot-panel::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);opacity:.25;pointer-events:none}
+  .auth-boot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;font-family:'Bebas Neue',sans-serif;letter-spacing:.18em;color:var(--gold);font-size:1rem}
+  .auth-boot-disc{width:84px;height:84px;border-radius:50%;margin:0 auto .9rem;background:
+    radial-gradient(circle at center,#f7d76f 0 8%,#1a1208 8% 17%,#d7a02a 17% 21%,#0c0905 21% 52%,#b57614 52% 56%,#080603 56% 100%);
+    border:1px solid rgba(200,130,10,.3);box-shadow:0 0 0 10px rgba(200,130,10,.05);animation:psxSpin 2.8s linear infinite}
+  .auth-boot-title{font-family:'Cinzel',serif;text-align:center;color:var(--cream);font-size:1.3rem;letter-spacing:.08em}
+  .auth-boot-sub{margin-top:.45rem;text-align:center;color:var(--smoke);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+  .auth-boot-bar{margin:1.1rem 0 .7rem;height:12px;border:1px solid rgba(200,130,10,.28);background:rgba(8,6,3,.95);position:relative;overflow:hidden}
+  .auth-boot-fill{height:100%;width:34%;background:linear-gradient(90deg,var(--rust),var(--amber),#f3cf62);box-shadow:0 0 12px rgba(200,130,10,.35);animation:psxLoad 1.2s steps(12,end) infinite}
+  .auth-boot-status{display:flex;justify-content:space-between;gap:1rem;font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.12em;color:var(--paper)}
+  .auth-boot-status span:last-child{color:var(--gold)}
+  @keyframes psxSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes psxLoad{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
+
+  /* NAV */
+  nav{background:linear-gradient(180deg,rgba(10,8,4,.98),rgba(10,8,4,.85));border-bottom:1px solid rgba(200,130,10,.3);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
+  .nav-logo{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:900;color:var(--gold);letter-spacing:.15em;text-decoration:none}
+  .nav-back{font-family:'Cinzel',serif;font-size:.75rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid rgba(200,130,10,.3);padding:.4rem .9rem;border-radius:1px;transition:all .2s}
+  .nav-back:hover{background:rgba(200,130,10,.1);border-color:var(--amber)}
+
+  /* LAYOUT */
+  main{max-width:1000px;margin:0 auto;padding:3rem 1.5rem}
+
+  /* HEADER */
+  .page-header{margin-bottom:2.5rem}
+  .page-title{font-family:'Cinzel',serif;font-size:2rem;font-weight:700;color:var(--cream);margin-bottom:.4rem}
+  .page-sub{font-size:.82rem;color:var(--smoke);font-style:italic}
+
+  /* LOGIN WALL */
+  #loginWall{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:1.5rem;text-align:center}
+  .lock-icon{font-size:3rem;opacity:.4}
+  .login-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--cream)}
+  .login-sub{font-size:.85rem;color:var(--smoke);font-style:italic}
+  .btn-google{display:flex;align-items:center;justify-content:center;gap:.8rem;padding:.8rem 1.8rem;background:#fff;color:#3c3c3c;border:1px solid #ddd;border-radius:2px;font-family:'Cinzel',serif;font-size:.82rem;font-weight:700;letter-spacing:.1em;cursor:pointer;transition:background .2s,box-shadow .2s}
+  .btn-google:hover{background:#f5f5f5;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .btn-ghost{background:transparent;border:1px solid rgba(200,130,10,.4);color:var(--amber);padding:.5rem 1.2rem;font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:1px;transition:all .2s}
+  .btn-ghost:hover{background:rgba(200,130,10,.1)}
+  .denied-msg{color:#e06060;font-size:.85rem}
+
+  /* FILTERS */
+  #logContent{display:none}
+  .filters{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem;align-items:center}
+  .filter-btn{background:rgba(10,8,4,.8);border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.35rem .9rem;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:1px;transition:all .2s}
+  .filter-btn:hover{border-color:rgba(200,130,10,.5);color:var(--paper)}
+  .filter-btn.active{background:rgba(200,130,10,.15);border-color:var(--amber);color:var(--amber)}
+  .filter-search{background:rgba(10,8,4,.8);border:1px solid rgba(200,130,10,.2);color:var(--cream);padding:.35rem .8rem;font-family:'Lora',serif;font-size:.82rem;border-radius:1px;outline:none;transition:border-color .2s;flex:1;min-width:160px;max-width:280px}
+  .filter-search:focus{border-color:var(--amber)}
+  .filter-count{font-size:.75rem;color:var(--smoke);font-style:italic;margin-left:auto}
+
+  /* STATS */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.8rem;margin-bottom:2rem}
+  .stat-card{background:linear-gradient(135deg,rgba(42,26,8,.7),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.15);border-radius:1px;padding:.9rem 1rem;text-align:center}
+  .stat-num{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--gold);line-height:1}
+  .stat-label{font-size:.65rem;color:var(--smoke);letter-spacing:.1em;text-transform:uppercase;margin-top:.2rem}
+
+  /* DETAIL PANELS */
+  .detail-section{margin-bottom:2rem}
+  .detail-title{font-family:'Cinzel',serif;font-size:.95rem;color:var(--amber);letter-spacing:.08em;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+  .detail-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(200,130,10,.3),transparent)}
+  .metric-row{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem}
+  .metric-card{flex:1;min-width:180px;background:linear-gradient(135deg,rgba(42,26,8,.5),rgba(19,15,9,.7));border:1px solid rgba(200,130,10,.12);border-radius:1px;padding:1rem 1.2rem}
+  .metric-label{font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.3rem}
+  .metric-value{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--cream);line-height:1}
+  .metric-value.gold{color:var(--gold)}
+  .metric-bar{height:4px;background:rgba(200,130,10,.1);border-radius:2px;margin-top:.5rem;overflow:hidden}
+  .metric-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--amber),var(--gold))}
+  .top-table{width:100%;border-collapse:collapse}
+  .top-table td{padding:.5rem .8rem;font-size:.8rem;border-bottom:1px solid rgba(200,130,10,.06)}
+  .top-table td:first-child{color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:1rem;text-align:center;width:32px}
+  .top-table td:nth-child(2){color:var(--cream)}
+  .top-table td:last-child{text-align:right;color:var(--smoke);font-size:.75rem}
+
+  /* LOG TABLE */
+  .log-table{width:100%;border-collapse:collapse}
+  .log-table th{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);padding:.6rem 1rem;border-bottom:1px solid rgba(200,130,10,.25);text-align:left;background:rgba(42,26,8,.4);position:relative}
+  .sort-header{cursor:pointer;user-select:none;transition:color .15s}
+  .sort-header:hover{color:var(--gold)!important}
+  .sort-arrow{display:inline-block;font-size:.6rem;margin-left:.2rem;opacity:.4;transition:opacity .15s}
+  .sort-header:hover .sort-arrow{opacity:.8}
+  .sort-active .sort-arrow{opacity:1;color:var(--gold)}
+  .sort-header{cursor:pointer;user-select:none;transition:color .15s}
+  .sort-header:hover{color:var(--gold)!important}
+  .sort-arrow{display:inline-block;font-size:.65rem;margin-left:.2rem;opacity:.35;transition:opacity .15s}
+  .sort-header:hover .sort-arrow{opacity:.7}
+  .sort-active .sort-arrow{opacity:1}
+  .log-table td{padding:.7rem 1rem;border-bottom:1px solid rgba(200,130,10,.06);font-size:.82rem;vertical-align:top}
+  .log-table tr:hover td{background:rgba(200,130,10,.03)}
+  .log-table tr.hidden-row{display:none}
+  .cat-badge{display:inline-block;padding:.15rem .5rem;border-radius:1px;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;font-family:'Cinzel',serif;white-space:nowrap}
+  .cat-membros {background:rgba(60,100,200,.15);border:1px solid rgba(60,100,200,.3);color:#8ab4f8}
+  .cat-sugestoes{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--amber)}
+  .cat-enquetes {background:rgba(130,60,200,.12);border:1px solid rgba(130,60,200,.3);color:#c084fc}
+  .cat-setlist  {background:rgba(30,150,80,.12);border:1px solid rgba(30,150,80,.3);color:#6ee7b7}
+  .cat-repertorio{background:rgba(200,80,30,.12);border:1px solid rgba(200,80,30,.3);color:#fca5a5}
+  .cat-forum    {background:rgba(200,160,20,.12);border:1px solid rgba(200,160,20,.3);color:#fde68a}
+  .cat-galeria  {background:rgba(20,160,180,.12);border:1px solid rgba(20,160,180,.3);color:#67e8f9}
+  .cat-acesso   {background:rgba(80,200,80,.12);border:1px solid rgba(80,200,80,.3);color:#86efac}
+  .log-action{color:var(--cream);font-weight:600}
+  .log-detail{color:var(--paper);font-size:.78rem;margin-top:.15rem}
+  .log-who{color:var(--amber);font-size:.78rem}
+  .log-ts{color:var(--smoke);font-size:.72rem;font-style:italic;white-space:nowrap}
+  .empty-state{text-align:center;padding:3rem;color:var(--smoke);font-style:italic}
+
+  /* CLEAR BTN */
+  .danger-zone{margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(200,130,10,.1);display:flex;align-items:center;justify-content:space-between;flex-wrap:gap}
+  .btn-danger{background:rgba(139,58,10,.2);border:1px solid rgba(139,58,10,.4);color:#fca5a5;padding:.5rem 1.2rem;font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:1px;transition:all .2s}
+  .btn-danger:hover{background:rgba(139,58,10,.4)}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1)}
+  .toast.show{transform:translateY(0);opacity:1}
+
+  @media(max-width:600px){
+    main{padding:2rem 1rem}
+    .page-title{font-size:1.4rem}
+    .log-table th:nth-child(3),.log-table td:nth-child(3){display:none}
+    .filters{gap:.4rem}
+    .stats-grid{grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<div id="authBoot">
+  <div class="auth-boot-panel">
+    <div class="auth-boot-head">
+      <span>Retorica System</span>
+      <span>PSX-LOG 01</span>
+    </div>
+    <div class="auth-boot-disc"></div>
+    <div class="auth-boot-title">Carregando Portal Admin</div>
+    <div class="auth-boot-sub">Verificando sessao e permissoes</div>
+    <div class="auth-boot-bar"><div class="auth-boot-fill"></div></div>
+    <div class="auth-boot-status">
+      <span>Autenticando</span>
+      <span>Please wait...</span>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <a class="nav-logo" href="index.html">Retórica</a>
+  <a class="nav-back" href="index.html">← Voltar ao site</a>
+</nav>
+
+<main>
+  <!-- LOGIN WALL -->
+  <div id="loginWall" style="display:none">
+    <div class="lock-icon">🔒</div>
+    <div class="login-title">Área restrita a membros</div>
+    <div class="login-sub">Faça login com sua conta Google aprovada para ver os logs</div>
+    <button class="btn-google" onclick="doLogin()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.569 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z"/></svg>
+      Entrar com Google
+    </button>
+    <div class="denied-msg" id="deniedMsg" style="display:none"></div>
+  </div>
+
+  <!-- LOG CONTENT (shown after login) -->
+  <div id="logContent">
+    <div class="page-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem">
+        <div>
+          <h1 class="page-title">Logs de Alterações</h1>
+          <p class="page-sub" id="loggedAs"></p>
+        </div>
+        <button class="btn-ghost" onclick="doLogout()">Sair</button>
+      </div>
+    </div>
+
+    <!-- STORAGE METRIC -->
+    <div id="storageMetric"></div>
+
+    <!-- REALTIME METRICS -->
+    <div id="realtimeMetrics"></div>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter('all',this)">Todas</button>
+      <button class="filter-btn" onclick="setFilter('membros',this)">Membros</button>
+      <button class="filter-btn" onclick="setFilter('sugestoes',this)">Sugestões</button>
+      <button class="filter-btn" onclick="setFilter('enquetes',this)">Enquetes</button>
+      <button class="filter-btn" onclick="setFilter('setlist',this)">Setlist</button>
+      <button class="filter-btn" onclick="setFilter('repertorio',this)">Repertório</button>
+      <button class="filter-btn" onclick="setFilter('forum',this)">Fórum</button>
+      <button class="filter-btn" onclick="setFilter('galeria',this)">Galeria</button>
+      <button class="filter-btn" onclick="setFilter('acesso',this)">🔑 Acesso</button>
+      <input class="filter-search" type="text" placeholder="Buscar nos logs…" oninput="applySearch(this.value)" id="searchInput">
+      <span class="filter-count" id="filterCount"></span>
+    </div>
+
+    <!-- TABLE -->
+    <div style="overflow-x:auto">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th class="sort-header" onclick="sortBy('action')" data-sort="action">Ação <span class="sort-arrow"></span></th>
+            <th class="sort-header" onclick="sortBy('detail')" data-sort="detail">Detalhe <span class="sort-arrow"></span></th>
+            <th class="sort-header" onclick="sortBy('who')" data-sort="who">Quem <span class="sort-arrow"></span></th>
+            <th class="sort-header" onclick="sortBy('ts')" data-sort="ts">Quando <span class="sort-arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none">Nenhum log encontrado.</div>
+    </div>
+
+    <!-- CONFIGURAÇÕES DA GALERIA -->
+    <div class="detail-section" style="margin-top:2.5rem">
+      <div class="detail-title">⚙️ Configurações da Galeria</div>
+      <div style="background:linear-gradient(135deg,rgba(42,26,8,.5),rgba(19,15,9,.7));border:1px solid rgba(200,130,10,.15);border-radius:2px;padding:1.2rem 1.4rem">
+        <p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-bottom:1.2rem">
+          Controla a compressão aplicada a todas as fotos enviadas para a galeria.<br>
+          Quanto maior a qualidade, maior o arquivo enviado ao Storage.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div>
+            <label style="font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;color:var(--amber);text-transform:uppercase;display:block;margin-bottom:.5rem">
+              Qualidade da compressão: <span id="qualityLabel" style="color:var(--gold)">carregando…</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+              <input type="range" id="qualitySlider" min="30" max="100" step="5" value="70"
+                style="flex:1;min-width:180px;max-width:360px;accent-color:var(--amber);cursor:pointer"
+                oninput="onQualitySlide(this.value)">
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="qualityPresets">
+                <button class="filter-btn" onclick="setQualityPreset(50)">Baixa (50%)</button>
+                <button class="filter-btn" onclick="setQualityPreset(70)">Média (70%)</button>
+                <button class="filter-btn" onclick="setQualityPreset(85)">Alta (85%)</button>
+                <button class="filter-btn" onclick="setQualityPreset(95)">Máxima (95%)</button>
+              </div>
+            </div>
+            <p style="font-size:.72rem;color:var(--smoke);margin-top:.5rem;font-style:italic" id="qualityHint"></p>
+          </div>
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+            <label style="font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;color:var(--amber);text-transform:uppercase">
+              Resolução máxima:
+            </label>
+            <select id="maxPxSelect" onchange="onMaxPxChange(this.value)"
+              style="background:rgba(10,8,4,.8);border:1px solid rgba(200,130,10,.3);color:var(--cream);padding:.3rem .6rem;font-family:'Lora',serif;font-size:.82rem;border-radius:1px;cursor:pointer">
+              <option value="1280">1280px (compacto)</option>
+              <option value="1920" selected>1920px (recomendado)</option>
+              <option value="2560">2560px (grande)</option>
+              <option value="4096">4096px (original)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
+            <button class="btn-ghost" onclick="saveGalleryConfig()" style="border-color:var(--amber);color:var(--gold)">
+              💾 Salvar configurações
+            </button>
+            <span id="configSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DANGER ZONE -->
+    <div class="danger-zone" style="gap:1rem;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        <span style="font-size:.78rem;color:var(--smoke);font-style:italic">Manutenção e Comunicação:</span>
+        <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+          <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 4+ dislikes</button>
+          <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
+          <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
+        </div>
+      </div>
+      <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, getDoc, getDocs,
+  onSnapshot, deleteDoc, orderBy, query, writeBatch,
+  addDoc, setDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getStorage, ref as storageRef, listAll
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDUgxw6RxmiQJnlo1trXL7l8lLYKuk0984",
+  authDomain: "retorica-b05b3.firebaseapp.com",
+  projectId: "retorica-b05b3",
+  storageBucket: "retorica-b05b3.firebasestorage.app",
+  messagingSenderId: "299312853191",
+  appId: "1:299312853191:web:f3f2536da460743940cee2",
+  measurementId: "G-2TQ7Q80QPK"
+};
+
+const app      = initializeApp(firebaseConfig);
+const db       = getFirestore(app);
+const auth     = getAuth(app);
+const provider = new GoogleAuthProvider();
+const storage  = getStorage(app);
+let authResolved = false;
+
+let allLogs      = [];
+let activeFilter = 'all';
+let activeSearch = '';
+let sortField    = 'ts';       // 'action','category','who','ts'
+let sortDir      = -1;          // -1 = desc, 1 = asc
+let realtimeData = {};
+let storageStats   = { files: 0, bytes: 0 };
+const TS_FIELDS  = ['ts','createdAt'];
+
+// Firebase Storage Spark free tier: 5 GB
+const STORAGE_LIMIT = 5 * 1024 * 1024 * 1024; // 5 GB in bytes
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1024 * 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
+  return (b / (1024 * 1024 * 1024)).toFixed(3) + ' GB';
+}
+
+function calcStorageStats() {
+  const galleryData = realtimeData.gallery || [];
+  let totalBytes = 0;
+  galleryData.forEach(p => {
+    if (p.compSize) totalBytes += p.compSize * 1024;
+    else if (p.origSize) totalBytes += p.origSize * 1024;
+    else totalBytes += 500 * 1024; // fallback estimate
+  });
+  storageStats.files = galleryData.length;
+  storageStats.bytes = totalBytes;
+  renderStorageMetric();
+}
+
+// ─── AUTH ──────────────────────────────────────────────────────────
+async function isApproved(email) {
+  const snap = await getDoc(doc(db,'approved_emails', email.toLowerCase()));
+  return snap.exists();
+}
+
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    const ok = await isApproved(user.email);
+    if (!ok) {
+      await signOut(auth);
+      document.getElementById('deniedMsg').textContent = `${user.email} não está na lista de membros aprovados.`;
+      document.getElementById('deniedMsg').style.display = 'block';
+      document.body.classList.add('auth-resolved');
+      authResolved = true;
+      return;
+    }
+    document.getElementById('loginWall').style.display    = 'none';
+    document.getElementById('logContent').style.display   = 'block';
+    document.getElementById('loggedAs').textContent       = `Logado como ${user.displayName || user.email}`;
+    startListening();
+  } else {
+    document.getElementById('loginWall').style.display  = 'flex';
+    document.getElementById('logContent').style.display = 'none';
+  }
+  if (!authResolved) authResolved = true;
+  document.body.classList.add('auth-resolved');
+});
+
+window.doLogin = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const ok = await isApproved(result.user.email);
+    if (!ok) {
+      await signOut(auth);
+      document.getElementById('deniedMsg').textContent = `${result.user.email} não está na lista de membros aprovados.`;
+      document.getElementById('deniedMsg').style.display = 'block';
+    }
+  } catch(e) {
+    if (e.code === 'auth/popup-closed-by-user') return;
+    showToast('Erro ao entrar: ' + (e.message || 'Tente novamente.'));
+  }
+};
+
+window.doLogout = async () => { await signOut(auth); };
+
+// ─── REALTIME COLLECTIONS ─────────────────────────────────────────
+const RT_COLLECTIONS = ['members','gallery','forum','suggestions','polls','approved_emails'];
+
+function startRTListeners() {
+  RT_COLLECTIONS.forEach(colName => {
+    onSnapshot(collection(db, colName), snap => {
+      realtimeData[colName] = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      renderRealtimeMetrics();
+    });
+  });
+}
+
+function renderRealtimeMetrics() {
+  // Recalculate storage stats when gallery data arrives
+  const galForStorage = realtimeData.gallery || [];
+  if (galForStorage.length) {
+    let totalBytes = 0;
+    galForStorage.forEach(p => {
+      if (p.compSize) totalBytes += p.compSize * 1024;
+      else if (p.origSize) totalBytes += p.origSize * 1024;
+      else totalBytes += 500 * 1024;
+    });
+    storageStats.files = galForStorage.length;
+    storageStats.bytes = totalBytes;
+    renderStorageMetric();
+  }
+
+  const el = document.getElementById('realtimeMetrics');
+  if (!el || !Object.keys(realtimeData).length) return;
+
+  const members    = realtimeData.members || [];
+  const gallery    = realtimeData.gallery || [];
+  const forums     = realtimeData.forum || [];
+  const suggestions= realtimeData.suggestions || [];
+  const polls      = realtimeData.polls || [];
+  const approvals  = realtimeData.approved_emails || [];
+
+  // Gallery stats: total views, reactions, comments
+  let totalGallLikes = 0, totalGallComments = 0, totalGallReplies = 0;
+  gallery.forEach(p => {
+    const r = p.reactions || {};
+    totalGallLikes += Object.keys(r).filter(k => r[k]==='like').length;
+    const cmts = p.comments || [];
+    totalGallComments += cmts.length;
+    cmts.forEach(c => { totalGallReplies += (c.replies||[]).length; });
+  });
+
+  // Forum stats
+  let totalForumPosts = 0, totalForumReplies = 0, totalForumLikes = 0;
+  forums.forEach(t => {
+    const posts = t.posts || [];
+    totalForumPosts += posts.length;
+    posts.forEach(p => {
+      const r = p.reactions || {};
+      totalForumLikes += Object.values(r).filter(v=>v==='like').length;
+      totalForumReplies += (p.replies||[]).length;
+    });
+  });
+
+  // Suggestions stats
+  let totalSugVotes = 0;
+  suggestions.forEach(s => { totalSugVotes += (s.likes||0) + (s.dislikes||0); });
+  const topSuggestion = suggestions.length
+    ? suggestions.reduce((a,b) => (a.likes||0) > (b.likes||0) ? a : b)
+    : null;
+
+  // Polls stats
+  let totalPollVotes = 0;
+  polls.forEach(p => { totalPollVotes += (p.options||[]).reduce((s,o)=>s+(o.votes||0),0); });
+
+  // Members approved vs actual
+  const numMembers = members.length;
+  const numApproved = approvals.length;
+
+  el.innerHTML = `
+    <div class="detail-section">
+      <div class="detail-title">Dados em Tempo Real</div>
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">Membros da Banda</div>
+          <div class="metric-value gold">${numMembers}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">${numApproved} e-mail${numApproved!==1?'s':''} aprovado${numApproved!==1?'s':''}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Fotos na Galeria</div>
+          <div class="metric-value gold">${gallery.length}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">👍 ${totalGallLikes} · 💬 ${totalGallComments} comentários · ↩ ${totalGallReplies} respostas</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Tópicos no Fórum</div>
+          <div class="metric-value gold">${forums.length}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">💬 ${totalForumPosts} posts · 👍 ${totalForumLikes} · ↩ ${totalForumReplies} respostas</div>
+        </div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">Sugestões de Músicas</div>
+          <div class="metric-value gold">${suggestions.length}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">🗳 ${totalSugVotes} votos${topSuggestion && topSuggestion.likes ? ` · 🏆 "${topSuggestion.song||'?'}"` : ''}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Enquetes Ativas</div>
+          <div class="metric-value gold">${polls.length}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">🗳 ${totalPollVotes} votos totais · ${polls.filter(p=>p.closed).length} encerrada${polls.filter(p=>p.closed).length!==1?'s':''}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── LOGS ──────────────────────────────────────────────────────────
+const CAT_LABELS = {
+  membros:'Membros', sugestoes:'Sugestões', enquetes:'Enquetes',
+  setlist:'Setlist', repertorio:'Repertório', forum:'Fórum', galeria:'Galeria',
+  acesso:'Acesso'
+};
+
+function startListening() {
+  startRTListeners();
+  // Listen to logs collection in Firestore
+  onSnapshot(collection(db, 'logs'), snap => {
+    allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() })).reverse();
+    renderTable();
+  });
+}
+
+function renderStorageMetric() {
+  const el = document.getElementById('storageMetric');
+  if (!el) return;
+  const { bytes, files } = storageStats;
+  const pct = Math.min((bytes / STORAGE_LIMIT) * 100, 100).toFixed(2);
+  const remaining = STORAGE_LIMIT - bytes;
+  const isWarn = pct > 70;
+  const isCritical = pct > 85;
+  const barColor = isCritical ? '#f87171' : isWarn ? '#fbbf24' : 'var(--amber)';
+
+  const limitLabel = '5 GB (plano gratuito)';
+
+  el.innerHTML = `
+    <div class="detail-section">
+      <div class="detail-title">☁️ Firebase Storage</div>
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">Espaço utilizado</div>
+          <div class="metric-value ${isCritical ? '' : isWarn ? '' : 'gold'}" style="${isCritical?'color:#f87171':isWarn?'color:#fbbf24':''}">${formatBytes(bytes)}</div>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${barColor},${barColor}dd)"></div></div>
+          <div style="font-size:.68rem;color:var(--smoke);margin-top:.4rem">${pct}% de ${limitLabel} · Restam ${formatBytes(remaining)}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Arquivos na galeria</div>
+          <div class="metric-value gold">${files}</div>
+          <div style="font-size:.68rem;color:var(--smoke);margin-top:.4rem">Média: ${files ? formatBytes(bytes / files) : '—'} por foto</div>
+        </div>
+        ${isWarn ? `<div class="metric-card" style="border-color:rgba(250,180,10,.3)">
+          <div class="metric-label">${isCritical ? '⚠️ Limite crítico!' : '⚠️ Atenção'}</div>
+          <div style="font-size:.82rem;color:${isCritical?'#f87171':'#fbbf24'};margin-top:.3rem">
+            ${isCritical
+              ? `Muito perto do limite! Remova fotos antigas ou limpe a galeria.`
+              : `Acima de 70%, fique atento ao consumo de storage.`}
+          </div>
+        </div>` : `<div class="metric-card">
+          <div class="metric-label">Status</div>
+          <div style="font-size:1rem;color:#6ee7b7;margin-top:.3rem">✓ Dentro do limite</div>
+        </div>`}
+      </div>
+    </div>`;
+}
+
+window.setFilterById = id => {
+  activeFilter = id;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  const btns = document.querySelectorAll('.filter-btn');
+  btns.forEach(b => { if(b.getAttribute('onclick')?.includes(`'${id}'`)) b.classList.add('active'); });
+  renderTable();
+};
+
+function getSortScore(log) {
+  if (sortField === 'action') return log.action || '';
+  if (sortField === 'detail') return getLogDetail(log);
+  if (sortField === 'who') return getLogWho(log);
+  return log.createdAt?.toMillis?.() || log.ts?.toMillis?.() || log.ts || 0;
+}
+
+function getLogDetail(log) {
+  if (log.detail) return log.detail;
+  if (log.category === 'sugestoes') {
+    const parts = [];
+    if (log.song || log.artist) parts.push(`${log.song || '?'}${log.artist ? ` — ${log.artist}` : ''}`);
+    if (log.likes !== undefined || log.dislikes !== undefined) parts.push(`${log.likes || 0}👍 ${log.dislikes || 0}👎`);
+    if (log.reason) parts.push(`Motivo: ${log.reason}`);
+    if (log.by) parts.push(`Sugerida por ${log.by}`);
+    return parts.join(' · ') || '—';
+  }
+  return '—';
+}
+
+function getLogWho(log) {
+  return log.who || log.removedBy || log.by || '?';
+}
+
+function getLogWhen(log) {
+  if (log.tsLocal) return log.tsLocal;
+  const ts = log.ts?.toDate?.() || log.createdAt?.toDate?.() || null;
+  return ts ? ts.toLocaleString('pt-BR') : '—';
+}
+
+window.sortBy = field => {
+  if (sortField === field) { sortDir *= -1; }
+  else { sortField = field; sortDir = field === 'ts' ? -1 : 1; }
+  renderTable();
+  updateSortArrows();
+};
+
+function updateSortArrows() {
+  const arrows = { 1: '&#9650;', '-1': '&#9660;' };
+  document.querySelectorAll('.sort-header').forEach(th => {
+    const f = th.dataset.sort;
+    const active = f === sortField;
+    th.classList.toggle('sort-active', active);
+    th.querySelector('.sort-arrow').innerHTML = active ? arrows[sortDir] : '';
+  });
+}
+
+function renderTable() {
+  const body  = document.getElementById('logBody');
+  const empty = document.getElementById('emptyState');
+  const count = document.getElementById('filterCount');
+
+  const filtered = allLogs.filter(l => {
+    const matchCat    = activeFilter === 'all' || l.category === activeFilter;
+    const detailText  = getLogDetail(l).toLowerCase();
+    const whoText     = getLogWho(l).toLowerCase();
+    const matchSearch = !activeSearch ||
+      l.action?.toLowerCase().includes(activeSearch) ||
+      detailText.includes(activeSearch) ||
+      whoText.includes(activeSearch);
+    return matchCat && matchSearch;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    const va = getSortScore(a), vb = getSortScore(b);
+    if (typeof va === 'number') return (va - vb) * sortDir;
+    return String(va).localeCompare(String(vb), 'pt-BR') * sortDir;
+  });
+
+  count.textContent = `${filtered.length} registro${filtered.length!==1?'s':''}`;
+
+  if (!filtered.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  body.innerHTML = filtered.map(l => {
+    const cat   = l.category || 'geral';
+    const badge = `<span class="cat-badge cat-${cat}">${CAT_LABELS[cat]||cat}</span>`;
+    return `<tr>
+      <td>${badge}<div class="log-action" style="margin-top:.3rem">${l.action||'—'}</div></td>
+      <td><div class="log-detail">${getLogDetail(l)}</div></td>
+      <td><span class="log-who">${getLogWho(l)}</span>${l.whoEmail ? `<div style="font-size:.68rem;color:var(--smoke)">${l.whoEmail}</div>` : ''}</td>
+      <td><span class="log-ts">${getLogWhen(l)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+window.setFilter = (cat, btn) => {
+  activeFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+};
+
+window.applySearch = val => {
+  activeSearch = val.toLowerCase().trim();
+  renderTable();
+};
+
+window.confirmClearLogs = () => {
+  if (!confirm('Tem certeza? Isso vai apagar TODOS os logs permanentemente. Esta ação não pode ser desfeita.')) return;
+  clearAllLogs();
+};
+
+async function clearAllLogs() {
+  showToast('⏳ Limpando logs…');
+  const snap = await getDocs(collection(db,'logs'));
+  // Batch delete in groups of 500
+  const batchSize = 499;
+  let batch = writeBatch(db);
+  let i = 0;
+  for (const d of snap.docs) {
+    batch.delete(d.ref);
+    i++;
+    if (i % batchSize === 0) { await batch.commit(); batch = writeBatch(db); }
+  }
+  await batch.commit();
+  showToast(`✓ ${snap.size} log${snap.size!==1?'s':''} removido${snap.size!==1?'s':''}.`);
+}
+
+window.runSuggestionsCleanup = async () => {
+  if (!confirm('Deseja iniciar a varredura? Todas as músicas com 4 ou mais dislikes serão removidas e as mensagens de motivação serão enviadas ao WhatsApp.')) return;
+  
+  showToast('⏳ Iniciando varredura…');
+  let removedCount = 0;
+  
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Varredura Manual de Sugestões',
+      detail: 'Solicitação manual via painel de logs para remover sugestões com 4 ou mais dislikes',
+      category: 'sugestoes',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+
+    const snap = await getDocs(collection(db, 'suggestions'));
+    const toRemove = snap.docs.filter(d => {
+      const s = d.data();
+      return (s.dislikes || 0) >= 4;
+    });
+    
+    if (toRemove.length === 0) {
+      showToast('✨ Nenhuma música com 4+ dislikes encontrada.');
+      return;
+    }
+    
+    for (const d of toRemove) {
+      const s = d.data();
+      const id = d.id;
+      
+      // Deleta a sugestão
+      await deleteDoc(doc(db, 'suggestions', id));
+      
+      // Cria o log que dispara o WhatsApp
+      await addDoc(collection(db, 'logs'), {
+        action: 'Sugestão Removida',
+        detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: Atingiu o limite de 4 dislikes (Varredura de manutenção)`,
+        song: s.song,
+        artist: s.artist,
+        by: s.by || 'Membro',
+        likes: s.likes || 0,
+        dislikes: s.dislikes || 0,
+        reason: 'Atingiu o limite de 4 dislikes (Varredura de manutenção)',
+        removedBy: 'Varredura Automática',
+        category: 'sugestoes',
+        who: 'Varredura Automática',
+        whoEmail: '',
+        ts: serverTimestamp(),
+        tsLocal: new Date().toLocaleString('pt-BR')
+      });
+      
+      removedCount++;
+    }
+    
+    showToast(`✅ Varredura concluída! ${removedCount} música(s) removida(s).`);
+  } catch (e) {
+    console.error('Cleanup error:', e);
+    showToast('❌ Erro durante a varredura. Veja o console.');
+  }
+};
+
+window.triggerManualRehearsalZap = async () => {
+  if (!confirm('Deseja enviar a lista do "Ensaio Atual" para o WhatsApp agora?')) return;
+  
+  showToast('⏳ Disparando WhatsApp…');
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Disparar Zap Ensaio',
+      detail: 'Solicitação manual via painel de logs',
+      category: 'setlist',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    showToast('🚀 Comando enviado!');
+  } catch (e) {
+    console.error('Manual zap error:', e);
+    showToast('❌ Erro ao disparar. Veja o console.');
+  }
+};
+
+// ─── UTILS ─────────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════════
+// GALLERY COMPRESSION CONFIG
+// ═══════════════════════════════════════════════════════════════════
+
+const QUALITY_HINTS = {
+  30: 'Compressão máxima — arquivos bem pequenos, qualidade visivelmente reduzida.',
+  40: 'Compressão alta — boa para economizar storage, perda perceptível em detalhes.',
+  50: 'Baixa qualidade — arquivos compactos, aceitável para fotos de bastidores.',
+  55: 'Qualidade baixa-média.',
+  60: 'Qualidade moderada — bom equilíbrio para a maioria dos usos.',
+  65: 'Qualidade moderada-boa.',
+  70: 'Qualidade média (padrão anterior) — redução de 30%, boa relação tamanho/visual.',
+  75: 'Qualidade boa — compressão suave, perda mínima.',
+  80: 'Qualidade alta — arquivos maiores, detalhes bem preservados.',
+  85: 'Alta qualidade — recomendado para fotos de shows e apresentações.',
+  90: 'Qualidade muito alta — pouca compressão, arquivos grandes.',
+  95: 'Qualidade máxima — quase sem perda, arquivos bem pesados.',
+  100: 'Sem compressão JPEG — arquivos muito grandes, não recomendado.',
+};
+
+async function loadGalleryConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
+    if (snap.exists()) {
+      const { quality = 70, maxPx = 1920 } = snap.data();
+      applyConfigToUI(quality, maxPx);
+    } else {
+      applyConfigToUI(70, 1920);
+    }
+  } catch(e) {
+    applyConfigToUI(70, 1920);
+  }
+}
+
+function applyConfigToUI(quality, maxPx) {
+  const slider = document.getElementById('qualitySlider');
+  const label  = document.getElementById('qualityLabel');
+  const hint   = document.getElementById('qualityHint');
+  const sel    = document.getElementById('maxPxSelect');
+  if (slider) slider.value = quality;
+  if (label)  label.textContent = `${quality}%`;
+  if (hint)   hint.textContent  = QUALITY_HINTS[quality] || '';
+  if (sel)    sel.value = String(maxPx);
+  updatePresetHighlight(quality);
+}
+
+function updatePresetHighlight(quality) {
+  document.querySelectorAll('#qualityPresets .filter-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('onclick').match(/\d+/)?.[0]);
+    btn.classList.toggle('active', val === quality);
+  });
+}
+
+window.onQualitySlide = val => {
+  const q = parseInt(val);
+  const label = document.getElementById('qualityLabel');
+  const hint  = document.getElementById('qualityHint');
+  if (label) label.textContent = `${q}%`;
+  if (hint)  hint.textContent  = QUALITY_HINTS[q] || '';
+  updatePresetHighlight(q);
+};
+
+window.setQualityPreset = val => {
+  const slider = document.getElementById('qualitySlider');
+  if (slider) { slider.value = val; onQualitySlide(val); }
+};
+
+window.onMaxPxChange = val => {
+  // nothing extra needed, value read on save
+};
+
+window.saveGalleryConfig = async () => {
+  const slider  = document.getElementById('qualitySlider');
+  const sel     = document.getElementById('maxPxSelect');
+  const status  = document.getElementById('configSaveStatus');
+  const quality = parseInt(slider?.value || 70);
+  const maxPx   = parseInt(sel?.value || 1920);
+  try {
+    await setDoc(doc(db, 'config', 'galleryCompression'), { quality, maxPx, updatedAt: new Date().toISOString() });
+    if (status) { status.textContent = '✓ Salvo! Próximos uploads já usam a nova configuração.'; status.style.color = 'var(--gold)'; }
+    showToast(`✓ Configuração salva — qualidade ${quality}%, max ${maxPx}px`);
+    setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+  } catch(e) {
+    if (status) { status.textContent = '⚠ Erro ao salvar.'; status.style.color = '#fca5a5'; }
+    showToast('⚠ Erro ao salvar configuração');
+  }
+};
+
+loadGalleryConfig();
+
+window.showToast = msg => {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+};
+</script>
+</body>
+</html>

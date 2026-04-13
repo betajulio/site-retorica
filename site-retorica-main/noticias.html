@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0804">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="imagens/Toca_do_Mineiro_logo_final.png">
+<title>Notícias do Rock — Retórica</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+
+  /* NAV */
+  nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(180deg,rgba(10,8,4,.98),rgba(10,8,4,.85));border-bottom:1px solid rgba(200,130,10,.3);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;backdrop-filter:blur(10px)}
+  .nav-logo{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.15em;text-decoration:none}
+  .nav-links{display:flex;list-style:none}
+  .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .7rem;transition:color .2s;cursor:pointer}
+  .nav-links a:hover{color:var(--gold)}
+  .nav-back{font-family:'Cinzel',serif;font-size:.72rem;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;text-decoration:none;border:1px solid rgba(200,130,10,.3);padding:.4rem .9rem;border-radius:1px;transition:all .2s}
+  .nav-back:hover{background:rgba(200,130,10,.1);border-color:var(--amber)}
+
+  /* NAV MOBILE */
+  .nav-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:.4rem;z-index:1100}
+  .nav-hamburger span{display:block;width:22px;height:2px;background:var(--gold);border-radius:1px;transition:all .3s}
+  .nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .nav-hamburger.open span:nth-child(2){opacity:0}
+  .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .nav-mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;background:rgba(10,8,4,.98);border-bottom:1px solid rgba(200,130,10,.3);backdrop-filter:blur(16px);z-index:999;flex-direction:column;padding:.5rem 0}
+  .nav-mobile-menu.open{display:flex}
+  .nav-mobile-menu a{color:var(--paper);text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;padding:1rem 2rem;border-bottom:1px solid rgba(200,130,10,.08);transition:color .2s;display:flex;align-items:center;justify-content:space-between}
+  .badge-mobile-inline{background:var(--gold);color:var(--black);font-family:'Bebas Neue',sans-serif;font-size:.55rem;letter-spacing:.1em;padding:.08rem .35rem;border-radius:1px;animation:pulse-badge 2s infinite;white-space:nowrap;pointer-events:none;margin-left:auto}
+  @keyframes pulse-badge {0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+  /* HERO */
+  #hero{height:40vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:300px}
+  .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
+  .hero-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(200,130,10,.04) 59px,rgba(200,130,10,.04) 60px)}
+  .hero-content{position:relative;text-align:center;animation:fadeUp 1.2s ease both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+  .hero-title{font-family:'Cinzel',serif;font-size:clamp(2.5rem,7vw,5rem);font-weight:900;color:var(--cream);line-height:.9;text-shadow:0 0 80px rgba(200,130,10,.3),3px 3px 0 rgba(139,58,10,.4)}
+  .hero-subtitle{font-family:'IM Fell English SC',serif;font-size:.85rem;letter-spacing:.4em;color:var(--smoke);margin-top:1rem;text-transform:uppercase}
+
+  /* SECTIONS */
+  section{padding:4rem 2rem;max-width:1300px;margin:0 auto}
+  .section-header{display:flex;align-items:center;gap:1.5rem;margin-bottom:2.5rem}
+  .section-number{font-family:'Bebas Neue',sans-serif;font-size:3rem;color:rgba(200,130,10,.2);line-height:1;min-width:50px}
+  .section-title-wrap h2{font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;color:var(--cream);letter-spacing:.05em}
+  .section-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(200,130,10,.4),transparent)}
+  .full-divider{border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(200,130,10,.2),transparent);max-width:1100px;margin:2rem auto}
+
+  /* CARDS */
+  .historia-card{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;overflow:hidden;transition:border-color .3s,transform .3s}
+  .historia-card:hover{border-color:rgba(200,130,10,.4);transform:translateY(-2px)}
+
+  /* HISTORIA TITLES (DATA DESTAQUE) */
+  .fatos-header{display:flex;align-items:baseline;font-family:'Cinzel',serif;border-bottom:1px solid rgba(200,130,10,.15);padding-bottom:.5rem;margin-bottom:.8rem}
+  .fatos-date{color:var(--gold);font-weight:900;font-size:1.1rem;margin-right:.6rem;letter-spacing:0}
+  .fatos-label{color:var(--amber);font-size:.8rem;letter-spacing:.12em;text-transform:uppercase}
+
+  /* TOP ROCK GRID */
+  .top-rock-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem}
+  @media(max-width:1024px){ .top-rock-grid{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:768px){ .top-rock-grid{grid-template-columns:1fr} .nav-links{display:none} .nav-hamburger{display:flex} }
+
+  .col-container{display:flex;flex-direction:column;gap:.6rem}
+  .col-label{font-family:'Cinzel',serif;font-size:.7rem;color:var(--amber);border-bottom:1px solid rgba(200,130,10,.2);padding-bottom:.4rem;text-transform:uppercase;letter-spacing:.1em}
+
+  /* MUSIC CARD */
+  .music-card{height:80px; display:flex; align-items:center; gap:.7rem; padding:0 .7rem}
+  .music-item-thumb{width:48px;height:48px;border-radius:2px;object-fit:cover;border:1px solid rgba(200,130,10,0.3);flex-shrink:0}
+  .music-rank{font-family:'Bebas Neue',serif;font-size:1.2rem;color:rgba(200,130,10,.3);min-width:20px;text-align:center}
+  .music-info{flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center}
+  .music-title{font-family:'Cinzel',serif; font-size:.72rem; font-weight:700; color:var(--cream); line-height:1.2; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space: normal; word-wrap: break-word}
+  .music-artist{font-size:.62rem; color:var(--smoke); margin-top:.15rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+  /* NEWS */
+  .news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.2rem}
+  .news-card{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;overflow:hidden;transition:border-color .3s,transform .3s;display:flex;flex-direction:column}
+  .news-card-thumb{width:100%;height:180px;object-fit:cover;background:rgba(10,8,4,.5)}
+  .news-card-body{padding:1.2rem;flex:1;display:flex;flex-direction:column}
+  .news-card-source{font-size:.68rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;font-family:'Cinzel',serif;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+  .news-card-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--cream);line-height:1.35;margin-bottom:.6rem}
+  .news-card-link{display:inline-flex;align-items:center;gap:.4rem;color:var(--amber);font-size:.78rem;text-decoration:none;font-family:'Cinzel',serif;letter-spacing:.08em;text-transform:uppercase;padding:.6rem 0;border-top:1px solid rgba(200,130,10,.12);margin-top:.8rem}
+
+  /* UTILS */
+  .spinner{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:2rem 0}
+  .spinner-circle{width:24px;height:24px;border:2px solid rgba(200,130,10,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .refresh-btn{background:none;border:1px solid rgba(200,130,10,.3);color:var(--amber);font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.1em;text-transform:uppercase;padding:.4rem .9rem;cursor:pointer;border-radius:1px;margin-left:auto}
+  .tabs{display:flex;margin-bottom:2rem;border-bottom:1px solid rgba(200,130,10,.2);gap:0}
+  .tab-btn{background:none;border:none;color:var(--smoke);padding:.7rem 1.2rem;font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.1em;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;margin-bottom:-1px}
+  .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+  .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 32px rgba(0,0,0,.5)}
+  .toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Retórica</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Portal</a></li>
+    <li><a href="noticias.html" style="color:var(--gold)">Notícias</a></li>
+  </ul>
+  <a href="index.html" class="nav-back">&larr; Voltar ao portal</a>
+  <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="nav-mobile-menu" id="navMobileMenu">
+  <a href="index.html">Portal</a>
+  <a href="noticias.html">Notícias <span class="badge-mobile-inline">NEW</span></a>
+  <a href="index.html" style="border:none; color:var(--amber)">Voltar ao portal</a>
+</div>
+
+<div id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-lines"></div>
+  <div class="hero-content">
+    <span class="hero-icon">♫</span>
+    <h1 class="hero-title">Notícias do Rock</h1>
+    <p class="hero-subtitle">Mundo do Rock · Histórias e Paradas musicais</p>
+  </div>
+</div>
+
+<section id="historia">
+  <div class="section-header">
+    <div class="section-number">♦</div>
+    <div class="section-title-wrap"><h2>Curiosidades da Música</h2><p>Memória histórica do dia</p></div>
+    <div class="section-line"></div>
+  </div>
+  <div id="historiaContent"><div class="spinner"><div class="spinner-circle"></div></div></div>
+</section>
+
+<hr class="full-divider">
+
+<section id="topRock">
+  <div class="section-header">
+    <div class="section-number">★</div>
+    <div class="section-title-wrap"><h2>Destaques Musicais</h2><p>Lançamentos e rankings oficiais Apple Music</p></div>
+    <div class="section-line"></div>
+  </div>
+  <div class="top-rock-grid">
+    <div class="col-container" id="col-new"><div class="col-label">Lançamentos Rock</div><div class="spinner"><div class="spinner-circle"></div></div></div>
+    <div class="col-container" id="col-intl"><div class="col-label">Top Internacional</div><div class="spinner"><div class="spinner-circle"></div></div></div>
+    <div class="col-container" id="col-nac"><div class="col-label">Nacional</div><div class="spinner"><div class="spinner-circle"></div></div></div>
+    <div class="col-container" id="col-metal"><div class="col-label">Heavy Metal</div><div class="spinner"><div class="spinner-circle"></div></div></div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<section id="noticias">
+  <div class="section-header">
+    <div class="section-number">♫</div>
+    <div class="section-title-wrap"><h2>Últimas Notícias</h2><p>Feed global atualizado</p></div>
+    <button class="refresh-btn" onclick="location.reload()">↻ Atualizar</button>
+  </div>
+  <div class="tabs" id="newsTabs">
+    <button class="tab-btn active" data-tab="all">Todas</button>
+    <button class="tab-btn" data-tab="nacional">Nacional</button>
+    <button class="tab-btn" data-tab="internacional">Internacional</button>
+  </div>
+  <div id="newsContent"><div class="spinner"><div class="spinner-circle"></div></div></div>
+</section>
+
+<div id="updateInfo" style="text-align:center; padding:2rem; color:var(--smoke); font-size:.7rem; font-style:italic"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CACHE_KEY = 'retorica_news_cache_v4';
+const CACHE_TTL = 3600000;
+
+function toggleMobileMenu() {
+  document.getElementById('navMobileMenu').classList.toggle('open');
+  document.getElementById('navHamburger').classList.toggle('open');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str; return div.innerHTML;
+}
+
+// ─── CARREGAR CHARTS ───────────────────────────────────────────────
+async function fetchAppleChart(url) {
+  try {
+    const directRes = await fetch(url, { cache: 'no-store' });
+    if (directRes.ok) return await directRes.json();
+  } catch(e) {}
+
+  const proxyRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { cache: 'no-store' });
+  if (!proxyRes.ok) throw new Error('Proxy indisponivel');
+  const proxyData = await proxyRes.json();
+  if (!proxyData?.contents) throw new Error('Resposta vazia do proxy');
+  return JSON.parse(proxyData.contents);
+}
+
+async function loadChartColumn(colId, label, url) {
+  const container = document.getElementById(colId);
+  try {
+    const data = await fetchAppleChart(url);
+    const feed = data.feed;
+    const entries = feed.entry ? feed.entry.slice(0, 5) : [];
+    
+    if (!entries.length) throw new Error();
+    
+    let html = `<div class="col-label">${label}</div>`;
+    entries.forEach((entry, i) => {
+      const song = entry['im:name'].label;
+      const artist = entry['im:artist'].label;
+      const thumb = entry['im:image'][2].label;
+      const link = Array.isArray(entry.link) ? entry.link[0].attributes.href : entry.link.attributes.href;
+      
+      html += `<div class="historia-card music-card">
+        <span class="music-rank">${i+1}</span>
+        <img src="${thumb}" class="music-item-thumb" alt="Capa" onerror="this.src='imagens/inst.png'">
+        <div class="music-info">
+          <div class="music-title">${escapeHtml(song)}</div>
+          <div class="music-artist">${escapeHtml(artist)}</div>
+        </div>
+        <a href="${link}" target="_blank" style="text-decoration:none; font-size:.9rem">🎧</a>
+      </div>`;
+    });
+    container.innerHTML = html;
+  } catch(e) {
+    console.warn(`[TOP ROCK] Falha ao carregar ${label}:`, e);
+    container.innerHTML = `<div class="col-label">${label}</div><p style="font-size:.7rem; color:var(--smoke); font-style:italic; padding:1rem">Indisponível</p>`;
+  }
+}
+
+function loadTopRock() {
+  loadChartColumn('col-new', 'Lançamentos Rock', 'https://itunes.apple.com/us/rss/topalbums/limit=10/genre=21/json');
+  loadChartColumn('col-intl', 'Top Internacional', 'https://itunes.apple.com/us/rss/topsongs/limit=10/json');
+  loadChartColumn('col-nac', 'Nacional', 'https://itunes.apple.com/br/rss/topsongs/limit=10/genre=21/json');
+  loadChartColumn('col-metal', 'Heavy Metal', 'https://itunes.apple.com/us/rss/topsongs/limit=10/genre=1153/json');
+}
+
+// ─── HISTORIA (FATOS COM DATA EM DESTAQUE) ───
+async function loadHistoria() {
+  const dateObj = new Date();
+  const day = dateObj.getDate();
+  const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  const dateStr = `${String(day).padStart(2, '0')} de ${monthNames[dateObj.getMonth()]}`;
+
+  try {
+    const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fucsfm.com.br%2Ffeed%2F');
+    const data = await res.json();
+    const almanaque = data.items.find(it => it.title.toLowerCase().includes('almanaque'));
+    if (almanaque) {
+      const slugMatch = almanaque.link.match(/ucsfm\.com\.br\/([^/]+)\//);
+      if (slugMatch) {
+        const wpRes = await fetch('https://ucsfm.com.br/wp-json/wp/v2/posts?search=' + encodeURIComponent(slugMatch[1].replace(/-/g,' ')) + '&per_page=1');
+        const posts = await wpRes.json();
+        if (posts.length) {
+          const content = posts[0].content.rendered;
+          const parts = content.split(/<hr\s*\/?>/i).map(s => s.trim()).filter(s => s.length > 50);
+          
+          let h = '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.2rem">';
+          const subLabels = ['FATOS', 'OUTROS FATOS'];
+          
+          for (let i=1; i < Math.min(parts.length, 3); i++) {
+            const li = parts[i].match(/<li[^>]*>([\s\S]*?)<\/li>/g);
+            const items = li ? li.map(l => l.replace(/<[^>]*>/g,'').trim()) : [parts[i].replace(/<[^>]*>/g,'').trim()];
+            h += `<div class="historia-card" style="padding:1.2rem; text-align:left">
+              <div class="fatos-header">
+                <span class="fatos-date">${dateStr}</span>
+                <span class="fatos-label">${subLabels[i-1]}</span>
+              </div>
+              ${items.map(txt => `<div style="font-size:.85rem; color:var(--paper); line-height:1.6; margin-bottom:.6rem">${txt}</div>`).join('')}
+            </div>`;
+          }
+          document.getElementById('historiaContent').innerHTML = h + '</div>';
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+  document.getElementById('historiaContent').innerHTML = '<p style="color:var(--smoke); text-align:center">Indisponível no momento.</p>';
+}
+
+// ─── NEWS (WHIPLASH E AFINS) ───
+const RSS_SOURCES = [
+  { id: 'whiplash', name: 'Whiplash', url: 'https://whiplash.net/news.xml', type: 'nacional' },
+  { id: 'rsbrasil', name: 'Rolling Stone BR', url: 'https://rollingstone.com.br/feed/', type: 'nacional' },
+  { id: 'loudwire', name: 'Loudwire', url: 'https://loudwire.com/feed/', type: 'internacional' }
+];
+
+async function fetchNews(f) {
+  try {
+    const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(f.url)}`);
+    const d = await res.json();
+    return d.items.map(it => ({ title: it.title, link: it.link, date: new Date(it.pubDate), source: f.name, type: f.type, thumb: it.thumbnail }));
+  } catch(e) { return []; }
+}
+
+async function loadNews() {
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
+    const p = JSON.parse(cached);
+    if (Date.now() - p.ts < CACHE_TTL) { renderNews(p.items); return; }
+  }
+  const all = (await Promise.all(RSS_SOURCES.map(fetchNews))).flat().sort((a,b) => b.date - a.date);
+  if (all.length) {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ items: all, ts: Date.now() }));
+    renderNews(all);
+    document.getElementById('updateInfo').textContent = 'Sincronizado em: ' + new Date().toLocaleString();
+  }
+}
+
+function renderNews(items) {
+  const tab = document.querySelector('.tab-btn.active').dataset.tab;
+  const filtered = tab === 'all' ? items : items.filter(it => it.type === tab);
+  let h = '<div class="news-grid">';
+  filtered.slice(0, 12).forEach(it => {
+    h += `<div class="news-card">
+      ${it.thumb?`<img class="news-card-thumb" src="${it.thumb}" loading="lazy">`:''}
+      <div class="news-card-body">
+        <div class="news-card-source">${it.source} • ${new Date(it.date).toLocaleDateString()}</div>
+        <div class="news-card-title">${it.title}</div>
+        <a class="news-card-link" href="${it.link}" target="_blank">Ler notícia completa</a>
+      </div>
+    </div>`;
+  });
+  document.getElementById('newsContent').innerHTML = h + '</div>';
+}
+
+document.getElementById('newsTabs').addEventListener('click', e => {
+  if (!e.target.classList.contains('tab-btn')) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+  if (cached) renderNews(cached.items);
+});
+
+loadHistoria(); loadTopRock(); loadNews();
+</script>
+</body>
+</html>

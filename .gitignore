@@ -1,0 +1,26 @@
+.claude/
+Backups/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+
+# Virtual environments
+venv/
+.venv/
+functions/venv/
+
+# Local secrets and machine-specific files
+*.local
+.env
+.env.*
+
+# OS/editor noise
+Thumbs.db
+.DS_Store
+
+# Optional local snapshots
+*.zip
