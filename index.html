@@ -2563,6 +2563,16 @@ let galleryCompMaxPx    = 1920;
 let galleryLastGridIds  = '';    // ids da última grade renderizada, evita re-render desnecessário
 let bulkTagOriginalIds  = [];
 
+function getGalleryCommentCount(photoData) {
+  if (typeof photoData?.commentCount === 'number') return photoData.commentCount;
+  return (photoData?.comments || []).length;
+}
+
+function getGalleryReplyCount(photoData) {
+  if (typeof photoData?.replyCount === 'number') return photoData.replyCount;
+  return (photoData?.comments || []).reduce((sum, comment) => sum + ((comment.replies || []).length), 0);
+}
+
 function ensureGallerySubscription() {
   if (gallerySubscribed) return;
   gallerySubscribed = true;
@@ -2620,7 +2630,7 @@ function renderGallery() {
     const r = p.reactions || {};
     const likes    = Object.values(r).filter(v=>v==='like').length;
     const dislikes = Object.values(r).filter(v=>v==='dislike').length;
-    const comments = (p.comments||[]).length;
+    const comments = getGalleryCommentCount(p);
     const editBtn = isMember
       ? `<button onclick="event.stopPropagation();editCaption('${id}')" style="background:rgba(200,130,10,.2);border:1px solid rgba(200,130,10,.4);color:var(--amber);padding:.2rem .5rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-right:.4rem">✏ Descrição</button>`
       : '';
@@ -2657,7 +2667,7 @@ function renderGallery() {
       const r = p.reactions || {};
       const likes    = Object.values(r).filter(v=>v==='like').length;
       const dislikes = Object.values(r).filter(v=>v==='dislike').length;
-      const comments = (p.comments||[]).length;
+      const comments = getGalleryCommentCount(p);
       const del = isMember
         ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
         : '';
@@ -2785,7 +2795,9 @@ window.uploadGalleryPhotos = async () => {
             createdAt: serverTimestamp(),
             origSize: Math.round(origSize / 1024),
             compSize: Math.round(compSize / 1024),
-            tags: photoTags
+            tags: photoTags,
+            commentCount: 0,
+            replyCount: 0
           });
           resolve();
         }
@@ -2821,6 +2833,10 @@ window.deleteGalleryPhoto = async (id, path) => {
   if (!confirmAction('Tem certeza que deseja excluir esta foto da galeria?')) return;
   const snap = await getDoc(doc(db,'gallery',id));
   const caption = snap.exists() ? (snap.data().caption || 'sem descrição') : id;
+  const commentsSnap = await getDocs(collection(db,'gallery',id,'comments'));
+  if (!commentsSnap.empty) {
+    await Promise.all(commentsSnap.docs.map(commentDoc => deleteDoc(commentDoc.ref)));
+  }
   await deleteDoc(doc(db,'gallery',id));
   if (path) { try { await deleteObject(storageRef(storage, path)); } catch {} }
   await writeLog('Foto excluída da galeria', `"${caption}"`, 'galeria');
@@ -2835,12 +2851,75 @@ window.deleteGalleryPhoto = async (id, path) => {
 // LIGHTBOX
 // ═══════════════════════════════════════════════════════════════════
 let currentLbId = null;
+const galleryCommentsCache = {};
+const galleryCommentSubscriptions = {};
+
+async function syncGalleryCounts(photoId, updater) {
+  const photoRef = doc(db,'gallery',photoId);
+  await runTransaction(db, async tx => {
+    const snap = await tx.get(photoRef);
+    if (!snap.exists()) return;
+    const photo = snap.data();
+    const next = updater({
+      commentCount: getGalleryCommentCount(photo),
+      replyCount: getGalleryReplyCount(photo)
+    });
+    tx.update(photoRef, next);
+  });
+}
+
+function ensureGalleryCommentsSubscription(photoId) {
+  if (galleryCommentSubscriptions[photoId]) return;
+  galleryCommentSubscriptions[photoId] = onSnapshot(
+    query(collection(db,'gallery',photoId,'comments'), orderBy('createdAt','asc')),
+    snap => {
+      galleryCommentsCache[photoId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+      const photo = galleryCache.find(item => item.id === photoId)?.data;
+      if (currentLbId === photoId && photo) renderLightboxComments(photoId, photo);
+    }
+  );
+}
+
+function getGalleryCommentsForRender(photoId, photoData) {
+  const legacyComments = (photoData.comments || []).map((comment, index) => ({
+    ...comment,
+    __legacy: true,
+    __commentKey: `legacy-${index}`,
+    __legacyIndex: index
+  }));
+  const modernComments = (galleryCommentsCache[photoId] || []).map(({id, data}) => ({
+    ...data,
+    __legacy: false,
+    __commentKey: id
+  }));
+  return [...legacyComments, ...modernComments];
+}
+
+async function updateLegacyGalleryComment(photoId, legacyIndex, updater) {
+  const snap = await getDoc(doc(db,'gallery',photoId));
+  if (!snap.exists()) return;
+  const photo = snap.data();
+  const comments = [...(photo.comments || [])];
+  const current = comments[legacyIndex];
+  if (!current) return;
+  comments[legacyIndex] = updater({ ...current });
+  await updateDoc(doc(db,'gallery',photoId), { comments });
+}
+
+async function updateModernGalleryComment(photoId, commentId, updater) {
+  const commentRef = doc(db,'gallery',photoId,'comments',commentId);
+  const commentSnap = await getDoc(commentRef);
+  if (!commentSnap.exists()) return;
+  const next = updater({ ...commentSnap.data() });
+  await updateDoc(commentRef, next);
+}
 
 window.openLightbox = async id => {
   const snap = await getDoc(doc(db,'gallery',id));
   if (!snap.exists()) return;
   const p = snap.data();
   currentLbId = id;
+  ensureGalleryCommentsSubscription(id);
 
   document.getElementById('lbImg').src = p.url;
   document.getElementById('lbImg').alt = p.caption || '';
@@ -2944,7 +3023,7 @@ function getMemberName() {
 function renderLightboxComments(id, p) {
   const el = document.getElementById('lbComments');
   const uid = auth.currentUser?.uid || null;
-  const comments = p.comments || [];
+  const comments = getGalleryCommentsForRender(id, p);
   const name = getMemberName();
 
   let html = `<div class="lb-ctitle">Comentários (${comments.length})</div>`;
@@ -2973,9 +3052,9 @@ function renderLightboxComments(id, p) {
             </div>
             <div class="lb-cmt-txt">${rp.text}</div>
             <div class="lb-cmt-act">
-              <button class="lb-cr${rMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}',${ci},'reply',${rpi},'like')" ${!isLoggedIn?'disabled':''}>👍 ${rLikes||''}</button>
-              <button class="lb-cr${rMy==='dislike'?' dkd':''}" onclick="lbCmtReact('${id}',${ci},'reply',${rpi},'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${rDislikes||''}</button>
-              ${canDel?`<button class="lb-cdel" onclick="delLbReply('${id}',${ci},${rpi})">✕</button>`:''}
+              <button class="lb-cr${rMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}','${c.__commentKey}','reply',${rpi},'like')" ${!isLoggedIn?'disabled':''}>👍 ${rLikes||''}</button>
+              <button class="lb-cr${rMy==='dislike'?' dkd':''}" onclick="lbCmtReact('${id}','${c.__commentKey}','reply',${rpi},'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${rDislikes||''}</button>
+              ${canDel?`<button class="lb-cdel" onclick="delLbReply('${id}','${c.__commentKey}',${rpi})">✕</button>`:''}
             </div>
           </div>
         </div>`;
@@ -2984,9 +3063,9 @@ function renderLightboxComments(id, p) {
     }
 
     const replyForm = isLoggedIn
-      ? `<div class="lb-rpform" style="display:none" id="lbRpForm_${ci}">
-          <input placeholder="Sua resposta..." id="lbRpInput_${ci}" onkeydown="if(event.key==='Enter')submitLbReply('${id}',${ci})">
-          <button onclick="submitLbReply('${id}',${ci})">Responder</button>
+      ? `<div class="lb-rpform" style="display:none" id="lbRpForm_${c.__commentKey}">
+          <input placeholder="Sua resposta..." id="lbRpInput_${c.__commentKey}" onkeydown="if(event.key==='Enter')submitLbReply('${id}','${c.__commentKey}')">
+          <button onclick="submitLbReply('${id}','${c.__commentKey}')">Responder</button>
         </div>`
       : `<div class="lb-login-hint"><button class="lb-login-btn" onclick="openLogin()">Entrar para responder</button></div>`;
 
@@ -2995,13 +3074,13 @@ function renderLightboxComments(id, p) {
         <div class="lb-cmt-av">${c.author.charAt(0)}</div>
         <span class="lb-cmt-au">${c.author}</span>
         <span class="lb-cmt-dt">${c.date}</span>
-        ${canDel?`<button class="lb-cdel" onclick="delLbComment('${id}',${ci})">✕</button>`:''}
+        ${canDel?`<button class="lb-cdel" onclick="delLbComment('${id}','${c.__commentKey}')">✕</button>`:''}
       </div>
       <div class="lb-cmt-txt">${c.text}</div>
       <div class="lb-cmt-act">
-        <button class="lb-cr${cMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}',${ci},'comment',-1,'like')" ${!isLoggedIn?'disabled':''}>👍 ${cLikes||''}</button>
-        <button class="lb-cr${cMy==='dislike'?' dkd':''}" onclick="lbCmtReact('${id}',${ci},'comment',-1,'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${cDislikes||''}</button>
-        <button class="lb-rpbtn" onclick="toggleLbReplyForm(${ci})"${!isLoggedIn?' disabled style="opacity:.35;cursor:default"':''}>Responder</button>
+        <button class="lb-cr${cMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}','${c.__commentKey}','comment',-1,'like')" ${!isLoggedIn?'disabled':''}>👍 ${cLikes||''}</button>
+        <button class="lb-cr${cMy==='dislike'?' dkd':''}" onclick="lbCmtReact('${id}','${c.__commentKey}','comment',-1,'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${cDislikes||''}</button>
+        <button class="lb-rpbtn" onclick="toggleLbReplyForm('${c.__commentKey}')"${!isLoggedIn?' disabled style="opacity:.35;cursor:default"':''}>Responder</button>
       </div>
       ${replyForm}
       ${repliesHtml}
@@ -3022,8 +3101,8 @@ function renderLightboxComments(id, p) {
   el.innerHTML = html;
 }
 
-window.toggleLbReplyForm = ci => {
-  const el = document.getElementById(`lbRpForm_${ci}`);
+window.toggleLbReplyForm = commentKey => {
+  const el = document.getElementById(`lbRpForm_${commentKey}`);
   if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
 };
 
@@ -3032,88 +3111,111 @@ window.addLbComment = async id => {
   const input = document.getElementById('lbNewCmtInput');
   const text = input?.value.trim();
   if (!text) return;
-  const snap = await getDoc(doc(db,'gallery',id));
-  if (!snap.exists()) return;
-  const p = snap.data();
-  const comments = [...(p.comments||[])];
-  comments.push({author: getMemberName(), text, date: nowLabel(), reactions: {}, replies: [], authorUid: auth.currentUser?.uid});
-  await updateDoc(doc(db,'gallery',id), {comments});
+  await addDoc(collection(db,'gallery',id,'comments'), {
+    author: getMemberName(),
+    text,
+    date: nowLabel(),
+    reactions: {},
+    replies: [],
+    authorUid: auth.currentUser?.uid,
+    createdAt: serverTimestamp()
+  });
+  await syncGalleryCounts(id, counts => ({
+    commentCount: counts.commentCount + 1
+  }));
   input.value = '';
   showToast('✓ Comentário adicionado!');
 };
 
-window.submitLbReply = async (id, cIdx) => {
+window.submitLbReply = async (id, commentKey) => {
   if (!isLoggedIn) return;
-  const input = document.getElementById(`lbRpInput_${cIdx}`);
+  const input = document.getElementById(`lbRpInput_${commentKey}`);
   const text = input?.value.trim();
   if (!text) return;
-  const snap = await getDoc(doc(db,'gallery',id));
-  if (!snap.exists()) return;
-  const p = snap.data();
-  const comments = [...(p.comments||[])];
-  if (!comments[cIdx]) return;
-  const comment = {...comments[cIdx]};
-  comment.replies = [...(comment.replies||[])];
-  comment.replies.push({author: getMemberName(), text, date: nowLabel(), reactions: {}, authorUid: auth.currentUser?.uid});
-  comments[cIdx] = comment;
-  await updateDoc(doc(db,'gallery',id), {comments});
+  const photo = galleryCache.find(item => item.id === id)?.data || {};
+  const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
+  if (!comment) return;
+  const mutateComment = current => {
+    const replies = [...(current.replies || [])];
+    replies.push({author: getMemberName(), text, date: nowLabel(), reactions: {}, authorUid: auth.currentUser?.uid});
+    return { ...current, replies };
+  };
+  if (comment.__legacy) await updateLegacyGalleryComment(id, comment.__legacyIndex, mutateComment);
+  else await updateModernGalleryComment(id, comment.__commentKey, mutateComment);
+  await syncGalleryCounts(id, counts => ({
+    replyCount: counts.replyCount + 1
+  }));
+  if (input) input.value = '';
   showToast('✓ Resposta adicionada!');
 };
 
-window.lbCmtReact = async (id, cIdx, type, rIdx, reaction) => {
+window.lbCmtReact = async (id, commentKey, type, rIdx, reaction) => {
   if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
   const uid = auth.currentUser?.uid;
-  const snap = await getDoc(doc(db,'gallery',id));
-  if (!snap.exists()) return;
-  const p = snap.data();
-  const comments = [...(p.comments||[])];
-  const comment = {...comments[cIdx]};
-
-  if (type === 'comment') {
-    const r = {...(comment.reactions||{})};
-    if (r[uid] === reaction) delete r[uid];
-    else r[uid] = reaction;
-    comment.reactions = r;
-  } else {
-    const replies = [...(comment.replies||[])];
+  const photo = galleryCache.find(item => item.id === id)?.data || {};
+  const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
+  if (!comment) return;
+  const mutateComment = current => {
+    if (type === 'comment') {
+      const r = {...(current.reactions||{})};
+      if (r[uid] === reaction) delete r[uid];
+      else r[uid] = reaction;
+      return { ...current, reactions: r };
+    }
+    const replies = [...(current.replies || [])];
     const reply = {...replies[rIdx]};
+    if (!reply) return current;
     const rr = {...(reply.reactions||{})};
     if (rr[uid] === reaction) delete rr[uid];
     else rr[uid] = reaction;
     reply.reactions = rr;
     replies[rIdx] = reply;
-    comment.replies = replies;
-  }
-
-  comments[cIdx] = comment;
-  await updateDoc(doc(db,'gallery',id), {comments});
+    return { ...current, replies };
+  };
+  if (comment.__legacy) await updateLegacyGalleryComment(id, comment.__legacyIndex, mutateComment);
+  else await updateModernGalleryComment(id, comment.__commentKey, mutateComment);
 };
 
-window.delLbComment = async (id, cIdx) => {
+window.delLbComment = async (id, commentKey) => {
   if (!confirmAction('Excluir este comentário?')) return;
   if (!isMember) return;
-  const snap = await getDoc(doc(db,'gallery',id));
-  if (!snap.exists()) return;
-  const p = snap.data();
-  const comments = [...(p.comments||[])];
-  comments.splice(cIdx, 1);
-  await updateDoc(doc(db,'gallery',id), {comments});
+  const photo = galleryCache.find(item => item.id === id)?.data || {};
+  const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
+  if (!comment) return;
+  const removedReplies = (comment.replies || []).length;
+  if (comment.__legacy) {
+    const snap = await getDoc(doc(db,'gallery',id));
+    if (!snap.exists()) return;
+    const p = snap.data();
+    const comments = [...(p.comments||[])];
+    comments.splice(comment.__legacyIndex, 1);
+    await updateDoc(doc(db,'gallery',id), {comments});
+  } else {
+    await deleteDoc(doc(db,'gallery',id,'comments',comment.__commentKey));
+  }
+  await syncGalleryCounts(id, counts => ({
+    commentCount: Math.max(0, counts.commentCount - 1),
+    replyCount: Math.max(0, counts.replyCount - removedReplies)
+  }));
   showToast('Comentário excluído.');
 };
 
-window.delLbReply = async (id, cIdx, rIdx) => {
+window.delLbReply = async (id, commentKey, rIdx) => {
   if (!confirmAction('Excluir esta resposta?')) return;
   if (!isMember) return;
-  const snap = await getDoc(doc(db,'gallery',id));
-  if (!snap.exists()) return;
-  const p = snap.data();
-  const comments = [...(p.comments||[])];
-  const comment = {...comments[cIdx]};
-  const replies = [...(comment.replies||[])];
-  replies.splice(rIdx, 1);
-  comment.replies = replies;
-  comments[cIdx] = comment;
-  await updateDoc(doc(db,'gallery',id), {comments});
+  const photo = galleryCache.find(item => item.id === id)?.data || {};
+  const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
+  if (!comment) return;
+  const mutateComment = current => {
+    const replies = [...(current.replies || [])];
+    replies.splice(rIdx, 1);
+    return { ...current, replies };
+  };
+  if (comment.__legacy) await updateLegacyGalleryComment(id, comment.__legacyIndex, mutateComment);
+  else await updateModernGalleryComment(id, comment.__commentKey, mutateComment);
+  await syncGalleryCounts(id, counts => ({
+    replyCount: Math.max(0, counts.replyCount - 1)
+  }));
   showToast('Resposta excluída.');
 };
 

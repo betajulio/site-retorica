@@ -461,9 +461,10 @@ function renderRealtimeMetrics() {
   gallery.forEach(p => {
     const r = p.reactions || {};
     totalGallLikes += Object.keys(r).filter(k => r[k]==='like').length;
-    const cmts = p.comments || [];
-    totalGallComments += cmts.length;
-    cmts.forEach(c => { totalGallReplies += (c.replies||[]).length; });
+    totalGallComments += typeof p.commentCount === 'number' ? p.commentCount : (p.comments || []).length;
+    totalGallReplies += typeof p.replyCount === 'number'
+      ? p.replyCount
+      : (p.comments || []).reduce((sum, c) => sum + ((c.replies || []).length), 0);
   });
 
   // Forum stats
@@ -642,16 +643,20 @@ function getSortScore(log) {
 }
 
 function getLogDetail(log) {
-  if (log.detail) return log.detail;
+  const waParts = [];
+  if (log.whatsAppStatus === 'sent') waParts.push('Zap: enviado');
+  else if (log.whatsAppStatus === 'failed') waParts.push(`Zap: falhou${log.whatsAppDetail ? ` (${log.whatsAppDetail})` : ''}`);
+
+  if (log.detail) return [log.detail, ...waParts].join(' · ');
   if (log.category === 'sugestoes') {
     const parts = [];
     if (log.song || log.artist) parts.push(`${log.song || '?'}${log.artist ? ` — ${log.artist}` : ''}`);
     if (log.likes !== undefined || log.dislikes !== undefined) parts.push(`${log.likes || 0}👍 ${log.dislikes || 0}👎`);
     if (log.reason) parts.push(`Motivo: ${log.reason}`);
     if (log.by) parts.push(`Sugerida por ${log.by}`);
-    return parts.join(' · ') || '—';
+    return [...parts, ...waParts].join(' · ') || '—';
   }
-  return '—';
+  return waParts.join(' · ') || '—';
 }
 
 function getLogWho(log) {
