@@ -789,7 +789,7 @@
     <div class="section-title-wrap"><h2>Sugestões de Músicas</h2><p>Proponha músicas para os próximos ensaios</p></div>
     <div class="section-line"></div>
   </div>
-  <div id="promotionCountdownAnchor"></div>
+  <div id="promotionCountdownBanner"></div>
   <div class="member-only">
     <div class="form-card">
       <div class="form-row">
@@ -4291,10 +4291,10 @@ async function updatePromotionCountdowns() {
   try {
     const navBadge = document.getElementById('promoCountdownNav');
     const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
-    const anchor = document.getElementById('promotionCountdownAnchor');
+    const bannerHost = document.getElementById('promotionCountdownBanner');
     const clearSectionBadge = () => {
-      if (!anchor?.parentNode) return;
-      anchor.parentNode.querySelectorAll('.countdown-badge-big').forEach(el => el.remove());
+      if (!bannerHost) return;
+      bannerHost.innerHTML = '';
     };
 
     const stateSnap = await getDoc(promotionStateRef);
@@ -4321,18 +4321,16 @@ async function updatePromotionCountdowns() {
     if (shouldShow) console.log('[COUNTDOWN] Badges nav atualizados');
     
     // Contador nas sugestões (logo abaixo do cabeçalho da seção)
-    if (anchor && timeUntil > 0) {
-      const parent = anchor.parentNode;
+    if (bannerHost && timeUntil > 0) {
       clearSectionBadge();
       
-      const badge = document.createElement('div');
-      badge.className = `countdown-badge-big ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}`;
-      badge.innerHTML = `
+      bannerHost.innerHTML = `
+        <div class="countdown-badge-big ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}">
         <div style="font-size:2rem;margin-bottom:.3rem">🏆</div>
         <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;letter-spacing:.08em;margin-bottom:.4rem">VENCEDOR IRÁ PARA ENQUETE EM</div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:.15em;color:var(--gold)">${formatTimeRemaining(timeUntil)}</div>
+        </div>
       `;
-      parent.insertBefore(badge, anchor.nextSibling);
       console.log('[COUNTDOWN] Badge sugestões adicionado');
     } else {
       clearSectionBadge();
