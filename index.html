@@ -399,7 +399,7 @@
   .carousel-wrap{position:relative;overflow:hidden;border-radius:2px;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.2)}
   .carousel-track{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)}
   .carousel-slide{min-width:100%;position:relative}
-  .carousel-slide img{width:100%;height:480px;object-fit:cover;display:block}
+  .carousel-slide img{width:100%;max-height:520px;height:auto;object-fit:contain;display:block;background:rgba(5,4,2,.9)}
   .carousel-caption{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(0deg,rgba(10,8,4,.92) 0%,transparent 100%);padding:2rem 1.5rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-end}
   .carousel-caption-text{font-family:'Lora',serif;font-size:.9rem;color:var(--cream);font-style:italic;max-width:70%}
   .carousel-caption-meta{font-size:.72rem;color:var(--smoke);text-align:right}
@@ -539,7 +539,7 @@
     .forum-thread-header{padding:.9rem 1rem}
 
     /* Carousel */
-    .carousel-slide img{height:260px}
+    .carousel-slide img{max-height:320px}
     .carousel-btn{width:36px;height:36px;font-size:.9rem}
     .carousel-prev{left:.4rem}
     .carousel-next{right:.4rem}
@@ -569,7 +569,7 @@
   @media(max-width:380px){
     .hero-title{font-size:clamp(2.4rem,16vw,3.2rem)!important}
     .members-grid{grid-template-columns:1fr 1fr}
-    .carousel-slide img{height:210px}
+    .carousel-slide img{max-height:240px}
   }
 
   /* ── INSTALL POPUP ── */
@@ -873,10 +873,12 @@
         <div class="form-group"><label>Música</label><input type="text" id="repSong" placeholder="Nome da música"></div>
         <div class="form-group"><label>Artista</label><input type="text" id="repArtist" placeholder="Ex: Deep Purple"></div>
       </div>
-      <div class="form-row full">
+      <div class="form-row">
         <div class="form-group"><label>Link YouTube (opcional)</label><input type="url" id="repYt" placeholder="https://youtube.com/..."></div>
+        <div class="form-group"><label>Link Cifra (opcional)</label><input type="url" id="repCifra" placeholder="https://cifraclub.com.br/..."></div>
       </div>
       <button class="btn" onclick="addRepSong()">Adicionar ao Repertório</button>
+      <button class="btn-ghost btn-sm" onclick="importSetlistToRep()" style="margin-top:.5rem">📋 Importar músicas do Setlist atual</button>
     </div>
   </div>
   <div class="repertorio-grid" id="repertorioGrid"></div>
@@ -930,10 +932,30 @@
       <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase">Tags existentes:</span>
       <div class="tag-manager-row" id="tagManagerChips"></div>
     </div>
-    <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-bottom:1.1rem">
       <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase">Nova tag:</span>
       <input type="text" id="newTagInput" placeholder="Nome da tag…" style="width:130px;padding:.28rem .6rem;font-size:.72rem;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.25);color:var(--cream);border-radius:1px;font-family:inherit" onkeydown="if(event.key==='Enter')addGalleryTag()">
       <button class="btn-ghost btn-sm" onclick="addGalleryTag()">+ Adicionar</button>
+    </div>
+    <div style="border-top:1px solid rgba(200,130,10,.12);padding-top:.9rem">
+      <p style="font-family:'Cinzel',serif;font-size:.72rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Migração em Lote</p>
+      <p style="font-size:.72rem;color:var(--smoke);margin-bottom:.7rem">Selecione fotos e mova para uma tag de destino.</p>
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.6rem">
+        <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.06em;text-transform:uppercase">Filtrar por:</span>
+        <select id="bulkSourceTag" style="background:rgba(10,8,4,.8);border:1px solid rgba(200,130,10,.25);color:var(--cream);padding:.25rem .5rem;font-size:.75rem;border-radius:1px;font-family:inherit" onchange="loadBulkPhotoGrid()">
+          <option value="Todas">Todas</option>
+        </select>
+        <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.06em;text-transform:uppercase">→ Mover para:</span>
+        <select id="bulkDestTag" style="background:rgba(10,8,4,.8);border:1px solid rgba(200,130,10,.25);color:var(--cream);padding:.25rem .5rem;font-size:.75rem;border-radius:1px;font-family:inherit">
+          <option value="">Selecione destino</option>
+        </select>
+        <button class="btn-ghost btn-sm" onclick="bulkMigratePhotos()">Migrar selecionadas</button>
+        <button class="btn-ghost btn-sm" onclick="bulkSelectAll()" style="font-size:.65rem">Sel. todas</button>
+      </div>
+      <div id="bulkPhotoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:.4rem;max-height:260px;overflow-y:auto;padding:.3rem;border:1px solid rgba(200,130,10,.1);border-radius:1px;background:rgba(5,4,2,.4)">
+        <p style="grid-column:1/-1;color:var(--smoke);font-size:.75rem;font-style:italic;padding:.5rem">Selecione um filtro acima para ver as fotos.</p>
+      </div>
+      <p id="bulkSelCount" style="font-size:.72rem;color:var(--smoke);margin-top:.4rem"></p>
     </div>
   </div>
   <!-- Carrossel principal -->
@@ -1222,8 +1244,25 @@ function formatTs(ts) {
   return `${day}/${mon} ${h}:${m}`;
 }
 
+function getYtId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 function ytBtn(url) {
   if (!url) return '';
+  const id = getYtId(url);
+  if (id) {
+    return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" title="Abrir no YouTube" style="display:inline-block;flex-shrink:0;text-decoration:none">
+      <div style="position:relative;width:80px;height:45px;border-radius:2px;overflow:hidden;border:1px solid rgba(200,130,10,.3);transition:border-color .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.3)'">
+        <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" alt="YouTube" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);transition:background .2s" onmouseover="this.style.background='rgba(0,0,0,.15)'" onmouseout="this.style.background='rgba(0,0,0,.3)'">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="rgba(255,0,0,.85)"/><polygon points="9.5,7 18,12 9.5,17" fill="white"/></svg>
+        </div>
+      </div>
+    </a>`;
+  }
   return `<a href="${url}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">▶ YouTube</a>`;
 }
 
@@ -2036,7 +2075,8 @@ function renderRepFromCache() {
   const displaySongs = repertorioExpanded ? repCache : repCache.slice(0, 5);
   
   const items = displaySongs.map(({id, data: r}, i) => {
-    const rmBtn = isMember ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
+    const editBtn = isMember ? `<button class="btn-icon" onclick="openRepEdit('${id}');event.stopPropagation()">✎ Editar</button>` : '';
+    const rmBtn   = isMember ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
     return `<div class="rep-item">
       <span class="rep-num">${i+1}</span>
       <div class="rep-info">
@@ -2045,6 +2085,8 @@ function renderRepFromCache() {
       </div>
       <div class="rep-actions">
         ${ytBtn(r.youtube)}
+        ${cifraBtn(r.cifra)}
+        ${editBtn}
         ${rmBtn}
       </div>
     </div>`;
@@ -2073,14 +2115,63 @@ onSnapshot(query(collection(db,'repertorio'), orderBy('addedAt','asc')), snap =>
 
 window.addRepSong = async () => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
-  const song  = document.getElementById('repSong').value.trim();
-  const artist= document.getElementById('repArtist').value.trim();
-  const youtube=document.getElementById('repYt').value.trim();
+  const song   = document.getElementById('repSong').value.trim();
+  const artist = document.getElementById('repArtist').value.trim();
+  const youtube= document.getElementById('repYt').value.trim();
+  const cifra  = document.getElementById('repCifra').value.trim();
   if (!song||!artist) { showToast('⚠ Preencha música e artista'); return; }
-  await addDoc(collection(db,'repertorio'),{song,artist,youtube,addedAt:serverTimestamp(),by:auth.currentUser?.displayName||'Membro'});
+  await addDoc(collection(db,'repertorio'),{song,artist,youtube,cifra,addedAt:serverTimestamp(),by:auth.currentUser?.displayName||'Membro'});
   await writeLog('Música adicionada ao repertório', `${song} — ${artist}`, 'repertorio');
-  ['repSong','repArtist','repYt'].forEach(id=>document.getElementById(id).value='');
+  ['repSong','repArtist','repYt','repCifra'].forEach(id=>document.getElementById(id).value='');
   showToast(`✓ "${song}" adicionada ao repertório!`);
+};
+
+window.openRepEdit = async id => {
+  if (!isMember) return;
+  const snap = await getDoc(doc(db,'repertorio',id));
+  if (!snap.exists()) return;
+  const r = snap.data();
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:1rem';
+  overlay.innerHTML = `
+    <div style="background:linear-gradient(160deg,#1a1207,#0f0b04);border:1px solid rgba(200,130,10,.3);border-radius:2px;padding:1.6rem;max-width:480px;width:100%">
+      <p style="font-family:'Cinzel',serif;color:var(--gold);font-size:.9rem;margin-bottom:1.1rem;letter-spacing:.08em;text-transform:uppercase">Editar Música</p>
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+        <div><label style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:.25rem">Música</label>
+          <input id="repEditSong" value="${r.song||''}" style="width:100%;padding:.4rem .6rem;background:rgba(10,8,4,.7);border:1px solid rgba(200,130,10,.25);color:var(--cream);border-radius:1px;font-family:inherit;font-size:.85rem"></div>
+        <div><label style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:.25rem">Artista</label>
+          <input id="repEditArtist" value="${r.artist||''}" style="width:100%;padding:.4rem .6rem;background:rgba(10,8,4,.7);border:1px solid rgba(200,130,10,.25);color:var(--cream);border-radius:1px;font-family:inherit;font-size:.85rem"></div>
+        <div style="display:flex;gap:.6rem">
+          <div style="flex:1"><label style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:.25rem">Link YouTube</label>
+            <input id="repEditYt" value="${r.youtube||''}" type="url" placeholder="https://youtube.com/..." style="width:100%;padding:.4rem .6rem;background:rgba(10,8,4,.7);border:1px solid rgba(200,130,10,.25);color:var(--cream);border-radius:1px;font-family:inherit;font-size:.82rem">
+            ${r.youtube ? `<div style="margin-top:.35rem">${ytBtn(r.youtube)}</div>` : ''}
+          </div>
+          <div style="flex:1"><label style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:.25rem">Link Cifra</label>
+            <input id="repEditCifra" value="${r.cifra||''}" type="url" placeholder="https://cifraclub.com.br/..." style="width:100%;padding:.4rem .6rem;background:rgba(10,8,4,.7);border:1px solid rgba(200,130,10,.25);color:var(--cream);border-radius:1px;font-family:inherit;font-size:.82rem">
+            ${r.cifra ? `<div style="margin-top:.35rem">${cifraBtn(r.cifra)}</div>` : ''}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.7rem;justify-content:flex-end;margin-top:1.2rem">
+        <button class="btn-ghost btn-sm" onclick="this.closest('[style*=fixed]').remove()">Cancelar</button>
+        <button class="btn btn-sm" onclick="saveRepEdit('${id}',this)">💾 Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+};
+
+window.saveRepEdit = async (id, btn) => {
+  const overlay = btn.closest('[style*=fixed]');
+  const song    = overlay.querySelector('#repEditSong').value.trim();
+  const artist  = overlay.querySelector('#repEditArtist').value.trim();
+  const youtube = overlay.querySelector('#repEditYt').value.trim();
+  const cifra   = overlay.querySelector('#repEditCifra').value.trim();
+  if (!song||!artist) { showToast('⚠ Preencha música e artista'); return; }
+  await updateDoc(doc(db,'repertorio',id), {song, artist, youtube, cifra});
+  await writeLog('Música do repertório editada', `${song} — ${artist}`, 'repertorio');
+  overlay.remove();
+  showToast(`✓ "${song}" atualizada!`);
 };
 
 window.removeRepSong = async id => {
@@ -2090,6 +2181,25 @@ window.removeRepSong = async id => {
   await deleteDoc(doc(db,'repertorio',id));
   await writeLog('Música removida do repertório', `${r.song||id} — ${r.artist||''}`, 'repertorio');
   showToast('Música removida.');
+};
+
+window.importSetlistToRep = async () => {
+  if (!isMember) return;
+  const songs = getActiveSetlistSongs();
+  if (!songs.length) { showToast('⚠ Nenhuma música no setlist atual'); return; }
+  const existing = repCache.map(({data:r}) => r.song.toLowerCase().trim());
+  const toAdd    = songs.filter(s => !existing.includes(s.song.toLowerCase().trim()));
+  if (!toAdd.length) { showToast('✓ Todas as músicas do setlist já estão no repertório'); return; }
+  const userName = auth.currentUser?.displayName||'Membro';
+  for (const s of toAdd) {
+    await addDoc(collection(db,'repertorio'), {
+      song: s.song, artist: s.artist||'—',
+      youtube: s.youtube||'', cifra: s.cifra||'',
+      addedAt: serverTimestamp(), by: userName
+    });
+  }
+  await writeLog('Músicas importadas do setlist', `${toAdd.length} música${toAdd.length!==1?'s':''}`, 'repertorio');
+  showToast(`✓ ${toAdd.length} música${toAdd.length!==1?'s':''} importada${toAdd.length!==1?'s':''} para o repertório!`);
 };
 
 // ─── FORUM ─────────────────────────────────────────────────────────
@@ -2163,6 +2273,7 @@ let activeTagFilter     = 'Todas';
 let selectedUploadTag   = '';
 let galleryCompQuality  = 0.7;   // lido do Firestore config/galleryCompression
 let galleryCompMaxPx    = 1920;
+let galleryLastGridIds  = '';    // ids da última grade renderizada, evita re-render desnecessário
 
 function renderGallery() {
   const track = document.getElementById('carouselTrack');
@@ -2222,24 +2333,31 @@ function renderGallery() {
 
   track.style.transform = `translateX(-${carouselIndex * 100}%)`;
 
-  grid.innerHTML = filtered.map(({id, data: p}, i) => {
-    const r = p.reactions || {};
-    const likes    = Object.values(r).filter(v=>v==='like').length;
-    const dislikes = Object.values(r).filter(v=>v==='dislike').length;
-    const comments = (p.comments||[]).length;
-    const del = isMember
-      ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
-      : '';
-    const statsHtml = `<div class="img-stats">
-      <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
-      <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
-    </div>`;
-    return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
-      <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
-      ${statsHtml}
-      ${del}
-    </div>`;
-  }).join('');
+  // Só re-renderiza a grade se o conjunto de fotos mudou
+  const newGridIds = filtered.map(x=>x.id).join(',');
+  const gridNeedsUpdate = newGridIds !== galleryLastGridIds;
+  galleryLastGridIds = newGridIds;
+
+  if (gridNeedsUpdate) {
+    grid.innerHTML = filtered.map(({id, data: p}, i) => {
+      const r = p.reactions || {};
+      const likes    = Object.values(r).filter(v=>v==='like').length;
+      const dislikes = Object.values(r).filter(v=>v==='dislike').length;
+      const comments = (p.comments||[]).length;
+      const del = isMember
+        ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
+        : '';
+      const statsHtml = `<div class="img-stats">
+        <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
+        <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
+      </div>`;
+      return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
+        <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
+        ${statsHtml}
+        ${del}
+      </div>`;
+    }).join('');
+  }
 }
 
 window.carouselGo = idx => { carouselIndex = idx; renderGallery(); };
@@ -2719,6 +2837,7 @@ window.toggleTagManager = () => {
 window.setTagFilter = tag => {
   activeTagFilter = tag;
   carouselIndex = 0;
+  galleryLastGridIds = ''; // força re-render da grade ao trocar tag
   renderGallery();
 };
 
@@ -2730,6 +2849,19 @@ function renderTagManagerChips() {
     }<button onclick="renameGalleryTag(${i})" title="Renomear tag" style="color:var(--amber);margin-left:.1rem">✎</button
     ><button onclick="removeGalleryTag(${i})" title="Excluir tag">✕</button></span>`
   ).join('');
+  // Populate bulk migration selects
+  const srcSel  = document.getElementById('bulkSourceTag');
+  const destSel = document.getElementById('bulkDestTag');
+  if (srcSel) {
+    const srcVal = srcSel.value;
+    srcSel.innerHTML = '<option value="Todas">Todas</option>' + galleryTags.map(t=>`<option value="${t}">${t}</option>`).join('');
+    if (galleryTags.includes(srcVal)) srcSel.value = srcVal;
+  }
+  if (destSel) {
+    const destVal = destSel.value;
+    destSel.innerHTML = '<option value="">Selecione destino</option>' + galleryTags.map(t=>`<option value="${t}">${t}</option>`).join('');
+    if (galleryTags.includes(destVal)) destSel.value = destVal;
+  }
 }
 
 function renderUploadTagSelect() {
@@ -2760,12 +2892,68 @@ window.addGalleryTag = async () => {
 window.removeGalleryTag = async idx => {
   if (!isMember) return;
   const tag = galleryTags[idx];
-  if (!confirmAction(`Excluir a tag "${tag}"? Fotos com esta tag não serão deletadas, mas perderão a classificação.`)) return;
+
+  // Check if any photos have this tag
+  const affectedPhotos = galleryCache.filter(({data:p}) => (p.tags||[]).includes(tag));
+
+  if (affectedPhotos.length > 0) {
+    const otherTags = galleryTags.filter((_,i) => i !== idx);
+    if (!otherTags.length) {
+      showToast('⚠ Crie outra tag antes de excluir esta — há fotos vinculadas.');
+      return;
+    }
+
+    // Build migration modal
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:1rem';
+    overlay.innerHTML = `
+      <div style="background:linear-gradient(160deg,#1a1207,#0f0b04);border:1px solid rgba(200,130,10,.3);border-radius:2px;padding:1.6rem;max-width:400px;width:100%">
+        <p style="font-family:'Cinzel',serif;color:var(--gold);font-size:.9rem;margin-bottom:.6rem;letter-spacing:.08em">EXCLUIR TAG "${tag.toUpperCase()}"</p>
+        <p style="font-size:.8rem;color:var(--paper);margin-bottom:1.1rem">
+          <strong>${affectedPhotos.length} foto${affectedPhotos.length!==1?'s':''}</strong> ${affectedPhotos.length!==1?'estão vinculadas':'está vinculada'} a esta tag.<br>
+          Selecione para qual tag migrar essas fotos:
+        </p>
+        <div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:1.2rem" id="migrateTagPicker">
+          ${otherTags.map(t => `<button class="gallery-tag-btn" onclick="this.parentElement.querySelectorAll('.gallery-tag-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')" data-tag="${t}">${t}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:.7rem;justify-content:flex-end">
+          <button class="btn-ghost btn-sm" onclick="this.closest('[style*=fixed]').remove()">Cancelar</button>
+          <button class="btn btn-sm" style="background:linear-gradient(135deg,var(--rust),#a04010)" onclick="confirmRemoveTag(${idx},'${tag}',this)">Excluir e migrar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    return;
+  }
+
+  // No photos — just delete
+  if (!confirmAction(`Excluir a tag "${tag}"?`)) return;
   galleryTags = galleryTags.filter((_,i) => i !== idx);
-  if (activeTagFilter === tag) { activeTagFilter = 'Todas'; }
-  if (selectedUploadTag === tag) { selectedUploadTag = ''; }
+  if (activeTagFilter === tag) activeTagFilter = 'Todas';
+  if (selectedUploadTag === tag) selectedUploadTag = '';
   await saveGalleryTags();
   showToast(`Tag "${tag}" excluída.`);
+};
+
+window.confirmRemoveTag = async (idx, tag, btn) => {
+  const overlay = btn.closest('[style*=fixed]');
+  const targetBtn = overlay.querySelector('#migrateTagPicker .gallery-tag-btn.active');
+  if (!targetBtn) { showToast('⚠ Selecione uma tag de destino'); return; }
+  const targetTag = targetBtn.dataset.tag;
+
+  showToast('⏳ Migrando fotos…');
+  const affectedPhotos = galleryCache.filter(({data:p}) => (p.tags||[]).includes(tag));
+  for (const {id, data:p} of affectedPhotos) {
+    const newTags = [...new Set((p.tags||[]).map(t => t === tag ? targetTag : t).filter(t => t !== tag))];
+    if (!newTags.includes('Todas')) newTags.unshift('Todas');
+    await updateDoc(doc(db,'gallery',id), { tags: newTags });
+  }
+
+  galleryTags = galleryTags.filter((_,i) => i !== idx);
+  if (activeTagFilter === tag) activeTagFilter = targetTag;
+  if (selectedUploadTag === tag) selectedUploadTag = targetTag;
+  await saveGalleryTags();
+  overlay.remove();
+  showToast(`✓ ${affectedPhotos.length} foto${affectedPhotos.length!==1?'s':''} migrada${affectedPhotos.length!==1?'s':''} para "${targetTag}". Tag "${tag}" excluída.`);
 };
 
 window.renameGalleryTag = async idx => {
@@ -2842,6 +3030,89 @@ window.savePhotoTags = async (id, btn) => {
   showToast('✓ Tags atualizadas!');
   // refresh lightbox if open
   if (currentLbId === id) openLightbox(id);
+};
+
+
+window.loadBulkPhotoGrid = () => {
+  const srcTag  = document.getElementById('bulkSourceTag')?.value || 'Todas';
+  const grid    = document.getElementById('bulkPhotoGrid');
+  if (!grid) return;
+  const photos  = srcTag === 'Todas' ? galleryCache : galleryCache.filter(({data:p}) => (p.tags||['Todas']).includes(srcTag));
+  if (!photos.length) {
+    grid.innerHTML = '<p style="grid-column:1/-1;color:var(--smoke);font-size:.75rem;font-style:italic;padding:.5rem">Nenhuma foto com esta tag.</p>';
+    return;
+  }
+  grid.innerHTML = photos.map(({id, data:p}) =>
+    `<div class="bulk-photo-thumb" data-id="${id}" onclick="toggleBulkSelect(this)"
+      style="position:relative;aspect-ratio:1;overflow:hidden;border:2px solid rgba(200,130,10,.15);border-radius:1px;cursor:pointer;transition:border-color .2s">
+      <img src="${p.url}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover">
+      <div class="bulk-check" style="position:absolute;top:.2rem;right:.2rem;width:18px;height:18px;border-radius:50%;border:2px solid rgba(200,130,10,.5);background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:transparent;transition:all .2s">✓</div>
+    </div>`
+  ).join('');
+  updateBulkSelCount();
+};
+
+window.toggleBulkSelect = el => {
+  const isSelected = el.dataset.selected === 'true';
+  el.dataset.selected = !isSelected;
+  el.style.borderColor = !isSelected ? 'var(--amber)' : 'rgba(200,130,10,.15)';
+  const check = el.querySelector('.bulk-check');
+  if (check) {
+    check.style.background = !isSelected ? 'var(--amber)' : 'rgba(0,0,0,.5)';
+    check.style.color      = !isSelected ? '#000' : 'transparent';
+    check.style.borderColor= !isSelected ? 'var(--amber)' : 'rgba(200,130,10,.5)';
+  }
+  updateBulkSelCount();
+};
+
+window.bulkSelectAll = () => {
+  const grid  = document.getElementById('bulkPhotoGrid');
+  if (!grid) return;
+  const thumbs = grid.querySelectorAll('.bulk-photo-thumb');
+  const allSel = [...thumbs].every(t => t.dataset.selected === 'true');
+  thumbs.forEach(t => {
+    t.dataset.selected = !allSel;
+    t.style.borderColor = !allSel ? 'var(--amber)' : 'rgba(200,130,10,.15)';
+    const check = t.querySelector('.bulk-check');
+    if (check) {
+      check.style.background  = !allSel ? 'var(--amber)' : 'rgba(0,0,0,.5)';
+      check.style.color       = !allSel ? '#000' : 'transparent';
+      check.style.borderColor = !allSel ? 'var(--amber)' : 'rgba(200,130,10,.5)';
+    }
+  });
+  updateBulkSelCount();
+};
+
+function updateBulkSelCount() {
+  const grid  = document.getElementById('bulkPhotoGrid');
+  const count = document.getElementById('bulkSelCount');
+  if (!grid || !count) return;
+  const n = grid.querySelectorAll('.bulk-photo-thumb[data-selected="true"]').length;
+  count.textContent = n > 0 ? `${n} foto${n!==1?'s':''} selecionada${n!==1?'s':''}` : '';
+}
+
+window.bulkMigratePhotos = async () => {
+  const grid    = document.getElementById('bulkPhotoGrid');
+  const destTag = document.getElementById('bulkDestTag')?.value;
+  if (!destTag) { showToast('⚠ Selecione a tag de destino'); return; }
+  const selected = grid ? [...grid.querySelectorAll('.bulk-photo-thumb[data-selected="true"]')] : [];
+  if (!selected.length) { showToast('⚠ Selecione ao menos uma foto'); return; }
+  showToast(`⏳ Migrando ${selected.length} foto${selected.length!==1?'s':''}…`);
+  for (const el of selected) {
+    const id   = el.dataset.id;
+    const item = galleryCache.find(x => x.id === id);
+    if (!item) continue;
+    const existing = item.data.tags || ['Todas'];
+    const newTags  = [...new Set([...existing, 'Todas', destTag])];
+    await updateDoc(doc(db,'gallery',id), { tags: newTags });
+    el.dataset.selected = 'false';
+    el.style.borderColor = 'var(--amber)';
+    const check = el.querySelector('.bulk-check');
+    if (check) { check.style.background='rgba(30,180,30,.8)'; check.style.color='#fff'; }
+  }
+  showToast(`✓ ${selected.length} foto${selected.length!==1?'s':''} adicionada${selected.length!==1?'s':''} à tag "${destTag}"!`);
+  updateBulkSelCount();
+  loadBulkPhotoGrid();
 };
 
 // Ouvir mudanças de tags em tempo real (para todos os membros verem alterações ao vivo)
