@@ -4324,7 +4324,10 @@ async function updatePromotionCountdowns() {
     const stateSnap = await getDoc(promotionStateRef);
     const state = stateSnap.exists() ? stateSnap.data() : null;
     const now = Date.now();
-    const nextPromoDate = toDateOrNull(state?.nextPromotionDate) || getNextFriday();
+    let nextPromoDate = toDateOrNull(state?.nextPromotionDate) || getNextFriday();
+    if (nextPromoDate.getTime() <= now) {
+      nextPromoDate = getNextFriday(new Date(now + 60000));
+    }
     const nextPromo = nextPromoDate.getTime();
     const timeUntil = nextPromo - now;
     
