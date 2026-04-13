@@ -31,6 +31,12 @@ git add .
 git commit -m "checkpoint local"
 ```
 
+Salvar status + backup + commit com um comando:
+
+```powershell
+.\checkpoint.ps1 -Mensagem "descrição da alteração"
+```
+
 Gerar backup zipado:
 
 ```powershell
