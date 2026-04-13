@@ -865,10 +865,32 @@
 
 <hr class="full-divider">
 
-<!-- 05 REPERTÓRIO -->
-<section id="repertorio">
+<!-- 05 FÓRUM -->
+<section id="forum">
   <div class="section-header">
     <div class="section-number">05</div>
+    <div class="section-title-wrap"><h2>Fórum dos Ensaios</h2><p>Discussão pós-ensaio</p></div>
+    <div class="section-line"></div>
+  </div>
+  <div class="member-only-flex" style="margin-bottom:1.5rem;gap:1rem;align-items:flex-end">
+    <div class="form-group" style="flex:1"><label>Novo Tópico</label><input type="text" id="newThreadTitle" placeholder="Ex: Ensaio 14/06 – Estúdio Centro"></div>
+    <button class="btn" onclick="addForumThread()">Criar Tópico</button>
+  </div>
+  <div class="forum-sessions" id="forumContainer"></div>
+  <div id="forumHistoryWrap" style="margin-top:1.5rem">
+    <button class="btn-ghost btn-sm" id="forumHistoryBtn" onclick="toggleForumHistory()" style="display:none">
+      🗂 Histórico do fórum (<span id="forumClosedCount">0</span>)
+    </button>
+    <div id="forumHistoryContainer" style="display:none;margin-top:1rem"></div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- 06 REPERTÓRIO -->
+<section id="repertorio">
+  <div class="section-header">
+    <div class="section-number">06</div>
     <div class="section-title-wrap"><h2>Repertório Atual</h2><p>Músicas que a banda já sabe tocar</p></div>
     <div class="section-line"></div>
   </div>
@@ -887,28 +909,6 @@
     </div>
   </div>
   <div class="repertorio-grid" id="repertorioGrid"></div>
-</section>
-
-<hr class="full-divider">
-
-<!-- 06 FÓRUM -->
-<section id="forum">
-  <div class="section-header">
-    <div class="section-number">06</div>
-    <div class="section-title-wrap"><h2>Fórum dos Ensaios</h2><p>Discussão pós-ensaio</p></div>
-    <div class="section-line"></div>
-  </div>
-  <div class="member-only-flex" style="margin-bottom:1.5rem;gap:1rem;align-items:flex-end">
-    <div class="form-group" style="flex:1"><label>Novo Tópico</label><input type="text" id="newThreadTitle" placeholder="Ex: Ensaio 14/06 – Estúdio Centro"></div>
-    <button class="btn" onclick="addForumThread()">Criar Tópico</button>
-  </div>
-  <div class="forum-sessions" id="forumContainer"></div>
-  <div id="forumHistoryWrap" style="margin-top:1.5rem">
-    <button class="btn-ghost btn-sm" id="forumHistoryBtn" onclick="toggleForumHistory()" style="display:none">
-      🗂 Histórico do fórum (<span id="forumClosedCount">0</span>)
-    </button>
-    <div id="forumHistoryContainer" style="display:none;margin-top:1rem"></div>
-  </div>
 </section>
 
 <hr class="full-divider">
@@ -1284,6 +1284,20 @@ function cifraBtn(url) {
   return `<a href="${url}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">♫ Cifra</a>`;
 }
 
+function buildMusicSearchTerm(song, artist='') {
+  return encodeURIComponent(`${song || ''} ${artist || ''}`.trim());
+}
+
+function ytSearchBtn(song, artist='') {
+  const term = buildMusicSearchTerm(song, artist);
+  return `<a href="https://www.youtube.com/results?search_query=${term}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">🔎 Buscar video</a>`;
+}
+
+function cifraSearchBtn(song, artist='') {
+  const term = buildMusicSearchTerm(`${song || ''} cifra`, artist);
+  return `<a href="https://www.google.com/search?q=${term}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">🔎 Buscar cifra</a>`;
+}
+
 // ─── MEMBERS ───────────────────────────────────────────────────────
 const INSTRUMENTS = ['Vocal','Guitarra','Guitarra Base','Baixo','Bateria','Teclado','Violão','Outro'];
 
@@ -1566,7 +1580,7 @@ function renderSuggestions() {
       </div>
       <div class="suggestion-by">por ${s.by}${s.createdAt ? ` · <small style="color:var(--smoke)">${formatTs(s.createdAt)}</small>` : ''}</div>
       <div class="suggestion-actions">
-        ${ytBtn(s.youtube)}
+        ${s.youtube ? ytBtn(s.youtube) : ytSearchBtn(s.song, s.artist)}
         <div class="suggestion-score">${likeBtn}${dislikeBtn}</div>
         ${rmBtn}
       </div>
@@ -2097,8 +2111,8 @@ function renderRepFromCache() {
         <div class="rep-artist">${r.artist}</div>
       </div>
       <div class="rep-actions">
-        ${ytBtn(r.youtube)}
-        ${cifraBtn(r.cifra)}
+        ${r.youtube ? ytBtn(r.youtube) : ytSearchBtn(r.song, r.artist)}
+        ${r.cifra ? cifraBtn(r.cifra) : cifraSearchBtn(r.song, r.artist)}
         ${editBtn}
         ${rmBtn}
       </div>

@@ -201,21 +201,6 @@
     <!-- REALTIME METRICS -->
     <div id="realtimeMetrics"></div>
 
-    <!-- FILTERS -->
-    <div class="filters">
-      <button class="filter-btn active" onclick="setFilter('all',this)">Todas</button>
-      <button class="filter-btn" onclick="setFilter('membros',this)">Membros</button>
-      <button class="filter-btn" onclick="setFilter('sugestoes',this)">Sugestões</button>
-      <button class="filter-btn" onclick="setFilter('enquetes',this)">Enquetes</button>
-      <button class="filter-btn" onclick="setFilter('setlist',this)">Setlist</button>
-      <button class="filter-btn" onclick="setFilter('repertorio',this)">Repertório</button>
-      <button class="filter-btn" onclick="setFilter('forum',this)">Fórum</button>
-      <button class="filter-btn" onclick="setFilter('galeria',this)">Galeria</button>
-      <button class="filter-btn" onclick="setFilter('acesso',this)">🔑 Acesso</button>
-      <input class="filter-search" type="text" placeholder="Buscar nos logs…" oninput="applySearch(this.value)" id="searchInput">
-      <span class="filter-count" id="filterCount"></span>
-    </div>
-
     <div class="admin-tools">
       <div class="admin-tools-head">
         <div>
@@ -230,6 +215,21 @@
         <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
         <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
       </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter('all',this)">Todas</button>
+      <button class="filter-btn" onclick="setFilter('membros',this)">Membros</button>
+      <button class="filter-btn" onclick="setFilter('sugestoes',this)">Sugestões</button>
+      <button class="filter-btn" onclick="setFilter('enquetes',this)">Enquetes</button>
+      <button class="filter-btn" onclick="setFilter('setlist',this)">Setlist</button>
+      <button class="filter-btn" onclick="setFilter('repertorio',this)">Repertório</button>
+      <button class="filter-btn" onclick="setFilter('forum',this)">Fórum</button>
+      <button class="filter-btn" onclick="setFilter('galeria',this)">Galeria</button>
+      <button class="filter-btn" onclick="setFilter('acesso',this)">🔑 Acesso</button>
+      <input class="filter-search" type="text" placeholder="Buscar nos logs…" oninput="applySearch(this.value)" id="searchInput">
+      <span class="filter-count" id="filterCount"></span>
     </div>
 
     <!-- TABLE -->
