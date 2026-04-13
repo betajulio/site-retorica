@@ -789,7 +789,6 @@
     <div class="section-title-wrap"><h2>Sugestões de Músicas</h2><p>Proponha músicas para os próximos ensaios</p></div>
     <div class="section-line"></div>
   </div>
-  <div id="promotionCountdownBanner"></div>
   <div class="member-only">
     <div class="form-card">
       <div class="form-row">
@@ -806,6 +805,7 @@
       <button class="btn" onclick="addSuggestion()">Enviar Sugestão</button>
     </div>
   </div>
+  <div id="promotionCountdownBanner"></div>
   <p id="suggestionsNotice" style="display:none;color:var(--smoke);font-style:italic;font-size:.88rem;margin-top:1rem">Faça login para sugerir músicas.</p>
   <div class="suggestions-list" id="suggestionsList"></div>
 </section>
@@ -4127,13 +4127,21 @@ async function initPromotionState() {
   }
 }
 
-// Calcular próxima sexta-feira às 00:00
+// Calcular próxima sexta-feira às 23:59
 function getNextFriday(fromDate = new Date()) {
   const date = new Date(fromDate);
-  date.setHours(0, 0, 0, 0);
+  date.setSeconds(0, 0);
   const dayOfWeek = date.getDay();
-  const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
+  let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+  const isFridayAfterCutoff = dayOfWeek === 5 && (
+    date.getHours() > 23 ||
+    (date.getHours() === 23 && date.getMinutes() >= 59)
+  );
+  if (daysUntilFriday === 0 && isFridayAfterCutoff) {
+    daysUntilFriday = 7;
+  }
   date.setDate(date.getDate() + daysUntilFriday);
+  date.setHours(23, 59, 0, 0);
   return date;
 }
 
