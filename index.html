@@ -64,8 +64,23 @@
   .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
   .hero-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(200,130,10,.04) 59px,rgba(200,130,10,.04) 60px)}
   .hero-content{position:relative;text-align:center;animation:fadeUp 1.2s ease both;padding:1rem 0 6.6rem}
-  .hero-inst-wrap{display:flex;justify-content:center;margin:.5rem 0 .75rem;animation:fadeUp 1.2s .1s ease both}
+  .hero-inst-wrap{position:relative;display:flex;justify-content:center;align-items:center;margin:.5rem 0 .75rem;animation:fadeUp 1.2s .1s ease both}
   .hero-inst-img{width:214px;max-width:63.75vw;height:auto;object-fit:contain;filter:drop-shadow(0 0 24px rgba(200,130,10,0.25))}
+  .seasonal-hero{position:absolute;inset:-18px -36px -16px;pointer-events:none;z-index:2}
+  .seasonal-piece{position:absolute;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+  .seasonal-piece[data-piece="hat"]{top:-18px;left:54%;font-size:3rem;transform:translateX(-50%) rotate(10deg)}
+  .seasonal-piece[data-piece="left"]{left:-10px;bottom:16px;font-size:2.2rem}
+  .seasonal-piece[data-piece="right"]{right:-12px;bottom:12px;font-size:2.2rem}
+  .seasonal-piece[data-piece="top"]{top:-6px;right:4px;font-size:1.5rem}
+  .seasonal-string{position:absolute;left:50%;top:-36px;transform:translateX(-50%);font-size:1rem;letter-spacing:.22rem;white-space:nowrap;opacity:.92}
+  .seasonal-label{position:absolute;left:50%;bottom:-28px;transform:translateX(-50%);padding:.18rem .55rem;border:1px solid rgba(200,130,10,.22);border-radius:999px;background:rgba(10,8,4,.76);font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+  #hero[data-season="none"] .seasonal-hero{display:none}
+  #hero[data-season="natal"] .hero-bg{background:radial-gradient(circle at 50% 16%,rgba(239,68,68,.12),transparent 18%),radial-gradient(circle at 40% 20%,rgba(34,197,94,.1),transparent 22%),radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
+  #hero[data-season="pascoa"] .hero-bg{background:radial-gradient(circle at 50% 20%,rgba(250,204,21,.12),transparent 16%),radial-gradient(circle at 24% 76%,rgba(236,72,153,.08),transparent 18%),radial-gradient(circle at 76% 76%,rgba(96,165,250,.08),transparent 18%),radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
+  #hero[data-season="junina"] .hero-bg{background:radial-gradient(circle at 50% 16%,rgba(251,191,36,.14),transparent 16%),radial-gradient(circle at 18% 18%,rgba(239,68,68,.08),transparent 18%),radial-gradient(circle at 82% 18%,rgba(34,197,94,.08),transparent 18%),radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
+  #hero[data-season="independencia"] .hero-bg{background:radial-gradient(circle at 50% 16%,rgba(34,197,94,.13),transparent 18%),radial-gradient(circle at 50% 22%,rgba(250,204,21,.11),transparent 22%),radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
+  #hero[data-season="halloween"] .hero-bg{background:radial-gradient(circle at 50% 18%,rgba(249,115,22,.12),transparent 18%),radial-gradient(circle at 26% 18%,rgba(168,85,247,.08),transparent 18%),radial-gradient(circle at 74% 18%,rgba(251,146,60,.08),transparent 18%),radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
+  #hero[data-season="ano-novo"] .hero-bg{background:radial-gradient(circle at 50% 12%,rgba(250,204,21,.12),transparent 16%),radial-gradient(circle at 20% 18%,rgba(96,165,250,.08),transparent 16%),radial-gradient(circle at 80% 18%,rgba(244,114,182,.08),transparent 16%),radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
   @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
   .hero-tag{font-family:'IM Fell English SC',serif;font-size:.85rem;letter-spacing:.4em;color:var(--amber);text-transform:uppercase;margin-bottom:1.5rem}
   .hero-title{font-family:'Cinzel',serif;font-size:clamp(5rem,14vw,12rem);font-weight:900;color:var(--cream);line-height:.85;text-shadow:0 0 80px rgba(200,130,10,.3),3px 3px 0 rgba(139,58,10,.4);animation:fadeUp 1.2s .2s ease both}
@@ -487,6 +502,12 @@
     .hero-content{padding:2.4rem 0 7.2rem}
     .hero-inst-wrap{margin:.9rem 0 .9rem}
     .hero-inst-img{max-width:66.3vw}
+    .seasonal-hero{inset:-12px -18px -12px}
+    .seasonal-piece[data-piece="hat"]{top:-12px;font-size:2.2rem}
+    .seasonal-piece[data-piece="left"],.seasonal-piece[data-piece="right"]{font-size:1.6rem;bottom:8px}
+    .seasonal-piece[data-piece="top"]{font-size:1.1rem;top:-2px}
+    .seasonal-string{top:-20px;font-size:.78rem;letter-spacing:.1rem}
+    .seasonal-label{bottom:-20px;font-size:.5rem;letter-spacing:.14em;padding:.14rem .42rem}
     .toca-badge{grid-template-columns:1fr;justify-items:center;text-align:center;padding:1.15rem 1rem;gap:.9rem}
     .toca-badge-mark{width:108px;height:108px}
     .toca-badge-mark img{width:108px;height:108px}
@@ -757,6 +778,7 @@
 
     <!-- Band instruments image -->
     <div class="hero-inst-wrap">
+      <div class="seasonal-hero" id="seasonalHeroDecor"></div>
       <img class="hero-inst-img" src="imagens/inst.png" alt="Instrumentos Retórica">
     </div>
 
@@ -1275,6 +1297,98 @@ function sinceLabel(s) {
 function nowLabel() {
   const n = new Date();
   return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+
+const EASTER_SUNDAYS = {
+  2026: '2026-04-05',
+  2027: '2027-03-28',
+  2028: '2028-04-16',
+  2029: '2029-04-01',
+  2030: '2030-04-21',
+  2031: '2031-04-13',
+  2032: '2032-03-28'
+};
+const SEASON_WINDOW_DAYS = 10;
+const EASTER_TEST_OVERRIDE_START = '2026-04-13';
+const EASTER_TEST_OVERRIDE_END = '2026-04-23';
+
+function dateKeyBR(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+function inRange(date, start, end) {
+  const key = dateKeyBR(date);
+  return key >= start && key <= end;
+}
+
+function rangeAround(dateLike, days = SEASON_WINDOW_DAYS) {
+  const center = new Date(`${dateLike}T12:00:00`);
+  const start = new Date(center);
+  const end = new Date(center);
+  start.setDate(start.getDate() - days);
+  end.setDate(end.getDate() + days);
+  return { start: dateKeyBR(start), end: dateKeyBR(end) };
+}
+
+function getSeasonalTheme(date = new Date()) {
+  const year = date.getFullYear();
+  const easter = EASTER_SUNDAYS[year];
+  if (inRange(date, EASTER_TEST_OVERRIDE_START, EASTER_TEST_OVERRIDE_END)) {
+    return { key: 'pascoa', label: 'Teste de Páscoa', pieces: { left: '🥚', right: '🪺', top: '🐰', string: '• • • • •' } };
+  }
+  const christmasRange = rangeAround(`${year}-12-25`);
+  if (inRange(date, christmasRange.start, christmasRange.end)) {
+    return { key: 'natal', label: 'Especial de Natal', pieces: { hat: '🎅', left: '🎄', right: '✨', top: '🔔', string: '✦ ✦ ✦ ✦ ✦' } };
+  }
+  const newYearCurrent = rangeAround(`${year}-01-01`);
+  const newYearNext = rangeAround(`${year + 1}-01-01`);
+  if (inRange(date, newYearCurrent.start, newYearCurrent.end) || inRange(date, newYearNext.start, newYearNext.end)) {
+    return { key: 'ano-novo', label: 'Virada do Ano', pieces: { left: '🎆', right: '🎇', top: '✨', string: '⋆ ⋆ ⋆ ⋆ ⋆' } };
+  }
+  if (easter) {
+    const easterRange = rangeAround(easter);
+    if (inRange(date, easterRange.start, easterRange.end)) {
+      return { key: 'pascoa', label: 'Clima de Páscoa', pieces: { left: '🥚', right: '🪺', top: '🐰', string: '• • • • •' } };
+    }
+  }
+  const juninaRange = rangeAround(`${year}-06-24`);
+  if (inRange(date, juninaRange.start, juninaRange.end)) {
+    return { key: 'junina', label: 'Arraiá do Rock', pieces: { left: '🌽', right: '🔥', top: '⭐', string: '◭ ◮ ◭ ◮ ◭' } };
+  }
+  const independenciaRange = rangeAround(`${year}-09-07`);
+  if (inRange(date, independenciaRange.start, independenciaRange.end)) {
+    return { key: 'independencia', label: 'Semana do Brasil', pieces: { left: '🇧🇷', right: '⭐', top: '💚', string: '▴ ▾ ▴ ▾ ▴' } };
+  }
+  const halloweenRange = rangeAround(`${year}-10-31`);
+  if (inRange(date, halloweenRange.start, halloweenRange.end)) {
+    return { key: 'halloween', label: 'Halloween', pieces: { left: '🎃', right: '🦇', top: '🕸️', string: '✶ ✶ ✶ ✶ ✶' } };
+  }
+  return { key: 'none', label: '', pieces: {} };
+}
+
+function applySeasonalHeroTheme() {
+  const hero = document.getElementById('hero');
+  const decor = document.getElementById('seasonalHeroDecor');
+  if (!hero || !decor) return;
+  const theme = getSeasonalTheme();
+  hero.dataset.season = theme.key;
+  if (theme.key === 'none') {
+    decor.innerHTML = '';
+    return;
+  }
+
+  const pieceOrder = ['hat', 'left', 'right', 'top'];
+  const piecesHtml = pieceOrder
+    .filter(piece => theme.pieces[piece])
+    .map(piece => `<span class="seasonal-piece" data-piece="${piece}">${theme.pieces[piece]}</span>`)
+    .join('');
+  const stringHtml = theme.pieces.string
+    ? `<div class="seasonal-string">${theme.pieces.string}</div>`
+    : '';
+  const labelHtml = theme.label
+    ? `<div class="seasonal-label">${theme.label}</div>`
+    : '';
+  decor.innerHTML = `${stringHtml}${piecesHtml}${labelHtml}`;
 }
 
 function getNextSaturdayInfo() {
@@ -3968,6 +4082,7 @@ function initLazySectionSubscriptions() {
 }
 
 // ─── INIT ──────────────────────────────────────────────────────────
+applySeasonalHeroTheme();
 initLazySectionSubscriptions();
 window.addEventListener('focus', () => {
   if (currentSection === 'sugestoes') loadSuggestionsSnapshot(true);
