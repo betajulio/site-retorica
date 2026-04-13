@@ -247,6 +247,10 @@
       </table>
       <div class="empty-state" id="emptyState" style="display:none">Nenhum log encontrado.</div>
     </div>
+    <div style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+      <div id="logsLoadedInfo" style="font-size:.72rem;color:var(--smoke)"></div>
+      <button class="btn-ghost btn-sm" id="loadMoreLogsBtn" onclick="loadMoreLogs()" style="display:none">Carregar mais logs</button>
+    </div>
 
     <!-- CONFIGURAÇÕES DA GALERIA -->
     <div class="detail-section" style="margin-top:2.5rem">
@@ -305,7 +309,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs,
-  onSnapshot, deleteDoc, orderBy, query, writeBatch,
+  deleteDoc, orderBy, query, writeBatch, limit, startAfter,
   addDoc, setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
@@ -338,6 +342,9 @@ let activeSearch = '';
 let sortField    = 'ts';       // 'action','category','who','ts'
 let sortDir      = -1;          // -1 = desc, 1 = asc
 let realtimeData = {};
+let lastLogDoc   = null;
+let hasMoreLogs  = true;
+const LOGS_PAGE_SIZE = 200;
 let storageStats   = { files: 0, bytes: 0 };
 const TS_FIELDS  = ['ts','createdAt'];
 
@@ -413,13 +420,15 @@ window.doLogout = async () => { await signOut(auth); };
 // ─── REALTIME COLLECTIONS ─────────────────────────────────────────
 const RT_COLLECTIONS = ['members','gallery','forum','suggestions','polls','approved_emails'];
 
-function startRTListeners() {
-  RT_COLLECTIONS.forEach(colName => {
-    onSnapshot(collection(db, colName), snap => {
-      realtimeData[colName] = snap.docs.map(d => ({id: d.id, ...d.data()}));
-      renderRealtimeMetrics();
-    });
-  });
+async function loadAdminMetricsSnapshot() {
+  const results = await Promise.all(
+    RT_COLLECTIONS.map(async colName => {
+      const snap = await getDocs(collection(db, colName));
+      return [colName, snap.docs.map(d => ({id: d.id, ...d.data()}))];
+    })
+  );
+  realtimeData = Object.fromEntries(results);
+  renderRealtimeMetrics();
 }
 
 function renderRealtimeMetrics() {
@@ -486,7 +495,7 @@ function renderRealtimeMetrics() {
 
   el.innerHTML = `
     <div class="detail-section">
-      <div class="detail-title">Dados em Tempo Real</div>
+      <div class="detail-title">Resumo Atual</div>
       <div class="metric-row">
         <div class="metric-card">
           <div class="metric-label">Membros da Banda</div>
@@ -527,13 +536,52 @@ const CAT_LABELS = {
 };
 
 function startListening() {
-  startRTListeners();
-  // Listen to logs collection in Firestore
-  onSnapshot(collection(db, 'logs'), snap => {
-    allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() })).reverse();
-    renderTable();
+  loadAdminMetricsSnapshot().catch(err => {
+    console.warn('Metrics load error:', err);
+  });
+  loadInitialLogs().catch(err => {
+    console.warn('Logs load error:', err);
+    showToast('⚠ Não foi possível carregar os logs.');
   });
 }
+
+async function loadLogsPage() {
+  let q = query(collection(db, 'logs'), orderBy('ts', 'desc'), limit(LOGS_PAGE_SIZE));
+  if (lastLogDoc) q = query(collection(db, 'logs'), orderBy('ts', 'desc'), startAfter(lastLogDoc), limit(LOGS_PAGE_SIZE));
+  const snap = await getDocs(q);
+  const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (snap.docs.length) lastLogDoc = snap.docs[snap.docs.length - 1];
+  hasMoreLogs = snap.docs.length === LOGS_PAGE_SIZE;
+  return docs;
+}
+
+async function loadInitialLogs() {
+  allLogs = [];
+  lastLogDoc = null;
+  hasMoreLogs = true;
+  const docs = await loadLogsPage();
+  allLogs = docs;
+  renderTable();
+}
+
+window.loadMoreLogs = async () => {
+  const btn = document.getElementById('loadMoreLogsBtn');
+  if (!hasMoreLogs || !btn) return;
+  const prevText = btn.textContent;
+  btn.textContent = 'Carregando...';
+  btn.disabled = true;
+  try {
+    const docs = await loadLogsPage();
+    allLogs = [...allLogs, ...docs];
+    renderTable();
+  } catch (err) {
+    console.error('Load more logs error:', err);
+    showToast('⚠ Não foi possível carregar mais logs.');
+  } finally {
+    btn.textContent = prevText;
+    btn.disabled = false;
+  }
+};
 
 function renderStorageMetric() {
   const el = document.getElementById('storageMetric');
@@ -637,6 +685,8 @@ function renderTable() {
   const body  = document.getElementById('logBody');
   const empty = document.getElementById('emptyState');
   const count = document.getElementById('filterCount');
+  const loadInfo = document.getElementById('logsLoadedInfo');
+  const loadBtn  = document.getElementById('loadMoreLogsBtn');
 
   const filtered = allLogs.filter(l => {
     const matchCat    = activeFilter === 'all' || l.category === activeFilter;
@@ -657,6 +707,12 @@ function renderTable() {
   });
 
   count.textContent = `${filtered.length} registro${filtered.length!==1?'s':''}`;
+  if (loadInfo) {
+    loadInfo.textContent = `Carregados ${allLogs.length} logs${hasMoreLogs ? ' até agora' : ' no total'}`;
+  }
+  if (loadBtn) {
+    loadBtn.style.display = hasMoreLogs ? 'inline-flex' : 'none';
+  }
 
   if (!filtered.length) {
     body.innerHTML = '';
