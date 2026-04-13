@@ -4321,13 +4321,8 @@ function renderPromotionBanner(timeUntil) {
 // Atualizar contadores na UI
 async function updatePromotionCountdowns() {
   try {
-    const stateSnap = await getDoc(promotionStateRef);
-    const state = stateSnap.exists() ? stateSnap.data() : null;
     const now = Date.now();
-    let nextPromoDate = toDateOrNull(state?.nextPromotionDate) || getNextFriday();
-    if (nextPromoDate.getTime() <= now) {
-      nextPromoDate = getNextFriday(new Date(now + 60000));
-    }
+    const nextPromoDate = getNextFriday(new Date(now + 60000));
     const nextPromo = nextPromoDate.getTime();
     const timeUntil = nextPromo - now;
     
@@ -4335,7 +4330,7 @@ async function updatePromotionCountdowns() {
     renderPromotionBanner(timeUntil);
   } catch (e) {
     console.error('[COUNTDOWN] Erro ao atualizar:', e);
-    const fallbackTimeUntil = getNextFriday().getTime() - Date.now();
+    const fallbackTimeUntil = getNextFriday(new Date(Date.now() + 60000)).getTime() - Date.now();
     renderPromotionBanner(fallbackTimeUntil);
   }
 }
