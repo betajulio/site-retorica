@@ -4109,17 +4109,21 @@ const PROMOTION_LOCK_MS = 2 * 60 * 1000;
 
 // Inicializar estado de promoção
 async function initPromotionState() {
-  const snap = await getDoc(promotionStateRef);
-  if (!snap.exists()) {
-    const nextFriday = getNextFriday();
-    await setDoc(promotionStateRef, {
-      nextPromotionDate: Timestamp.fromDate(nextFriday),
-      activeTiebreakerPoll: null,
-      activeRepertoryPoll: null,
-      completionLockToken: null,
-      completionLockUntil: null,
-      completionLockPollId: null
-    });
+  try {
+    const snap = await getDoc(promotionStateRef);
+    if (!snap.exists()) {
+      const nextFriday = getNextFriday();
+      await setDoc(promotionStateRef, {
+        nextPromotionDate: Timestamp.fromDate(nextFriday),
+        activeTiebreakerPoll: null,
+        activeRepertoryPoll: null,
+        completionLockToken: null,
+        completionLockUntil: null,
+        completionLockPollId: null
+      });
+    }
+  } catch (e) {
+    console.warn('[PROMOÇÃO] Não foi possível inicializar promotion_state, usando fallback local.', e);
   }
 }
 
@@ -4285,22 +4289,24 @@ function formatTimeRemaining(ms) {
 // Atualizar contadores na UI
 async function updatePromotionCountdowns() {
   try {
+    const navBadge = document.getElementById('promoCountdownNav');
+    const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
+    const anchor = document.getElementById('promotionCountdownAnchor');
+    const clearSectionBadge = () => {
+      if (!anchor?.parentNode) return;
+      anchor.parentNode.querySelectorAll('.countdown-badge-big').forEach(el => el.remove());
+    };
+
     const stateSnap = await getDoc(promotionStateRef);
-    if (!stateSnap.exists()) {
-      console.log('[COUNTDOWN] Estado de promoção não existe ainda');
-      return;
-    }
-    
-    const state = stateSnap.data();
+    const state = stateSnap.exists() ? stateSnap.data() : null;
     const now = Date.now();
-    const nextPromo = state.nextPromotionDate.toDate().getTime();
+    const nextPromoDate = toDateOrNull(state?.nextPromotionDate) || getNextFriday();
+    const nextPromo = nextPromoDate.getTime();
     const timeUntil = nextPromo - now;
     
     console.log('[COUNTDOWN] Tempo até próxima promoção:', formatTimeRemaining(timeUntil));
     
     // Badge na navegação (Desktop e Mobile)
-    const navBadge = document.getElementById('promoCountdownNav');
-    const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
     const timeLabel = formatTimeRemaining(timeUntil);
     const shouldShow = timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
 
@@ -4315,11 +4321,9 @@ async function updatePromotionCountdowns() {
     if (shouldShow) console.log('[COUNTDOWN] Badges nav atualizados');
     
     // Contador nas sugestões (logo abaixo do cabeçalho da seção)
-    const anchor = document.getElementById('promotionCountdownAnchor');
     if (anchor && timeUntil > 0) {
-      // Remover countdown existente
       const parent = anchor.parentNode;
-      parent.querySelectorAll('.countdown-badge-big').forEach(el => el.remove());
+      clearSectionBadge();
       
       const badge = document.createElement('div');
       badge.className = `countdown-badge-big ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}`;
@@ -4330,6 +4334,8 @@ async function updatePromotionCountdowns() {
       `;
       parent.insertBefore(badge, anchor.nextSibling);
       console.log('[COUNTDOWN] Badge sugestões adicionado');
+    } else {
+      clearSectionBadge();
     }
   } catch (e) {
     console.error('[COUNTDOWN] Erro ao atualizar:', e);
