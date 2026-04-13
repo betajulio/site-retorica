@@ -198,9 +198,6 @@
     <!-- STORAGE METRIC -->
     <div id="storageMetric"></div>
 
-    <!-- FIRESTORE USAGE -->
-    <div id="firestoreMetric"></div>
-
     <!-- REALTIME METRICS -->
     <div id="realtimeMetrics"></div>
 
@@ -313,7 +310,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc, getDoc, getDocs,
   deleteDoc, orderBy, query, writeBatch, limit, startAfter,
-  addDoc, setDoc, updateDoc, increment, serverTimestamp
+  addDoc, setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
@@ -351,36 +348,6 @@ const LOGS_PAGE_SIZE = 200;
 let storageStats   = { files: 0, bytes: 0 };
 const TS_FIELDS  = ['ts','createdAt'];
 
-// ── Firestore usage tracking ──
-// We instrument every SDK call in this admin page and accumulate per-session + per-day counters.
-const _fsCounters = { reads: 0, writes: 0, deletes: 0, listens: 0 };
-const _fsSessionStart = Date.now();
-
-function _trackRead(n = 1)    { _fsCounters.reads   += n; _persistUsage(); }
-function _trackWrite(n = 1)   { _fsCounters.writes  += n; _persistUsage(); }
-function _trackDelete(n = 1)  { _fsCounters.deletes += n; _persistUsage(); }
-function _trackListen()       { _fsCounters.listens += 1; }
-
-let _persistTimer = null;
-function _persistUsage() {
-  // Debounce: write to DOM immediately, persist to Firestore at most once per 30s
-  renderFirestoreMetric();
-  if (_persistTimer) return;
-  _persistTimer = setTimeout(async () => {
-    _persistTimer = null;
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const ref   = doc(db, 'config', 'firestoreUsage');
-      await setDoc(ref, {
-        [`days.${today}.reads`]:   increment(_fsCounters.reads),
-        [`days.${today}.writes`]:  increment(_fsCounters.writes),
-        [`days.${today}.deletes`]: increment(_fsCounters.deletes),
-        lastUpdated: serverTimestamp()
-      }, { merge: true });
-    } catch(_) { /* silently ignore — usage tracking must never break the app */ }
-  }, 30000);
-}
-
 // Firebase Storage Spark free tier: 5 GB
 const STORAGE_LIMIT = 5 * 1024 * 1024 * 1024; // 5 GB in bytes
 
@@ -407,7 +374,6 @@ function calcStorageStats() {
 // ─── AUTH ──────────────────────────────────────────────────────────
 async function isApproved(email) {
   const snap = await getDoc(doc(db,'approved_emails', email.toLowerCase()));
-  _trackRead();
   return snap.exists();
 }
 
@@ -458,7 +424,6 @@ async function loadAdminMetricsSnapshot() {
   const results = await Promise.all(
     RT_COLLECTIONS.map(async colName => {
       const snap = await getDocs(collection(db, colName));
-      _trackRead(snap.docs.length || 1);
       return [colName, snap.docs.map(d => ({id: d.id, ...d.data()}))];
     })
   );
@@ -574,9 +539,6 @@ function startListening() {
   loadAdminMetricsSnapshot().catch(err => {
     console.warn('Metrics load error:', err);
   });
-  loadFirestoreHistory().catch(err => {
-    console.warn('Firestore history load error:', err);
-  });
   loadInitialLogs().catch(err => {
     console.warn('Logs load error:', err);
     showToast('⚠ Não foi possível carregar os logs.');
@@ -587,7 +549,6 @@ async function loadLogsPage() {
   let q = query(collection(db, 'logs'), orderBy('ts', 'desc'), limit(LOGS_PAGE_SIZE));
   if (lastLogDoc) q = query(collection(db, 'logs'), orderBy('ts', 'desc'), startAfter(lastLogDoc), limit(LOGS_PAGE_SIZE));
   const snap = await getDocs(q);
-  _trackRead(snap.docs.length || 1);
   const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (snap.docs.length) lastLogDoc = snap.docs[snap.docs.length - 1];
   hasMoreLogs = snap.docs.length === LOGS_PAGE_SIZE;
@@ -661,141 +622,6 @@ function renderStorageMetric() {
           <div class="metric-label">Status</div>
           <div style="font-size:1rem;color:#6ee7b7;margin-top:.3rem">✓ Dentro do limite</div>
         </div>`}
-      </div>
-    </div>`;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// FIRESTORE USAGE METRICS
-// ═══════════════════════════════════════════════════════════════════
-
-let _fsHistorical = {}; // { 'YYYY-MM-DD': { reads, writes, deletes } }
-
-async function loadFirestoreHistory() {
-  try {
-    const snap = await getDoc(doc(db, 'config', 'firestoreUsage'));
-    _trackRead();
-    if (snap.exists()) {
-      _fsHistorical = snap.data().days || {};
-    }
-  } catch(_) {}
-  renderFirestoreMetric();
-}
-
-// Firestore Spark free tier limits
-const FS_LIMITS = { reads: 50000, writes: 20000, deletes: 20000 };
-
-function renderFirestoreMetric() {
-  const el = document.getElementById('firestoreMetric');
-  if (!el) return;
-
-  // Session counters
-  const { reads, writes, deletes, listens } = _fsCounters;
-  const sessionMin = Math.round((Date.now() - _fsSessionStart) / 60000);
-
-  // Today's historical totals (from Firestore config doc, accumulated across all sessions)
-  const today = new Date().toISOString().slice(0, 10);
-  const hist  = _fsHistorical[today] || {};
-  // Session ops are already being persisted incrementally, so hist includes past sessions today
-  // Show both: "this session" and "today total"
-
-  // Last 7 days sparkline data
-  const days7 = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const h   = _fsHistorical[key] || {};
-    days7.push({ key, reads: h.reads || 0, writes: h.writes || 0, deletes: h.deletes || 0 });
-  }
-
-  const maxReadsDay  = Math.max(...days7.map(d => d.reads),  1);
-  const maxWritesDay = Math.max(...days7.map(d => d.writes), 1);
-
-  function bar(val, max, color) {
-    const h = Math.max(4, Math.round((val / max) * 36));
-    return `<div title="${val.toLocaleString()}" style="width:10px;height:${h}px;background:${color};border-radius:1px 1px 0 0;align-self:flex-end;transition:height .3s"></div>`;
-  }
-
-  const sparkReads  = days7.map(d => bar(d.reads,  maxReadsDay,  'rgba(232,168,32,.7)')).join('');
-  const sparkWrites = days7.map(d => bar(d.writes, maxWritesDay, 'rgba(200,130,10,.55)')).join('');
-
-  function pct(val, limit) { return Math.min((val / limit) * 100, 100).toFixed(1); }
-  function barPct(val, limit, color) {
-    const p = pct(val, limit);
-    const warn = p > 70; const crit = p > 85;
-    const c = crit ? '#f87171' : warn ? '#fbbf24' : color;
-    return `<div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;margin-top:.3rem">
-      <div style="height:100%;width:${p}%;background:${c};border-radius:3px;transition:width .4s"></div>
-    </div>`;
-  }
-
-  // Today total = historical (past sessions) + current session
-  const todayReads   = (hist.reads   || 0) + reads;
-  const todayWrites  = (hist.writes  || 0) + writes;
-  const todayDeletes = (hist.deletes || 0) + deletes;
-
-  el.innerHTML = `
-    <div class="detail-section">
-      <div class="detail-title">🔥 Consumo do Firestore</div>
-      <div style="font-size:.72rem;color:var(--smoke);font-style:italic;margin-bottom:.9rem">
-        Operações realizadas por esta tela de admin. Limites gratuitos: ${FS_LIMITS.reads.toLocaleString()} leituras · ${FS_LIMITS.writes.toLocaleString()} escritas · ${FS_LIMITS.deletes.toLocaleString()} exclusões por dia.
-      </div>
-
-      <!-- Session + Today cards -->
-      <div class="metric-row" style="margin-bottom:.8rem">
-        <div class="metric-card">
-          <div class="metric-label">Leituras hoje</div>
-          <div class="metric-value gold">${todayReads.toLocaleString()}</div>
-          ${barPct(todayReads, FS_LIMITS.reads, 'var(--amber)')}
-          <div style="font-size:.68rem;color:var(--smoke);margin-top:.3rem">${pct(todayReads, FS_LIMITS.reads)}% de ${FS_LIMITS.reads.toLocaleString()} · Esta sessão: +${reads}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Escritas hoje</div>
-          <div class="metric-value gold">${todayWrites.toLocaleString()}</div>
-          ${barPct(todayWrites, FS_LIMITS.writes, 'var(--amber)')}
-          <div style="font-size:.68rem;color:var(--smoke);margin-top:.3rem">${pct(todayWrites, FS_LIMITS.writes)}% de ${FS_LIMITS.writes.toLocaleString()} · Esta sessão: +${writes}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Exclusões hoje</div>
-          <div class="metric-value gold">${todayDeletes.toLocaleString()}</div>
-          ${barPct(todayDeletes, FS_LIMITS.deletes, 'var(--amber)')}
-          <div style="font-size:.68rem;color:var(--smoke);margin-top:.3rem">${pct(todayDeletes, FS_LIMITS.deletes)}% de ${FS_LIMITS.deletes.toLocaleString()} · Esta sessão: +${deletes}</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Sessão atual</div>
-          <div class="metric-value" style="color:var(--paper);font-size:1.2rem">${sessionMin}min</div>
-          <div style="font-size:.68rem;color:var(--smoke);margin-top:.3rem">
-            📖 ${reads} leit. · ✏️ ${writes} escrit. · 🗑 ${deletes} excl. · 👂 ${listens} ouv.
-          </div>
-        </div>
-      </div>
-
-      <!-- 7-day sparklines -->
-      <div style="background:rgba(10,8,4,.4);border:1px solid rgba(200,130,10,.1);border-radius:2px;padding:.8rem 1rem">
-        <div style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem">Últimos 7 dias (esta tela)</div>
-        <div style="display:flex;gap:2rem;flex-wrap:wrap">
-          <div>
-            <div style="font-size:.65rem;color:var(--gold);margin-bottom:.3rem">📖 Leituras</div>
-            <div style="display:flex;gap:3px;align-items:flex-end;height:40px">${sparkReads}</div>
-            <div style="display:flex;gap:3px;margin-top:.2rem">
-              ${days7.map(d => `<div style="width:10px;font-size:.5rem;color:var(--smoke);text-align:center">${new Date(d.key+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}).slice(0,5).replace('/','/')}</div>`).join('')}
-            </div>
-          </div>
-          <div>
-            <div style="font-size:.65rem;color:var(--amber);margin-bottom:.3rem">✏️ Escritas</div>
-            <div style="display:flex;gap:3px;align-items:flex-end;height:40px">${sparkWrites}</div>
-          </div>
-          <div style="flex:1;min-width:160px;align-self:center">
-            <div style="font-size:.7rem;color:var(--smoke);line-height:1.7">
-              ${days7.map(d => `<span style="color:var(--paper)">${new Date(d.key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit'})}</span>
-              <span style="color:var(--smoke)"> ${d.reads.toLocaleString()}r · ${d.writes.toLocaleString()}w · ${d.deletes.toLocaleString()}d</span><br>`).join('')}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style="font-size:.65rem;color:rgba(107,96,80,.6);margin-top:.5rem;font-style:italic">
-        ⚠ Contabiliza apenas operações desta página admin. O consumo real do app (index.html) é muito maior e pode ser visto no Firebase Console → Firestore → Usage.
       </div>
     </div>`;
 }
@@ -927,7 +753,6 @@ window.confirmClearLogs = () => {
 async function clearAllLogs() {
   showToast('⏳ Limpando logs…');
   const snap = await getDocs(collection(db,'logs'));
-  _trackRead(snap.docs.length || 1);
   // Batch delete in groups of 500
   const batchSize = 499;
   let batch = writeBatch(db);
@@ -938,7 +763,6 @@ async function clearAllLogs() {
     if (i % batchSize === 0) { await batch.commit(); batch = writeBatch(db); }
   }
   await batch.commit();
-  _trackDelete(snap.docs.length);
   showToast(`✓ ${snap.size} log${snap.size!==1?'s':''} removido${snap.size!==1?'s':''}.`);
 }
 
@@ -949,7 +773,6 @@ window.runSuggestionsCleanup = async () => {
   let removedCount = 0;
   
   try {
-    _trackWrite();
     await addDoc(collection(db, 'logs'), {
       action: 'Varredura Manual de Sugestões',
       detail: 'Solicitação manual via painel de logs para remover sugestões com 4 ou mais dislikes',
@@ -961,7 +784,6 @@ window.runSuggestionsCleanup = async () => {
     });
 
     const snap = await getDocs(collection(db, 'suggestions'));
-    _trackRead(snap.docs.length || 1);
     const toRemove = snap.docs.filter(d => {
       const s = d.data();
       return (s.dislikes || 0) >= 4;
@@ -978,9 +800,8 @@ window.runSuggestionsCleanup = async () => {
       
       // Deleta a sugestão
       await deleteDoc(doc(db, 'suggestions', id));
-      _trackDelete();
+      
       // Cria o log que dispara o WhatsApp
-      _trackWrite();
       await addDoc(collection(db, 'logs'), {
         action: 'Sugestão Removida',
         detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: Atingiu o limite de 4 dislikes (Varredura de manutenção)`,
@@ -1013,7 +834,6 @@ window.triggerManualRehearsalZap = async () => {
   
   showToast('⏳ Disparando WhatsApp…');
   try {
-    _trackWrite();
     await addDoc(collection(db, 'logs'), {
       action: 'Disparar Zap Ensaio',
       detail: 'Solicitação manual via painel de logs',
@@ -1043,7 +863,6 @@ window.cancelThisWeeksRehearsal = async () => {
 
   showToast('⏳ Registrando cancelamento…');
   try {
-    _trackWrite();
     await addDoc(collection(db, 'logs'), {
       action: 'Cancelar Ensaio',
       detail: `Motivo: ${trimmedReason}`,
@@ -1086,7 +905,6 @@ const QUALITY_HINTS = {
 async function loadGalleryConfig() {
   try {
     const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
-    _trackRead();
     if (snap.exists()) {
       const { quality = 70, maxPx = 1920 } = snap.data();
       applyConfigToUI(quality, maxPx);
@@ -1142,7 +960,6 @@ window.saveGalleryConfig = async () => {
   const quality = parseInt(slider?.value || 70);
   const maxPx   = parseInt(sel?.value || 1920);
   try {
-    _trackWrite();
     await setDoc(doc(db, 'config', 'galleryCompression'), { quality, maxPx, updatedAt: new Date().toISOString() });
     if (status) { status.textContent = '✓ Salvo! Próximos uploads já usam a nova configuração.'; status.style.color = 'var(--gold)'; }
     showToast(`✓ Configuração salva — qualidade ${quality}%, max ${maxPx}px`);
