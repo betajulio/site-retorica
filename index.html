@@ -1359,24 +1359,16 @@ window.chooseRepCifra = async id => {
     const snap = await getDoc(ref);
     if (!snap.exists()) return;
     const r = snap.data();
-    showToast('⏳ Buscando opções de cifra...');
+    showToast('⏳ Buscando cifra automaticamente...');
     const data = await fetchFunctionJson('lookup_cifra_candidates', { song: r.song || '', artist: r.artist || '' });
     const candidates = Array.isArray(data.candidates) ? data.candidates : [];
     if (!candidates.length) {
       showToast('⚠ Nenhuma opção de cifra encontrada.');
       return;
     }
-    const optionsText = candidates.map((item, index) => `${index + 1}. ${item.label}`).join('\n');
-    const choice = prompt(`Escolha a cifra para ${r.song}:\n\n${optionsText}\n\nDigite o número da opção desejada.`);
-    if (choice === null) return;
-    const idx = Number(choice) - 1;
-    if (!Number.isInteger(idx) || idx < 0 || idx >= candidates.length) {
-      showToast('⚠ Opção inválida.');
-      return;
-    }
-    await updateDoc(ref, { cifra: candidates[idx].url });
+    await updateDoc(ref, { cifra: candidates[0].url });
     await writeLog('Link de cifra localizado', `${r.song} — ${r.artist}`, 'repertorio');
-    showToast('✓ Cifra salva com sucesso!');
+    showToast('✓ Primeira cifra encontrada foi salva!');
   } catch (err) {
     console.error('Rep cifra candidates error:', err);
     showToast(`⚠ ${err.message || 'Não foi possível buscar as cifras.'}`);
@@ -2197,7 +2189,7 @@ function renderRepFromCache() {
       </div>
       <div class="rep-actions">
         ${r.youtube ? ytBtn(r.youtube) : `<button class="btn-icon" onclick="findRepYoutube('${id}');event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(r.song, r.artist)}`}
-        ${r.cifra ? cifraBtn(r.cifra) : `<button class="btn-icon" onclick="chooseRepCifra('${id}');event.stopPropagation()">♫ Escolher cifra</button>${cifraSearchBtn(r.song, r.artist)}`}
+        ${r.cifra ? cifraBtn(r.cifra) : `<button class="btn-icon" onclick="chooseRepCifra('${id}');event.stopPropagation()">♫ Auto cifra</button>`}
         ${editBtn}
         ${rmBtn}
       </div>
