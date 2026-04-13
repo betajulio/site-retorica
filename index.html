@@ -701,8 +701,8 @@
     <li style="position:relative"><a onclick="goTo('sugestoes')">Sugestões</a><span id="promoCountdownNav" class="badge-new" style="display:none"></span></li>
     <li><a onclick="goTo('enquetes')">Enquetes</a></li>
     <li><a onclick="goTo('setlist')">Setlist</a></li>
-    <li><a onclick="goTo('repertorio')">Repertório</a></li>
     <li><a onclick="goTo('forum')">Fórum</a></li>
+    <li><a onclick="goTo('repertorio')">Repertório</a></li>
     <li><a onclick="goTo('galeria')">Galeria</a></li>
     <li style="position:relative"><a href="noticias.html">Notícias</a><span class="badge-new">NEW</span></li>
     <li class="member-admin-only"><a href="logs.html" style="color:var(--amber)">⚙ Admin</a></li>
@@ -723,8 +723,8 @@
   <a onclick="mobileGoTo('sugestoes')">Sugestões <span id="promoCountdownNavMobile" class="badge-mobile-inline" style="display:none"></span></a>
   <a onclick="mobileGoTo('enquetes')">Enquetes</a>
   <a onclick="mobileGoTo('setlist')">Setlist</a>
-  <a onclick="mobileGoTo('repertorio')">Repertório</a>
   <a onclick="mobileGoTo('forum')">Fórum</a>
+  <a onclick="mobileGoTo('repertorio')">Repertório</a>
   <a href="noticias.html">Notícias <span class="badge-mobile-inline">NEW</span></a>
   <a onclick="mobileGoTo('galeria')">Galeria</a>
   <a href="logs.html" id="adminLinkMobile" class="member-admin-only" style="color:var(--amber)">⚙ Portal Admin</a>
@@ -1288,6 +1288,8 @@ function buildMusicSearchTerm(song, artist='') {
   return encodeURIComponent(`${song || ''} ${artist || ''}`.trim());
 }
 
+const FUNCTIONS_BASE_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net';
+
 function ytSearchBtn(song, artist='') {
   const term = buildMusicSearchTerm(song, artist);
   return `<a href="https://www.youtube.com/results?search_query=${term}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">🔎 Buscar video</a>`;
@@ -1297,6 +1299,89 @@ function cifraSearchBtn(song, artist='') {
   const term = buildMusicSearchTerm(`${song || ''} cifra`, artist);
   return `<a href="https://www.google.com/search?q=${term}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">🔎 Buscar cifra</a>`;
 }
+
+async function fetchFunctionJson(path, params={}) {
+  const url = new URL(`${FUNCTIONS_BASE_URL}/${path}`);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && `${value}`.trim() !== '') url.searchParams.set(key, value);
+  });
+  const resp = await fetch(url.toString());
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || data.ok === false) throw new Error(data.error || 'Não foi possível concluir a busca automática.');
+  return data;
+}
+
+window.findSuggestionYoutube = async id => {
+  try {
+    const ref = doc(db, 'suggestions', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const s = snap.data();
+    if (s.youtube) {
+      showToast('Esta sugestão já possui vídeo.');
+      return;
+    }
+    showToast('⏳ Buscando vídeo automaticamente...');
+    const data = await fetchFunctionJson('lookup_youtube_link', { song: s.song || '', artist: s.artist || '' });
+    await updateDoc(ref, { youtube: data.url });
+    await writeLog('Link de vídeo localizado', `${s.song} — ${s.artist}`, 'sugestoes');
+    showToast('✓ Vídeo encontrado e salvo!');
+  } catch (err) {
+    console.error('Auto suggestion youtube error:', err);
+    showToast(`⚠ ${err.message || 'Não foi possível localizar o vídeo.'}`);
+  }
+};
+
+window.findRepYoutube = async id => {
+  try {
+    const ref = doc(db, 'repertorio', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const r = snap.data();
+    if (r.youtube) {
+      showToast('Esta música já possui vídeo.');
+      return;
+    }
+    showToast('⏳ Buscando vídeo automaticamente...');
+    const data = await fetchFunctionJson('lookup_youtube_link', { song: r.song || '', artist: r.artist || '' });
+    await updateDoc(ref, { youtube: data.url });
+    await writeLog('Link de vídeo localizado', `${r.song} — ${r.artist}`, 'repertorio');
+    showToast('✓ Vídeo encontrado e salvo!');
+  } catch (err) {
+    console.error('Auto rep youtube error:', err);
+    showToast(`⚠ ${err.message || 'Não foi possível localizar o vídeo.'}`);
+  }
+};
+
+window.chooseRepCifra = async id => {
+  try {
+    const ref = doc(db, 'repertorio', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const r = snap.data();
+    showToast('⏳ Buscando opções de cifra...');
+    const data = await fetchFunctionJson('lookup_cifra_candidates', { song: r.song || '', artist: r.artist || '' });
+    const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+    if (!candidates.length) {
+      showToast('⚠ Nenhuma opção de cifra encontrada.');
+      return;
+    }
+    const optionsText = candidates.map((item, index) => `${index + 1}. ${item.label}`).join('\n');
+    const choice = prompt(`Escolha a cifra para ${r.song}:\n\n${optionsText}\n\nDigite o número da opção desejada.`);
+    if (choice === null) return;
+    const idx = Number(choice) - 1;
+    if (!Number.isInteger(idx) || idx < 0 || idx >= candidates.length) {
+      showToast('⚠ Opção inválida.');
+      return;
+    }
+    await updateDoc(ref, { cifra: candidates[idx].url });
+    await writeLog('Link de cifra localizado', `${r.song} — ${r.artist}`, 'repertorio');
+    showToast('✓ Cifra salva com sucesso!');
+  } catch (err) {
+    console.error('Rep cifra candidates error:', err);
+    showToast(`⚠ ${err.message || 'Não foi possível buscar as cifras.'}`);
+  }
+};
 
 // ─── MEMBERS ───────────────────────────────────────────────────────
 const INSTRUMENTS = ['Vocal','Guitarra','Guitarra Base','Baixo','Bateria','Teclado','Violão','Outro'];
@@ -1580,7 +1665,7 @@ function renderSuggestions() {
       </div>
       <div class="suggestion-by">por ${s.by}${s.createdAt ? ` · <small style="color:var(--smoke)">${formatTs(s.createdAt)}</small>` : ''}</div>
       <div class="suggestion-actions">
-        ${s.youtube ? ytBtn(s.youtube) : ytSearchBtn(s.song, s.artist)}
+        ${s.youtube ? ytBtn(s.youtube) : `<button class="btn-icon" onclick="findSuggestionYoutube('${id}');event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(s.song, s.artist)}`}
         <div class="suggestion-score">${likeBtn}${dislikeBtn}</div>
         ${rmBtn}
       </div>
@@ -2111,8 +2196,8 @@ function renderRepFromCache() {
         <div class="rep-artist">${r.artist}</div>
       </div>
       <div class="rep-actions">
-        ${r.youtube ? ytBtn(r.youtube) : ytSearchBtn(r.song, r.artist)}
-        ${r.cifra ? cifraBtn(r.cifra) : cifraSearchBtn(r.song, r.artist)}
+        ${r.youtube ? ytBtn(r.youtube) : `<button class="btn-icon" onclick="findRepYoutube('${id}');event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(r.song, r.artist)}`}
+        ${r.cifra ? cifraBtn(r.cifra) : `<button class="btn-icon" onclick="chooseRepCifra('${id}');event.stopPropagation()">♫ Escolher cifra</button>${cifraSearchBtn(r.song, r.artist)}`}
         ${editBtn}
         ${rmBtn}
       </div>
