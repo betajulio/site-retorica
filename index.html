@@ -4291,19 +4291,20 @@ function renderPromotionBanner(timeUntil) {
   const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
   const bannerHost = document.getElementById('promotionCountdownBanner');
   const timeLabel = formatTimeRemaining(timeUntil);
-  const shouldShow = timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+  const shouldShowNav = timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+  const shouldShowSection = timeUntil > 0;
 
   if (navBadge) {
     navBadge.textContent = timeLabel;
-    navBadge.style.display = shouldShow ? 'inline-block' : 'none';
+    navBadge.style.display = shouldShowNav ? 'inline-block' : 'none';
   }
   if (navBadgeMobile) {
     navBadgeMobile.textContent = timeLabel;
-    navBadgeMobile.style.display = shouldShow ? 'inline-block' : 'none';
+    navBadgeMobile.style.display = shouldShowNav ? 'inline-block' : 'none';
   }
   if (!bannerHost) return;
 
-  if (!shouldShow) {
+  if (!shouldShowSection) {
     bannerHost.innerHTML = '';
     return;
   }
