@@ -3095,22 +3095,29 @@ window.uploadGalleryPhotos = async () => {
         },
         reject,
         async () => {
-          const url = await getDownloadURL(task.snapshot.ref);
-          await addDoc(collection(db,'gallery'), {
-            url,
-            storagePath: path,
-            caption,
-            addedBy: userName,
-            date: sourceDate.label,
-            sourceDateIso: sourceDate.iso,
-            sourceDateSource: sourceDate.source,
-            createdAt: serverTimestamp(),
-            origSize: Math.round(origSize / 1024),
-            compSize: Math.round(compSize / 1024),
-            tags: photoTags,
-            commentCount: 0,
-            replyCount: 0
-          });
+          const uploadedRef = task.snapshot.ref;
+          const url = await getDownloadURL(uploadedRef);
+          try {
+            await addDoc(collection(db,'gallery'), {
+              url,
+              storagePath: path,
+              caption,
+              addedBy: userName,
+              date: sourceDate.label,
+              sourceDateIso: sourceDate.iso,
+              sourceDateSource: sourceDate.source,
+              createdAt: serverTimestamp(),
+              origSize: Math.round(origSize / 1024),
+              compSize: Math.round(compSize / 1024),
+              tags: photoTags,
+              commentCount: 0,
+              replyCount: 0
+            });
+          } catch (err) {
+            try { await deleteObject(uploadedRef); } catch {}
+            reject(err);
+            return;
+          }
           uploadedCount += 1;
           resolve();
         }
