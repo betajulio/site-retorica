@@ -1041,6 +1041,7 @@
     <p>Use os sliders para alinhar o vídeo dentro da moldura. Os valores ficam salvos no navegador e você pode copiar o resultado final.</p>
     <div class="video-frame-debug-group" id="videoFrameDebugCarousel"></div>
     <div class="video-frame-debug-group" id="videoFrameDebugThumb"></div>
+    <div class="video-frame-debug-group" id="videoFrameDebugPortrait"></div>
     <div class="video-frame-debug-actions">
       <button class="video-frame-debug-btn" type="button" onclick="copyVideoFrameDebugValues()">Copiar valores</button>
       <button class="video-frame-debug-btn" type="button" onclick="resetVideoFrameDebugValues()">Resetar</button>
@@ -5202,18 +5203,31 @@ function persistVideoFrameDebugValues() {
 function buildVideoFrameDebugGroup(hostId, title, prefix) {
   const host = document.getElementById(hostId);
   if (!host) return;
-  const controls = [
-    { key: `${prefix}_top`, label: 'Topo' },
-    { key: `${prefix}_right`, label: 'Dir' },
-    { key: `${prefix}_bottom`, label: 'Base' },
-    { key: `${prefix}_left`, label: 'Esq' },
-    { key: `${prefix}_pos_x`, label: 'Pos X' },
-    { key: `${prefix}_pos_y`, label: 'Pos Y' }
-  ];
-  if (prefix === 'vt') {
-    controls.push({ key: 'vt_scale', label: 'Escala', min: 0.6, max: 1.6, step: 0.01, unit: '' });
-    controls.push({ key: 'vt_frame_w', label: 'Tv W', min: 70, max: 130, step: 0.5, unit: '%' });
-    controls.push({ key: 'vt_frame_h', label: 'Tv H', min: 70, max: 130, step: 0.5, unit: '%' });
+  let controls = [];
+  if (prefix === 'vc') {
+    controls = [
+      { key: 'vc_top', label: 'Topo' },
+      { key: 'vc_right', label: 'Dir' },
+      { key: 'vc_bottom', label: 'Base' },
+      { key: 'vc_left', label: 'Esq' },
+      { key: 'vc_pos_x', label: 'Pos X' },
+      { key: 'vc_pos_y', label: 'Pos Y' }
+    ];
+  } else if (prefix === 'vt') {
+    controls = [
+      { key: 'vt_top', label: 'Topo' },
+      { key: 'vt_right', label: 'Dir' },
+      { key: 'vt_bottom', label: 'Base' },
+      { key: 'vt_left', label: 'Esq' },
+      { key: 'vt_pos_x', label: 'Pos X' },
+      { key: 'vt_pos_y', label: 'Pos Y' },
+      { key: 'vt_scale', label: 'Escala', min: 0.6, max: 1.6, step: 0.01, unit: '' }
+    ];
+  } else if (prefix === 'vp') {
+    controls = [
+      { key: 'vt_frame_w', label: 'Largura', min: 70, max: 130, step: 0.5, unit: '%' },
+      { key: 'vt_frame_h', label: 'Altura', min: 70, max: 130, step: 0.5, unit: '%' }
+    ];
   }
   host.innerHTML = `<h4>${title}</h4>` + controls.map(control => `
     <div class="video-frame-debug-row">
@@ -5263,6 +5277,7 @@ window.resetVideoFrameDebugValues = () => {
   applyVideoFrameDebugValues(VIDEO_FRAME_DEBUG_DEFAULTS);
   buildVideoFrameDebugGroup('videoFrameDebugCarousel', 'Carrossel', 'vc');
   buildVideoFrameDebugGroup('videoFrameDebugThumb', 'Miniatura', 'vt');
+  buildVideoFrameDebugGroup('videoFrameDebugPortrait', 'Portrait', 'vp');
   showToast('Ajustes temporários resetados');
 };
 
@@ -5271,6 +5286,7 @@ window.resetVideoFrameDebugValues = () => {
   applyVideoFrameDebugValues(values);
   buildVideoFrameDebugGroup('videoFrameDebugCarousel', 'Carrossel', 'vc');
   buildVideoFrameDebugGroup('videoFrameDebugThumb', 'Miniatura', 'vt');
+  buildVideoFrameDebugGroup('videoFrameDebugPortrait', 'Portrait', 'vp');
   if (new URLSearchParams(location.search).get('videoFrameDebug') === '1') {
     toggleVideoFrameDebug(true);
   }
