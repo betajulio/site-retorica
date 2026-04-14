@@ -412,7 +412,7 @@
   .frp-rform button{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--amber);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif}
 
   /* GALERIA */
-  .carousel-wrap{position:relative;overflow:hidden;border-radius:2px;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.2)}
+  .carousel-wrap{position:relative;overflow:hidden;border-radius:2px;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.2);touch-action:pan-y}
   .carousel-track{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)}
   .carousel-slide{min-width:100%;display:flex;flex-direction:column;background:rgba(5,4,2,.45)}
   .carousel-media-stage{position:relative;background:rgba(5,4,2,.9);overflow:hidden}
@@ -2853,6 +2853,10 @@ let selectedYoutubeUploadTag = '';
 let galleryCompQuality  = 0.7;   // lido do Firestore config/galleryCompression
 let galleryCompMaxPx    = 1920;
 let galleryLastGridIds  = '';    // ids da última grade renderizada, evita re-render desnecessário
+let carouselTouchStartX = 0;
+let carouselTouchStartY = 0;
+let carouselTouchDragging = false;
+let carouselTouchSuppressClick = false;
 let bulkTagOriginalIds  = [];
 let galleryTagsLoaded   = false;
 let galleryCompressionLoaded = false;
@@ -3054,6 +3058,47 @@ window.carouselMove = dir => {
   carouselIndex = (carouselIndex + dir + Math.max(galleryCache.length,1)) % Math.max(galleryCache.length,1);
   renderGallery();
 };
+
+function initCarouselTouch() {
+  const wrap = document.getElementById('carouselWrap');
+  if (!wrap) return;
+
+  wrap.addEventListener('touchstart', (event) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    carouselTouchStartX = touch.clientX;
+    carouselTouchStartY = touch.clientY;
+    carouselTouchDragging = false;
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', (event) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    const dx = touch.clientX - carouselTouchStartX;
+    const dy = touch.clientY - carouselTouchStartY;
+    if (Math.abs(dx) > 18 && Math.abs(dx) > Math.abs(dy)) {
+      carouselTouchDragging = true;
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('touchend', (event) => {
+    const touch = event.changedTouches?.[0];
+    if (!touch) return;
+    const dx = touch.clientX - carouselTouchStartX;
+    const dy = touch.clientY - carouselTouchStartY;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)) {
+      carouselTouchSuppressClick = true;
+      carouselMove(dx < 0 ? 1 : -1);
+      setTimeout(() => { carouselTouchSuppressClick = false; }, 350);
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('click', (event) => {
+    if (!carouselTouchSuppressClick) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+}
 
 setInterval(() => {
   if (galleryCache.length > 1) { carouselIndex = (carouselIndex + 1) % galleryCache.length; renderGallery(); }
@@ -4504,6 +4549,7 @@ function initLazySectionSubscriptions() {
 // ─── INIT ──────────────────────────────────────────────────────────
 applySeasonalHeroTheme();
 initLazySectionSubscriptions();
+initCarouselTouch();
 window.addEventListener('focus', () => {
   if (currentSection === 'sugestoes') loadSuggestionsSnapshot(true);
   if (currentSection === 'enquetes') loadPollsSnapshot(true);
