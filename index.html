@@ -9,7 +9,7 @@
 <title>Retórica — Classic Rock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:12.8%;--vc-right:21.8%;--vc-bottom:16.8%;--vc-left:17.8%;--vc-pos-x:41%;--vc-pos-y:34%;--vt-top:14%;--vt-right:22%;--vt-bottom:24%;--vt-left:17%;--vt-pos-x:41%;--vt-pos-y:34%;--vt-scale:1}
+  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:8%;--vc-right:29.4%;--vc-bottom:23.2%;--vc-left:13.7%;--vc-pos-x:24.3%;--vc-pos-y:16.7%;--vt-top:0%;--vt-right:32.2%;--vt-bottom:11.4%;--vt-left:0%;--vt-pos-x:40%;--vt-pos-y:25.9%;--vt-scale:1.09}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
   body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
@@ -1038,7 +1038,7 @@
 
   <div class="video-frame-debug" id="videoFrameDebug">
     <h3>Ajuste Temporário de Vídeo</h3>
-    <p>Use os sliders para alinhar o vídeo dentro da moldura. Atalho: <strong>Ctrl+Shift+V</strong>. Os valores ficam salvos no navegador.</p>
+    <p>Use os sliders para alinhar o vídeo dentro da moldura. Os valores ficam salvos no navegador e você pode copiar o resultado final.</p>
     <div class="video-frame-debug-group" id="videoFrameDebugCarousel"></div>
     <div class="video-frame-debug-group" id="videoFrameDebugThumb"></div>
     <div class="video-frame-debug-actions">
@@ -5156,19 +5156,19 @@ async function completeRepertoryPoll(pollId, pollData) {
 
 const VIDEO_FRAME_DEBUG_KEY = 'retorica_video_frame_debug_values';
 const VIDEO_FRAME_DEBUG_DEFAULTS = {
-  vc_top: '12.8%',
-  vc_right: '21.8%',
-  vc_bottom: '16.8%',
-  vc_left: '17.8%',
-  vc_pos_x: '41%',
-  vc_pos_y: '34%',
-  vt_top: '14%',
-  vt_right: '22%',
-  vt_bottom: '24%',
-  vt_left: '17%',
-  vt_pos_x: '41%',
-  vt_pos_y: '34%',
-  vt_scale: '1'
+  vc_top: '8%',
+  vc_right: '29.4%',
+  vc_bottom: '23.2%',
+  vc_left: '13.7%',
+  vc_pos_x: '24.3%',
+  vc_pos_y: '16.7%',
+  vt_top: '0%',
+  vt_right: '32.2%',
+  vt_bottom: '11.4%',
+  vt_left: '0%',
+  vt_pos_x: '40%',
+  vt_pos_y: '25.9%',
+  vt_scale: '1.09'
 };
 
 function loadVideoFrameDebugValues() {
@@ -5268,12 +5268,6 @@ window.resetVideoFrameDebugValues = () => {
   if (new URLSearchParams(location.search).get('videoFrameDebug') === '1') {
     toggleVideoFrameDebug(true);
   }
-  window.addEventListener('keydown', (event) => {
-    if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'v') {
-      event.preventDefault();
-      toggleVideoFrameDebug();
-    }
-  });
 })();
 
 </script>
