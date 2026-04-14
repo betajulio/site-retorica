@@ -1258,11 +1258,32 @@ async function writeLog(action, detail, category) {
   } catch(e) { console.warn('Log error:', e); }
 }
 
-window.showToast = msg => {
+let toastTimer = null;
+
+window.showToast = (msg, opts = {}) => {
+  const { duration = 3000, persist = false } = opts;
   const el = document.getElementById('toast');
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+    toastTimer = null;
+  }
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3000);
+  if (!persist) {
+    toastTimer = setTimeout(() => {
+      el.classList.remove('show');
+      toastTimer = null;
+    }, duration);
+  }
+};
+
+window.hideToast = () => {
+  const el = document.getElementById('toast');
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+    toastTimer = null;
+  }
+  el.classList.remove('show');
 };
 
 function sinceLabel(s) {
@@ -2897,22 +2918,146 @@ function dataURLtoBlob(dataurl) {
   return new Blob([u8arr], {type: mime});
 }
 
+function formatPhotoDate(date) {
+  return date.toLocaleDateString('pt-BR');
+}
+
+function parseExifDateString(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  const match = raw.trim().match(/^(\d{4}):(\d{2}):(\d{2})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/);
+  if (!match) return null;
+  const [, year, month, day, hour = '0', minute = '0', second = '0'] = match;
+  const parsed = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second)
+  );
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function readExifAscii(view, offset, length) {
+  let out = '';
+  for (let i = 0; i < length; i++) {
+    const byte = view.getUint8(offset + i);
+    if (byte === 0) break;
+    out += String.fromCharCode(byte);
+  }
+  return out;
+}
+
+function extractExifDate(file) {
+  return new Promise(resolve => {
+    const fileHint = `${file?.type || ''} ${file?.name || ''}`;
+    if (!/jpe?g/i.test(fileHint)) {
+      resolve(null);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => resolve(null);
+    reader.onload = () => {
+      try {
+        const view = new DataView(reader.result);
+        if (view.byteLength < 4 || view.getUint16(0, false) !== 0xFFD8) {
+          resolve(null);
+          return;
+        }
+        let offset = 2;
+        while (offset + 4 < view.byteLength) {
+          const marker = view.getUint16(offset, false);
+          offset += 2;
+          if (marker === 0xFFE1) {
+            const app1Length = view.getUint16(offset, false);
+            offset += 2;
+            if (readExifAscii(view, offset, 4) !== 'Exif') {
+              offset += app1Length - 2;
+              continue;
+            }
+            const tiffOffset = offset + 6;
+            const littleEndian = view.getUint16(tiffOffset, false) === 0x4949;
+            const firstIFDOffset = view.getUint32(tiffOffset + 4, littleEndian);
+            let exifIfdOffset = null;
+
+            const readIfd = ifdOffset => {
+              if (!ifdOffset || tiffOffset + ifdOffset + 2 > view.byteLength) return null;
+              const entries = view.getUint16(tiffOffset + ifdOffset, littleEndian);
+              for (let i = 0; i < entries; i++) {
+                const entryOffset = tiffOffset + ifdOffset + 2 + (i * 12);
+                if (entryOffset + 12 > view.byteLength) continue;
+                const tag = view.getUint16(entryOffset, littleEndian);
+                const type = view.getUint16(entryOffset + 2, littleEndian);
+                const count = view.getUint32(entryOffset + 4, littleEndian);
+                const valueOffset = view.getUint32(entryOffset + 8, littleEndian);
+                if (tag === 0x8769) exifIfdOffset = valueOffset;
+                if ((tag === 0x9003 || tag === 0x0132) && type === 2 && count > 0) {
+                  const absoluteOffset = count <= 4 ? entryOffset + 8 : tiffOffset + valueOffset;
+                  if (absoluteOffset + count <= view.byteLength) {
+                    const parsed = parseExifDateString(readExifAscii(view, absoluteOffset, count));
+                    if (parsed) return parsed;
+                  }
+                }
+              }
+              return null;
+            };
+
+            const primaryDate = readIfd(firstIFDOffset);
+            if (primaryDate) {
+              resolve(primaryDate);
+              return;
+            }
+            if (exifIfdOffset) {
+              resolve(readIfd(exifIfdOffset));
+              return;
+            }
+            resolve(null);
+            return;
+          }
+          if ((marker & 0xFF00) !== 0xFF00) break;
+          const size = view.getUint16(offset, false);
+          offset += size;
+        }
+      } catch {
+        resolve(null);
+        return;
+      }
+      resolve(null);
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function extractPhotoTakenDate(file) {
+  const exifDate = await extractExifDate(file);
+  const fallbackDate = file?.lastModified ? new Date(file.lastModified) : new Date();
+  const chosenDate = exifDate || fallbackDate;
+  return {
+    date: chosenDate,
+    label: formatPhotoDate(chosenDate),
+    iso: chosenDate.toISOString(),
+    source: exifDate ? 'exif' : 'file'
+  };
+}
+
 window.uploadGalleryPhotos = async () => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   if (!galleryFilesBuf.length) { showToast('⚠ Selecione ao menos uma foto'); return; }
   if (!selectedUploadTag) { showToast('⚠ Selecione uma tag antes de publicar'); return; }
   const caption  = document.getElementById('galleryCaption').value.trim();
   const userName = auth.currentUser?.displayName?.split(' ')[0] || 'Membro';
-  const dateStr  = new Date().toLocaleDateString('pt-BR');
   const total    = galleryFilesBuf.length;
   let totalOrigKB = 0, totalCompKB = 0;
   const photoTags = ['Todas', selectedUploadTag];
+  let uploadedCount = 0;
+  let failedCount = 0;
 
   for (let i = 0; i < galleryFilesBuf.length; i++) {
     const file = galleryFilesBuf[i];
     const origSize = file.size;
+    const sourceDate = await extractPhotoTakenDate(file);
     totalOrigKB += Math.round(origSize / 1024);
-    showToast(`⏳ Comprimindo ${i+1}/${total}…`);
+    showToast(`⏳ Preparando ${i+1}/${total}: ${file.name}`, { persist: true });
 
     let blob, compSize;
     try {
@@ -2921,11 +3066,12 @@ window.uploadGalleryPhotos = async () => {
       compSize = blob.size;
       totalCompKB += Math.round(compSize / 1024);
     } catch(err) {
+      failedCount += 1;
       showToast(`⚠ ${err.message} (${i+1}/${total})`);
       continue;
     }
 
-    showToast(`⏳ Enviando ${i+1}/${total}…`);
+    showToast(`⏳ Enviando ${i+1}/${total}: ${file.name}`, { persist: true });
 
     const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
     const name = file.name.replace(/\.[^.]+$/, '');
@@ -2937,7 +3083,7 @@ window.uploadGalleryPhotos = async () => {
       task.on('state_changed',
         snap => {
           const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
-          showToast(`⏳ Enviando ${i+1}/${total}: ${pct}%`);
+          showToast(`⏳ Enviando ${i+1}/${total}: ${file.name} (${pct}%)`, { persist: true });
         },
         reject,
         async () => {
@@ -2947,7 +3093,9 @@ window.uploadGalleryPhotos = async () => {
             storagePath: path,
             caption,
             addedBy: userName,
-            date: dateStr,
+            date: sourceDate.label,
+            sourceDateIso: sourceDate.iso,
+            sourceDateSource: sourceDate.source,
             createdAt: serverTimestamp(),
             origSize: Math.round(origSize / 1024),
             compSize: Math.round(compSize / 1024),
@@ -2955,22 +3103,31 @@ window.uploadGalleryPhotos = async () => {
             commentCount: 0,
             replyCount: 0
           });
+          uploadedCount += 1;
           resolve();
         }
       );
+    }).catch(err => {
+      failedCount += 1;
+      console.error('Gallery upload error:', err);
+      showToast(`⚠ Falha ao enviar ${file.name}. Continuando...`);
     });
   }
 
-  const n = galleryFilesBuf.length;
+  const n = uploadedCount;
   await loadGallerySnapshot(true);
-  await writeLog('Foto(s) adicionada(s) à galeria', `${n} foto${n!==1?'s':''} — "${caption||'sem descrição'}" [${selectedUploadTag}] (${totalCompKB}KB comprimido, ${totalOrigKB}KB original)`, 'galeria');
+  await writeLog('Foto(s) adicionada(s) à galeria', `${n} foto${n!==1?'s':''} — "${caption||'sem descrição'}" [${selectedUploadTag}] (${totalCompKB}KB comprimido, ${totalOrigKB}KB original)${failedCount ? ` · ${failedCount} falha${failedCount!==1?'s':''}` : ''}`, 'galeria');
   galleryFilesBuf = [];
   selectedUploadTag = '';
   document.getElementById('galleryCaption').value = '';
   document.getElementById('galleryFileInput').value = '';
   renderGalleryPreview();
   renderUploadTagSelect();
-  showToast(`✓ ${n} foto${n!==1?'s':''} publicada${n!==1?'s':''}! (${totalCompKB}KB)`);
+  if (n) {
+    showToast(`✓ ${n} foto${n!==1?'s':''} publicada${n!==1?'s':''}!${failedCount ? ` ${failedCount} falha${failedCount!==1?'s':''}.` : ''} (${totalCompKB}KB)`);
+  } else {
+    showToast('⚠ Nenhuma foto foi publicada.');
+  }
 };
 
 // Delete from Storage + Firestore
