@@ -342,7 +342,7 @@
   .lb-caption-block p{font-family:'Lora',serif;font-size:.9rem;color:var(--cream);font-style:italic}
   .lb-caption-block.video-mode{text-align:left;margin-top:.9rem;padding:1rem 1rem .85rem;border:1px solid rgba(200,130,10,.14);border-radius:2px;background:linear-gradient(180deg,rgba(16,12,7,.86),rgba(10,8,4,.76))}
   .lb-video-head{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-bottom:.7rem}
-  .lb-video-desc{font-size:.92rem;line-height:1.55;color:var(--cream);font-style:italic}
+  .lb-video-desc{font-size:.92rem;line-height:1.55;color:var(--cream);font-style:italic;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
   .lb-meta{font-size:.7rem;color:var(--smoke);margin-top:.2rem}
   .lb-caption-block.video-mode .lb-meta{margin-top:.75rem;padding-top:.7rem;border-top:1px solid rgba(200,130,10,.1)}
   .lb-caption-block.video-mode .lb-photo-tags{margin-top:0}
@@ -427,7 +427,7 @@
   .carousel-panel-tag{display:inline-flex;align-items:center;gap:.3rem;background:rgba(10,8,4,.84);border:1px solid rgba(200,130,10,.25);color:var(--gold);padding:.24rem .6rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;line-height:1}
   .carousel-panel-tag.video{border-color:rgba(255,255,255,.16);color:var(--cream)}
   .carousel-panel-tag.credit strong{color:var(--cream);font-weight:700}
-  .carousel-caption-text{font-family:'Lora',serif;font-size:.98rem;color:var(--cream);font-style:italic;line-height:1.45}
+  .carousel-caption-text{font-family:'Lora',serif;font-size:.98rem;color:var(--cream);font-style:italic;line-height:1.45;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
   .media-caption-copy{min-width:0}
   .carousel-caption-meta{display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;font-size:.72rem;color:var(--smoke);text-align:right;flex-shrink:0}
   .carousel-stats-row{display:flex;gap:.45rem;flex-wrap:wrap;justify-content:flex-end}
@@ -615,6 +615,8 @@
     .lightbox-inner{flex-direction:column;max-height:92vh;overflow-y:auto;justify-content:flex-start}
     .lb-img-panel{max-width:100%;max-height:none;flex:none;padding-right:0;margin-bottom:1rem}
     .lb-img-panel .lightbox-img{max-height:50vh}
+    .lightbox-video-wrap{width:min(100%,92vw);aspect-ratio:16/9}
+    .lb-caption-block.video-mode{padding:.9rem .85rem .8rem}
     .lb-comments-wrap{width:100%;max-height:none;flex:none;border:1px solid rgba(200,130,10,.1);border-top:2px solid rgba(200,130,10,.2)}
 
     /* Modals */
@@ -1468,7 +1470,17 @@ function applySeasonalHeroTheme() {
   const hero = document.getElementById('hero');
   const image = document.getElementById('heroInstrumentsImage');
   if (!hero || !image) return;
-  const theme = getSeasonalTheme();
+  const forcedTheme = new URLSearchParams(window.location.search).get('seasonalPreview');
+  const forcedMap = {
+    natal: { key: 'natal', image: 'imagens/natal.png' },
+    anonovo: { key: 'ano-novo', image: 'imagens/anonovo.png' },
+    pascoa: { key: 'pascoa', image: 'imagens/pacoa.png' },
+    festajunina: { key: 'junina', image: 'imagens/festajunina.png' },
+    independencia: { key: 'independencia', image: 'imagens/independencia.png' },
+    halloween: { key: 'halloween', image: 'imagens/halloween.png' },
+    default: { key: 'none', image: 'imagens/inst.png' }
+  };
+  const theme = forcedMap[forcedTheme] || getSeasonalTheme();
   hero.dataset.season = theme.key;
   image.src = theme.image;
 }
