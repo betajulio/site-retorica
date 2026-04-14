@@ -340,7 +340,12 @@
   .lightbox-video-wrap iframe{width:100%;height:100%;border:0}
   .lb-caption-block{text-align:center;margin-top:.6rem;width:100%;flex-shrink:0;padding-top:.4rem}
   .lb-caption-block p{font-family:'Lora',serif;font-size:.9rem;color:var(--cream);font-style:italic}
+  .lb-caption-block.video-mode{text-align:left;margin-top:.9rem;padding:1rem 1rem .85rem;border:1px solid rgba(200,130,10,.14);border-radius:2px;background:linear-gradient(180deg,rgba(16,12,7,.86),rgba(10,8,4,.76))}
+  .lb-video-head{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-bottom:.7rem}
+  .lb-video-desc{font-size:.92rem;line-height:1.55;color:var(--cream);font-style:italic}
   .lb-meta{font-size:.7rem;color:var(--smoke);margin-top:.2rem}
+  .lb-caption-block.video-mode .lb-meta{margin-top:.75rem;padding-top:.7rem;border-top:1px solid rgba(200,130,10,.1)}
+  .lb-caption-block.video-mode .lb-photo-tags{margin-top:0}
   .lightbox-reactions{display:flex;gap:.5rem;align-items:center;margin-top:.5rem}
   .lb-rbtn{background:none;border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.3rem .65rem;cursor:pointer;border-radius:1px;font-size:.82rem;transition:all .2s;display:flex;align-items:center;gap:.3rem}
   .lb-rbtn:hover{border-color:rgba(200,130,10,.5)}
@@ -1116,10 +1121,11 @@
       <div id="lbVideoWrap" class="lightbox-video-wrap" style="display:none">
         <iframe id="lbVideoFrame" src="" title="Vídeo do YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
       </div>
-      <div class="lb-caption-block">
-        <p id="lbCaption"></p>
-        <div class="lb-meta" id="lbMeta"></div>
+      <div class="lb-caption-block" id="lbCaptionBlock">
+        <div class="lb-video-head" id="lbVideoHead"></div>
+        <p id="lbCaption" class="lb-video-desc"></p>
         <div class="lb-photo-tags" id="lbPhotoTags"></div>
+        <div class="lb-meta" id="lbMeta"></div>
         <div class="lightbox-reactions" id="lbReactions"></div>
       </div>
     </div>
@@ -3463,17 +3469,21 @@ window.openLightbox = async id => {
   const imgEl = document.getElementById('lbImg');
   const videoWrap = document.getElementById('lbVideoWrap');
   const videoFrame = document.getElementById('lbVideoFrame');
+  const captionBlock = document.getElementById('lbCaptionBlock');
+  const videoHeadEl = document.getElementById('lbVideoHead');
   if (mediaType === 'youtube' && p.videoId) {
     imgEl.style.display = 'none';
     imgEl.src = '';
     videoWrap.style.display = 'block';
     videoFrame.src = p.embedUrl || getYoutubeEmbedUrl(p.videoId);
+    captionBlock.classList.add('video-mode');
   } else {
     videoWrap.style.display = 'none';
     videoFrame.src = '';
     imgEl.style.display = 'block';
     imgEl.src = p.url;
     imgEl.alt = p.caption || '';
+    captionBlock.classList.remove('video-mode');
   }
 
   // Caption + edit button
@@ -3484,7 +3494,8 @@ window.openLightbox = async id => {
   const videoCredit = mediaType === 'youtube' && p.addedBy
     ? `<div class="lb-video-credit">Pedrada sugerida por <strong>${p.addedBy}</strong></div>`
     : '';
-  captionEl.innerHTML = `${videoCredit}${p.caption || ''}${editHtml}`;
+  videoHeadEl.innerHTML = mediaType === 'youtube' ? videoCredit : '';
+  captionEl.innerHTML = `${p.caption || ''}${editHtml}`;
 
   document.getElementById('lbMeta').textContent = `${p.addedBy||''} · ${p.date||''}`;
 
