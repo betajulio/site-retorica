@@ -1863,12 +1863,14 @@ function renderSuggestions() {
     const rankClass = i < 3 ? ` rank-${i+1}` : '';
     const trophy    = i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
 
-    // Lógica de Empate para o Top 3
+    // Só marca empate quando outra música disputa a mesma posição no topo.
     let isTie = false;
     if (i < 3) {
       isTie = sorted.some((other, idx) => {
         if (idx === i) return false;
-        return getSuggestionScore(other.data) === score && (other.data.likes || 0) === (s.likes || 0);
+        if (idx >= 3) return false;
+        return getSuggestionScore(other.data) === score
+          && (other.data.likes || 0) === (s.likes || 0);
       });
     }
 
