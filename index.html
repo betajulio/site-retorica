@@ -268,6 +268,22 @@
   /* TOAST */
   .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 32px rgba(0,0,0,.5)}
   .toast.show{transform:translateY(0);opacity:1}
+  .coin-reward{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,4,2,.58);backdrop-filter:blur(8px);z-index:10002;opacity:0;pointer-events:none;transition:opacity .28s ease;padding:1.2rem}
+  .coin-reward.show{opacity:1;pointer-events:auto}
+  .coin-reward-panel{width:min(92vw,420px);padding:1.35rem 1.2rem 1.15rem;border:1px solid rgba(232,168,32,.3);background:linear-gradient(165deg,rgba(34,22,10,.96),rgba(11,9,5,.98));box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 0 1px rgba(232,168,32,.08) inset;text-align:center;transform:translateY(18px) scale(.94);transition:transform .34s cubic-bezier(.34,1.56,.64,1);overflow:hidden;position:relative}
+  .coin-reward.show .coin-reward-panel{transform:translateY(0) scale(1)}
+  .coin-reward-panel::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top,rgba(232,168,32,.18),transparent 42%);pointer-events:none}
+  .coin-burst{position:relative;width:94px;height:94px;margin:0 auto .95rem;display:grid;place-items:center}
+  .coin-burst::before,.coin-burst::after{content:'';position:absolute;inset:10px;border-radius:50%;border:1px solid rgba(232,168,32,.22);animation:coinPulse 2s ease infinite}
+  .coin-burst::after{inset:0;animation-delay:.45s}
+  .coin-disc{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 30%,#f7db82 0 16%,#e8a820 16% 48%,#9c5f0d 49% 100%);color:#1a1208;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.08em;box-shadow:0 0 24px rgba(232,168,32,.28)}
+  .coin-reward-title{font-family:'Cinzel',serif;font-size:1.2rem;color:var(--cream);letter-spacing:.04em}
+  .coin-reward-copy{margin-top:.45rem;color:var(--paper);font-size:.92rem;line-height:1.6}
+  .coin-reward-copy strong{color:var(--gold)}
+  .coin-reward-meta{display:flex;justify-content:center;gap:.55rem;flex-wrap:wrap;margin-top:.85rem}
+  .coin-reward-pill{display:inline-flex;align-items:center;gap:.32rem;padding:.28rem .62rem;border:1px solid rgba(232,168,32,.22);background:rgba(232,168,32,.08);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--paper)}
+  .coin-reward-close{margin-top:1rem}
+  @keyframes coinPulse{0%{transform:scale(.8);opacity:.15}70%{transform:scale(1.18);opacity:.45}100%{transform:scale(1.28);opacity:0}}
 
   /* GOOGLE BTN */
   .btn-google{display:flex;align-items:center;justify-content:center;gap:.8rem;width:100%;padding:.8rem 1.5rem;background:#fff;color:#3c3c3c;border:1px solid #ddd;border-radius:2px;font-family:'Cinzel',serif;font-size:.82rem;font-weight:700;letter-spacing:.1em;cursor:pointer;transition:background .2s,box-shadow .2s}
@@ -1154,6 +1170,21 @@
   </div>
 </div>
 
+<div class="coin-reward" id="coinReward">
+  <div class="coin-reward-panel">
+    <div class="coin-burst">
+      <div class="coin-disc">RC</div>
+    </div>
+    <div class="coin-reward-title">Parabéns!</div>
+    <div class="coin-reward-copy" id="coinRewardCopy">Você ganhou <strong>1 Retorica Coin</strong>.</div>
+    <div class="coin-reward-meta">
+      <span class="coin-reward-pill" id="coinRewardAmount">+1 RC</span>
+      <span class="coin-reward-pill" id="coinRewardStreak">🔥 Streak 1</span>
+    </div>
+    <button class="btn-ghost coin-reward-close" type="button" onclick="hideCoinReward()">Fechar</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- CONFIRM HELPER (runs before module script) -->
@@ -1248,7 +1279,7 @@ async function awardMemberDailyLogin(user) {
   const statsRef = doc(db, 'member_stats', email);
   const nowLocal = new Date().toLocaleString('pt-BR');
 
-  await runTransaction(db, async transaction => {
+  return runTransaction(db, async transaction => {
     const snap = await transaction.get(statsRef);
     const current = snap.exists() ? snap.data() : {};
     const alreadyLoggedToday = current.lastLoginKey === todayKey;
@@ -1261,7 +1292,7 @@ async function awardMemberDailyLogin(user) {
         lastSeenLocal: nowLocal,
         updatedAt: serverTimestamp()
       }, { merge: true });
-      return;
+      return { awarded: false, awardedCoins: 0, streakDays: Number(current.streakDays || 0), totalCoins: Number(current.coins || 0) };
     }
 
     const previousStreak = Number(current.streakDays || 0);
@@ -1286,7 +1317,44 @@ async function awardMemberDailyLogin(user) {
       updatedAt: serverTimestamp(),
       createdAt: current.createdAt || serverTimestamp()
     }, { merge: true });
+
+    return {
+      awarded: true,
+      awardedCoins,
+      streakDays: newStreak,
+      totalCoins: Number(current.coins || 0) + awardedCoins
+    };
   });
+}
+
+let coinRewardTimer = null;
+
+window.hideCoinReward = () => {
+  const el = document.getElementById('coinReward');
+  if (coinRewardTimer) {
+    clearTimeout(coinRewardTimer);
+    coinRewardTimer = null;
+  }
+  el?.classList.remove('show');
+};
+
+function showCoinReward({ awardedCoins = 1, streakDays = 1, totalCoins = awardedCoins } = {}) {
+  const overlay = document.getElementById('coinReward');
+  if (!overlay) return;
+  const copy = document.getElementById('coinRewardCopy');
+  const amount = document.getElementById('coinRewardAmount');
+  const streak = document.getElementById('coinRewardStreak');
+  const coinLabel = awardedCoins === 1 ? 'Retorica Coin' : 'Retorica Coin';
+
+  copy.innerHTML = `Você ganhou <strong>${awardedCoins} ${coinLabel}</strong> no login de hoje.`;
+  amount.textContent = `+${awardedCoins} RC`;
+  streak.textContent = streakDays > 1 ? `🔥 Streak ${streakDays} · Total ${totalCoins} RC` : `🎸 Total ${totalCoins} RC`;
+
+  if (coinRewardTimer) clearTimeout(coinRewardTimer);
+  overlay.classList.add('show');
+  coinRewardTimer = setTimeout(() => {
+    hideCoinReward();
+  }, 4200);
 }
 
 onAuthStateChanged(auth, async user => {
@@ -1298,7 +1366,11 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
     document.getElementById('navUserMobile').textContent = `🎸 ${firstName}`;
     if (approved) {
-      await awardMemberDailyLogin(user).catch(err => console.warn('Member score error:', err));
+      const reward = await awardMemberDailyLogin(user).catch(err => {
+        console.warn('Member score error:', err);
+        return null;
+      });
+      if (reward?.awarded) showCoinReward(reward);
       await writeLog('Login membro', `${user.displayName || ''} (${user.email})`, 'acesso');
     } else {
       await writeLog('Login visitante', `${user.displayName || ''} (${user.email})`, 'acesso');
