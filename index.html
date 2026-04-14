@@ -319,7 +319,12 @@
   .toca-badge-meta{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem}
   .toca-chip{background:rgba(200,130,10,.11);border:1px solid rgba(200,130,10,.24);color:var(--gold);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:.28rem .55rem;border-radius:999px}
   .media-pill{position:absolute;top:.65rem;left:.65rem;z-index:2;background:rgba(10,8,4,.8);border:1px solid rgba(200,130,10,.35);color:var(--gold);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.18rem .45rem;border-radius:999px;font-family:'Cinzel',serif}
+  .carousel-photo-tag{top:2rem;z-index:6}
   .media-play-badge{position:absolute;top:2.5rem;left:.65rem;z-index:2;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.15);color:var(--cream);font-size:.72rem;padding:.22rem .5rem;border-radius:999px;font-family:'Cinzel',serif;letter-spacing:.08em}
+  .carousel-media-stack{position:absolute;top:2rem;left:.65rem;z-index:6;display:flex;flex-direction:column;align-items:flex-start;gap:.35rem;pointer-events:none}
+  .carousel-media-tag{display:inline-flex;align-items:center;align-self:flex-start;flex:0 0 auto;box-sizing:border-box;width:auto;max-width:none;white-space:nowrap;background:rgba(10,8,4,.84);border:1px solid rgba(200,130,10,.35);color:var(--gold);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.22rem .62rem;border-radius:999px;font-family:'Cinzel',serif;line-height:1}
+  .carousel-media-tag.video{background:rgba(0,0,0,.72);border-color:rgba(255,255,255,.15);color:var(--cream);font-size:.72rem;letter-spacing:.08em;padding:.24rem .62rem}
+  .carousel-media-tag.credit{border-color:rgba(200,130,10,.22);font-size:.58rem;letter-spacing:.08em;padding:.18rem .46rem}
 
   /* ── LIGHTBOX ── */
   .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:8000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:1rem;opacity:0;transition:opacity .3s}
@@ -411,9 +416,9 @@
   .media-recommended-by{display:inline-flex;align-items:center;gap:.35rem;flex:0 0 auto;max-width:100%;width:fit-content;background:rgba(10,8,4,.88);border:1px solid rgba(200,130,10,.38);color:var(--gold);padding:.22rem .55rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase}
   .media-recommended-by strong{color:var(--cream);font-weight:700}
   .thumb-media-stack{position:absolute;top:.45rem;left:.45rem;z-index:6;display:flex;flex-direction:column;align-items:flex-start;gap:.28rem;pointer-events:none}
-  .thumb-media-tag{display:inline-flex;align-items:center;box-sizing:border-box;max-width:calc(100% - .9rem);width:max-content;white-space:nowrap;background:rgba(10,8,4,.84);border:1px solid rgba(200,130,10,.28);color:var(--gold);padding:.18rem .48rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;line-height:1.1}
+  .thumb-media-tag{display:inline-flex;align-items:center;align-self:flex-start;flex:0 0 auto;box-sizing:border-box;width:auto;max-width:none;white-space:nowrap;background:rgba(10,8,4,.84);border:1px solid rgba(200,130,10,.28);color:var(--gold);padding:.2rem .58rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;line-height:1}
   .thumb-media-tag.video{border-color:rgba(255,255,255,.18);color:var(--cream)}
-  .thumb-video-credit{display:inline-flex;align-items:center;box-sizing:border-box;width:max-content;max-width:calc(100% - .9rem);white-space:nowrap;background:rgba(10,8,4,.88);border:1px solid rgba(200,130,10,.22);color:var(--gold);padding:.18rem .48rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;line-height:1.1}
+  .thumb-video-credit{display:inline-flex;align-items:center;align-self:flex-start;flex:0 0 auto;box-sizing:border-box;width:auto;max-width:none;white-space:nowrap;background:rgba(10,8,4,.88);border:1px solid rgba(200,130,10,.22);color:var(--gold);padding:.2rem .58rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;line-height:1}
   .thumb-video-credit strong{color:var(--cream);font-weight:700}
   .lb-video-credit{display:inline-flex;align-items:center;gap:.35rem;background:rgba(200,130,10,.16);border:1px solid rgba(200,130,10,.32);color:var(--gold);padding:.28rem .65rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;margin-top:.45rem}
   .lb-video-credit strong{color:var(--cream);font-weight:700}
@@ -2902,11 +2907,8 @@ function renderGallery() {
       ? `<button onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
       : '';
     const mediaBadge = mediaType === 'youtube'
-      ? `<div class="media-play-badge">▶ Vídeo</div><div class="media-pill">YouTube</div>`
-      : `<div class="media-pill">Foto</div>`;
-    const creditHtml = mediaType === 'youtube' && p.addedBy
-      ? `<div class="media-recommended-by">Pedrada sugerida por <strong>${p.addedBy}</strong></div>`
-      : '';
+      ? `<div class="carousel-media-stack"><div class="carousel-media-tag">YouTube</div><div class="carousel-media-tag video">▶ Vídeo</div>${p.addedBy ? `<div class="carousel-media-tag credit">Pedrada sugerida por <strong>${p.addedBy}</strong></div>` : ''}</div>`
+      : `<div class="media-pill carousel-photo-tag">Foto</div>`;
     const statsHtml = `<div class="img-stats">
       <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
       <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
@@ -2916,7 +2918,7 @@ function renderGallery() {
       ${mediaBadge}
       ${statsHtml}
       <div class="carousel-caption">
-        <div class="carousel-caption-text"><span class="media-caption-copy">${p.caption||''}</span>${creditHtml}</div>
+        <div class="carousel-caption-text"><span class="media-caption-copy">${p.caption||''}</span></div>
         <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}</div>
       </div>
     </div>`;
