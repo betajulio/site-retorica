@@ -777,6 +777,7 @@ async function loadParticipationStats() {
   const participants = new Map();
   const aliasByName = new Map();
   const membersByName = new Map();
+  const approvedEmails = new Set(approvedSnap.docs.map(docSnap => docSnap.id.toLowerCase()));
 
   function ensureParticipant(key, seed = {}) {
     if (!participants.has(key)) participants.set(key, createParticipant({ key, ...seed }));
@@ -803,6 +804,7 @@ async function loadParticipationStats() {
   memberStatsSnap.docs.forEach(docSnap => {
     const data = docSnap.data() || {};
     const email = docSnap.id.toLowerCase();
+    if (!approvedEmails.has(email)) return;
     const participant = ensureParticipant(`email:${email}`, {
       email,
       name: data.name || nameFromEmail(email),
@@ -822,11 +824,10 @@ async function loadParticipationStats() {
   membersSnap.docs.forEach(docSnap => {
     const data = docSnap.data() || {};
     const normName = normalizeName(data.name || '');
-    const aliasKey = aliasByName.get(normName) || `name:${normName || docSnap.id}`;
-    const participant = ensureParticipant(aliasKey, {
-      name: data.name || 'Membro',
-      photo: data.photo || ''
-    });
+    const aliasKey = aliasByName.get(normName);
+    if (!aliasKey || !participants.has(aliasKey)) return;
+    const participant = participants.get(aliasKey);
+    if (data.name && !participant.name) participant.name = data.name;
     if (data.photo && !participant.photo) participant.photo = data.photo;
   });
 
@@ -834,13 +835,15 @@ async function loadParticipationStats() {
     const log = docSnap.data() || {};
     const email = (log.whoEmail || '').toLowerCase();
     const who = normalizeName(log.who || log.removedBy || log.by || '');
-    const participantKey = email
-      ? (participants.has(`email:${email}`) ? `email:${email}` : `email:${email}`)
-      : (aliasByName.get(who) || `name:${who || docSnap.id}`);
+    const participantKey = email && approvedEmails.has(email)
+      ? `email:${email}`
+      : aliasByName.get(who);
+    if (!participantKey || !participants.has(participantKey)) return;
 
-    const participant = ensureParticipant(participantKey, {
-      email,
-      name: log.who || log.removedBy || log.by || nameFromEmail(email)
+    const participant = participants.get(participantKey);
+    mergeParticipant(participant, {
+      email: approvedEmails.has(email) ? email : participant.email,
+      name: log.who || log.removedBy || log.by || participant.name
     });
 
     const category = PARTICIPATION_POINTS[log.category] !== undefined ? log.category : 'acesso';
