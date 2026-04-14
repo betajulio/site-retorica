@@ -325,6 +325,8 @@
   .carousel-media-tag{display:inline-flex;align-items:center;align-self:flex-start;flex:0 0 auto;box-sizing:border-box;width:auto;max-width:none;white-space:nowrap;background:rgba(10,8,4,.84);border:1px solid rgba(200,130,10,.35);color:var(--gold);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.22rem .62rem;border-radius:999px;font-family:'Cinzel',serif;line-height:1}
   .carousel-media-tag.video{background:rgba(0,0,0,.72);border-color:rgba(255,255,255,.15);color:var(--cream);font-size:.72rem;letter-spacing:.08em;padding:.24rem .62rem}
   .carousel-media-tag.credit{border-color:rgba(200,130,10,.22);font-size:.58rem;letter-spacing:.08em;padding:.18rem .46rem}
+  .video-portrait-frame{position:absolute;z-index:3;background:url('imagens/portrait_video.png') center/auto 100% no-repeat;pointer-events:none;opacity:.96;filter:drop-shadow(0 10px 18px rgba(0,0,0,.28))}
+  .carousel-video-frame{inset:0}
 
   /* ── LIGHTBOX ── */
   .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:8000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:1rem;opacity:0;transition:opacity .3s}
@@ -407,12 +409,23 @@
   /* GALERIA */
   .carousel-wrap{position:relative;overflow:hidden;border-radius:2px;background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.2)}
   .carousel-track{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)}
-  .carousel-slide{min-width:100%;position:relative}
+  .carousel-slide{min-width:100%;display:flex;flex-direction:column;background:rgba(5,4,2,.45)}
+  .carousel-media-stage{position:relative;background:rgba(5,4,2,.9);overflow:hidden}
+  .carousel-media-stage-video{aspect-ratio:16/9}
   .carousel-slide img{width:100%;max-height:520px;height:auto;object-fit:contain;display:block;background:rgba(5,4,2,.9)}
-  .carousel-caption{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(0deg,rgba(10,8,4,.92) 0%,transparent 100%);padding:2rem 1.5rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-end}
-  .carousel-caption-text{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.45rem .55rem;font-family:'Lora',serif;font-size:.9rem;color:var(--cream);font-style:italic;max-width:70%}
+  .carousel-media{position:relative;display:block;width:100%;height:auto}
+  .carousel-media-screen{position:absolute;inset:12.8% 21.8% 16.8% 17.8%;overflow:hidden;z-index:2;border-radius:7.5% 7.5% 9.5% 9.5% / 9% 9% 12% 12%}
+  .carousel-media-video{width:100%;height:100%;object-fit:cover;object-position:41% 34%;max-height:none;background:transparent}
+  .carousel-info-panel{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;padding:1rem 1.2rem 1.15rem;border-top:1px solid rgba(200,130,10,.12);background:linear-gradient(180deg,rgba(10,8,4,.94),rgba(10,8,4,.86))}
+  .carousel-info-main{min-width:0;display:flex;flex-direction:column;gap:.7rem;flex:1}
+  .carousel-badges-row{display:flex;flex-wrap:wrap;gap:.42rem;align-items:center}
+  .carousel-panel-tag{display:inline-flex;align-items:center;gap:.3rem;background:rgba(10,8,4,.84);border:1px solid rgba(200,130,10,.25);color:var(--gold);padding:.24rem .6rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;line-height:1}
+  .carousel-panel-tag.video{border-color:rgba(255,255,255,.16);color:var(--cream)}
+  .carousel-panel-tag.credit strong{color:var(--cream);font-weight:700}
+  .carousel-caption-text{font-family:'Lora',serif;font-size:.98rem;color:var(--cream);font-style:italic;line-height:1.45}
   .media-caption-copy{min-width:0}
-  .carousel-caption-meta{font-size:.72rem;color:var(--smoke);text-align:right}
+  .carousel-caption-meta{display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;font-size:.72rem;color:var(--smoke);text-align:right;flex-shrink:0}
+  .carousel-stats-row{display:flex;gap:.45rem;flex-wrap:wrap;justify-content:flex-end}
   .media-recommended-by{display:inline-flex;align-items:center;gap:.35rem;flex:0 0 auto;max-width:100%;width:fit-content;background:rgba(10,8,4,.88);border:1px solid rgba(200,130,10,.38);color:var(--gold);padding:.22rem .55rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase}
   .media-recommended-by strong{color:var(--cream);font-weight:700}
   .thumb-media-stack{position:absolute;top:.45rem;left:.45rem;z-index:6;display:flex;flex-direction:column;align-items:flex-start;gap:.28rem;pointer-events:none}
@@ -420,6 +433,7 @@
   .thumb-media-tag.video{border-color:rgba(255,255,255,.18);color:var(--cream)}
   .thumb-video-credit{display:inline-flex;align-items:center;align-self:flex-start;flex:0 0 auto;box-sizing:border-box;width:auto;max-width:none;white-space:nowrap;background:rgba(10,8,4,.88);border:1px solid rgba(200,130,10,.22);color:var(--gold);padding:.2rem .58rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;line-height:1}
   .thumb-video-credit strong{color:var(--cream);font-weight:700}
+  .thumb-video-frame{inset:0;opacity:1;background-size:100% 100%;background-position:center center}
   .lb-video-credit{display:inline-flex;align-items:center;gap:.35rem;background:rgba(200,130,10,.16);border:1px solid rgba(200,130,10,.32);color:var(--gold);padding:.28rem .65rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;margin-top:.45rem}
   .lb-video-credit strong{color:var(--cream);font-weight:700}
   .carousel-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(10,8,4,.7);border:1px solid rgba(200,130,10,.3);color:var(--gold);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.1rem;transition:all .2s;display:flex;align-items:center;justify-content:center;z-index:10}
@@ -434,6 +448,8 @@
   .gallery-thumb{position:relative;aspect-ratio:1;overflow:hidden;border:1px solid rgba(200,130,10,.15);border-radius:1px;cursor:pointer;transition:border-color .2s}
   .gallery-thumb:hover{border-color:rgba(200,130,10,.5)}
   .gallery-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+  .gallery-thumb-media{position:absolute;inset:0;width:100%;height:100%}
+  .gallery-thumb-media-video{inset:14% 22% 24% 17%;width:auto;height:auto;object-fit:cover;object-position:41% 34%;z-index:2}
   .gallery-thumb:hover img{transform:scale(1.05)}
   .gallery-thumb-active{border-color:var(--amber)!important;box-shadow:0 0 0 2px rgba(200,130,10,.3)}
   .gallery-thumb-del{position:absolute;top:.3rem;right:.3rem;background:rgba(10,8,4,.8);border:none;color:var(--rust);cursor:pointer;border-radius:50%;width:22px;height:22px;font-size:.7rem;display:none;align-items:center;justify-content:center;transition:all .2s}
@@ -564,14 +580,19 @@
 
     /* Carousel */
     .carousel-slide img{max-height:320px}
+    .carousel-video-frame{inset:0}
+    .carousel-media-screen{inset:13.6% 22.4% 17.4% 17.8%;border-radius:7.5% 7.5% 9.5% 9.5% / 9% 9% 12% 12%}
     .carousel-btn{width:36px;height:36px;font-size:.9rem}
     .carousel-prev{left:.4rem}
     .carousel-next{right:.4rem}
-    .carousel-caption{padding:1.2rem .8rem .8rem}
-    .carousel-caption-text{font-size:.8rem;max-width:60%}
-    .carousel-caption-meta{font-size:.65rem}
+    .carousel-info-panel{padding:.85rem .8rem 1rem;flex-direction:column;align-items:flex-start}
+    .carousel-caption-text{font-size:.84rem}
+    .carousel-caption-meta{font-size:.65rem;align-items:flex-start;text-align:left;width:100%}
+    .carousel-stats-row{justify-content:flex-start}
     .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.4rem}
     .gallery-thumb-del{display:flex} /* always visible on mobile (no hover) */
+    .gallery-thumb-media-video{inset:15% 23% 25% 18%}
+    .thumb-video-frame{inset:0;background-size:100% 100%;background-position:center center}
 
     /* Lightbox */
     .lightbox-inner{flex-direction:column;max-height:92vh;overflow-y:auto;justify-content:flex-start}
@@ -594,6 +615,7 @@
     .hero-title{font-size:clamp(2.4rem,16vw,3.2rem)!important}
     .members-grid{grid-template-columns:1fr 1fr}
     .carousel-slide img{max-height:240px}
+    .carousel-media-screen{inset:14.2% 22.6% 18.3% 19%;border-radius:7.5% 7.5% 9.5% 9.5% / 9% 9% 12% 12%}
   }
 
   /* ── INSTALL POPUP ── */
@@ -2906,20 +2928,38 @@ function renderGallery() {
     const del = isMember
       ? `<button onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
       : '';
-    const mediaBadge = mediaType === 'youtube'
-      ? `<div class="carousel-media-stack"><div class="carousel-media-tag">YouTube</div><div class="carousel-media-tag video">▶ Vídeo</div>${p.addedBy ? `<div class="carousel-media-tag credit">Pedrada sugerida por <strong>${p.addedBy}</strong></div>` : ''}</div>`
-      : `<div class="media-pill carousel-photo-tag">Foto</div>`;
-    const statsHtml = `<div class="img-stats">
+    const videoFrame = mediaType === 'youtube'
+      ? `<div class="video-portrait-frame carousel-video-frame" aria-hidden="true"></div>`
+      : '';
+    const contentTags = (p.tags || []).filter(tag => tag && tag !== 'Todas');
+    const panelTags = [];
+    if (mediaType === 'youtube' && p.addedBy) panelTags.push(`<span class="carousel-panel-tag credit">Pedrada sugerida por <strong>${p.addedBy}</strong></span>`);
+    if (mediaType === 'youtube') {
+      panelTags.push('<span class="carousel-panel-tag">YouTube</span>');
+      panelTags.push('<span class="carousel-panel-tag video">▶ Vídeo</span>');
+    } else {
+      panelTags.push('<span class="carousel-panel-tag">Foto</span>');
+    }
+    contentTags.forEach(tag => panelTags.push(`<span class="carousel-panel-tag">${tag}</span>`));
+    const statsHtml = `<div class="carousel-stats-row">
       <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
-      <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
+      <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0}</span>
+      <span class="stat-badge"><span class="stat-icon">👎</span> ${dislikes||0}</span>
     </div>`;
+    const mediaHtml = mediaType === 'youtube'
+      ? `<div class="carousel-media-screen"><img class="carousel-media carousel-media-video" src="${thumbUrl}" alt="${p.caption||''}" loading="lazy"></div>`
+      : `<img class="carousel-media" src="${thumbUrl}" alt="${p.caption||''}" loading="lazy">`;
     return `<div class="carousel-slide" onclick="openLightbox('${id}')" style="cursor:pointer">
-      <img src="${thumbUrl}" alt="${p.caption||''}" loading="lazy">
-      ${mediaBadge}
-      ${statsHtml}
-      <div class="carousel-caption">
-        <div class="carousel-caption-text"><span class="media-caption-copy">${p.caption||''}</span></div>
-        <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}</div>
+      <div class="carousel-media-stage${mediaType === 'youtube' ? ' carousel-media-stage-video' : ''}">
+        ${mediaHtml}
+        ${videoFrame}
+      </div>
+      <div class="carousel-info-panel">
+        <div class="carousel-info-main">
+          <div class="carousel-badges-row">${panelTags.join('')}</div>
+          <div class="carousel-caption-text"><span class="media-caption-copy">${p.caption||''}</span></div>
+        </div>
+        <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}${statsHtml}</div>
       </div>
     </div>`;
   }).join('');
@@ -2947,14 +2987,18 @@ function renderGallery() {
         ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
         : '';
       const mediaBadge = mediaType === 'youtube'
-        ? `<div class="thumb-media-stack"><div class="thumb-media-tag">YouTube</div><div class="thumb-media-tag video">Vídeo</div>${p.addedBy ? `<div class="thumb-video-credit"><strong>${getFirstName(p.addedBy)}</strong></div>` : ''}</div>`
+        ? `<div class="thumb-media-stack">${p.addedBy ? `<div class="thumb-video-credit"><strong>${getFirstName(p.addedBy)}</strong></div>` : ''}<div class="thumb-media-tag">YouTube</div><div class="thumb-media-tag video">Vídeo</div></div>`
         : `<div class="media-pill">Foto</div>`;
+      const videoFrame = mediaType === 'youtube'
+        ? `<div class="video-portrait-frame thumb-video-frame" aria-hidden="true"></div>`
+        : '';
       const statsHtml = `<div class="img-stats">
         <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
         <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
       </div>`;
       return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
-        <img src="${thumbUrl}" alt="${p.caption||''}" loading="lazy">
+        <img class="gallery-thumb-media${mediaType === 'youtube' ? ' gallery-thumb-media-video' : ''}" src="${thumbUrl}" alt="${p.caption||''}" loading="lazy">
+        ${videoFrame}
         ${mediaBadge}
         ${statsHtml}
         ${del}
