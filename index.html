@@ -58,6 +58,9 @@
   .nav-links a:hover{color:var(--gold)}
   .nav-auth{display:flex;align-items:center;gap:.8rem}
   .nav-user{font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif;letter-spacing:.08em}
+  .coin-balance{display:none;align-items:center;gap:.38rem;padding:.28rem .62rem;border:1px solid rgba(200,130,10,.2);background:rgba(200,130,10,.08);border-radius:999px;color:var(--gold);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.04em}
+  .coin-balance img{width:18px;height:18px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.28))}
+  .coin-balance strong{font-family:'Bebas Neue',sans-serif;font-size:1rem;font-weight:400;letter-spacing:.04em;color:#ffd25c}
 
   /* HERO */
   #hero{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;padding-top:72px}
@@ -537,7 +540,7 @@
   .nav-mobile-menu a{color:var(--paper);text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;padding:1rem 2rem;border-bottom:1px solid rgba(200,130,10,.08);transition:color .2s;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
   .nav-mobile-menu a:last-child{border-bottom:none}
   .nav-mobile-menu a:hover{color:var(--gold);background:rgba(200,130,10,.05)}
-  .nav-mobile-auth{padding:.8rem 2rem 1rem;display:flex;gap:.8rem;align-items:center;border-top:1px solid rgba(200,130,10,.15);margin-top:.3rem}
+  .nav-mobile-auth{padding:.8rem 2rem 1rem;display:flex;gap:.8rem;align-items:center;border-top:1px solid rgba(200,130,10,.15);margin-top:.3rem;flex-wrap:wrap}
 
   /* ── MOBILE ── */
   @media(max-width:768px){
@@ -547,6 +550,8 @@
     .nav-hamburger{display:flex}
     nav{padding:0 1.2rem}
     .nav-logo{font-size:1.15rem}
+    .coin-balance{font-size:.68rem;padding:.24rem .56rem}
+    .coin-balance img{width:16px;height:16px}
 
     /* Hero */
     #hero{height:100svh;padding-top:78px}
@@ -784,6 +789,7 @@
   </ul>
   <div class="nav-auth">
     <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
+    <span class="coin-balance" id="coinBalance" style="display:none"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></span>
     <button class="btn-ghost btn-sm" id="loginBtn" onclick="openLogin()">Entrar</button>
     <button class="btn-ghost btn-sm member-only" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
   </div>
@@ -805,6 +811,7 @@
   <a href="logs.html" id="adminLinkMobile" class="member-admin-only" style="color:var(--amber)">⚙ Portal Admin</a>
   <div class="nav-mobile-auth">
     <span id="navUserMobile" style="display:none;font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif">🎸 Membro</span>
+    <span class="coin-balance" id="coinBalanceMobile" style="display:none"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValueMobile">0</strong></span>
     <button class="btn-ghost btn-sm" id="loginBtnMobile" onclick="openLogin();closeMobileMenu()">Entrar</button>
     <button class="btn-ghost btn-sm" id="logoutBtnMobile" onclick="doLogout();closeMobileMenu()" style="display:none">Sair</button>
   </div>
@@ -1243,6 +1250,7 @@ let pollsLoaded = false;
 const MEMBER_COIN_BASE = 10;
 const MEMBER_STREAK_BONUS_STEP = 2;
 const MEMBER_STREAK_BONUS_CAP = 10;
+let memberCoinBalance = 0;
 
 // ─── AUTH ──────────────────────────────────────────────────────────
 // Visitantes com Google login podem interagir (likes, comentários).
@@ -1327,6 +1335,41 @@ async function awardMemberDailyLogin(user) {
   });
 }
 
+async function syncMemberCoinBalance(user, fallbackCoins = null) {
+  const email = (user?.email || '').toLowerCase();
+  if (!email) {
+    memberCoinBalance = 0;
+    updateCoinBalanceUI();
+    return;
+  }
+
+  if (typeof fallbackCoins === 'number') {
+    memberCoinBalance = fallbackCoins;
+    updateCoinBalanceUI();
+  }
+
+  try {
+    const snap = await getDoc(doc(db, 'member_stats', email));
+    memberCoinBalance = snap.exists() ? Number(snap.data().coins || 0) : (typeof fallbackCoins === 'number' ? fallbackCoins : 0);
+  } catch (err) {
+    console.warn('Coin balance load error:', err);
+    if (typeof fallbackCoins !== 'number') memberCoinBalance = 0;
+  }
+  updateCoinBalanceUI();
+}
+
+function updateCoinBalanceUI() {
+  const show = isLoggedIn && isMember;
+  const desktop = document.getElementById('coinBalance');
+  const mobile = document.getElementById('coinBalanceMobile');
+  const desktopValue = document.getElementById('coinBalanceValue');
+  const mobileValue = document.getElementById('coinBalanceValueMobile');
+  if (desktopValue) desktopValue.textContent = String(memberCoinBalance || 0);
+  if (mobileValue) mobileValue.textContent = String(memberCoinBalance || 0);
+  if (desktop) desktop.style.display = show ? 'inline-flex' : 'none';
+  if (mobile) mobile.style.display = show ? 'inline-flex' : 'none';
+}
+
 let coinRewardTimer = null;
 
 window.hideCoinReward = () => {
@@ -1370,9 +1413,12 @@ onAuthStateChanged(auth, async user => {
         console.warn('Member score error:', err);
         return null;
       });
+      await syncMemberCoinBalance(user, typeof reward?.totalCoins === 'number' ? reward.totalCoins : null);
       if (reward?.awarded) showCoinReward(reward);
       await writeLog('Login membro', `${user.displayName || ''} (${user.email})`, 'acesso');
     } else {
+      memberCoinBalance = 0;
+      updateCoinBalanceUI();
       await writeLog('Login visitante', `${user.displayName || ''} (${user.email})`, 'acesso');
     }
     // Esconde modal de negação se estiver aberto
@@ -1380,6 +1426,8 @@ onAuthStateChanged(auth, async user => {
   } else {
     isLoggedIn = false;
     isMember   = false;
+    memberCoinBalance = 0;
+    updateCoinBalanceUI();
   }
   applyAuth();
   if (isMember) {
@@ -1412,6 +1460,7 @@ function applyAuth() {
   document.getElementById('logoutBtnMobile').style.display = isLoggedIn ? '' : 'none';
   document.getElementById('navUserMobile').style.display   = isLoggedIn ? '' : 'none';
   document.getElementById('suggestionsNotice').style.display = isLoggedIn ? 'none' : '';
+  updateCoinBalanceUI();
 
   if (isLoggedIn) {
     const userName = auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ') || auth.currentUser?.email?.split('@')[0] || 'Membro';
