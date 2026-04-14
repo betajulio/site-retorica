@@ -58,9 +58,9 @@
   .nav-links a:hover{color:var(--gold)}
   .nav-auth{display:flex;align-items:center;gap:.8rem}
   .nav-user{font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif;letter-spacing:.08em}
-  .coin-balance{display:none;align-items:center;gap:.38rem;padding:.28rem .62rem;border:1px solid rgba(200,130,10,.2);background:rgba(200,130,10,.08);border-radius:999px;color:var(--gold);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.04em}
-  .coin-balance img{width:18px;height:18px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.28))}
-  .coin-balance strong{font-family:'Bebas Neue',sans-serif;font-size:1rem;font-weight:400;letter-spacing:.04em;color:#ffd25c}
+  .coin-balance{display:none;align-items:center;justify-content:center;gap:.38rem;padding:.28rem .62rem;border:1px solid rgba(200,130,10,.2);background:rgba(200,130,10,.08);border-radius:999px;color:var(--gold);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.04em;line-height:1;white-space:nowrap}
+  .coin-balance img{display:block;width:18px;height:18px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.28));flex:0 0 auto}
+  .coin-balance strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1rem;font-weight:400;letter-spacing:.04em;color:#ffd25c;line-height:1}
 
   /* HERO */
   #hero{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;padding-top:72px}
@@ -633,10 +633,11 @@
     .thumb-video-frame{inset:0;background-size:var(--vt-frame-w) var(--vt-frame-h);background-position:center center}
 
     /* Lightbox */
-    .lightbox-inner{flex-direction:column;max-height:92vh;overflow-y:auto;justify-content:flex-start}
+    .lightbox{padding:.6rem}
+    .lightbox-inner{flex-direction:column;max-height:94vh;overflow-y:auto;justify-content:flex-start;gap:.8rem;max-width:98vw}
     .lb-img-panel{max-width:100%;max-height:none;flex:none;padding-right:0;margin-bottom:1rem}
     .lb-img-panel .lightbox-img{max-height:50vh}
-    .lightbox-video-wrap{width:min(100%,92vw);aspect-ratio:16/9}
+    .lightbox-video-wrap{width:min(100%,96vw);aspect-ratio:16/9}
     .lb-caption-block.video-mode{padding:.9rem .85rem .8rem}
     .lb-comments-wrap{width:100%;max-height:none;flex:none;border:1px solid rgba(200,130,10,.1);border-top:2px solid rgba(200,130,10,.2)}
 

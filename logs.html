@@ -164,6 +164,9 @@
   .admin-tools-sub{font-size:.77rem;color:#d6b59a;max-width:720px;line-height:1.6}
   .admin-tools-grid{display:flex;gap:.8rem;flex-wrap:wrap}
   .admin-tools-warning{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .6rem;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:#fca5a5;font-size:.67rem;letter-spacing:.12em;text-transform:uppercase;font-family:'Cinzel',serif}
+  .coin-inline{display:inline-flex;align-items:center;gap:.38rem;line-height:1;white-space:nowrap}
+  .coin-inline img{display:block;width:16px;height:16px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.22));flex:0 0 auto}
+  .coin-inline strong,.coin-inline b{line-height:1}
 
   /* TOAST */
   .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1)}
@@ -696,7 +699,7 @@ function renderParticipationStats(participants = []) {
         <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Meta definida: ${PARTICIPATION_DAILY_GOAL} login por dia</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Retorica Coin em circulação</div>
+        <div class="metric-label"><span class="coin-inline"><img src="imagens/coin.png" alt="Retorica Coin">Retorica Coin em circulação</span></div>
         <div class="metric-value gold">${totalCoins}</div>
         <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Cada login diário rende ${PARTICIPATION_BASE_COINS} Retorica Coin + bônus de sequência</div>
       </div>
@@ -719,7 +722,7 @@ function renderParticipationStats(participants = []) {
       </div>
       <div class="podium-score">
         <span class="score-pill">Score <strong>${member.score}</strong></span>
-        <span class="score-pill">🪙 ${member.coins} RC</span>
+        <span class="score-pill"><span class="coin-inline"><img src="imagens/coin.png" alt="Retorica Coin">${member.coins} RC</span></span>
         <span class="score-pill">🔥 ${member.streakDays}</span>
       </div>
     </div>`).join('');
@@ -746,12 +749,12 @@ function renderParticipationStats(participants = []) {
         </div>
         <div class="member-stat-strip">
           <div class="member-mini-stat"><strong>${member.score}</strong><span>Score</span></div>
-          <div class="member-mini-stat"><strong>${member.coins}</strong><span>Retorica Coin</span></div>
+          <div class="member-mini-stat"><strong>${member.coins}</strong><span class="coin-inline"><img src="imagens/coin.png" alt="Retorica Coin">Retorica Coin</span></div>
           <div class="member-mini-stat"><strong>${member.streakDays}</strong><span>Streak</span></div>
           <div class="member-mini-stat"><strong>${member.totalActions}</strong><span>Ações</span></div>
         </div>
         <div class="member-part-sub">Último login com recompensa: ${lastSeen}</div>
-        <div class="member-part-sub">Recorde de sequência: ${member.longestStreak} · Último ganho: ${member.lastAwardCoins} Retorica Coin</div>
+        <div class="member-part-sub">Recorde de sequência: ${member.longestStreak} · Último ganho: <span class="coin-inline"><img src="imagens/coin.png" alt="Retorica Coin">${member.lastAwardCoins} Retorica Coin</span></div>
         <div class="member-cat-grid">${catMarkup}</div>
       </article>`;
   }).join('');
@@ -759,7 +762,7 @@ function renderParticipationStats(participants = []) {
   el.innerHTML = `
     <div class="detail-section participation-shell">
       <div class="detail-title">🏆 Participação dos Membros <span style="font-size:.68rem;color:var(--smoke);font-style:italic;font-weight:400;letter-spacing:.04em">Atualizado em ${updatedLabel}</span></div>
-      <div class="participation-note">Score calculado por Retorica Coin de presença, streak de login e volume de interação nas áreas do site.</div>
+      <div class="participation-note">Score calculado por <span class="coin-inline"><img src="imagens/coin.png" alt="Retorica Coin">Retorica Coin</span> de presença, streak de login e volume de interação nas áreas do site.</div>
       ${summaryCards}
       <div class="podium-grid">${podiumCards}</div>
       <div class="member-part-grid">${memberCards}</div>
