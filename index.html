@@ -3031,9 +3031,15 @@ function extractExifDate(file) {
 }
 
 async function extractPhotoTakenDate(file) {
-  const exifDate = await extractExifDate(file);
+  let exifDate = null;
+  try {
+    exifDate = await extractExifDate(file);
+  } catch {
+    exifDate = null;
+  }
   const fallbackDate = file?.lastModified ? new Date(file.lastModified) : new Date();
-  const chosenDate = exifDate || fallbackDate;
+  const safeFallback = Number.isNaN(fallbackDate.getTime()) ? new Date() : fallbackDate;
+  const chosenDate = exifDate && !Number.isNaN(exifDate.getTime()) ? exifDate : safeFallback;
   return {
     date: chosenDate,
     label: formatPhotoDate(chosenDate),
@@ -3057,9 +3063,9 @@ window.uploadGalleryPhotos = async () => {
   for (let i = 0; i < galleryFilesBuf.length; i++) {
     const file = galleryFilesBuf[i];
     const origSize = file.size;
-    const sourceDate = await extractPhotoTakenDate(file);
     totalOrigKB += Math.round(origSize / 1024);
     showToast(`⏳ Preparando ${i+1}/${total}: ${file.name}`, { persist: true });
+    const sourceDate = await extractPhotoTakenDate(file);
 
     let blob, compSize;
     try {
@@ -3112,7 +3118,8 @@ window.uploadGalleryPhotos = async () => {
     }).catch(err => {
       failedCount += 1;
       console.error('Gallery upload error:', err);
-      showToast(`⚠ Falha ao enviar ${file.name}. Continuando...`);
+      const detail = err?.code || err?.message || 'erro desconhecido';
+      showToast(`⚠ Falha ao enviar ${file.name}: ${detail}`);
     });
   }
 
