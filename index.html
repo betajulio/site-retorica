@@ -409,7 +409,10 @@
   .carousel-caption-meta{font-size:.72rem;color:var(--smoke);text-align:right}
   .media-recommended-by{display:inline-flex;align-items:center;gap:.35rem;max-width:100%;width:fit-content;background:rgba(10,8,4,.88);border:1px solid rgba(200,130,10,.38);color:var(--gold);padding:.22rem .55rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;margin-top:.5rem}
   .media-recommended-by strong{color:var(--cream);font-weight:700}
-  .thumb-video-credit{position:absolute;left:.45rem;right:.45rem;bottom:.45rem;z-index:6;background:linear-gradient(180deg,rgba(10,8,4,.1),rgba(10,8,4,.88));border:1px solid rgba(200,130,10,.22);color:var(--gold);padding:.28rem .45rem;border-radius:10px;font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;text-align:left}
+  .thumb-media-stack{position:absolute;top:.45rem;left:.45rem;z-index:6;display:flex;flex-direction:column;align-items:flex-start;gap:.28rem;pointer-events:none}
+  .thumb-media-tag{display:inline-flex;align-items:center;max-width:calc(100% - .9rem);width:fit-content;background:rgba(10,8,4,.84);border:1px solid rgba(200,130,10,.28);color:var(--gold);padding:.18rem .42rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;line-height:1.1}
+  .thumb-media-tag.video{border-color:rgba(255,255,255,.18);color:var(--cream)}
+  .thumb-video-credit{display:inline-flex;align-items:center;width:fit-content;max-width:calc(100% - .9rem);background:rgba(10,8,4,.88);border:1px solid rgba(200,130,10,.22);color:var(--gold);padding:.18rem .42rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;line-height:1.1}
   .thumb-video-credit strong{color:var(--cream);font-weight:700}
   .lb-video-credit{display:inline-flex;align-items:center;gap:.35rem;background:rgba(200,130,10,.16);border:1px solid rgba(200,130,10,.32);color:var(--gold);padding:.28rem .65rem;border-radius:999px;font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;margin-top:.45rem}
   .lb-video-credit strong{color:var(--cream);font-weight:700}
@@ -2942,11 +2945,8 @@ function renderGallery() {
         ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
         : '';
       const mediaBadge = mediaType === 'youtube'
-        ? `<div class="media-play-badge">▶ Vídeo</div><div class="media-pill">YouTube</div>`
+        ? `<div class="thumb-media-stack"><div class="thumb-media-tag">YouTube</div><div class="thumb-media-tag video">Vídeo</div>${p.addedBy ? `<div class="thumb-video-credit"><strong>${getFirstName(p.addedBy)}</strong></div>` : ''}</div>`
         : `<div class="media-pill">Foto</div>`;
-      const thumbCredit = mediaType === 'youtube' && p.addedBy
-        ? `<div class="thumb-video-credit"><strong>${getFirstName(p.addedBy)}</strong></div>`
-        : '';
       const statsHtml = `<div class="img-stats">
         <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
         <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
@@ -2954,7 +2954,6 @@ function renderGallery() {
       return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
         <img src="${thumbUrl}" alt="${p.caption||''}" loading="lazy">
         ${mediaBadge}
-        ${thumbCredit}
         ${statsHtml}
         ${del}
       </div>`;
