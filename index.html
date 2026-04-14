@@ -1209,6 +1209,9 @@ let setlistLoaded = false;
 let repertorioLoaded = false;
 let suggestionsLoaded = false;
 let pollsLoaded = false;
+const MEMBER_COIN_BASE = 10;
+const MEMBER_STREAK_BONUS_STEP = 2;
+const MEMBER_STREAK_BONUS_CAP = 10;
 
 // ─── AUTH ──────────────────────────────────────────────────────────
 // Visitantes com Google login podem interagir (likes, comentários).
@@ -1217,6 +1220,73 @@ let pollsLoaded = false;
 async function isEmailApproved(email) {
   const snap = await getDoc(doc(db, 'approved_emails', email.toLowerCase()));
   return snap.exists();
+}
+
+function getBrazilDateKey(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+}
+
+function getBrazilYesterdayKey() {
+  const yesterday = new Date();
+  yesterday.setHours(12, 0, 0, 0);
+  yesterday.setDate(yesterday.getDate() - 1);
+  return getBrazilDateKey(yesterday);
+}
+
+async function awardMemberDailyLogin(user) {
+  const email = (user?.email || '').toLowerCase();
+  if (!email) return;
+
+  const todayKey = getBrazilDateKey();
+  const yesterdayKey = getBrazilYesterdayKey();
+  const memberName = user.displayName || user.email.split('@')[0] || 'Membro';
+  const statsRef = doc(db, 'member_stats', email);
+  const nowLocal = new Date().toLocaleString('pt-BR');
+
+  await runTransaction(db, async transaction => {
+    const snap = await transaction.get(statsRef);
+    const current = snap.exists() ? snap.data() : {};
+    const alreadyLoggedToday = current.lastLoginKey === todayKey;
+
+    if (alreadyLoggedToday) {
+      transaction.set(statsRef, {
+        email,
+        name: memberName,
+        lastSeenAt: serverTimestamp(),
+        lastSeenLocal: nowLocal,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      return;
+    }
+
+    const previousStreak = Number(current.streakDays || 0);
+    const newStreak = current.lastLoginKey === yesterdayKey ? previousStreak + 1 : 1;
+    const streakBonus = Math.min((newStreak - 1) * MEMBER_STREAK_BONUS_STEP, MEMBER_STREAK_BONUS_CAP);
+    const awardedCoins = MEMBER_COIN_BASE + streakBonus;
+    const recentLoginKeys = Array.isArray(current.recentLoginKeys) ? current.recentLoginKeys : [];
+    const mergedRecentKeys = [todayKey, ...recentLoginKeys.filter(key => key !== todayKey)].slice(0, 14);
+
+    transaction.set(statsRef, {
+      email,
+      name: memberName,
+      coins: Number(current.coins || 0) + awardedCoins,
+      streakDays: newStreak,
+      longestStreak: Math.max(Number(current.longestStreak || 0), newStreak),
+      totalLoginDays: Number(current.totalLoginDays || 0) + 1,
+      lastAwardCoins: awardedCoins,
+      lastLoginKey: todayKey,
+      recentLoginKeys: mergedRecentKeys,
+      lastSeenAt: serverTimestamp(),
+      lastSeenLocal: nowLocal,
+      updatedAt: serverTimestamp(),
+      createdAt: current.createdAt || serverTimestamp()
+    }, { merge: true });
+  });
 }
 
 onAuthStateChanged(auth, async user => {
@@ -1228,6 +1298,7 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
     document.getElementById('navUserMobile').textContent = `🎸 ${firstName}`;
     if (approved) {
+      await awardMemberDailyLogin(user).catch(err => console.warn('Member score error:', err));
       await writeLog('Login membro', `${user.displayName || ''} (${user.email})`, 'acesso');
     } else {
       await writeLog('Login visitante', `${user.displayName || ''} (${user.email})`, 'acesso');

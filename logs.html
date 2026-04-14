@@ -89,6 +89,38 @@
   .top-table td:first-child{color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:1rem;text-align:center;width:32px}
   .top-table td:nth-child(2){color:var(--cream)}
   .top-table td:last-child{text-align:right;color:var(--smoke);font-size:.75rem}
+  .participation-shell{margin-bottom:2.2rem}
+  .participation-note{font-size:.76rem;color:var(--smoke);font-style:italic;margin:-.35rem 0 1rem}
+  .podium-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem;margin-bottom:1rem}
+  .podium-card{position:relative;padding:1.1rem 1rem 1rem;border:1px solid rgba(200,130,10,.16);background:linear-gradient(145deg,rgba(42,26,8,.78),rgba(17,13,8,.94));overflow:hidden}
+  .podium-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(232,168,32,.12),transparent 44%);pointer-events:none}
+  .podium-card.top-1{border-color:rgba(232,168,32,.3)}
+  .podium-card.top-2{border-color:rgba(180,180,190,.26)}
+  .podium-card.top-3{border-color:rgba(181,101,29,.3)}
+  .podium-rank{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.08em;color:var(--gold);margin-bottom:.7rem}
+  .podium-profile{display:flex;align-items:center;gap:.8rem}
+  .podium-avatar,.member-part-avatar{width:58px;height:58px;border-radius:50%;border:1px solid rgba(200,130,10,.22);background:linear-gradient(135deg,rgba(200,130,10,.14),rgba(20,16,10,.9));display:grid;place-items:center;overflow:hidden;color:var(--gold);font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.08em}
+  .podium-avatar img,.member-part-avatar img{width:100%;height:100%;object-fit:cover}
+  .podium-name{font-family:'Cinzel',serif;font-size:.96rem;color:var(--cream)}
+  .podium-meta{font-size:.72rem;color:var(--smoke);margin-top:.16rem}
+  .podium-score{margin-top:.85rem;display:flex;gap:.7rem;flex-wrap:wrap}
+  .score-pill{display:inline-flex;align-items:center;gap:.32rem;padding:.24rem .58rem;border:1px solid rgba(200,130,10,.22);background:rgba(200,130,10,.08);font-size:.7rem;color:var(--paper);letter-spacing:.06em;text-transform:uppercase}
+  .member-part-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+  .member-part-card{padding:1rem;border:1px solid rgba(200,130,10,.12);background:linear-gradient(145deg,rgba(29,21,12,.86),rgba(12,10,6,.94))}
+  .member-part-head{display:flex;gap:.85rem;align-items:center;margin-bottom:1rem}
+  .member-part-name{font-family:'Cinzel',serif;color:var(--cream);font-size:.95rem}
+  .member-part-email{font-size:.69rem;color:var(--smoke);word-break:break-word}
+  .member-part-goal{display:inline-flex;align-items:center;gap:.35rem;margin-top:.35rem;padding:.22rem .5rem;border:1px solid rgba(200,130,10,.18);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase}
+  .member-part-goal.ok{color:#86efac;border-color:rgba(80,200,80,.28);background:rgba(80,200,80,.08)}
+  .member-part-goal.miss{color:#fbbf24;border-color:rgba(251,191,36,.28);background:rgba(251,191,36,.08)}
+  .member-stat-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem;margin-bottom:.9rem}
+  .member-mini-stat{padding:.55rem .45rem;border:1px solid rgba(200,130,10,.1);background:rgba(200,130,10,.04);text-align:center}
+  .member-mini-stat strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1.22rem;color:var(--gold);line-height:1}
+  .member-mini-stat span{display:block;font-size:.63rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;margin-top:.18rem}
+  .member-part-sub{font-size:.72rem;color:var(--smoke);margin-bottom:.7rem}
+  .member-cat-grid{display:flex;gap:.45rem;flex-wrap:wrap}
+  .member-cat-pill{display:inline-flex;align-items:center;justify-content:space-between;gap:.45rem;min-width:88px;padding:.28rem .48rem;border:1px solid rgba(200,130,10,.12);background:rgba(200,130,10,.04);font-size:.68rem;color:var(--paper)}
+  .member-cat-pill b{color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:.95rem;font-weight:400}
 
   /* LOG TABLE */
   .log-table{width:100%;border-collapse:collapse}
@@ -143,6 +175,8 @@
     .log-table th:nth-child(3),.log-table td:nth-child(3){display:none}
     .filters{gap:.4rem}
     .stats-grid{grid-template-columns:repeat(3,1fr)}
+    .podium-grid{grid-template-columns:1fr}
+    .member-stat-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
 </style>
 </head>
@@ -200,6 +234,9 @@
 
     <!-- REALTIME METRICS -->
     <div id="realtimeMetrics"></div>
+
+    <!-- PARTICIPAÇÃO DOS MEMBROS -->
+    <div id="memberParticipationStats"></div>
 
     <div class="admin-tools">
       <div class="admin-tools-head">
@@ -357,7 +394,22 @@ const LOGS_PAGE_SIZE = 200;
 let storageStats   = { files: 0, bytes: 0 };
 let metricsSnapshot = null;
 let metricsLoadedAt = null;
+let participationLoadedAt = null;
 const TS_FIELDS  = ['ts','createdAt'];
+const PARTICIPATION_DAILY_GOAL = 1;
+const PARTICIPATION_BASE_COINS = 10;
+const PARTICIPATION_STREAK_BONUS_STEP = 2;
+const PARTICIPATION_STREAK_BONUS_CAP = 10;
+const PARTICIPATION_POINTS = {
+  acesso: 2,
+  sugestoes: 8,
+  enquetes: 6,
+  setlist: 6,
+  repertorio: 5,
+  forum: 5,
+  galeria: 5,
+  membros: 3
+};
 
 // Firebase Storage Spark free tier: 5 GB
 const STORAGE_LIMIT = 5 * 1024 * 1024 * 1024; // 5 GB in bytes
@@ -367,6 +419,38 @@ function formatBytes(b) {
   if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
   if (b < 1024 * 1024 * 1024) return (b / (1024 * 1024)).toFixed(2) + ' MB';
   return (b / (1024 * 1024 * 1024)).toFixed(3) + ' GB';
+}
+
+function getBrazilDateKey(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+}
+
+function normalizeName(value = '') {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+function nameFromEmail(email = '') {
+  const local = (email || '').split('@')[0] || 'membro';
+  return local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ') || 'Membro';
+}
+
+function getInitials(name = '') {
+  const parts = (name || 'Membro').split(/\s+/).filter(Boolean).slice(0, 2);
+  return parts.map(part => part.charAt(0).toUpperCase()).join('') || 'M';
 }
 
 function calcStorageStats(galleryData = []) {
@@ -529,6 +613,263 @@ function renderRealtimeMetrics() {
     </div>`;
 }
 
+function createParticipant(seed = {}) {
+  return {
+    key: seed.key || '',
+    email: seed.email || '',
+    name: seed.name || '',
+    photo: seed.photo || '',
+    coins: Number(seed.coins || 0),
+    streakDays: Number(seed.streakDays || 0),
+    longestStreak: Number(seed.longestStreak || 0),
+    totalLoginDays: Number(seed.totalLoginDays || 0),
+    lastAwardCoins: Number(seed.lastAwardCoins || 0),
+    lastLoginKey: seed.lastLoginKey || '',
+    recentLoginKeys: Array.isArray(seed.recentLoginKeys) ? [...seed.recentLoginKeys] : [],
+    lastSeenLocal: seed.lastSeenLocal || '',
+    totalActions: 0,
+    actionsByCat: {
+      acesso: 0,
+      sugestoes: 0,
+      enquetes: 0,
+      setlist: 0,
+      repertorio: 0,
+      forum: 0,
+      galeria: 0,
+      membros: 0
+    },
+    actionPoints: 0,
+    loginDaysSet: new Set()
+  };
+}
+
+function mergeParticipant(target, incoming = {}) {
+  if (incoming.email && !target.email) target.email = incoming.email;
+  if (incoming.name && (!target.name || target.name === nameFromEmail(target.email))) target.name = incoming.name;
+  if (incoming.photo && !target.photo) target.photo = incoming.photo;
+  if (incoming.coins !== undefined) target.coins = Number(incoming.coins || 0);
+  if (incoming.streakDays !== undefined) target.streakDays = Number(incoming.streakDays || 0);
+  if (incoming.longestStreak !== undefined) target.longestStreak = Number(incoming.longestStreak || 0);
+  if (incoming.totalLoginDays !== undefined) target.totalLoginDays = Number(incoming.totalLoginDays || 0);
+  if (incoming.lastAwardCoins !== undefined) target.lastAwardCoins = Number(incoming.lastAwardCoins || 0);
+  if (incoming.lastLoginKey) target.lastLoginKey = incoming.lastLoginKey;
+  if (Array.isArray(incoming.recentLoginKeys) && incoming.recentLoginKeys.length) target.recentLoginKeys = [...incoming.recentLoginKeys];
+  if (incoming.lastSeenLocal) target.lastSeenLocal = incoming.lastSeenLocal;
+}
+
+function buildParticipantScore(member) {
+  const activeCategories = Object.values(member.actionsByCat).filter(count => count > 0).length;
+  return (
+    member.coins +
+    (member.streakDays * 12) +
+    (member.totalActions * 6) +
+    (activeCategories * 8) +
+    (member.totalLoginDays * 3)
+  );
+}
+
+function renderParticipationStats(participants = []) {
+  const el = document.getElementById('memberParticipationStats');
+  if (!el) return;
+
+  if (!participants.length) {
+    el.innerHTML = `
+      <div class="detail-section participation-shell">
+        <div class="detail-title">🏆 Participação dos Membros</div>
+        <div class="participation-note">Assim que os membros logarem e interagirem, esta área começa a montar a trilha de participação, moedas e streaks.</div>
+      </div>`;
+    return;
+  }
+
+  const todayKey = getBrazilDateKey();
+  const membersDoneToday = participants.filter(member => member.lastLoginKey === todayKey).length;
+  const totalCoins = participants.reduce((sum, member) => sum + member.coins, 0);
+  const topStreak = participants.reduce((max, member) => Math.max(max, member.longestStreak || 0), 0);
+  const podium = [...participants].sort((a, b) => b.score - a.score).slice(0, 3);
+  const updatedLabel = participationLoadedAt ? participationLoadedAt.toLocaleString('pt-BR') : '—';
+
+  const summaryCards = `
+    <div class="metric-row">
+      <div class="metric-card">
+        <div class="metric-label">Meta diária de login</div>
+        <div class="metric-value gold">${membersDoneToday}/${participants.length}</div>
+        <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Meta definida: ${PARTICIPATION_DAILY_GOAL} login por dia</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Moedas em circulação</div>
+        <div class="metric-value gold">${totalCoins}</div>
+        <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Cada login diário rende ${PARTICIPATION_BASE_COINS} moedas + bônus de sequência</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Maior streak já registrado</div>
+        <div class="metric-value gold">${topStreak}</div>
+        <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Bônus de sequência atual: +${PARTICIPATION_STREAK_BONUS_STEP} por dia, até +${PARTICIPATION_STREAK_BONUS_CAP}</div>
+      </div>
+    </div>`;
+
+  const podiumCards = podium.map((member, index) => `
+    <div class="podium-card top-${index + 1}">
+      <div class="podium-rank">${['🥇 #1', '🥈 #2', '🥉 #3'][index]}</div>
+      <div class="podium-profile">
+        <div class="podium-avatar">${member.photo ? `<img src="${member.photo}" alt="${member.name}">` : getInitials(member.name)}</div>
+        <div>
+          <div class="podium-name">${member.name}</div>
+          <div class="podium-meta">${member.totalActions} ações · ${member.totalLoginDays} login${member.totalLoginDays !== 1 ? 's' : ''} com recompensa</div>
+        </div>
+      </div>
+      <div class="podium-score">
+        <span class="score-pill">Score <strong>${member.score}</strong></span>
+        <span class="score-pill">🪙 ${member.coins}</span>
+        <span class="score-pill">🔥 ${member.streakDays}</span>
+      </div>
+    </div>`).join('');
+
+  const memberCards = participants.map(member => {
+    const goalDone = member.lastLoginKey === todayKey;
+    const lastSeen = member.lastSeenLocal || 'Ainda sem login premiado';
+    const sortedCats = Object.entries(member.actionsByCat)
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1]);
+    const catMarkup = sortedCats.length
+      ? sortedCats.map(([cat, count]) => `<span class="member-cat-pill">${CAT_LABELS[cat] || cat}<b>${count}</b></span>`).join('')
+      : `<span class="member-part-sub">Sem atividade registrada além do login até agora.</span>`;
+
+    return `
+      <article class="member-part-card">
+        <div class="member-part-head">
+          <div class="member-part-avatar">${member.photo ? `<img src="${member.photo}" alt="${member.name}">` : getInitials(member.name)}</div>
+          <div style="min-width:0">
+            <div class="member-part-name">${member.name}</div>
+            <div class="member-part-email">${member.email || 'Sem e-mail vinculado'}</div>
+            <div class="member-part-goal ${goalDone ? 'ok' : 'miss'}">${goalDone ? '✓ meta diária batida' : '⌛ falta login hoje'}</div>
+          </div>
+        </div>
+        <div class="member-stat-strip">
+          <div class="member-mini-stat"><strong>${member.score}</strong><span>Score</span></div>
+          <div class="member-mini-stat"><strong>${member.coins}</strong><span>Moedas</span></div>
+          <div class="member-mini-stat"><strong>${member.streakDays}</strong><span>Streak</span></div>
+          <div class="member-mini-stat"><strong>${member.totalActions}</strong><span>Ações</span></div>
+        </div>
+        <div class="member-part-sub">Último login com recompensa: ${lastSeen}</div>
+        <div class="member-part-sub">Recorde de sequência: ${member.longestStreak} · Último ganho: ${member.lastAwardCoins} moedas</div>
+        <div class="member-cat-grid">${catMarkup}</div>
+      </article>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="detail-section participation-shell">
+      <div class="detail-title">🏆 Participação dos Membros <span style="font-size:.68rem;color:var(--smoke);font-style:italic;font-weight:400;letter-spacing:.04em">Atualizado em ${updatedLabel}</span></div>
+      <div class="participation-note">Score calculado por moedas de presença, streak de login e volume de interação nas áreas do site.</div>
+      ${summaryCards}
+      <div class="podium-grid">${podiumCards}</div>
+      <div class="member-part-grid">${memberCards}</div>
+    </div>`;
+}
+
+async function loadParticipationStats() {
+  const [membersSnap, approvedSnap, memberStatsSnap, logsSnap] = await Promise.all([
+    getDocs(collection(db, 'members')),
+    getDocs(collection(db, 'approved_emails')),
+    getDocs(collection(db, 'member_stats')),
+    getDocs(collection(db, 'logs'))
+  ]);
+
+  const participants = new Map();
+  const aliasByName = new Map();
+  const membersByName = new Map();
+
+  function ensureParticipant(key, seed = {}) {
+    if (!participants.has(key)) participants.set(key, createParticipant({ key, ...seed }));
+    const target = participants.get(key);
+    mergeParticipant(target, seed);
+    if (target.name) aliasByName.set(normalizeName(target.name), key);
+    return target;
+  }
+
+  membersSnap.docs.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    const normName = normalizeName(data.name || '');
+    if (normName) membersByName.set(normName, { ...data, id: docSnap.id });
+  });
+
+  approvedSnap.docs.forEach(docSnap => {
+    const email = docSnap.id.toLowerCase();
+    ensureParticipant(`email:${email}`, {
+      email,
+      name: nameFromEmail(email)
+    });
+  });
+
+  memberStatsSnap.docs.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    const email = docSnap.id.toLowerCase();
+    const participant = ensureParticipant(`email:${email}`, {
+      email,
+      name: data.name || nameFromEmail(email),
+      coins: data.coins,
+      streakDays: data.streakDays,
+      longestStreak: data.longestStreak,
+      totalLoginDays: data.totalLoginDays,
+      lastAwardCoins: data.lastAwardCoins,
+      lastLoginKey: data.lastLoginKey,
+      recentLoginKeys: data.recentLoginKeys,
+      lastSeenLocal: data.lastSeenLocal
+    });
+    const memberMatch = membersByName.get(normalizeName(participant.name));
+    if (memberMatch?.photo) participant.photo = memberMatch.photo;
+  });
+
+  membersSnap.docs.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    const normName = normalizeName(data.name || '');
+    const aliasKey = aliasByName.get(normName) || `name:${normName || docSnap.id}`;
+    const participant = ensureParticipant(aliasKey, {
+      name: data.name || 'Membro',
+      photo: data.photo || ''
+    });
+    if (data.photo && !participant.photo) participant.photo = data.photo;
+  });
+
+  logsSnap.docs.forEach(docSnap => {
+    const log = docSnap.data() || {};
+    const email = (log.whoEmail || '').toLowerCase();
+    const who = normalizeName(log.who || log.removedBy || log.by || '');
+    const participantKey = email
+      ? (participants.has(`email:${email}`) ? `email:${email}` : `email:${email}`)
+      : (aliasByName.get(who) || `name:${who || docSnap.id}`);
+
+    const participant = ensureParticipant(participantKey, {
+      email,
+      name: log.who || log.removedBy || log.by || nameFromEmail(email)
+    });
+
+    const category = PARTICIPATION_POINTS[log.category] !== undefined ? log.category : 'acesso';
+    participant.actionsByCat[category] = (participant.actionsByCat[category] || 0) + 1;
+    participant.totalActions += 1;
+    participant.actionPoints += PARTICIPATION_POINTS[category] || 0;
+
+    if (log.action === 'Login membro') {
+      const loginDate = getLogDateKey(log);
+      if (loginDate) participant.loginDaysSet.add(loginDate);
+    }
+  });
+
+  const todayKey = getBrazilDateKey();
+  const finalParticipants = [...participants.values()].map(member => {
+    if ((!member.photo || !member.photo.trim()) && member.name) {
+      const memberMatch = membersByName.get(normalizeName(member.name));
+      if (memberMatch?.photo) member.photo = memberMatch.photo;
+    }
+    if (!member.totalLoginDays && member.loginDaysSet.size) member.totalLoginDays = member.loginDaysSet.size;
+    if (!member.lastLoginKey && member.loginDaysSet.has(todayKey)) member.lastLoginKey = todayKey;
+    member.score = buildParticipantScore(member);
+    return member;
+  }).sort((a, b) => b.score - a.score || b.coins - a.coins || a.name.localeCompare(b.name, 'pt-BR'));
+
+  participationLoadedAt = new Date();
+  renderParticipationStats(finalParticipants);
+}
+
 // ─── LOGS ──────────────────────────────────────────────────────────
 const CAT_LABELS = {
   membros:'Membros', sugestoes:'Sugestões', enquetes:'Enquetes',
@@ -539,6 +880,10 @@ const CAT_LABELS = {
 function startListening() {
   loadAdminMetricsSnapshot().catch(err => {
     console.warn('Metrics load error:', err);
+  });
+  loadParticipationStats().catch(err => {
+    console.warn('Participation load error:', err);
+    showToast('⚠ Não foi possível montar o painel de participação.');
   });
   loadInitialLogs().catch(err => {
     console.warn('Logs load error:', err);
@@ -669,6 +1014,12 @@ function getLogWhen(log) {
   return ts ? ts.toLocaleString('pt-BR') : '—';
 }
 
+function getLogDateKey(log) {
+  const ts = log.ts?.toDate?.() || log.createdAt?.toDate?.() || null;
+  if (!ts) return '';
+  return getBrazilDateKey(ts);
+}
+
 window.sortBy = field => {
   if (sortField === field) { sortDir *= -1; }
   else { sortField = field; sortDir = field === 'ts' ? -1 : 1; }
@@ -768,6 +1119,9 @@ async function clearAllLogs() {
     if (i % batchSize === 0) { await batch.commit(); batch = writeBatch(db); }
   }
   await batch.commit();
+  await loadAdminMetricsSnapshot().catch(err => console.warn('Metrics refresh error:', err));
+  await loadInitialLogs().catch(err => console.warn('Logs refresh error:', err));
+  await loadParticipationStats().catch(err => console.warn('Participation refresh error:', err));
   showToast(`✓ ${snap.size} log${snap.size!==1?'s':''} removido${snap.size!==1?'s':''}.`);
 }
 
