@@ -9,7 +9,7 @@
 <title>Retórica — Classic Rock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:8%;--vc-right:29.4%;--vc-bottom:23.2%;--vc-left:13.7%;--vc-pos-x:24.3%;--vc-pos-y:16.7%;--vt-top:0%;--vt-right:32.2%;--vt-bottom:11.4%;--vt-left:0%;--vt-pos-x:40%;--vt-pos-y:25.9%;--vt-scale:1.09;--vt-frame-w:100%;--vt-frame-h:100%}
+  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:8%;--vc-right:29.4%;--vc-bottom:23.2%;--vc-left:13.7%;--vc-pos-x:24.3%;--vc-pos-y:16.7%;--vt-top:0%;--vt-right:32.2%;--vt-bottom:11.4%;--vt-left:0%;--vt-pos-x:40%;--vt-pos-y:25.9%;--vt-scale:1.09;--vt-frame-w:100%;--vt-frame-h:100%;--cf-tvglacial-size:1;--cf-tvglacial-w:100%;--cf-tvglacial-h:100%;--cf-tvglacial-x:50%;--cf-tvglacial-y:50%;--cf-tvcorote-size:1;--cf-tvcorote-w:100%;--cf-tvcorote-h:100%;--cf-tvcorote-x:50%;--cf-tvcorote-y:50%;--cf-donabenta-size:1;--cf-donabenta-w:100%;--cf-donabenta-h:100%;--cf-donabenta-x:50%;--cf-donabenta-y:50%}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
   body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
@@ -58,9 +58,11 @@
   .nav-links a:hover{color:var(--gold)}
   .nav-auth{display:flex;align-items:center;gap:.8rem}
   .nav-user{font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif;letter-spacing:.08em}
-  .coin-balance{display:none;align-items:center;justify-content:center;gap:.38rem;padding:.28rem .62rem;border:1px solid rgba(200,130,10,.2);background:rgba(200,130,10,.08);border-radius:999px;color:var(--gold);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.04em;line-height:1;white-space:nowrap}
+  .coin-balance{display:none;align-items:center;justify-content:center;gap:.38rem;padding:.28rem .62rem;border:1px solid rgba(200,130,10,.2);background:rgba(200,130,10,.08);border-radius:999px;color:var(--gold);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.04em;line-height:1;white-space:nowrap;cursor:pointer;transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease}
   .coin-balance img{display:block;width:18px;height:18px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.28));flex:0 0 auto}
   .coin-balance strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1rem;font-weight:400;letter-spacing:.04em;color:#ffd25c;line-height:1}
+  .coin-balance:hover{transform:translateY(-1px);border-color:rgba(232,168,32,.42);background:rgba(232,168,32,.14);box-shadow:0 10px 24px rgba(0,0,0,.18)}
+  .coin-balance:focus-visible{outline:none;border-color:rgba(255,210,92,.7);box-shadow:0 0 0 3px rgba(232,168,32,.2)}
 
   /* HERO */
   #hero{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;padding-top:72px}
@@ -287,6 +289,40 @@
   .coin-reward-pill{display:inline-flex;align-items:center;gap:.32rem;padding:.28rem .62rem;border:1px solid rgba(232,168,32,.22);background:rgba(232,168,32,.08);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--paper)}
   .coin-reward-close{margin-top:1rem}
   @keyframes coinPulse{0%{transform:scale(.8);opacity:.15}70%{transform:scale(1.18);opacity:.45}100%{transform:scale(1.28);opacity:0}}
+  .coin-guide{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1.1rem;background:rgba(5,4,2,.72);backdrop-filter:blur(10px);z-index:10003;opacity:0;pointer-events:none;transition:opacity .28s ease}
+  .coin-guide.show{opacity:1;pointer-events:auto}
+  .coin-guide-panel{position:relative;width:min(94vw,880px);max-height:min(90vh,900px);overflow:auto;padding:1.25rem;border:1px solid rgba(232,168,32,.28);background:linear-gradient(180deg,rgba(30,19,8,.98),rgba(10,8,4,.98));box-shadow:0 26px 80px rgba(0,0,0,.44),0 0 0 1px rgba(232,168,32,.06) inset;border-radius:22px}
+  .coin-guide-close{position:absolute;top:.9rem;right:.9rem;width:38px;height:38px;border:none;border-radius:999px;cursor:pointer;background:rgba(255,255,255,.06);color:var(--cream);font-size:1rem}
+  .coin-guide-close:hover{background:rgba(232,168,32,.18);color:var(--gold)}
+  .coin-guide-hero{position:relative;padding:1.35rem 1.2rem 1.1rem;border:1px solid rgba(232,168,32,.18);border-radius:20px;background:radial-gradient(circle at top,rgba(255,214,92,.18),transparent 38%),linear-gradient(180deg,rgba(49,31,11,.92),rgba(19,13,7,.96));overflow:hidden}
+  .coin-guide-hero::after{content:'';position:absolute;inset:auto -12% -55% -12%;height:240px;background:radial-gradient(circle,rgba(232,168,32,.22),transparent 60%);pointer-events:none}
+  .coin-guide-kicker{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);text-align:center}
+  .coin-guide-title{margin-top:.45rem;font-family:'Cinzel',serif;font-size:clamp(1.5rem,3vw,2.4rem);color:var(--cream);text-align:center}
+  .coin-guide-sub{margin:.45rem auto 0;max-width:560px;text-align:center;color:var(--paper);font-size:.92rem;line-height:1.6}
+  .coin-guide-coin-wrap{position:relative;width:150px;height:150px;margin:0 auto 1rem;display:grid;place-items:center}
+  .coin-guide-coin-wrap::before,.coin-guide-coin-wrap::after{content:'';position:absolute;border-radius:50%}
+  .coin-guide-coin-wrap::before{inset:-8px;background:radial-gradient(circle,rgba(255,220,110,.45) 0,rgba(255,220,110,.14) 38%,rgba(255,220,110,0) 70%);filter:blur(6px);animation:coinGuideGlow 2.8s ease-in-out infinite}
+  .coin-guide-coin-wrap::after{inset:18px;border:1px solid rgba(255,220,110,.34);animation:coinGuideRing 3s ease-out infinite}
+  .coin-guide-coin{position:relative;width:118px;height:118px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 32% 28%,#fff2b3 0 18%,#ffd25c 18% 38%,#e8a820 38% 62%,#9c5f0d 63% 100%);box-shadow:0 0 36px rgba(232,168,32,.38),0 12px 24px rgba(0,0,0,.28)}
+  .coin-guide-coin img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))}
+  .coin-guide-body{display:grid;gap:1rem;margin-top:1rem}
+  .coin-guide-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.75rem}
+  .coin-guide-stat{padding:.95rem .9rem;border:1px solid rgba(232,168,32,.16);border-radius:16px;background:linear-gradient(180deg,rgba(20,14,8,.94),rgba(10,8,4,.86))}
+  .coin-guide-stat-label{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke);font-family:'Cinzel',serif}
+  .coin-guide-stat-value{margin-top:.35rem;font-family:'Bebas Neue',sans-serif;font-size:1.45rem;letter-spacing:.04em;color:#ffd25c}
+  .coin-guide-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:1rem}
+  .coin-guide-card{padding:1rem;border:1px solid rgba(232,168,32,.14);border-radius:18px;background:linear-gradient(180deg,rgba(18,12,7,.94),rgba(10,8,4,.82))}
+  .coin-guide-card h3{font-family:'Cinzel',serif;font-size:1rem;color:var(--cream);margin-bottom:.7rem}
+  .coin-guide-copy{display:grid;gap:.55rem;color:var(--paper);font-size:.9rem;line-height:1.65}
+  .coin-guide-copy strong{color:#ffd25c}
+  .coin-guide-note{padding:.78rem .85rem;border:1px solid rgba(232,168,32,.12);border-radius:14px;background:rgba(232,168,32,.07)}
+  .coin-guide-cats{display:flex;flex-wrap:wrap;gap:.55rem}
+  .coin-guide-cat{display:inline-flex;align-items:center;gap:.45rem;padding:.42rem .68rem;border-radius:999px;border:1px solid rgba(232,168,32,.2);background:rgba(232,168,32,.08);color:var(--paper);font-size:.74rem;line-height:1.2}
+  .coin-guide-cat b{color:#ffd25c;font-family:'Bebas Neue',sans-serif;font-size:1rem;font-weight:400;letter-spacing:.04em}
+  .coin-guide-scoreline{margin-top:.8rem;padding-top:.8rem;border-top:1px solid rgba(232,168,32,.1);color:var(--smoke);font-size:.78rem;line-height:1.6}
+  .coin-guide-loading,.coin-guide-error{text-align:center;padding:1.4rem 1rem;color:var(--paper)}
+  @keyframes coinGuideGlow{0%,100%{transform:scale(.96);opacity:.88}50%{transform:scale(1.06);opacity:1}}
+  @keyframes coinGuideRing{0%{transform:scale(.82);opacity:.45}75%{transform:scale(1.15);opacity:0}100%{transform:scale(1.18);opacity:0}}
 
   /* GOOGLE BTN */
   .btn-google{display:flex;align-items:center;justify-content:center;gap:.8rem;width:100%;padding:.8rem 1.5rem;background:#fff;color:#3c3c3c;border:1px solid #ddd;border-radius:2px;font-family:'Cinzel',serif;font-size:.82rem;font-weight:700;letter-spacing:.1em;cursor:pointer;transition:background .2s,box-shadow .2s}
@@ -344,8 +380,11 @@
   .carousel-media-tag{display:inline-flex;align-items:center;align-self:flex-start;flex:0 0 auto;box-sizing:border-box;width:auto;max-width:none;white-space:nowrap;background:rgba(10,8,4,.84);border:1px solid rgba(200,130,10,.35);color:var(--gold);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.22rem .62rem;border-radius:999px;font-family:'Cinzel',serif;line-height:1}
   .carousel-media-tag.video{background:rgba(0,0,0,.72);border-color:rgba(255,255,255,.15);color:var(--cream);font-size:.72rem;letter-spacing:.08em;padding:.24rem .62rem}
   .carousel-media-tag.credit{border-color:rgba(200,130,10,.22);font-size:.58rem;letter-spacing:.08em;padding:.18rem .46rem}
-  .video-portrait-frame{position:absolute;z-index:3;background:url('imagens/portrait_video.png') center/auto 100% no-repeat;pointer-events:none;opacity:.96;filter:drop-shadow(0 10px 18px rgba(0,0,0,.28))}
-  .carousel-video-frame{inset:0}
+  .video-portrait-frame{position:absolute;z-index:3;background:center/auto 100% no-repeat;pointer-events:none;opacity:.96;filter:drop-shadow(0 10px 18px rgba(0,0,0,.28))}
+  .carousel-video-frame{left:50%;top:50%;width:100%;height:100%;transform:translate(-50%,-50%) scale(1)}
+  .carousel-video-frame.frame-tvglacial{width:var(--cf-tvglacial-w);height:var(--cf-tvglacial-h);left:var(--cf-tvglacial-x);top:var(--cf-tvglacial-y);transform:translate(-50%,-50%) scale(var(--cf-tvglacial-size))}
+  .carousel-video-frame.frame-tvcorote{width:var(--cf-tvcorote-w);height:var(--cf-tvcorote-h);left:var(--cf-tvcorote-x);top:var(--cf-tvcorote-y);transform:translate(-50%,-50%) scale(var(--cf-tvcorote-size))}
+  .carousel-video-frame.frame-donabenta{width:var(--cf-donabenta-w);height:var(--cf-donabenta-h);left:var(--cf-donabenta-x);top:var(--cf-donabenta-y);transform:translate(-50%,-50%) scale(var(--cf-donabenta-size))}
 
   /* ── LIGHTBOX ── */
   .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:8000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:1rem;opacity:0;transition:opacity .3s}
@@ -552,6 +591,16 @@
     .nav-logo{font-size:1.15rem}
     .coin-balance{font-size:.68rem;padding:.24rem .56rem}
     .coin-balance img{width:16px;height:16px}
+    .coin-guide{padding:.7rem}
+    .coin-guide-panel{padding:1rem .9rem;border-radius:18px;max-height:92vh}
+    .coin-guide-hero{padding:1.05rem .85rem .9rem}
+    .coin-guide-coin-wrap{width:126px;height:126px}
+    .coin-guide-coin{width:98px;height:98px}
+    .coin-guide-coin img{width:62px;height:62px}
+    .coin-guide-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .coin-guide-grid{grid-template-columns:1fr}
+    .coin-guide-card{padding:.9rem}
+    .coin-guide-sub{font-size:.86rem}
 
     /* Hero */
     #hero{height:100svh;padding-top:78px}
@@ -620,7 +669,7 @@
 
     /* Carousel */
     .carousel-slide img{max-height:320px}
-    .carousel-video-frame{inset:0}
+    .carousel-video-frame{inset:auto}
     .carousel-btn{width:36px;height:36px;font-size:.9rem}
     .carousel-prev{left:.4rem}
     .carousel-next{right:.4rem}
@@ -790,7 +839,7 @@
   </ul>
   <div class="nav-auth">
     <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
-    <span class="coin-balance" id="coinBalance" style="display:none"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></span>
+    <span class="coin-balance" id="coinBalance" style="display:none" role="button" tabindex="0" aria-label="Abrir detalhes das Retorica Coins" onclick="openCoinGuide()" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();openCoinGuide();}"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></span>
     <button class="btn-ghost btn-sm" id="loginBtn" onclick="openLogin()">Entrar</button>
     <button class="btn-ghost btn-sm member-only" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
   </div>
@@ -812,7 +861,7 @@
   <a href="logs.html" id="adminLinkMobile" class="member-admin-only" style="color:var(--amber)">⚙ Portal Admin</a>
   <div class="nav-mobile-auth">
     <span id="navUserMobile" style="display:none;font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif">🎸 Membro</span>
-    <span class="coin-balance" id="coinBalanceMobile" style="display:none"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValueMobile">0</strong></span>
+    <span class="coin-balance" id="coinBalanceMobile" style="display:none" role="button" tabindex="0" aria-label="Abrir detalhes das Retorica Coins" onclick="openCoinGuide()" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();openCoinGuide();}"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValueMobile">0</strong></span>
     <button class="btn-ghost btn-sm" id="loginBtnMobile" onclick="openLogin();closeMobileMenu()">Entrar</button>
     <button class="btn-ghost btn-sm" id="logoutBtnMobile" onclick="doLogout();closeMobileMenu()" style="display:none">Sair</button>
   </div>
@@ -1073,6 +1122,9 @@
     <div class="video-frame-debug-group" id="videoFrameDebugCarousel"></div>
     <div class="video-frame-debug-group" id="videoFrameDebugThumb"></div>
     <div class="video-frame-debug-group" id="videoFrameDebugPortrait"></div>
+    <div class="video-frame-debug-group" id="videoFrameDebugFrameGlacial"></div>
+    <div class="video-frame-debug-group" id="videoFrameDebugFrameCorote"></div>
+    <div class="video-frame-debug-group" id="videoFrameDebugFrameDonaBenta"></div>
     <div class="video-frame-debug-actions">
       <button class="video-frame-debug-btn" type="button" onclick="copyVideoFrameDebugValues()">Copiar valores</button>
       <button class="video-frame-debug-btn" type="button" onclick="resetVideoFrameDebugValues()">Resetar</button>
@@ -1193,6 +1245,25 @@
   </div>
 </div>
 
+<div class="coin-guide" id="coinGuide" onclick="closeCoinGuide(event)">
+  <div class="coin-guide-panel" onclick="event.stopPropagation()">
+    <button class="coin-guide-close" type="button" aria-label="Fechar detalhes das coins" onclick="closeCoinGuide()">✕</button>
+    <div class="coin-guide-hero">
+      <div class="coin-guide-coin-wrap">
+        <div class="coin-guide-coin">
+          <img src="imagens/coin.png" alt="Retorica Coin">
+        </div>
+      </div>
+      <div class="coin-guide-kicker">Retorica Coins</div>
+      <div class="coin-guide-title" id="coinGuideTitle">Seu mapa de engajamento</div>
+      <div class="coin-guide-sub" id="coinGuideSubtitle">Veja como as coins entram, como o score do admin é montado e como está sua presença no site.</div>
+    </div>
+    <div class="coin-guide-body" id="coinGuideBody">
+      <div class="coin-guide-loading">Carregando seu painel de Retorica Coins...</div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- CONFIRM HELPER (runs before module script) -->
@@ -1251,7 +1322,33 @@ let pollsLoaded = false;
 const MEMBER_COIN_BASE = 10;
 const MEMBER_STREAK_BONUS_STEP = 2;
 const MEMBER_STREAK_BONUS_CAP = 10;
+const VIDEO_FRAME_ASSETS = ['tvglacial.png', 'tvcorote.png', 'donabenta.png'];
+const MEMBER_SCORE_STREAK_WEIGHT = 12;
+const MEMBER_SCORE_ACTION_WEIGHT = 6;
+const MEMBER_SCORE_CATEGORY_WEIGHT = 8;
+const MEMBER_SCORE_LOGIN_WEIGHT = 3;
+const MEMBER_PARTICIPATION_POINTS = {
+  acesso: 2,
+  sugestoes: 8,
+  enquetes: 6,
+  setlist: 6,
+  repertorio: 5,
+  forum: 5,
+  galeria: 5,
+  membros: 3
+};
+const MEMBER_CATEGORY_LABELS = {
+  acesso: 'Acesso',
+  sugestoes: 'Sugestões',
+  enquetes: 'Enquetes',
+  setlist: 'Setlist',
+  repertorio: 'Repertório',
+  forum: 'Fórum',
+  galeria: 'Galeria',
+  membros: 'Membros'
+};
 let memberCoinBalance = 0;
+let memberCoinGuideCache = { email: '', data: null, fetchedAt: 0 };
 
 // ─── AUTH ──────────────────────────────────────────────────────────
 // Visitantes com Google login podem interagir (likes, comentários).
@@ -1260,6 +1357,66 @@ let memberCoinBalance = 0;
 async function isEmailApproved(email) {
   const snap = await getDoc(doc(db, 'approved_emails', email.toLowerCase()));
   return snap.exists();
+}
+
+function normalizeName(value = '') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function nameFromEmail(email = '') {
+  const base = String(email || '').split('@')[0] || 'membro';
+  return base
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ') || 'Membro';
+}
+
+function escapeHtml(value = '') {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function createMemberCategoryBucket() {
+  return {
+    acesso: 0,
+    sugestoes: 0,
+    enquetes: 0,
+    setlist: 0,
+    repertorio: 0,
+    forum: 0,
+    galeria: 0,
+    membros: 0
+  };
+}
+
+function buildMemberAdminScore(summary) {
+  const activeCategories = Object.values(summary.actionsByCat || {}).filter(count => count > 0).length;
+  return (
+    Number(summary.coins || 0) +
+    (Number(summary.streakDays || 0) * MEMBER_SCORE_STREAK_WEIGHT) +
+    (Number(summary.totalActions || 0) * MEMBER_SCORE_ACTION_WEIGHT) +
+    (activeCategories * MEMBER_SCORE_CATEGORY_WEIGHT) +
+    (Number(summary.totalLoginDays || 0) * MEMBER_SCORE_LOGIN_WEIGHT)
+  );
+}
+
+function getStableFrameAsset(seed = '') {
+  const source = String(seed || 'frame');
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    hash = ((hash * 31) + source.charCodeAt(i)) >>> 0;
+  }
+  return VIDEO_FRAME_ASSETS[hash % VIDEO_FRAME_ASSETS.length];
 }
 
 function getBrazilDateKey(date = new Date()) {
@@ -1371,6 +1528,153 @@ function updateCoinBalanceUI() {
   if (mobile) mobile.style.display = show ? 'inline-flex' : 'none';
 }
 
+function renderCoinGuideLoading() {
+  const body = document.getElementById('coinGuideBody');
+  const title = document.getElementById('coinGuideTitle');
+  const subtitle = document.getElementById('coinGuideSubtitle');
+  if (title) title.textContent = 'Seu mapa de engajamento';
+  if (subtitle) subtitle.textContent = 'Carregando seus dados de coins, streak e participação no site...';
+  if (body) body.innerHTML = `<div class="coin-guide-loading">Carregando seu painel de Retorica Coins...</div>`;
+}
+
+function renderCoinGuideError() {
+  const body = document.getElementById('coinGuideBody');
+  const subtitle = document.getElementById('coinGuideSubtitle');
+  if (subtitle) subtitle.textContent = 'Não consegui puxar seus dados agora. Tente novamente em instantes.';
+  if (body) body.innerHTML = `<div class="coin-guide-error">Não foi possível carregar suas informações de engajamento agora.</div>`;
+}
+
+function renderCoinGuide(data) {
+  const title = document.getElementById('coinGuideTitle');
+  const subtitle = document.getElementById('coinGuideSubtitle');
+  const body = document.getElementById('coinGuideBody');
+  if (!body) return;
+
+  const memberName = escapeHtml(data.name || 'Membro');
+  const todayCoins = MEMBER_COIN_BASE + Math.min(Math.max((Number(data.streakDays || 1) - 1), 0) * MEMBER_STREAK_BONUS_STEP, MEMBER_STREAK_BONUS_CAP);
+  const categoryMarkup = data.topCategories.length
+    ? data.topCategories.map(item => `<span class="coin-guide-cat">${escapeHtml(item.label)} <b>${item.count}</b></span>`).join('')
+    : `<div class="coin-guide-note">Seu histórico ainda está começando. Faça login diariamente e interaja nas áreas do site para esse mapa ganhar corpo.</div>`;
+
+  if (title) title.textContent = `${data.firstName}, aqui está seu mapa de engajamento`;
+  if (subtitle) subtitle.textContent = `Saldo atual de ${data.coins} RC, streak de ${data.streakDays} dia${data.streakDays === 1 ? '' : 's'} e score do admin atualizado com seus registros.`;
+
+  body.innerHTML = `
+    <div class="coin-guide-stats">
+      <div class="coin-guide-stat"><div class="coin-guide-stat-label">Score do Admin</div><div class="coin-guide-stat-value">${data.score}</div></div>
+      <div class="coin-guide-stat"><div class="coin-guide-stat-label">Retorica Coins</div><div class="coin-guide-stat-value">${data.coins} RC</div></div>
+      <div class="coin-guide-stat"><div class="coin-guide-stat-label">Streak Atual</div><div class="coin-guide-stat-value">${data.streakDays}</div></div>
+      <div class="coin-guide-stat"><div class="coin-guide-stat-label">Recorde</div><div class="coin-guide-stat-value">${data.longestStreak}</div></div>
+      <div class="coin-guide-stat"><div class="coin-guide-stat-label">Logins Premiadas</div><div class="coin-guide-stat-value">${data.totalLoginDays}</div></div>
+      <div class="coin-guide-stat"><div class="coin-guide-stat-label">Ações no Site</div><div class="coin-guide-stat-value">${data.totalActions}</div></div>
+    </div>
+    <div class="coin-guide-grid">
+      <div class="coin-guide-card">
+        <h3>Como ganhar Retorica Coins</h3>
+        <div class="coin-guide-copy">
+          <div class="coin-guide-note"><strong>Login diário:</strong> cada entrada premiada rende <strong>${MEMBER_COIN_BASE} RC</strong>.</div>
+          <div class="coin-guide-note"><strong>Bônus de streak:</strong> dias seguidos somam <strong>+${MEMBER_STREAK_BONUS_STEP} RC</strong> por dia consecutivo, até <strong>+${MEMBER_STREAK_BONUS_CAP} RC</strong>.</div>
+          <div class="coin-guide-note"><strong>Se você entrar hoje mantendo sua sequência:</strong> o ganho previsto é de <strong>${todayCoins} RC</strong>.</div>
+          <div class="coin-guide-note"><strong>Último ganho registrado:</strong> ${data.lastAwardCoins} RC${data.lastSeenLocal ? ` em <strong>${escapeHtml(data.lastSeenLocal)}</strong>` : ''}.</div>
+        </div>
+      </div>
+      <div class="coin-guide-card">
+        <h3>Seu engajamento no admin</h3>
+        <div class="coin-guide-copy">
+          <div><strong>${memberName}</strong>, seu score atual combina coins, streak, volume de ações, áreas ativas e logins premiados.</div>
+          <div class="coin-guide-cats">${categoryMarkup}</div>
+          <div class="coin-guide-scoreline">Fórmula do score: coins + streak×${MEMBER_SCORE_STREAK_WEIGHT} + ações×${MEMBER_SCORE_ACTION_WEIGHT} + áreas ativas×${MEMBER_SCORE_CATEGORY_WEIGHT} + logins×${MEMBER_SCORE_LOGIN_WEIGHT}.</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function loadMemberCoinGuideData(user) {
+  const email = (user?.email || '').toLowerCase();
+  if (!email) throw new Error('missing-email');
+
+  if (memberCoinGuideCache.email === email && memberCoinGuideCache.data && Date.now() - memberCoinGuideCache.fetchedAt < 60000) {
+    return memberCoinGuideCache.data;
+  }
+
+  const [statsSnap, logsSnap] = await Promise.all([
+    getDoc(doc(db, 'member_stats', email)),
+    getDocs(collection(db, 'logs'))
+  ]);
+
+  const stats = statsSnap.exists() ? statsSnap.data() : {};
+  const actionsByCat = createMemberCategoryBucket();
+  const aliasNames = new Set([
+    normalizeName(user?.displayName || ''),
+    normalizeName(stats.name || ''),
+    normalizeName(nameFromEmail(email))
+  ].filter(Boolean));
+
+  let totalActions = 0;
+  logsSnap.forEach(docSnap => {
+    const log = docSnap.data() || {};
+    const logEmail = String(log.whoEmail || '').toLowerCase();
+    const rawNames = [log.who, log.removedBy, log.by].map(normalizeName).filter(Boolean);
+    const matches = logEmail === email || (!logEmail && rawNames.some(name => aliasNames.has(name)));
+    if (!matches) return;
+    const category = MEMBER_PARTICIPATION_POINTS[log.category] !== undefined ? log.category : 'acesso';
+    actionsByCat[category] = (actionsByCat[category] || 0) + 1;
+    totalActions += 1;
+  });
+
+  const summary = {
+    email,
+    name: stats.name || user?.displayName || nameFromEmail(email),
+    firstName: getFirstName(stats.name || user?.displayName || nameFromEmail(email)),
+    coins: Number(stats.coins || memberCoinBalance || 0),
+    streakDays: Number(stats.streakDays || 0),
+    longestStreak: Number(stats.longestStreak || 0),
+    totalLoginDays: Number(stats.totalLoginDays || 0),
+    lastAwardCoins: Number(stats.lastAwardCoins || 0),
+    lastSeenLocal: stats.lastSeenLocal || '',
+    totalActions,
+    actionsByCat
+  };
+
+  const topCategories = Object.entries(actionsByCat)
+    .filter(([, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, count]) => ({ key, count, label: MEMBER_CATEGORY_LABELS[key] || key }));
+
+  const data = {
+    ...summary,
+    score: buildMemberAdminScore(summary),
+    topCategories
+  };
+
+  memberCoinGuideCache = { email, data, fetchedAt: Date.now() };
+  return data;
+}
+
+window.closeCoinGuide = (event) => {
+  if (event && event.target && event.currentTarget && event.target !== event.currentTarget) return;
+  document.getElementById('coinGuide')?.classList.remove('show');
+};
+
+window.openCoinGuide = async () => {
+  if (!isLoggedIn || !isMember || !auth.currentUser) return;
+  const overlay = document.getElementById('coinGuide');
+  if (!overlay) return;
+  overlay.classList.add('show');
+  renderCoinGuideLoading();
+  try {
+    const data = await loadMemberCoinGuideData(auth.currentUser);
+    renderCoinGuide(data);
+  } catch (err) {
+    console.warn('Coin guide load error:', err);
+    renderCoinGuideError();
+  }
+};
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeCoinGuide();
+});
+
 let coinRewardTimer = null;
 
 window.hideCoinReward = () => {
@@ -1428,6 +1732,8 @@ onAuthStateChanged(auth, async user => {
     isLoggedIn = false;
     isMember   = false;
     memberCoinBalance = 0;
+    memberCoinGuideCache = { email: '', data: null, fetchedAt: 0 };
+    closeCoinGuide();
     updateCoinBalanceUI();
   }
   applyAuth();
@@ -3167,8 +3473,10 @@ function renderGallery() {
     const del = isMember
       ? `<button onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
       : '';
+    const frameAsset = mediaType === 'youtube' ? getStableFrameAsset(p.id || p.videoId || thumbUrl || id) : '';
+    const frameClass = frameAsset ? ` frame-${frameAsset.replace('.png','')}` : '';
     const videoFrame = mediaType === 'youtube'
-      ? `<div class="video-portrait-frame carousel-video-frame" aria-hidden="true"></div>`
+      ? `<div class="video-portrait-frame carousel-video-frame${frameClass}" aria-hidden="true" style="background-image:url('imagens/${frameAsset}')"></div>`
       : '';
     const contentTags = (p.tags || []).filter(tag => tag && tag !== 'Todas');
     const panelTags = [];
@@ -3229,7 +3537,7 @@ function renderGallery() {
         ? `<div class="thumb-media-stack">${p.addedBy ? `<div class="thumb-video-credit"><strong>${getFirstName(p.addedBy)}</strong></div>` : ''}<div class="thumb-media-tag">YouTube</div><div class="thumb-media-tag video">Vídeo</div></div>`
         : `<div class="media-pill">Foto</div>`;
       const videoFrame = mediaType === 'youtube'
-        ? `<div class="video-portrait-frame thumb-video-frame" aria-hidden="true"></div>`
+        ? `<div class="video-portrait-frame thumb-video-frame" aria-hidden="true" style="background-image:url('imagens/portrait_video.png')"></div>`
         : '';
       const statsHtml = `<div class="img-stats">
         <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
@@ -5433,7 +5741,22 @@ const VIDEO_FRAME_DEBUG_DEFAULTS = {
   vt_pos_y: '25.9%',
   vt_scale: '1.09',
   vt_frame_w: '100%',
-  vt_frame_h: '100%'
+  vt_frame_h: '100%',
+  cf_tvglacial_size: '1',
+  cf_tvglacial_w: '100%',
+  cf_tvglacial_h: '100%',
+  cf_tvglacial_x: '50%',
+  cf_tvglacial_y: '50%',
+  cf_tvcorote_size: '1',
+  cf_tvcorote_w: '100%',
+  cf_tvcorote_h: '100%',
+  cf_tvcorote_x: '50%',
+  cf_tvcorote_y: '50%',
+  cf_donabenta_size: '1',
+  cf_donabenta_w: '100%',
+  cf_donabenta_h: '100%',
+  cf_donabenta_x: '50%',
+  cf_donabenta_y: '50%'
 };
 
 function loadVideoFrameDebugValues() {
@@ -5516,6 +5839,41 @@ function buildVideoFrameDebugGroup(hostId, title, prefix) {
   });
 }
 
+function buildVideoFrameAssetDebugGroup(hostId, title, assetKey) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  const controls = [
+    { key: `cf_${assetKey}_size`, label: 'Tam', min: 0.4, max: 1.8, step: 0.01, unit: '' },
+    { key: `cf_${assetKey}_w`, label: 'Larg', min: 40, max: 160, step: 0.5, unit: '%' },
+    { key: `cf_${assetKey}_h`, label: 'Alt', min: 40, max: 160, step: 0.5, unit: '%' },
+    { key: `cf_${assetKey}_x`, label: 'Pos X', min: 0, max: 100, step: 0.1, unit: '%' },
+    { key: `cf_${assetKey}_y`, label: 'Pos Y', min: 0, max: 100, step: 0.1, unit: '%' }
+  ];
+  host.innerHTML = `<h4>${title}</h4>` + controls.map(control => `
+    <div class="video-frame-debug-row">
+      <label for="${control.key}">${control.label}</label>
+      <input id="${control.key}" type="range" min="${control.min}" max="${control.max}" step="${control.step}">
+      <output id="${control.key}_out"></output>
+    </div>
+  `).join('');
+
+  controls.forEach(control => {
+    const input = document.getElementById(control.key);
+    const output = document.getElementById(`${control.key}_out`);
+    const current = getComputedStyle(document.documentElement)
+      .getPropertyValue(`--${control.key.replace(/_/g, '-')}`).trim()
+      .replace('%', '');
+    input.value = Number.parseFloat(current) || 0;
+    output.textContent = `${input.value}${control.unit ?? '%'}`;
+    input.addEventListener('input', () => {
+      const next = `${input.value}${control.unit ?? '%'}`;
+      document.documentElement.style.setProperty(`--${control.key.replace(/_/g, '-')}`, next);
+      output.textContent = next;
+      persistVideoFrameDebugValues();
+    });
+  });
+}
+
 window.toggleVideoFrameDebug = (force) => {
   const panel = document.getElementById('videoFrameDebug');
   if (!panel) return;
@@ -5540,6 +5898,9 @@ window.resetVideoFrameDebugValues = () => {
   buildVideoFrameDebugGroup('videoFrameDebugCarousel', 'Carrossel', 'vc');
   buildVideoFrameDebugGroup('videoFrameDebugThumb', 'Miniatura', 'vt');
   buildVideoFrameDebugGroup('videoFrameDebugPortrait', 'Portrait', 'vp');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameGlacial', 'Moldura tvglacial', 'tvglacial');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameCorote', 'Moldura tvcorote', 'tvcorote');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameDonaBenta', 'Moldura donabenta', 'donabenta');
   showToast('Ajustes temporários resetados');
 };
 
@@ -5549,6 +5910,9 @@ window.resetVideoFrameDebugValues = () => {
   buildVideoFrameDebugGroup('videoFrameDebugCarousel', 'Carrossel', 'vc');
   buildVideoFrameDebugGroup('videoFrameDebugThumb', 'Miniatura', 'vt');
   buildVideoFrameDebugGroup('videoFrameDebugPortrait', 'Portrait', 'vp');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameGlacial', 'Moldura tvglacial', 'tvglacial');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameCorote', 'Moldura tvcorote', 'tvcorote');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameDonaBenta', 'Moldura donabenta', 'donabenta');
   if (new URLSearchParams(location.search).get('videoFrameDebug') === '1') {
     toggleVideoFrameDebug(true);
   }
