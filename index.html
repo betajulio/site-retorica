@@ -5215,12 +5215,12 @@ function buildVideoFrameDebugGroup(hostId, title, prefix) {
     ];
   } else if (prefix === 'vt') {
     controls = [
-      { key: 'vt_top', label: 'Topo' },
-      { key: 'vt_right', label: 'Dir' },
-      { key: 'vt_bottom', label: 'Base' },
-      { key: 'vt_left', label: 'Esq' },
-      { key: 'vt_pos_x', label: 'Pos X' },
-      { key: 'vt_pos_y', label: 'Pos Y' },
+      { key: 'vt_top', label: 'Topo', min: -20, max: 40, step: 0.1 },
+      { key: 'vt_right', label: 'Dir', min: -20, max: 40, step: 0.1 },
+      { key: 'vt_bottom', label: 'Base', min: -20, max: 40, step: 0.1 },
+      { key: 'vt_left', label: 'Esq', min: -20, max: 40, step: 0.1 },
+      { key: 'vt_pos_x', label: 'Pos X', min: -20, max: 120, step: 0.1 },
+      { key: 'vt_pos_y', label: 'Pos Y', min: -20, max: 120, step: 0.1 },
       { key: 'vt_scale', label: 'Escala', min: 0.6, max: 1.6, step: 0.01, unit: '' }
     ];
   } else if (prefix === 'vp') {
