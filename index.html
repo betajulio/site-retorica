@@ -9,7 +9,7 @@
 <title>Retórica — Classic Rock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:12.8%;--vc-right:21.8%;--vc-bottom:16.8%;--vc-left:17.8%;--vc-pos-x:41%;--vc-pos-y:34%;--vt-top:14%;--vt-right:22%;--vt-bottom:24%;--vt-left:17%;--vt-pos-x:41%;--vt-pos-y:34%}
+  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:12.8%;--vc-right:21.8%;--vc-bottom:16.8%;--vc-left:17.8%;--vc-pos-x:41%;--vc-pos-y:34%;--vt-top:14%;--vt-right:22%;--vt-bottom:24%;--vt-left:17%;--vt-pos-x:41%;--vt-pos-y:34%;--vt-scale:1}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
   body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
@@ -449,7 +449,8 @@
   .gallery-thumb:hover{border-color:rgba(200,130,10,.5)}
   .gallery-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
   .gallery-thumb-media{position:absolute;inset:0;width:100%;height:100%}
-  .gallery-thumb-media-video{top:var(--vt-top);right:var(--vt-right);bottom:var(--vt-bottom);left:var(--vt-left);width:auto;height:auto;object-fit:cover;object-position:var(--vt-pos-x) var(--vt-pos-y);z-index:2}
+  .gallery-thumb-media-video{top:var(--vt-top);right:var(--vt-right);bottom:var(--vt-bottom);left:var(--vt-left);width:auto;height:auto;object-fit:cover;object-position:var(--vt-pos-x) var(--vt-pos-y);transform:scale(var(--vt-scale));transform-origin:center center;z-index:2}
+  .gallery-thumb:hover .gallery-thumb-media-video{transform:scale(calc(var(--vt-scale) * 1.05))}
   .video-frame-debug{position:fixed;right:14px;bottom:14px;z-index:12000;width:min(92vw,360px);max-height:75vh;overflow:auto;background:rgba(10,8,4,.96);border:1px solid rgba(200,130,10,.35);border-radius:12px;box-shadow:0 18px 42px rgba(0,0,0,.38);padding:.95rem .95rem 1rem;display:none}
   .video-frame-debug.show{display:block}
   .video-frame-debug h3{font-family:'Cinzel',serif;font-size:.86rem;color:var(--gold);letter-spacing:.08em;margin-bottom:.75rem}
@@ -5166,7 +5167,8 @@ const VIDEO_FRAME_DEBUG_DEFAULTS = {
   vt_bottom: '24%',
   vt_left: '17%',
   vt_pos_x: '41%',
-  vt_pos_y: '34%'
+  vt_pos_y: '34%',
+  vt_scale: '1'
 };
 
 function loadVideoFrameDebugValues() {
@@ -5206,10 +5208,11 @@ function buildVideoFrameDebugGroup(hostId, title, prefix) {
     { key: `${prefix}_pos_x`, label: 'Pos X' },
     { key: `${prefix}_pos_y`, label: 'Pos Y' }
   ];
+  if (prefix === 'vt') controls.push({ key: 'vt_scale', label: 'Escala', min: 0.6, max: 1.6, step: 0.01, unit: '' });
   host.innerHTML = `<h4>${title}</h4>` + controls.map(control => `
     <div class="video-frame-debug-row">
       <label for="${control.key}">${control.label}</label>
-      <input id="${control.key}" type="range" min="0" max="40" step="0.1">
+      <input id="${control.key}" type="range" min="${control.min ?? 0}" max="${control.max ?? 40}" step="${control.step ?? 0.1}">
       <output id="${control.key}_out"></output>
     </div>
   `).join('');
@@ -5221,9 +5224,9 @@ function buildVideoFrameDebugGroup(hostId, title, prefix) {
       .getPropertyValue(`--${control.key.replace(/_/g, '-')}`).trim()
       .replace('%','');
     input.value = Number.parseFloat(current) || 0;
-    output.textContent = `${input.value}%`;
+    output.textContent = `${input.value}${control.unit ?? '%'}`;
     input.addEventListener('input', () => {
-      const next = `${input.value}%`;
+      const next = `${input.value}${control.unit ?? '%'}`;
       document.documentElement.style.setProperty(`--${control.key.replace(/_/g, '-')}`, next);
       output.textContent = next;
       persistVideoFrameDebugValues();
