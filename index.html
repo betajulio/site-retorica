@@ -9,7 +9,7 @@
 <title>Retórica — Classic Rock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050}
+  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:12.8%;--vc-right:21.8%;--vc-bottom:16.8%;--vc-left:17.8%;--vc-pos-x:41%;--vc-pos-y:34%;--vt-top:14%;--vt-right:22%;--vt-bottom:24%;--vt-left:17%;--vt-pos-x:41%;--vt-pos-y:34%}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
   body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
@@ -414,8 +414,8 @@
   .carousel-media-stage-video{aspect-ratio:16/9}
   .carousel-slide img{width:100%;max-height:520px;height:auto;object-fit:contain;display:block;background:rgba(5,4,2,.9)}
   .carousel-media{position:relative;display:block;width:100%;height:auto}
-  .carousel-media-screen{position:absolute;inset:12.8% 21.8% 16.8% 17.8%;overflow:hidden;z-index:2;border-radius:7.5% 7.5% 9.5% 9.5% / 9% 9% 12% 12%}
-  .carousel-media-video{width:100%;height:100%;object-fit:cover;object-position:41% 34%;max-height:none;background:transparent}
+  .carousel-media-screen{position:absolute;top:var(--vc-top);right:var(--vc-right);bottom:var(--vc-bottom);left:var(--vc-left);overflow:hidden;z-index:2;border-radius:7.5% 7.5% 9.5% 9.5% / 9% 9% 12% 12%}
+  .carousel-media-video{width:100%;height:100%;object-fit:cover;object-position:var(--vc-pos-x) var(--vc-pos-y);max-height:none;background:transparent}
   .carousel-info-panel{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;padding:1rem 1.2rem 1.15rem;border-top:1px solid rgba(200,130,10,.12);background:linear-gradient(180deg,rgba(10,8,4,.94),rgba(10,8,4,.86))}
   .carousel-info-main{min-width:0;display:flex;flex-direction:column;gap:.7rem;flex:1}
   .carousel-badges-row{display:flex;flex-wrap:wrap;gap:.42rem;align-items:center}
@@ -449,7 +449,20 @@
   .gallery-thumb:hover{border-color:rgba(200,130,10,.5)}
   .gallery-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
   .gallery-thumb-media{position:absolute;inset:0;width:100%;height:100%}
-  .gallery-thumb-media-video{inset:14% 22% 24% 17%;width:auto;height:auto;object-fit:cover;object-position:41% 34%;z-index:2}
+  .gallery-thumb-media-video{top:var(--vt-top);right:var(--vt-right);bottom:var(--vt-bottom);left:var(--vt-left);width:auto;height:auto;object-fit:cover;object-position:var(--vt-pos-x) var(--vt-pos-y);z-index:2}
+  .video-frame-debug{position:fixed;right:14px;bottom:14px;z-index:12000;width:min(92vw,360px);max-height:75vh;overflow:auto;background:rgba(10,8,4,.96);border:1px solid rgba(200,130,10,.35);border-radius:12px;box-shadow:0 18px 42px rgba(0,0,0,.38);padding:.95rem .95rem 1rem;display:none}
+  .video-frame-debug.show{display:block}
+  .video-frame-debug h3{font-family:'Cinzel',serif;font-size:.86rem;color:var(--gold);letter-spacing:.08em;margin-bottom:.75rem}
+  .video-frame-debug p{font-size:.68rem;color:var(--smoke);line-height:1.5;margin-bottom:.7rem}
+  .video-frame-debug-group{border-top:1px solid rgba(200,130,10,.14);padding-top:.7rem;margin-top:.7rem}
+  .video-frame-debug-group:first-of-type{border-top:none;padding-top:0;margin-top:0}
+  .video-frame-debug-group h4{font-family:'Cinzel',serif;font-size:.72rem;color:var(--cream);letter-spacing:.08em;margin-bottom:.5rem}
+  .video-frame-debug-row{display:grid;grid-template-columns:52px 1fr 58px;align-items:center;gap:.55rem;margin-bottom:.4rem}
+  .video-frame-debug-row label{font-size:.66rem;color:var(--paper);text-transform:uppercase;letter-spacing:.06em}
+  .video-frame-debug-row input{width:100%}
+  .video-frame-debug-row output{font-size:.68rem;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
+  .video-frame-debug-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+  .video-frame-debug-btn{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.28);color:var(--amber);padding:.45rem .7rem;border-radius:999px;cursor:pointer;font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em}
   .gallery-thumb:hover img{transform:scale(1.05)}
   .gallery-thumb-active{border-color:var(--amber)!important;box-shadow:0 0 0 2px rgba(200,130,10,.3)}
   .gallery-thumb-del{position:absolute;top:.3rem;right:.3rem;background:rgba(10,8,4,.8);border:none;color:var(--rust);cursor:pointer;border-radius:50%;width:22px;height:22px;font-size:.7rem;display:none;align-items:center;justify-content:center;transition:all .2s}
@@ -581,7 +594,6 @@
     /* Carousel */
     .carousel-slide img{max-height:320px}
     .carousel-video-frame{inset:0}
-    .carousel-media-screen{inset:13.6% 22.4% 17.4% 17.8%;border-radius:7.5% 7.5% 9.5% 9.5% / 9% 9% 12% 12%}
     .carousel-btn{width:36px;height:36px;font-size:.9rem}
     .carousel-prev{left:.4rem}
     .carousel-next{right:.4rem}
@@ -591,7 +603,6 @@
     .carousel-stats-row{justify-content:flex-start}
     .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.4rem}
     .gallery-thumb-del{display:flex} /* always visible on mobile (no hover) */
-    .gallery-thumb-media-video{inset:15% 23% 25% 18%}
     .thumb-video-frame{inset:0;background-size:100% 100%;background-position:center center}
 
     /* Lightbox */
@@ -615,7 +626,6 @@
     .hero-title{font-size:clamp(2.4rem,16vw,3.2rem)!important}
     .members-grid{grid-template-columns:1fr 1fr}
     .carousel-slide img{max-height:240px}
-    .carousel-media-screen{inset:14.2% 22.6% 18.3% 19%;border-radius:7.5% 7.5% 9.5% 9.5% / 9% 9% 12% 12%}
   }
 
   /* ── INSTALL POPUP ── */
@@ -1024,6 +1034,18 @@
 
   <!-- Miniaturas -->
   <div class="gallery-grid" id="galleryGrid"></div>
+
+  <div class="video-frame-debug" id="videoFrameDebug">
+    <h3>Ajuste Temporário de Vídeo</h3>
+    <p>Use os sliders para alinhar o vídeo dentro da moldura. Atalho: <strong>Ctrl+Shift+V</strong>. Os valores ficam salvos no navegador.</p>
+    <div class="video-frame-debug-group" id="videoFrameDebugCarousel"></div>
+    <div class="video-frame-debug-group" id="videoFrameDebugThumb"></div>
+    <div class="video-frame-debug-actions">
+      <button class="video-frame-debug-btn" type="button" onclick="copyVideoFrameDebugValues()">Copiar valores</button>
+      <button class="video-frame-debug-btn" type="button" onclick="resetVideoFrameDebugValues()">Resetar</button>
+      <button class="video-frame-debug-btn" type="button" onclick="toggleVideoFrameDebug(false)">Fechar</button>
+    </div>
+  </div>
 
   <!-- Upload — apenas membros -->
   <div class="member-only" style="margin-top:2rem">
@@ -5129,6 +5151,126 @@ async function completeRepertoryPoll(pollId, pollData) {
       console.error('[PROMOÇÃO] Erro inicial:', e);
     }
   }, 3000);
+})();
+
+const VIDEO_FRAME_DEBUG_KEY = 'retorica_video_frame_debug_values';
+const VIDEO_FRAME_DEBUG_DEFAULTS = {
+  vc_top: '12.8%',
+  vc_right: '21.8%',
+  vc_bottom: '16.8%',
+  vc_left: '17.8%',
+  vc_pos_x: '41%',
+  vc_pos_y: '34%',
+  vt_top: '14%',
+  vt_right: '22%',
+  vt_bottom: '24%',
+  vt_left: '17%',
+  vt_pos_x: '41%',
+  vt_pos_y: '34%'
+};
+
+function loadVideoFrameDebugValues() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(VIDEO_FRAME_DEBUG_KEY) || '{}');
+    return { ...VIDEO_FRAME_DEBUG_DEFAULTS, ...raw };
+  } catch {
+    return { ...VIDEO_FRAME_DEBUG_DEFAULTS };
+  }
+}
+
+function applyVideoFrameDebugValues(values) {
+  const root = document.documentElement;
+  Object.entries(values).forEach(([key, value]) => {
+    root.style.setProperty(`--${key.replace(/_/g, '-')}`, value);
+  });
+}
+
+function persistVideoFrameDebugValues() {
+  const values = {};
+  Object.keys(VIDEO_FRAME_DEBUG_DEFAULTS).forEach(key => {
+    values[key] = getComputedStyle(document.documentElement)
+      .getPropertyValue(`--${key.replace(/_/g, '-')}`).trim();
+  });
+  localStorage.setItem(VIDEO_FRAME_DEBUG_KEY, JSON.stringify(values));
+  return values;
+}
+
+function buildVideoFrameDebugGroup(hostId, title, prefix) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  const controls = [
+    { key: `${prefix}_top`, label: 'Topo' },
+    { key: `${prefix}_right`, label: 'Dir' },
+    { key: `${prefix}_bottom`, label: 'Base' },
+    { key: `${prefix}_left`, label: 'Esq' },
+    { key: `${prefix}_pos_x`, label: 'Pos X' },
+    { key: `${prefix}_pos_y`, label: 'Pos Y' }
+  ];
+  host.innerHTML = `<h4>${title}</h4>` + controls.map(control => `
+    <div class="video-frame-debug-row">
+      <label for="${control.key}">${control.label}</label>
+      <input id="${control.key}" type="range" min="0" max="40" step="0.1">
+      <output id="${control.key}_out"></output>
+    </div>
+  `).join('');
+
+  controls.forEach(control => {
+    const input = document.getElementById(control.key);
+    const output = document.getElementById(`${control.key}_out`);
+    const current = getComputedStyle(document.documentElement)
+      .getPropertyValue(`--${control.key.replace(/_/g, '-')}`).trim()
+      .replace('%','');
+    input.value = Number.parseFloat(current) || 0;
+    output.textContent = `${input.value}%`;
+    input.addEventListener('input', () => {
+      const next = `${input.value}%`;
+      document.documentElement.style.setProperty(`--${control.key.replace(/_/g, '-')}`, next);
+      output.textContent = next;
+      persistVideoFrameDebugValues();
+    });
+  });
+}
+
+window.toggleVideoFrameDebug = (force) => {
+  const panel = document.getElementById('videoFrameDebug');
+  if (!panel) return;
+  const shouldShow = typeof force === 'boolean' ? force : !panel.classList.contains('show');
+  panel.classList.toggle('show', shouldShow);
+};
+
+window.copyVideoFrameDebugValues = async () => {
+  const values = persistVideoFrameDebugValues();
+  const text = Object.entries(values).map(([key, value]) => `${key}: ${value}`).join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('✓ Valores copiados');
+  } catch {
+    showToast('⚠ Não consegui copiar, mas os valores ficaram salvos');
+  }
+};
+
+window.resetVideoFrameDebugValues = () => {
+  localStorage.setItem(VIDEO_FRAME_DEBUG_KEY, JSON.stringify(VIDEO_FRAME_DEBUG_DEFAULTS));
+  applyVideoFrameDebugValues(VIDEO_FRAME_DEBUG_DEFAULTS);
+  buildVideoFrameDebugGroup('videoFrameDebugCarousel', 'Carrossel', 'vc');
+  buildVideoFrameDebugGroup('videoFrameDebugThumb', 'Miniatura', 'vt');
+  showToast('Ajustes temporários resetados');
+};
+
+(function initVideoFrameDebug() {
+  const values = loadVideoFrameDebugValues();
+  applyVideoFrameDebugValues(values);
+  buildVideoFrameDebugGroup('videoFrameDebugCarousel', 'Carrossel', 'vc');
+  buildVideoFrameDebugGroup('videoFrameDebugThumb', 'Miniatura', 'vt');
+  if (new URLSearchParams(location.search).get('videoFrameDebug') === '1') {
+    toggleVideoFrameDebug(true);
+  }
+  window.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'v') {
+      event.preventDefault();
+      toggleVideoFrameDebug();
+    }
+  });
 })();
 
 </script>
