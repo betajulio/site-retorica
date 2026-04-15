@@ -2643,6 +2643,19 @@ async function loadPollsSnapshot(force = false) {
   if (pollsLoaded && !force) return;
   const snap = await getDocs(query(collection(db,'polls'), orderBy('createdAt','desc')));
   pollsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  const uid = auth.currentUser?.uid;
+  if (uid) {
+    await Promise.all(pollsCache.map(async item => {
+      try {
+        const voteSnap = await getDoc(doc(db, 'polls', item.id, 'votes', uid));
+        if (voteSnap.exists()) {
+          item.data.myVoteIdx = voteSnap.data().optIdx;
+        }
+      } catch (e) {
+        // Keep polls visible even if the private vote lookup is unavailable.
+      }
+    }));
+  }
   pollsLoaded = true;
   renderPolls();
 }
@@ -2695,7 +2708,7 @@ function renderPolls() {
     // Determine if closed: manually OR deadline passed
     const deadlineMs  = p.deadline ? new Date(p.deadline).getTime() : null;
     const isClosed    = p.closed === true || (deadlineMs && now > deadlineMs);
-    const myVoteIdx   = uid && p.voterMap ? p.voterMap[uid] : null;
+    const myVoteIdx   = p.myVoteIdx ?? (uid && p.voterMap ? p.voterMap[uid] : null);
     const hasVoted    = myVoteIdx !== null && myVoteIdx !== undefined;
     const total       = (p.options||[]).reduce((s,o)=>s+(o.votes||0),0);
     const canVote     = isMember && !hasVoted && !isClosed;
@@ -2732,10 +2745,9 @@ function renderPolls() {
       winnerHtml = `<div class="poll-winner">🏆 ${winners.length===1?'Vencedor':'Empate'}: ${winners.map(w=>w.label).join(' · ')}</div>`;
     }
 
-    // Bars (always shown)
+    // Bars (always shown), without exposing who voted in each option.
     const bars = (p.options||[]).map((o,i) => {
       const pct    = total ? Math.round((o.votes||0)/total*100) : 0;
-      const voters = (p.voters||[]).filter(v=>v.optIdx===i).map(v=>`<span class="voter-tag">${v.name}</span>`).join('');
       return `<div class="poll-bar-item">
         <div class="poll-bar-label">${o.label}</div>
         <div class="poll-bar-right">
@@ -2743,7 +2755,6 @@ function renderPolls() {
             <div class="poll-bar-track" style="flex:1"><div class="poll-bar-fill" style="width:${pct}%"></div></div>
             <span class="poll-bar-pct">${pct}% (${o.votes||0})</span>
           </div>
-          ${voters ? `<div class="poll-voters">${voters}</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -2754,12 +2765,12 @@ function renderPolls() {
       <div class="poll-options" style="margin-top:1rem">
         ${(p.options||[]).map((o,i)=>`<div class="poll-option"><input type="radio" id="p${id}o${i}" name="poll_${id}"><label class="poll-option-label" for="p${id}o${i}"><div class="poll-dot"></div>${o.label}</label></div>`).join('')}
         <div style="margin-top:.8rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
-          <span style="font-size:.78rem;color:var(--amber);font-family:'Cinzel',serif">Votando como: ${voterName}</span>
+          <span style="font-size:.78rem;color:var(--amber);font-family:'Cinzel',serif">Voto secreto como: ${voterName}</span>
           <button class="btn btn-sm" onclick="submitPollVote('${id}')">Votar</button>
         </div>
       </div>` : '';
 
-    const myVoteLabel   = hasVoted ? `<span class="poll-my-vote">Seu voto: ${p.options[myVoteIdx]?.label}</span>` : '';
+    const myVoteLabel   = hasVoted ? `<span class="poll-my-vote">Você já votou nesta enquete.</span>` : '';
     const changeVoteBtn = isMember && hasVoted && !isClosed ? `<button class="btn-ghost btn-sm" onclick="removePollVote('${id}')">Mudar voto</button>` : '';
     const closeBtn      = isMember && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
     const deleteBtn     = isMember ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
@@ -2815,8 +2826,6 @@ window.togglePollsHistory = () => {
 window.submitPollVote = async id => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
   const uid  = auth.currentUser?.uid;
-  const name = auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ') || auth.currentUser?.email?.split('@')[0] || 'Membro';
-
   const snap = await getDoc(doc(db,'polls',id));
   if (!snap.exists()) return;
   const p = snap.data();
@@ -2836,34 +2845,59 @@ window.submitPollVote = async id => {
   });
   if (chosen === null) { showToast('⚠ Selecione uma opção'); return; }
 
-  const options  = p.options.map((o,i) => ({...o, votes: (o.votes||0) + (i===chosen ? 1 : 0)}));
-  const voters   = [...(p.voters||[]), {uid, name, optIdx: chosen}];
-  const voterMap = {...(p.voterMap||{}), [uid]: chosen};
-
   try {
-    await updateDoc(doc(db,'polls',id), {options, voters, voterMap});
+    const pollRef = doc(db, 'polls', id);
+    const voteRef = doc(db, 'polls', id, 'votes', uid);
+    await runTransaction(db, async transaction => {
+      const pollSnap = await transaction.get(pollRef);
+      if (!pollSnap.exists()) throw new Error('Enquete não encontrada');
+      const poll = pollSnap.data();
+      const voteSnap = await transaction.get(voteRef);
+      const pollDeadlineMs = poll.deadline ? new Date(poll.deadline).getTime() : null;
+      const pollClosed = poll.closed === true || (pollDeadlineMs && Date.now() > pollDeadlineMs);
+      if (pollClosed) throw new Error('Esta enquete já foi encerrada');
+      if (voteSnap.exists() || poll.voterMap?.[uid] !== undefined || (poll.voters || []).some(v => v.uid === uid)) {
+        throw new Error('Você já votou nesta enquete');
+      }
+      const options = poll.options.map((o, i) => ({ ...o, votes: (o.votes || 0) + (i === chosen ? 1 : 0) }));
+      transaction.update(pollRef, { options });
+      transaction.set(voteRef, { optIdx: chosen, createdAt: serverTimestamp() });
+    });
     await refreshPollsIfNeeded();
-    await writeLog('Voto registrado', `"${p.question}" → ${p.options[chosen].label} (${name})`, 'enquetes');
+    await writeLog('Voto registrado', `"${p.question}" — voto secreto registrado`, 'enquetes');
     showToast('✓ Voto registrado!');
   } catch(e) {
     console.error('Vote error:', e);
-    showToast('⚠ Erro ao registrar voto. Verifique as regras do Firestore.');
+    showToast(`⚠ ${e.message || 'Erro ao registrar voto. Verifique as regras do Firestore.'}`);
   }
 };
 
 window.removePollVote = async id => {
   if (!confirmAction('Deseja realmente remover seu voto desta enquete?')) return;
   const uid = auth.currentUser?.uid; if (!uid) return;
-  const snap = await getDoc(doc(db,'polls',id)); if (!snap.exists()) return;
-  const p = snap.data();
-  const oldIdx = p.voterMap?.[uid]; if (oldIdx===undefined) return;
-  const options = p.options.map((o,i)=>({...o, votes:Math.max(0,(o.votes||0)-(i===oldIdx?1:0))}));
-  const voters  = (p.voters||[]).filter(v=>v.uid!==uid);
-  const voterMap= {...(p.voterMap||{})};
-  delete voterMap[uid];
-  await updateDoc(doc(db,'polls',id),{options,voters,voterMap});
-  await refreshPollsIfNeeded();
-  showToast('Voto removido. Vote novamente!');
+  try {
+    const pollRef = doc(db, 'polls', id);
+    const voteRef = doc(db, 'polls', id, 'votes', uid);
+    await runTransaction(db, async transaction => {
+      const pollSnap = await transaction.get(pollRef);
+      if (!pollSnap.exists()) throw new Error('Enquete não encontrada');
+      const poll = pollSnap.data();
+      const voteSnap = await transaction.get(voteRef);
+      const oldIdx = voteSnap.exists() ? voteSnap.data().optIdx : poll.voterMap?.[uid];
+      if (oldIdx === undefined || oldIdx === null) throw new Error('Voto não encontrado');
+      const options = poll.options.map((o, i) => ({ ...o, votes: Math.max(0, (o.votes || 0) - (i === oldIdx ? 1 : 0)) }));
+      const voters = (poll.voters || []).filter(v => v.uid !== uid).map(v => ({ uid: v.uid, optIdx: v.optIdx }));
+      const voterMap = { ...(poll.voterMap || {}) };
+      delete voterMap[uid];
+      transaction.update(pollRef, { options, voters, voterMap });
+      if (voteSnap.exists()) transaction.delete(voteRef);
+    });
+    await refreshPollsIfNeeded();
+    showToast('Voto removido. Vote novamente!');
+  } catch (e) {
+    console.error('Remove vote error:', e);
+    showToast(`⚠ ${e.message || 'Erro ao remover voto.'}`);
+  }
 };
 
 window.deletePoll = async id => {
@@ -2886,8 +2920,6 @@ window.createPoll = async () => {
   await addDoc(collection(db,'polls'),{
     question: q,
     options:  opts.map(l=>({label:l,votes:0})),
-    voters:   [],
-    voterMap: {},
     closed:   false,
     deadline: deadline || null,
     createdAt: serverTimestamp()
