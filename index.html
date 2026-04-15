@@ -2735,8 +2735,17 @@ let pollsCache = [];
 
 async function loadPollsSnapshot(force = false) {
   if (pollsLoaded && !force) return;
-  const snap = await getDocs(query(collection(db,'polls'), orderBy('createdAt','desc'), limit(40)));
-  pollsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  const snap = await getDocs(collection(db,'polls'));
+  const pollSortTime = p => {
+    if (p.createdAt?.toMillis) return p.createdAt.toMillis();
+    if (p.createdAt?.toDate) return p.createdAt.toDate().getTime();
+    if (p.createdAt) return new Date(p.createdAt).getTime() || 0;
+    if (p.deadline) return new Date(p.deadline).getTime() || 0;
+    return 0;
+  };
+  pollsCache = snap.docs
+    .map(d => ({id: d.id, data: d.data()}))
+    .sort((a, b) => pollSortTime(b.data) - pollSortTime(a.data));
   const uid = auth.currentUser?.uid;
   let voteLookupCount = 0;
   if (uid) {
