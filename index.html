@@ -3351,6 +3351,8 @@ let selectedUploadTag   = '';
 let selectedYoutubeUploadTag = '';
 let galleryCompQuality  = 0.7;   // lido do Firestore config/galleryCompression
 let galleryCompMaxPx    = 1920;
+let galleryCarouselDelayMs = 5000;
+let galleryCarouselTimer = null;
 let galleryLastGridIds  = '';    // ids da última grade renderizada, evita re-render desnecessário
 let carouselTouchStartX = 0;
 let carouselTouchStartY = 0;
@@ -3415,6 +3417,17 @@ async function ensureGallerySubscription(force = false) {
     loadGalleryCompression(force),
     loadGallerySnapshot(force)
   ]);
+}
+
+function restartGalleryAutoplay() {
+  if (galleryCarouselTimer) clearInterval(galleryCarouselTimer);
+  galleryCarouselTimer = setInterval(() => {
+    if (galleryCache.length > 1) {
+      carouselIndex = (carouselIndex + 1) % galleryCache.length;
+      carouselFramePhase = (carouselFramePhase + 1) % VIDEO_FRAME_ASSETS.length;
+      renderGallery();
+    }
+  }, galleryCarouselDelayMs);
 }
 
 async function loadGallerySnapshot(force = false) {
@@ -3603,13 +3616,7 @@ function initCarouselTouch() {
   }, true);
 }
 
-setInterval(() => {
-  if (galleryCache.length > 1) {
-    carouselIndex = (carouselIndex + 1) % galleryCache.length;
-    carouselFramePhase = (carouselFramePhase + 1) % VIDEO_FRAME_ASSETS.length;
-    renderGallery();
-  }
-}, 5000);
+restartGalleryAutoplay();
 
 // Preview files before upload
 function renderGalleryPreview() {
@@ -4400,9 +4407,11 @@ async function loadGalleryCompression(force = false) {
     if (snap.exists()) {
       galleryCompQuality = (snap.data().quality || 70) / 100;
       galleryCompMaxPx   = snap.data().maxPx   || 1920;
+      galleryCarouselDelayMs = Math.min(30000, Math.max(2000, (parseInt(snap.data().carouselDelaySeconds, 10) || 5) * 1000));
     }
   } catch(e) { /* use defaults */ }
   galleryCompressionLoaded = true;
+  restartGalleryAutoplay();
 }
 
 function renderTagBar() {

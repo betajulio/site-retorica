@@ -164,6 +164,14 @@
   .admin-tools-sub{font-size:.77rem;color:#d6b59a;max-width:720px;line-height:1.6}
   .admin-tools-grid{display:flex;gap:.8rem;flex-wrap:wrap}
   .admin-tools-warning{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .6rem;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:#fca5a5;font-size:.67rem;letter-spacing:.12em;text-transform:uppercase;font-family:'Cinzel',serif}
+  .admin-inline-config{margin-top:1rem;padding:1rem 1.1rem;border:1px solid rgba(200,130,10,.2);background:rgba(255,255,255,.025);display:flex;gap:1rem;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+  .admin-inline-config-copy{flex:1 1 260px;min-width:220px}
+  .admin-inline-config-title{font-family:'Cinzel',serif;color:var(--cream);letter-spacing:.08em;text-transform:uppercase;font-size:.9rem}
+  .admin-inline-config-sub{margin-top:.25rem;color:var(--smoke);font-size:.8rem;line-height:1.5}
+  .admin-inline-config-controls{display:flex;gap:.7rem;align-items:flex-end;flex-wrap:wrap}
+  .admin-inline-field{display:flex;flex-direction:column;gap:.35rem;min-width:150px}
+  .admin-inline-field label{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke)}
+  .admin-inline-field input{background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.28);color:var(--cream);padding:.7rem .8rem;font:inherit}
   .coin-inline{display:inline-flex;align-items:center;gap:.32rem;line-height:1.2;vertical-align:middle;max-width:100%}
   .coin-inline img{display:block;width:14px;height:14px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.22));flex:0 0 auto}
   .coin-inline strong,.coin-inline b{line-height:1}
@@ -256,16 +264,30 @@
         <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
         <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
       </div>
-      <div class="admin-tools-grid" style="margin-top:.8rem">
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=default#hero">Logo padrão</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=pascoa#hero">Páscoa</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=festajunina#hero">Festa Junina</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=independencia#hero">Independência</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=halloween#hero">Halloween</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=natal#hero">Natal</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=anonovo#hero">Ano Novo</a>
+        <div class="admin-tools-grid" style="margin-top:.8rem">
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=default#hero">Logo padrão</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=pascoa#hero">Páscoa</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=festajunina#hero">Festa Junina</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=independencia#hero">Independência</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=halloween#hero">Halloween</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=natal#hero">Natal</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=anonovo#hero">Ano Novo</a>
+        </div>
+        <div class="admin-inline-config">
+          <div class="admin-inline-config-copy">
+            <div class="admin-inline-config-title">Tempo do carrossel</div>
+            <div class="admin-inline-config-sub">Escolha quantos segundos cada item da galeria principal fica em destaque antes de passar para o próximo.</div>
+          </div>
+          <div class="admin-inline-config-controls">
+            <div class="admin-inline-field">
+              <label for="carouselDelaySecondsInput">Segundos por imagem</label>
+              <input id="carouselDelaySecondsInput" type="number" min="2" max="30" step="1" value="5">
+            </div>
+            <button class="btn-ghost" onclick="saveCarouselTimingConfig()" style="border-color:var(--amber);color:var(--gold)">⏱ Salvar tempo</button>
+            <span id="carouselTimingSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
+          </div>
+        </div>
       </div>
-    </div>
 
     <!-- FILTERS -->
     <div class="filters">
@@ -1267,31 +1289,33 @@ const QUALITY_HINTS = {
   100: 'Sem compressão JPEG — arquivos muito grandes, não recomendado.',
 };
 
-async function loadGalleryConfig() {
-  try {
-    const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
-    if (snap.exists()) {
-      const { quality = 70, maxPx = 1920 } = snap.data();
-      applyConfigToUI(quality, maxPx);
-    } else {
-      applyConfigToUI(70, 1920);
+  async function loadGalleryConfig() {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
+      if (snap.exists()) {
+        const { quality = 70, maxPx = 1920, carouselDelaySeconds = 5 } = snap.data();
+        applyConfigToUI(quality, maxPx, carouselDelaySeconds);
+      } else {
+        applyConfigToUI(70, 1920, 5);
+      }
+    } catch(e) {
+      applyConfigToUI(70, 1920, 5);
     }
-  } catch(e) {
-    applyConfigToUI(70, 1920);
   }
-}
-
-function applyConfigToUI(quality, maxPx) {
-  const slider = document.getElementById('qualitySlider');
-  const label  = document.getElementById('qualityLabel');
-  const hint   = document.getElementById('qualityHint');
-  const sel    = document.getElementById('maxPxSelect');
-  if (slider) slider.value = quality;
-  if (label)  label.textContent = `${quality}%`;
-  if (hint)   hint.textContent  = QUALITY_HINTS[quality] || '';
-  if (sel)    sel.value = String(maxPx);
-  updatePresetHighlight(quality);
-}
+  
+  function applyConfigToUI(quality, maxPx, carouselDelaySeconds = 5) {
+    const slider = document.getElementById('qualitySlider');
+    const label  = document.getElementById('qualityLabel');
+    const hint   = document.getElementById('qualityHint');
+    const sel    = document.getElementById('maxPxSelect');
+    const carouselDelayInput = document.getElementById('carouselDelaySecondsInput');
+    if (slider) slider.value = quality;
+    if (label)  label.textContent = `${quality}%`;
+    if (hint)   hint.textContent  = QUALITY_HINTS[quality] || '';
+    if (sel)    sel.value = String(maxPx);
+    if (carouselDelayInput) carouselDelayInput.value = String(Math.min(30, Math.max(2, parseInt(carouselDelaySeconds, 10) || 5)));
+    updatePresetHighlight(quality);
+  }
 
 function updatePresetHighlight(quality) {
   document.querySelectorAll('#qualityPresets .filter-btn').forEach(btn => {
@@ -1318,22 +1342,40 @@ window.onMaxPxChange = val => {
   // nothing extra needed, value read on save
 };
 
-window.saveGalleryConfig = async () => {
-  const slider  = document.getElementById('qualitySlider');
-  const sel     = document.getElementById('maxPxSelect');
-  const status  = document.getElementById('configSaveStatus');
-  const quality = parseInt(slider?.value || 70);
-  const maxPx   = parseInt(sel?.value || 1920);
-  try {
-    await setDoc(doc(db, 'config', 'galleryCompression'), { quality, maxPx, updatedAt: new Date().toISOString() });
-    if (status) { status.textContent = '✓ Salvo! Próximos uploads já usam a nova configuração.'; status.style.color = 'var(--gold)'; }
-    showToast(`✓ Configuração salva — qualidade ${quality}%, max ${maxPx}px`);
-    setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+  window.saveGalleryConfig = async () => {
+    const slider  = document.getElementById('qualitySlider');
+    const sel     = document.getElementById('maxPxSelect');
+    const status  = document.getElementById('configSaveStatus');
+    const carouselDelayInput = document.getElementById('carouselDelaySecondsInput');
+    const quality = parseInt(slider?.value || 70);
+    const maxPx   = parseInt(sel?.value || 1920);
+    const carouselDelaySeconds = Math.min(30, Math.max(2, parseInt(carouselDelayInput?.value || 5, 10) || 5));
+    try {
+      await setDoc(doc(db, 'config', 'galleryCompression'), { quality, maxPx, carouselDelaySeconds, updatedAt: new Date().toISOString() });
+      if (status) { status.textContent = '✓ Salvo! Próximos uploads já usam a nova configuração.'; status.style.color = 'var(--gold)'; }
+      showToast(`✓ Configuração salva — qualidade ${quality}%, max ${maxPx}px`);
+      setTimeout(() => { if (status) status.textContent = ''; }, 5000);
   } catch(e) {
     if (status) { status.textContent = '⚠ Erro ao salvar.'; status.style.color = '#fca5a5'; }
     showToast('⚠ Erro ao salvar configuração');
-  }
-};
+    }
+  };
+
+  window.saveCarouselTimingConfig = async () => {
+    const input = document.getElementById('carouselDelaySecondsInput');
+    const status = document.getElementById('carouselTimingSaveStatus');
+    const carouselDelaySeconds = Math.min(30, Math.max(2, parseInt(input?.value || 5, 10) || 5));
+    if (input) input.value = String(carouselDelaySeconds);
+    try {
+      await setDoc(doc(db, 'config', 'galleryCompression'), { carouselDelaySeconds, updatedAt: new Date().toISOString() }, { merge: true });
+      if (status) { status.textContent = '✓ Tempo salvo!'; status.style.color = 'var(--gold)'; }
+      showToast(`✓ Carrossel ajustado para ${carouselDelaySeconds}s por imagem`);
+      setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+    } catch (e) {
+      if (status) { status.textContent = '⚠ Erro ao salvar.'; status.style.color = '#fca5a5'; }
+      showToast('⚠ Erro ao salvar tempo do carrossel');
+    }
+  };
 
 loadGalleryConfig();
 
