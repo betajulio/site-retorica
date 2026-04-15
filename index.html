@@ -562,6 +562,9 @@
   .gallery-preview-card img{width:70px;height:70px;object-fit:cover;border-radius:1px;border:1px solid rgba(200,130,10,.3);display:block}
   .gallery-preview-del{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(10,8,4,.92);color:var(--rust);font-size:.78rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}
   .gallery-preview-del:hover{background:var(--rust);color:var(--cream)}
+  .gallery-preview-list{display:flex;gap:.5rem;flex-wrap:wrap;max-height:390px;overflow-y:auto;padding-right:.35rem}
+  .gallery-preview-list::-webkit-scrollbar{width:8px}
+  .gallery-preview-list::-webkit-scrollbar-thumb{background:rgba(200,130,10,.32);border-radius:999px}
 
   /* LOADING */
   .loading-overlay{position:fixed;inset:0;background:var(--black);z-index:8000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;transition:opacity .5s}
@@ -1160,7 +1163,7 @@
       </div>
       <div id="galleryPreviewWrap" style="display:none;margin-bottom:1rem">
         <p style="font-size:.75rem;color:var(--smoke);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.1em">Preview</p>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="galleryPreviewList"></div>
+        <div class="gallery-preview-list" id="galleryPreviewList"></div>
       </div>
       <button class="btn" onclick="uploadGalleryPhotos()">Publicar Foto(s)</button>
     </div>
