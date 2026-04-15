@@ -537,6 +537,10 @@
   .gallery-thumb-del{position:absolute;top:.3rem;right:.3rem;background:rgba(10,8,4,.8);border:none;color:var(--rust);cursor:pointer;border-radius:50%;width:22px;height:22px;font-size:.7rem;display:none;align-items:center;justify-content:center;transition:all .2s}
   .gallery-thumb:hover .gallery-thumb-del{display:flex}
   .gallery-thumb-del:hover{background:var(--rust);color:var(--cream)}
+  .gallery-rank-medal{position:absolute;right:.35rem;bottom:.35rem;z-index:7;display:flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 .45rem;border-radius:999px;border:1px solid rgba(255,255,255,.18);font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.06em;color:#1a1207;box-shadow:0 8px 16px rgba(0,0,0,.28)}
+  .gallery-rank-medal.gold{background:linear-gradient(135deg,#f7d774,#d89f09);color:#2c1a05}
+  .gallery-rank-medal.silver{background:linear-gradient(135deg,#e8edf3,#9ea8b4);color:#1e242c}
+  .gallery-rank-medal.bronze{background:linear-gradient(135deg,#e4b085,#9b5827);color:#2d1305}
   .img-stats{position:absolute;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 .4rem;pointer-events:none;z-index:5}
   .gallery-thumb .img-stats{bottom:.4rem}
   /* ── GALLERY TAGS ── */
@@ -3557,14 +3561,26 @@ function renderGallery() {
   ).join('');
 
   track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+  const activeCarouselId = filtered[carouselIndex]?.id || '';
+  const gridSorted = [...filtered].sort((a, b) => {
+    const likesA = Object.values(a.data?.reactions || {}).filter(v => v === 'like').length;
+    const likesB = Object.values(b.data?.reactions || {}).filter(v => v === 'like').length;
+    if (likesB !== likesA) return likesB - likesA;
+    const commentsA = getGalleryCommentCount(a.data);
+    const commentsB = getGalleryCommentCount(b.data);
+    if (commentsB !== commentsA) return commentsB - commentsA;
+    const tsA = a.data?.createdAt?.seconds || 0;
+    const tsB = b.data?.createdAt?.seconds || 0;
+    return tsB - tsA;
+  });
 
   // Só re-renderiza a grade se o conjunto de fotos mudou
-  const newGridIds = filtered.map(x=>x.id).join(',');
+  const newGridIds = gridSorted.map(x => x.id).join(',');
   const gridNeedsUpdate = newGridIds !== galleryLastGridIds;
   galleryLastGridIds = newGridIds;
 
   if (gridNeedsUpdate) {
-    grid.innerHTML = filtered.map(({id, data: p}, i) => {
+    grid.innerHTML = gridSorted.map(({id, data: p}, rankIndex) => {
       const mediaType = getGalleryMediaType(p);
       const thumbUrl = getGalleryThumbUrl(p);
       const r = p.reactions || {};
@@ -3580,14 +3596,22 @@ function renderGallery() {
       const videoFrame = mediaType === 'youtube'
         ? `<div class="video-portrait-frame thumb-video-frame" aria-hidden="true" style="background-image:url('imagens/portrait_video.png')"></div>`
         : '';
+      const medalHtml = rankIndex === 0
+        ? '<div class="gallery-rank-medal gold" title="1º lugar">Ouro</div>'
+        : rankIndex === 1
+          ? '<div class="gallery-rank-medal silver" title="2º lugar">Prata</div>'
+          : rankIndex === 2
+            ? '<div class="gallery-rank-medal bronze" title="3º lugar">Bronze</div>'
+            : '';
       const statsHtml = `<div class="img-stats">
         <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
         <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
       </div>`;
-      return `<div class="gallery-thumb${i===carouselIndex?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
+      return `<div class="gallery-thumb${id===activeCarouselId?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
         <img class="gallery-thumb-media${mediaType === 'youtube' ? ' gallery-thumb-media-video' : ''}" src="${thumbUrl}" alt="${p.caption||''}" loading="lazy">
         ${videoFrame}
         ${mediaBadge}
+        ${medalHtml}
         ${statsHtml}
         ${del}
       </div>`;
