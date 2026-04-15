@@ -537,10 +537,10 @@
   .video-frame-debug-btn{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.28);color:var(--amber);padding:.45rem .7rem;border-radius:999px;cursor:pointer;font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em}
   .gallery-thumb:hover img{transform:scale(1.05)}
   .gallery-thumb-active{border-color:var(--amber)!important;box-shadow:0 0 0 2px rgba(200,130,10,.3)}
-  .gallery-thumb-del{position:absolute;top:.3rem;right:.3rem;background:rgba(10,8,4,.8);border:none;color:var(--rust);cursor:pointer;border-radius:50%;width:22px;height:22px;font-size:.7rem;display:none;align-items:center;justify-content:center;transition:all .2s}
+  .gallery-thumb-del{position:absolute;top:.3rem;right:.3rem;z-index:8;background:rgba(10,8,4,.8);border:none;color:var(--rust);cursor:pointer;border-radius:50%;width:22px;height:22px;font-size:.7rem;display:none;align-items:center;justify-content:center;transition:all .2s}
   .gallery-thumb:hover .gallery-thumb-del{display:flex}
   .gallery-thumb-del:hover{background:var(--rust);color:var(--cream)}
-  .gallery-rank-medal{position:absolute;right:.35rem;top:.35rem;z-index:7;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(10,8,4,.55);backdrop-filter:blur(4px);border:none;font-size:1.1rem;box-shadow:0 4px 10px rgba(0,0,0,.35);line-height:1;animation:medal-float 3s ease-in-out infinite}
+  .gallery-rank-medal{position:absolute;right:.35rem;top:2.25rem;z-index:7;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(10,8,4,.55);backdrop-filter:blur(4px);border:none;font-size:1.1rem;box-shadow:0 4px 10px rgba(0,0,0,.35);line-height:1;animation:medal-float 3s ease-in-out infinite}
   @keyframes medal-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
   .gallery-rank-medal.gold{}
   .gallery-rank-medal.silver{}
@@ -1377,6 +1377,63 @@ const MEMBER_CATEGORY_LABELS = {
 };
 let memberCoinBalance = 0;
 let memberCoinGuideCache = { email: '', data: null, fetchedAt: 0 };
+const READ_AUDIT_CONFIG_ID = 'readAudit';
+let readAuditCache = { checkedAt: 0, data: null };
+
+function auditDateKey(date = new Date()) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:00`;
+}
+
+function auditTimestampMs(value) {
+  if (!value) return 0;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  return new Date(value).getTime() || 0;
+}
+
+async function getReadAuditConfig(force = false) {
+  const now = Date.now();
+  if (!force && readAuditCache.checkedAt && now - readAuditCache.checkedAt < 60000) return readAuditCache.data;
+  const snap = await getDoc(doc(db, 'config', READ_AUDIT_CONFIG_ID));
+  const data = snap.exists() ? snap.data() : null;
+  readAuditCache = { checkedAt: now, data };
+  return data;
+}
+
+function readAuditSeverity(estimatedReads) {
+  if (estimatedReads >= 200) return 'critical';
+  if (estimatedReads >= 50) return 'warning';
+  return 'info';
+}
+
+async function auditReadEvent({ page = 'index', action, collectionName, estimatedReads = 0, meta = {} }) {
+  if (!isLoggedIn || !isMember || !auth.currentUser || !action || !collectionName) return;
+  const config = await getReadAuditConfig().catch(() => null);
+  const expiresAt = auditTimestampMs(config?.expiresAt);
+  if (!config?.enabled || !config?.activeRunId || !expiresAt || expiresAt <= Date.now()) return;
+  const reads = Number(estimatedReads || 0);
+  try {
+    await addDoc(collection(db, 'read_audit_events'), {
+      auditId: config.activeRunId,
+      at: serverTimestamp(),
+      atLocal: new Date().toLocaleString('pt-BR'),
+      hourKey: auditDateKey(),
+      userEmail: auth.currentUser.email || '',
+      userName: auth.currentUser.displayName || auth.currentUser.email || 'Membro',
+      page,
+      action,
+      collection: collectionName,
+      estimatedReads: reads,
+      severity: readAuditSeverity(reads),
+      path: location.pathname,
+      userAgent: navigator.userAgent.slice(0, 180),
+      meta
+    });
+  } catch (err) {
+    console.warn('Read audit event error:', err);
+  }
+}
 
 // ─── AUTH ──────────────────────────────────────────────────────────
 // Visitantes com Google login podem interagir (likes, comentários).
@@ -1626,6 +1683,7 @@ async function loadMemberCoinGuideData(user) {
   }
 
   const statsSnap = await getDoc(doc(db, 'member_stats', email));
+  auditReadEvent({ action: 'coin-popup', collectionName: 'member_stats', estimatedReads: 1, meta: { email } });
 
   const stats = statsSnap.exists() ? statsSnap.data() : {};
   const actionsByCat = {
@@ -2664,12 +2722,14 @@ async function loadPollsSnapshot(force = false) {
   const snap = await getDocs(query(collection(db,'polls'), orderBy('createdAt','desc'), limit(40)));
   pollsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   const uid = auth.currentUser?.uid;
+  let voteLookupCount = 0;
   if (uid) {
     const now = Date.now();
     const voteLookupItems = pollsCache.filter(({ data: p }) => {
       const deadlineMs = p.deadline ? new Date(p.deadline).getTime() : null;
       return p.closed !== true && !(deadlineMs && now > deadlineMs);
     }).slice(0, 20);
+    voteLookupCount = voteLookupItems.length;
     await Promise.all(voteLookupItems.map(async item => {
       try {
         const voteSnap = await getDoc(doc(db, 'polls', item.id, 'votes', uid));
@@ -2681,6 +2741,7 @@ async function loadPollsSnapshot(force = false) {
       }
     }));
   }
+  auditReadEvent({ action: 'polls-load', collectionName: 'polls', estimatedReads: snap.size + voteLookupCount, meta: { polls: snap.size, privateVotes: voteLookupCount } });
   pollsLoaded = true;
   renderPolls();
 }
@@ -3271,6 +3332,7 @@ const forumPostSubscriptions = {};
 async function ensureForumSubscription(force = false) {
   if (forumSubscribed && !force) return;
   const snap = await getDocs(query(collection(db,'forum'), orderBy('createdAt','desc')));
+  auditReadEvent({ action: 'forum-load', collectionName: 'forum', estimatedReads: snap.size });
   forumCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   forumSubscribed = true;
   renderForum();
@@ -3279,6 +3341,7 @@ async function ensureForumSubscription(force = false) {
 async function ensureForumPostsSubscription(threadId, force = false) {
   if (forumPostSubscriptions[threadId] && !force) return;
   const snap = await getDocs(query(collection(db,'forum',threadId,'posts'), orderBy('createdAt','asc')));
+  auditReadEvent({ action: 'forum-posts-load', collectionName: `forum/${threadId}/posts`, estimatedReads: snap.size, meta: { threadId } });
   forumPostsCache[threadId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
   forumPostSubscriptions[threadId] = true;
   renderForum();
@@ -3522,6 +3585,7 @@ function restartGalleryAutoplay() {
 async function loadGallerySnapshot(force = false) {
   if (gallerySubscribed && !force) return;
   const snap = await getDocs(query(collection(db,'gallery'), orderBy('createdAt','desc')));
+  auditReadEvent({ action: 'gallery-load', collectionName: 'gallery', estimatedReads: snap.size });
   galleryCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   gallerySubscribed = true;
   renderGallery();
@@ -4094,6 +4158,7 @@ async function syncGalleryCounts(photoId, updater) {
 async function loadGalleryCommentsSnapshot(photoId, force = false) {
   if (galleryCommentsCache[photoId] && !force) return;
   const snap = await getDocs(query(collection(db,'gallery',photoId,'comments'), orderBy('createdAt','asc')));
+  auditReadEvent({ action: 'gallery-comments-load', collectionName: `gallery/${photoId}/comments`, estimatedReads: snap.size, meta: { photoId } });
   galleryCommentsCache[photoId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
 }
 

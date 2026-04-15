@@ -20,8 +20,7 @@
   .auth-boot-panel{width:min(88vw,520px);border:1px solid rgba(200,130,10,.32);background:linear-gradient(180deg,rgba(36,23,10,.96),rgba(14,10,6,.96));box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 2px rgba(200,130,10,.08) inset;padding:1.4rem 1.2rem 1.2rem;position:relative;overflow:hidden}
   .auth-boot-panel::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);opacity:.25;pointer-events:none}
   .auth-boot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;font-family:'Bebas Neue',sans-serif;letter-spacing:.18em;color:var(--gold);font-size:1rem}
-  .auth-boot-disc{width:84px;height:84px;border-radius:50%;margin:0 auto .9rem;background:
-    radial-gradient(circle at center,#f7d76f 0 8%,#1a1208 8% 17%,#d7a02a 17% 21%,#0c0905 21% 52%,#b57614 52% 56%,#080603 56% 100%);
+  .auth-boot-disc{width:84px;height:84px;border-radius:50%;margin:0 auto .9rem;background:url('imagens/Toca_do_Mineiro_logo_final.png') center/cover no-repeat;
     border:1px solid rgba(200,130,10,.3);box-shadow:0 0 0 10px rgba(200,130,10,.05);animation:psxSpin 2.8s linear infinite}
   .auth-boot-title{font-family:'Cinzel',serif;text-align:center;color:var(--cream);font-size:1.3rem;letter-spacing:.08em}
   .auth-boot-sub{margin-top:.45rem;text-align:center;color:var(--smoke);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
@@ -37,6 +36,7 @@
   .nav-logo{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:900;color:var(--gold);letter-spacing:.15em;text-decoration:none}
   .nav-back{font-family:'Cinzel',serif;font-size:.75rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid rgba(200,130,10,.3);padding:.4rem .9rem;border-radius:1px;transition:all .2s}
   .nav-back:hover{background:rgba(200,130,10,.1);border-color:var(--amber)}
+  .audit-only{display:none}
 
   /* LAYOUT */
   main{max-width:1000px;margin:0 auto;padding:3rem 1.5rem}
@@ -220,7 +220,10 @@
 
 <nav>
   <a class="nav-logo" href="index.html">Retórica</a>
-  <a class="nav-back" href="index.html">← Voltar ao site</a>
+  <div style="display:flex;gap:.55rem;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+    <a class="nav-back audit-only" id="auditLink" href="audit.html">Auditoria</a>
+    <a class="nav-back" href="index.html">← Voltar ao site</a>
+  </div>
 </nav>
 
 <main>
@@ -257,45 +260,15 @@
     <!-- PARTICIPAÇÃO DOS MEMBROS -->
     <div id="memberParticipationStats"></div>
 
-    <div class="admin-tools">
+    <div class="admin-tools audit-only" id="auditToolsNotice">
       <div class="admin-tools-head">
         <div>
           <div class="admin-tools-title">Ferramentas Administrativas</div>
-          <div class="admin-tools-sub">Use estes atalhos com cuidado. Eles disparam ações reais de manutenção e comunicação para a banda, incluindo WhatsApp e cancelamento de ensaio.</div>
+          <div class="admin-tools-sub">As ações sensíveis foram movidas para a página de Auditoria para ficarem junto do monitoramento de leituras.</div>
         </div>
-        <div class="admin-tools-warning">⚠ Ações sensíveis</div>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="audit.html">Abrir Auditoria</a>
       </div>
-      <div class="admin-tools-grid">
-        <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 4+ dislikes</button>
-        <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9" href="index.html?videoFrameDebug=1#galeria">🎛 Ajustar vídeos da galeria</a>
-        <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
-        <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
-      </div>
-        <div class="admin-tools-grid" style="margin-top:.8rem">
-          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=default#hero">Logo padrão</a>
-          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=pascoa#hero">Páscoa</a>
-          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=festajunina#hero">Festa Junina</a>
-          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=independencia#hero">Independência</a>
-          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=halloween#hero">Halloween</a>
-          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=natal#hero">Natal</a>
-          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=anonovo#hero">Ano Novo</a>
-        </div>
-        <div class="admin-inline-config">
-          <div class="admin-inline-config-copy">
-            <div class="admin-inline-config-title">Tempo do carrossel</div>
-            <div class="admin-inline-config-sub">Escolha quantos segundos cada item da galeria principal fica em destaque antes de passar para o próximo.</div>
-          </div>
-          <div class="admin-inline-config-controls">
-            <div class="admin-inline-field">
-              <label for="carouselDelaySecondsInput">Segundos por imagem</label>
-              <input id="carouselDelaySecondsInput" type="number" min="2" max="30" step="1" value="5">
-            </div>
-            <button class="btn-ghost" onclick="saveCarouselTimingConfig()" style="border-color:var(--amber);color:var(--gold)">⏱ Salvar tempo</button>
-            <span id="carouselTimingSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
-          </div>
-        </div>
-      </div>
+    </div>
 
     <!-- FILTERS -->
     <div class="filters">
@@ -332,54 +305,6 @@
       <button class="btn-ghost btn-sm" id="loadMoreLogsBtn" onclick="loadMoreLogs()" style="display:none">Carregar mais logs</button>
     </div>
 
-    <!-- CONFIGURAÇÕES DA GALERIA -->
-    <div class="detail-section" style="margin-top:2.5rem">
-      <div class="detail-title">⚙️ Configurações da Galeria</div>
-      <div style="background:linear-gradient(135deg,rgba(42,26,8,.5),rgba(19,15,9,.7));border:1px solid rgba(200,130,10,.15);border-radius:2px;padding:1.2rem 1.4rem">
-        <p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-bottom:1.2rem">
-          Controla a compressão aplicada a todas as fotos enviadas para a galeria.<br>
-          Quanto maior a qualidade, maior o arquivo enviado ao Storage.
-        </p>
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div>
-            <label style="font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;color:var(--amber);text-transform:uppercase;display:block;margin-bottom:.5rem">
-              Qualidade da compressão: <span id="qualityLabel" style="color:var(--gold)">carregando…</span>
-            </label>
-            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-              <input type="range" id="qualitySlider" min="30" max="100" step="5" value="70"
-                style="flex:1;min-width:180px;max-width:360px;accent-color:var(--amber);cursor:pointer"
-                oninput="onQualitySlide(this.value)">
-              <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="qualityPresets">
-                <button class="filter-btn" onclick="setQualityPreset(50)">Baixa (50%)</button>
-                <button class="filter-btn" onclick="setQualityPreset(70)">Média (70%)</button>
-                <button class="filter-btn" onclick="setQualityPreset(85)">Alta (85%)</button>
-                <button class="filter-btn" onclick="setQualityPreset(95)">Máxima (95%)</button>
-              </div>
-            </div>
-            <p style="font-size:.72rem;color:var(--smoke);margin-top:.5rem;font-style:italic" id="qualityHint"></p>
-          </div>
-          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
-            <label style="font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;color:var(--amber);text-transform:uppercase">
-              Resolução máxima:
-            </label>
-            <select id="maxPxSelect" onchange="onMaxPxChange(this.value)"
-              style="background:rgba(10,8,4,.8);border:1px solid rgba(200,130,10,.3);color:var(--cream);padding:.3rem .6rem;font-family:'Lora',serif;font-size:.82rem;border-radius:1px;cursor:pointer">
-              <option value="1280">1280px (compacto)</option>
-              <option value="1920" selected>1920px (recomendado)</option>
-              <option value="2560">2560px (grande)</option>
-              <option value="4096">4096px (original)</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
-            <button class="btn-ghost" onclick="saveGalleryConfig()" style="border-color:var(--amber);color:var(--gold)">
-              💾 Salvar configurações
-            </button>
-            <span id="configSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 </main>
 
@@ -389,8 +314,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs,
-  deleteDoc, orderBy, query, where, writeBatch, limit, startAfter,
-  addDoc, setDoc, serverTimestamp, getCountFromServer
+  orderBy, query, where, limit, startAfter,
+  addDoc, serverTimestamp, getCountFromServer
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
@@ -415,6 +340,7 @@ const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
 const storage  = getStorage(app);
 let authResolved = false;
+const AUDIT_EMAIL = 'juliocereser@gmail.com';
 
 let allLogs      = [];
 let activeFilter = 'all';
@@ -428,6 +354,8 @@ let storageStats   = { files: 0, bytes: 0 };
 let metricsSnapshot = null;
 let metricsLoadedAt = null;
 let participationLoadedAt = null;
+const READ_AUDIT_CONFIG_ID = 'readAudit';
+let readAuditCache = { checkedAt: 0, data: null };
 const TS_FIELDS  = ['ts','createdAt'];
 const PARTICIPATION_DAILY_GOAL = 1;
 const PARTICIPATION_BASE_COINS = 10;
@@ -443,6 +371,61 @@ const PARTICIPATION_POINTS = {
   galeria: 5,
   membros: 3
 };
+
+function auditDateKey(date = new Date()) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:00`;
+}
+
+function auditTimestampMs(value) {
+  if (!value) return 0;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  return new Date(value).getTime() || 0;
+}
+
+async function getReadAuditConfig(force = false) {
+  const now = Date.now();
+  if (!force && readAuditCache.checkedAt && now - readAuditCache.checkedAt < 60000) return readAuditCache.data;
+  const snap = await getDoc(doc(db, 'config', READ_AUDIT_CONFIG_ID));
+  const data = snap.exists() ? snap.data() : null;
+  readAuditCache = { checkedAt: now, data };
+  return data;
+}
+
+function readAuditSeverity(estimatedReads) {
+  if (estimatedReads >= 200) return 'critical';
+  if (estimatedReads >= 50) return 'warning';
+  return 'info';
+}
+
+async function auditReadEvent({ action, collectionName, estimatedReads = 0, meta = {} }) {
+  if (!auth.currentUser || !action || !collectionName) return;
+  const config = await getReadAuditConfig().catch(() => null);
+  const expiresAt = auditTimestampMs(config?.expiresAt);
+  if (!config?.enabled || !config?.activeRunId || !expiresAt || expiresAt <= Date.now()) return;
+  const reads = Number(estimatedReads || 0);
+  try {
+    await addDoc(collection(db, 'read_audit_events'), {
+      auditId: config.activeRunId,
+      at: serverTimestamp(),
+      atLocal: new Date().toLocaleString('pt-BR'),
+      hourKey: auditDateKey(),
+      userEmail: auth.currentUser.email || '',
+      userName: auth.currentUser.displayName || auth.currentUser.email || 'Membro',
+      page: 'admin-logs',
+      action,
+      collection: collectionName,
+      estimatedReads: reads,
+      severity: readAuditSeverity(reads),
+      path: location.pathname,
+      userAgent: navigator.userAgent.slice(0, 180),
+      meta
+    });
+  } catch (err) {
+    console.warn('Read audit event error:', err);
+  }
+}
 
 // Firebase Storage Spark free tier: 5 GB
 const STORAGE_LIMIT = 5 * 1024 * 1024 * 1024; // 5 GB in bytes
@@ -518,6 +501,8 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('loginWall').style.display    = 'none';
     document.getElementById('logContent').style.display   = 'block';
     document.getElementById('loggedAs').textContent       = `Logado como ${user.displayName || user.email}`;
+    const isAuditUser = (user.email || '').toLowerCase() === AUDIT_EMAIL;
+    document.querySelectorAll('.audit-only').forEach(el => el.style.display = isAuditUser ? '' : 'none');
     startListening();
   } else {
     document.getElementById('loginWall').style.display  = 'flex';
@@ -566,6 +551,12 @@ async function loadAdminMetricsSnapshot() {
   ]);
 
   const galleryDocs = gallerySampleSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  auditReadEvent({
+    action: 'admin-metrics',
+    collectionName: 'gallery',
+    estimatedReads: gallerySampleSnap.size,
+    meta: { gallerySample: gallerySampleSnap.size, aggregationQueries: 7 }
+  });
   calcStorageStats(galleryDocs);
 
   let totalGallLikes = 0, totalGallComments = 0, totalGallReplies = 0;
@@ -815,6 +806,12 @@ async function loadParticipationStats() {
     getDocs(collection(db, 'approved_emails')),
     getDocs(collection(db, 'member_stats'))
   ]);
+  auditReadEvent({
+    action: 'admin-participation',
+    collectionName: 'members+approved_emails+member_stats',
+    estimatedReads: membersSnap.size + approvedSnap.size + memberStatsSnap.size,
+    meta: { members: membersSnap.size, approved: approvedSnap.size, memberStats: memberStatsSnap.size }
+  });
 
   const participants = new Map();
   const aliasByName = new Map();
@@ -916,6 +913,7 @@ async function loadLogsPage() {
   let q = query(collection(db, 'logs'), orderBy('ts', 'desc'), limit(LOGS_PAGE_SIZE));
   if (lastLogDoc) q = query(collection(db, 'logs'), orderBy('ts', 'desc'), startAfter(lastLogDoc), limit(LOGS_PAGE_SIZE));
   const snap = await getDocs(q);
+  auditReadEvent({ action: 'admin-logs-page', collectionName: 'logs', estimatedReads: snap.size, meta: { pageSize: LOGS_PAGE_SIZE } });
   const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (snap.docs.length) lastLogDoc = snap.docs[snap.docs.length - 1];
   hasMoreLogs = snap.docs.length === LOGS_PAGE_SIZE;
@@ -1121,256 +1119,6 @@ window.applySearch = val => {
   activeSearch = val.toLowerCase().trim();
   renderTable();
 };
-
-window.confirmClearLogs = () => {
-  if (!confirm('Tem certeza? Isso vai apagar TODOS os logs permanentemente. Esta ação não pode ser desfeita.')) return;
-  clearAllLogs();
-};
-
-async function clearAllLogs() {
-  showToast('⏳ Limpando logs…');
-  const snap = await getDocs(collection(db,'logs'));
-  // Batch delete in groups of 500
-  const batchSize = 499;
-  let batch = writeBatch(db);
-  let i = 0;
-  for (const d of snap.docs) {
-    batch.delete(d.ref);
-    i++;
-    if (i % batchSize === 0) { await batch.commit(); batch = writeBatch(db); }
-  }
-  await batch.commit();
-  await loadAdminMetricsSnapshot().catch(err => console.warn('Metrics refresh error:', err));
-  await loadInitialLogs().catch(err => console.warn('Logs refresh error:', err));
-  await loadParticipationStats().catch(err => console.warn('Participation refresh error:', err));
-  showToast(`✓ ${snap.size} log${snap.size!==1?'s':''} removido${snap.size!==1?'s':''}.`);
-}
-
-window.runSuggestionsCleanup = async () => {
-  if (!confirm('Deseja iniciar a varredura? Todas as músicas com 4 ou mais dislikes serão removidas e as mensagens de motivação serão enviadas ao WhatsApp.')) return;
-  
-  showToast('⏳ Iniciando varredura…');
-  let removedCount = 0;
-  
-  try {
-    await addDoc(collection(db, 'logs'), {
-      action: 'Varredura Manual de Sugestões',
-      detail: 'Solicitação manual via painel de logs para remover sugestões com 4 ou mais dislikes',
-      category: 'sugestoes',
-      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
-      whoEmail: auth.currentUser?.email || '',
-      ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
-    });
-
-    const snap = await getDocs(collection(db, 'suggestions'));
-    const toRemove = snap.docs.filter(d => {
-      const s = d.data();
-      return (s.dislikes || 0) >= 4;
-    });
-    
-    if (toRemove.length === 0) {
-      showToast('✨ Nenhuma música com 4+ dislikes encontrada.');
-      return;
-    }
-    
-    for (const d of toRemove) {
-      const s = d.data();
-      const id = d.id;
-      
-      // Deleta a sugestão
-      await deleteDoc(doc(db, 'suggestions', id));
-      
-      // Cria o log que dispara o WhatsApp
-      await addDoc(collection(db, 'logs'), {
-        action: 'Sugestão Removida',
-        detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: Atingiu o limite de 4 dislikes (Varredura de manutenção)`,
-        song: s.song,
-        artist: s.artist,
-        by: s.by || 'Membro',
-        likes: s.likes || 0,
-        dislikes: s.dislikes || 0,
-        reason: 'Atingiu o limite de 4 dislikes (Varredura de manutenção)',
-        removedBy: 'Varredura Automática',
-        category: 'sugestoes',
-        who: 'Varredura Automática',
-        whoEmail: '',
-        ts: serverTimestamp(),
-        tsLocal: new Date().toLocaleString('pt-BR')
-      });
-      
-      removedCount++;
-    }
-    
-    showToast(`✅ Varredura concluída! ${removedCount} música(s) removida(s).`);
-  } catch (e) {
-    console.error('Cleanup error:', e);
-    showToast('❌ Erro durante a varredura. Veja o console.');
-  }
-};
-
-window.triggerManualRehearsalZap = async () => {
-  if (!confirm('Deseja enviar a lista do "Ensaio Atual" para o WhatsApp agora?')) return;
-  
-  showToast('⏳ Disparando WhatsApp…');
-  try {
-    await addDoc(collection(db, 'logs'), {
-      action: 'Disparar Zap Ensaio',
-      detail: 'Solicitação manual via painel de logs',
-      category: 'setlist',
-      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
-      ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
-    });
-    showToast('🚀 Comando enviado!');
-  } catch (e) {
-    console.error('Manual zap error:', e);
-    showToast('❌ Erro ao disparar. Veja o console.');
-  }
-};
-
-window.cancelThisWeeksRehearsal = async () => {
-  const reason = prompt('Informe o motivo do cancelamento do ensaio desta semana:');
-  if (reason === null) return;
-
-  const trimmedReason = reason.trim();
-  if (!trimmedReason) {
-    showToast('⚠ Informe o motivo do cancelamento para continuar.');
-    return;
-  }
-
-  if (!confirm(`Confirmar cancelamento do ensaio com o motivo abaixo?\n\n${trimmedReason}`)) return;
-
-  showToast('⏳ Registrando cancelamento…');
-  try {
-    await addDoc(collection(db, 'logs'), {
-      action: 'Cancelar Ensaio',
-      detail: `Motivo: ${trimmedReason}`,
-      reason: trimmedReason,
-      category: 'setlist',
-      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
-      whoEmail: auth.currentUser?.email || '',
-      ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
-    });
-    showToast('🚫 Cancelamento registrado e envio acionado.');
-  } catch (e) {
-    console.error('Cancel rehearsal error:', e);
-    showToast('❌ Erro ao cancelar ensaio. Veja o console.');
-  }
-};
-
-// ─── UTILS ─────────────────────────────────────────────────────────
-
-// ═══════════════════════════════════════════════════════════════════
-// GALLERY COMPRESSION CONFIG
-// ═══════════════════════════════════════════════════════════════════
-
-const QUALITY_HINTS = {
-  30: 'Compressão máxima — arquivos bem pequenos, qualidade visivelmente reduzida.',
-  40: 'Compressão alta — boa para economizar storage, perda perceptível em detalhes.',
-  50: 'Baixa qualidade — arquivos compactos, aceitável para fotos de bastidores.',
-  55: 'Qualidade baixa-média.',
-  60: 'Qualidade moderada — bom equilíbrio para a maioria dos usos.',
-  65: 'Qualidade moderada-boa.',
-  70: 'Qualidade média (padrão anterior) — redução de 30%, boa relação tamanho/visual.',
-  75: 'Qualidade boa — compressão suave, perda mínima.',
-  80: 'Qualidade alta — arquivos maiores, detalhes bem preservados.',
-  85: 'Alta qualidade — recomendado para fotos de shows e apresentações.',
-  90: 'Qualidade muito alta — pouca compressão, arquivos grandes.',
-  95: 'Qualidade máxima — quase sem perda, arquivos bem pesados.',
-  100: 'Sem compressão JPEG — arquivos muito grandes, não recomendado.',
-};
-
-  async function loadGalleryConfig() {
-    try {
-      const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
-      if (snap.exists()) {
-        const { quality = 70, maxPx = 1920, carouselDelaySeconds = 5 } = snap.data();
-        applyConfigToUI(quality, maxPx, carouselDelaySeconds);
-      } else {
-        applyConfigToUI(70, 1920, 5);
-      }
-    } catch(e) {
-      applyConfigToUI(70, 1920, 5);
-    }
-  }
-  
-  function applyConfigToUI(quality, maxPx, carouselDelaySeconds = 5) {
-    const slider = document.getElementById('qualitySlider');
-    const label  = document.getElementById('qualityLabel');
-    const hint   = document.getElementById('qualityHint');
-    const sel    = document.getElementById('maxPxSelect');
-    const carouselDelayInput = document.getElementById('carouselDelaySecondsInput');
-    if (slider) slider.value = quality;
-    if (label)  label.textContent = `${quality}%`;
-    if (hint)   hint.textContent  = QUALITY_HINTS[quality] || '';
-    if (sel)    sel.value = String(maxPx);
-    if (carouselDelayInput) carouselDelayInput.value = String(Math.min(30, Math.max(2, parseInt(carouselDelaySeconds, 10) || 5)));
-    updatePresetHighlight(quality);
-  }
-
-function updatePresetHighlight(quality) {
-  document.querySelectorAll('#qualityPresets .filter-btn').forEach(btn => {
-    const val = parseInt(btn.getAttribute('onclick').match(/\d+/)?.[0]);
-    btn.classList.toggle('active', val === quality);
-  });
-}
-
-window.onQualitySlide = val => {
-  const q = parseInt(val);
-  const label = document.getElementById('qualityLabel');
-  const hint  = document.getElementById('qualityHint');
-  if (label) label.textContent = `${q}%`;
-  if (hint)  hint.textContent  = QUALITY_HINTS[q] || '';
-  updatePresetHighlight(q);
-};
-
-window.setQualityPreset = val => {
-  const slider = document.getElementById('qualitySlider');
-  if (slider) { slider.value = val; onQualitySlide(val); }
-};
-
-window.onMaxPxChange = val => {
-  // nothing extra needed, value read on save
-};
-
-  window.saveGalleryConfig = async () => {
-    const slider  = document.getElementById('qualitySlider');
-    const sel     = document.getElementById('maxPxSelect');
-    const status  = document.getElementById('configSaveStatus');
-    const carouselDelayInput = document.getElementById('carouselDelaySecondsInput');
-    const quality = parseInt(slider?.value || 70);
-    const maxPx   = parseInt(sel?.value || 1920);
-    const carouselDelaySeconds = Math.min(30, Math.max(2, parseInt(carouselDelayInput?.value || 5, 10) || 5));
-    try {
-      await setDoc(doc(db, 'config', 'galleryCompression'), { quality, maxPx, carouselDelaySeconds, updatedAt: new Date().toISOString() });
-      if (status) { status.textContent = '✓ Salvo! Próximos uploads já usam a nova configuração.'; status.style.color = 'var(--gold)'; }
-      showToast(`✓ Configuração salva — qualidade ${quality}%, max ${maxPx}px`);
-      setTimeout(() => { if (status) status.textContent = ''; }, 5000);
-  } catch(e) {
-    if (status) { status.textContent = '⚠ Erro ao salvar.'; status.style.color = '#fca5a5'; }
-    showToast('⚠ Erro ao salvar configuração');
-    }
-  };
-
-  window.saveCarouselTimingConfig = async () => {
-    const input = document.getElementById('carouselDelaySecondsInput');
-    const status = document.getElementById('carouselTimingSaveStatus');
-    const carouselDelaySeconds = Math.min(30, Math.max(2, parseInt(input?.value || 5, 10) || 5));
-    if (input) input.value = String(carouselDelaySeconds);
-    try {
-      await setDoc(doc(db, 'config', 'galleryCompression'), { carouselDelaySeconds, updatedAt: new Date().toISOString() }, { merge: true });
-      if (status) { status.textContent = '✓ Tempo salvo!'; status.style.color = 'var(--gold)'; }
-      showToast(`✓ Carrossel ajustado para ${carouselDelaySeconds}s por imagem`);
-      setTimeout(() => { if (status) status.textContent = ''; }, 5000);
-    } catch (e) {
-      if (status) { status.textContent = '⚠ Erro ao salvar.'; status.style.color = '#fca5a5'; }
-      showToast('⚠ Erro ao salvar tempo do carrossel');
-    }
-  };
-
-loadGalleryConfig();
 
 window.showToast = msg => {
   const el = document.getElementById('toast');
