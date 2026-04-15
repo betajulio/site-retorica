@@ -1290,7 +1290,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc,
   onSnapshot, addDoc, deleteDoc, updateDoc,
-  setDoc, getDoc, getDocs, orderBy, query, serverTimestamp, runTransaction, Timestamp
+  setDoc, getDoc, getDocs, orderBy, query, serverTimestamp, runTransaction, Timestamp, increment
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
@@ -1610,30 +1610,14 @@ async function loadMemberCoinGuideData(user) {
     return memberCoinGuideCache.data;
   }
 
-  const [statsSnap, logsSnap] = await Promise.all([
-    getDoc(doc(db, 'member_stats', email)),
-    getDocs(collection(db, 'logs'))
-  ]);
+  const statsSnap = await getDoc(doc(db, 'member_stats', email));
 
   const stats = statsSnap.exists() ? statsSnap.data() : {};
-  const actionsByCat = createMemberCategoryBucket();
-  const aliasNames = new Set([
-    normalizeName(user?.displayName || ''),
-    normalizeName(stats.name || ''),
-    normalizeName(nameFromEmail(email))
-  ].filter(Boolean));
-
-  let totalActions = 0;
-  logsSnap.forEach(docSnap => {
-    const log = docSnap.data() || {};
-    const logEmail = String(log.whoEmail || '').toLowerCase();
-    const rawNames = [log.who, log.removedBy, log.by].map(normalizeName).filter(Boolean);
-    const matches = logEmail === email || (!logEmail && rawNames.some(name => aliasNames.has(name)));
-    if (!matches) return;
-    const category = MEMBER_PARTICIPATION_POINTS[log.category] !== undefined ? log.category : 'acesso';
-    actionsByCat[category] = (actionsByCat[category] || 0) + 1;
-    totalActions += 1;
-  });
+  const actionsByCat = {
+    ...createMemberCategoryBucket(),
+    ...(stats.actionsByCat || {})
+  };
+  const totalActions = Number(stats.totalActions || Object.values(actionsByCat).reduce((sum, count) => sum + Number(count || 0), 0));
 
   const summary = {
     email,
@@ -1868,7 +1852,25 @@ async function writeLog(action, detail, category) {
       ts: serverTimestamp(),
       tsLocal: new Date().toLocaleString('pt-BR')
     });
+    await updateMemberActionStats(user, category);
   } catch(e) { console.warn('Log error:', e); }
+}
+
+async function updateMemberActionStats(user, category) {
+  const email = (user?.email || '').toLowerCase();
+  if (!email || !isMember) return;
+  const safeCategory = MEMBER_PARTICIPATION_POINTS[category] !== undefined ? category : 'acesso';
+  try {
+    await setDoc(doc(db, 'member_stats', email), {
+      email,
+      name: user?.displayName || nameFromEmail(email),
+      totalActions: increment(1),
+      actionsByCat: { [safeCategory]: increment(1) },
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch (err) {
+    console.warn('Member action stats update error:', err);
+  }
 }
 
 let toastTimer = null;
@@ -2644,11 +2646,16 @@ let pollsCache = [];
 
 async function loadPollsSnapshot(force = false) {
   if (pollsLoaded && !force) return;
-  const snap = await getDocs(query(collection(db,'polls'), orderBy('createdAt','desc')));
+  const snap = await getDocs(query(collection(db,'polls'), orderBy('createdAt','desc'), limit(40)));
   pollsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   const uid = auth.currentUser?.uid;
   if (uid) {
-    await Promise.all(pollsCache.map(async item => {
+    const now = Date.now();
+    const voteLookupItems = pollsCache.filter(({ data: p }) => {
+      const deadlineMs = p.deadline ? new Date(p.deadline).getTime() : null;
+      return p.closed !== true && !(deadlineMs && now > deadlineMs);
+    }).slice(0, 20);
+    await Promise.all(voteLookupItems.map(async item => {
       try {
         const voteSnap = await getDoc(doc(db, 'polls', item.id, 'votes', uid));
         if (voteSnap.exists()) {

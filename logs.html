@@ -552,7 +552,8 @@ async function loadAdminMetricsSnapshot() {
     suggestionsCountSnap,
     pollsCountSnap,
     closedPollsCountSnap,
-    gallerySnap
+    galleryCountSnap,
+    gallerySampleSnap
   ] = await Promise.all([
     getCountFromServer(collection(db, 'members')),
     getCountFromServer(collection(db, 'approved_emails')),
@@ -560,10 +561,11 @@ async function loadAdminMetricsSnapshot() {
     getCountFromServer(collection(db, 'suggestions')),
     getCountFromServer(collection(db, 'polls')),
     getCountFromServer(query(collection(db, 'polls'), where('closed', '==', true))),
-    getDocs(collection(db, 'gallery'))
+    getCountFromServer(collection(db, 'gallery')),
+    getDocs(query(collection(db, 'gallery'), orderBy('createdAt', 'desc'), limit(50)))
   ]);
 
-  const galleryDocs = gallerySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const galleryDocs = gallerySampleSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   calcStorageStats(galleryDocs);
 
   let totalGallLikes = 0, totalGallComments = 0, totalGallReplies = 0;
@@ -583,10 +585,11 @@ async function loadAdminMetricsSnapshot() {
     suggestions: suggestionsCountSnap.data().count,
     polls: pollsCountSnap.data().count,
     closedPolls: closedPollsCountSnap.data().count,
-    gallery: galleryDocs.length,
+    gallery: galleryCountSnap.data().count,
     totalGallLikes,
     totalGallComments,
-    totalGallReplies
+    totalGallReplies,
+    galleryMetricsSampleSize: galleryDocs.length
   };
   metricsLoadedAt = new Date();
   renderRealtimeMetrics();
@@ -605,7 +608,8 @@ function renderRealtimeMetrics() {
     gallery,
     totalGallLikes,
     totalGallComments,
-    totalGallReplies
+    totalGallReplies,
+    galleryMetricsSampleSize
   } = metricsSnapshot;
   const updatedLabel = metricsLoadedAt
     ? metricsLoadedAt.toLocaleString('pt-BR')
@@ -623,7 +627,7 @@ function renderRealtimeMetrics() {
         <div class="metric-card">
           <div class="metric-label">Fotos na Galeria</div>
           <div class="metric-value gold">${gallery}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">👍 ${totalGallLikes} · 💬 ${totalGallComments} comentários · ↩ ${totalGallReplies} respostas</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Últimas ${galleryMetricsSampleSize}: 👍 ${totalGallLikes} · 💬 ${totalGallComments} comentários · ↩ ${totalGallReplies} respostas</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Tópicos no Fórum</div>
@@ -688,6 +692,12 @@ function mergeParticipant(target, incoming = {}) {
   if (incoming.lastLoginKey) target.lastLoginKey = incoming.lastLoginKey;
   if (Array.isArray(incoming.recentLoginKeys) && incoming.recentLoginKeys.length) target.recentLoginKeys = [...incoming.recentLoginKeys];
   if (incoming.lastSeenLocal) target.lastSeenLocal = incoming.lastSeenLocal;
+  if (incoming.totalActions !== undefined) target.totalActions = Number(incoming.totalActions || 0);
+  if (incoming.actionsByCat && typeof incoming.actionsByCat === 'object') {
+    Object.entries(incoming.actionsByCat).forEach(([cat, count]) => {
+      if (target.actionsByCat[cat] !== undefined) target.actionsByCat[cat] = Number(count || 0);
+    });
+  }
 }
 
 function buildParticipantScore(member) {
@@ -800,11 +810,10 @@ function renderParticipationStats(participants = []) {
 }
 
 async function loadParticipationStats() {
-  const [membersSnap, approvedSnap, memberStatsSnap, logsSnap] = await Promise.all([
+  const [membersSnap, approvedSnap, memberStatsSnap] = await Promise.all([
     getDocs(collection(db, 'members')),
     getDocs(collection(db, 'approved_emails')),
-    getDocs(collection(db, 'member_stats')),
-    getDocs(collection(db, 'logs'))
+    getDocs(collection(db, 'member_stats'))
   ]);
 
   const participants = new Map();
@@ -848,7 +857,9 @@ async function loadParticipationStats() {
       lastAwardCoins: data.lastAwardCoins,
       lastLoginKey: data.lastLoginKey,
       recentLoginKeys: data.recentLoginKeys,
-      lastSeenLocal: data.lastSeenLocal
+      lastSeenLocal: data.lastSeenLocal,
+      totalActions: data.totalActions,
+      actionsByCat: data.actionsByCat
     });
     const memberMatch = membersByName.get(normalizeName(participant.name));
     if (memberMatch?.photo) participant.photo = memberMatch.photo;
@@ -862,32 +873,6 @@ async function loadParticipationStats() {
     const participant = participants.get(aliasKey);
     if (data.name && !participant.name) participant.name = data.name;
     if (data.photo && !participant.photo) participant.photo = data.photo;
-  });
-
-  logsSnap.docs.forEach(docSnap => {
-    const log = docSnap.data() || {};
-    const email = (log.whoEmail || '').toLowerCase();
-    const who = normalizeName(log.who || log.removedBy || log.by || '');
-    const participantKey = email && approvedEmails.has(email)
-      ? `email:${email}`
-      : aliasByName.get(who);
-    if (!participantKey || !participants.has(participantKey)) return;
-
-    const participant = participants.get(participantKey);
-    mergeParticipant(participant, {
-      email: approvedEmails.has(email) ? email : participant.email,
-      name: log.who || log.removedBy || log.by || participant.name
-    });
-
-    const category = PARTICIPATION_POINTS[log.category] !== undefined ? log.category : 'acesso';
-    participant.actionsByCat[category] = (participant.actionsByCat[category] || 0) + 1;
-    participant.totalActions += 1;
-    participant.actionPoints += PARTICIPATION_POINTS[category] || 0;
-
-    if (log.action === 'Login membro') {
-      const loginDate = getLogDateKey(log);
-      if (loginDate) participant.loginDaysSet.add(loginDate);
-    }
   });
 
   const todayKey = getBrazilDateKey();
