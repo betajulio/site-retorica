@@ -510,7 +510,9 @@
   .carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(200,130,10,.25);border:none;cursor:pointer;transition:all .2s;padding:0}
   .carousel-dot.active{background:var(--amber);transform:scale(1.3)}
   .carousel-empty{padding:4rem 2rem;text-align:center;color:var(--smoke);font-style:italic}
-  .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;margin-top:1.5rem}
+  .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;margin-top:1.5rem;align-content:start;max-height:calc((140px * 5) + (.6rem * 4));overflow-y:auto;overflow-x:hidden;padding-right:.35rem}
+  .gallery-grid::-webkit-scrollbar{width:8px}
+  .gallery-grid::-webkit-scrollbar-thumb{background:rgba(200,130,10,.32);border-radius:999px}
   .gallery-thumb{position:relative;aspect-ratio:1;overflow:hidden;border:1px solid rgba(200,130,10,.15);border-radius:1px;cursor:pointer;transition:border-color .2s}
   .gallery-thumb:hover{border-color:rgba(200,130,10,.5)}
   .gallery-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
@@ -562,9 +564,6 @@
   .gallery-preview-card img{width:70px;height:70px;object-fit:cover;border-radius:1px;border:1px solid rgba(200,130,10,.3);display:block}
   .gallery-preview-del{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(10,8,4,.92);color:var(--rust);font-size:.78rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}
   .gallery-preview-del:hover{background:var(--rust);color:var(--cream)}
-  .gallery-preview-list{display:flex;gap:.5rem;flex-wrap:wrap;max-height:390px;overflow-y:auto;padding-right:.35rem}
-  .gallery-preview-list::-webkit-scrollbar{width:8px}
-  .gallery-preview-list::-webkit-scrollbar-thumb{background:rgba(200,130,10,.32);border-radius:999px}
 
   /* LOADING */
   .loading-overlay{position:fixed;inset:0;background:var(--black);z-index:8000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;transition:opacity .5s}
@@ -683,7 +682,7 @@
     .carousel-caption-text{font-size:.84rem}
     .carousel-caption-meta{font-size:.65rem;align-items:flex-start;text-align:left;width:100%}
     .carousel-stats-row{justify-content:flex-start}
-    .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.4rem}
+    .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.4rem;max-height:calc((90px * 5) + (.4rem * 4))}
     .gallery-thumb-del{display:flex} /* always visible on mobile (no hover) */
     .thumb-video-frame{inset:0;background-size:var(--vt-frame-w) var(--vt-frame-h);background-position:center center}
 
@@ -1163,7 +1162,7 @@
       </div>
       <div id="galleryPreviewWrap" style="display:none;margin-bottom:1rem">
         <p style="font-size:.75rem;color:var(--smoke);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.1em">Preview</p>
-        <div class="gallery-preview-list" id="galleryPreviewList"></div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="galleryPreviewList"></div>
       </div>
       <button class="btn" onclick="uploadGalleryPhotos()">Publicar Foto(s)</button>
     </div>
@@ -3393,7 +3392,8 @@ function getGalleryThumbUrl(itemData) {
 }
 
 function getYoutubeEmbedUrl(videoId) {
-  return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+  const origin = typeof window !== 'undefined' && window.location?.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
+  return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1${origin}`;
 }
 
 function getFirstName(name) {
@@ -4075,7 +4075,7 @@ window.openLightbox = async id => {
     imgEl.style.display = 'none';
     imgEl.src = '';
     videoWrap.style.display = 'block';
-    videoFrame.src = p.embedUrl || getYoutubeEmbedUrl(p.videoId);
+      videoFrame.src = getYoutubeEmbedUrl(p.videoId);
     captionBlock.classList.add('video-mode');
   } else {
     videoWrap.style.display = 'none';
