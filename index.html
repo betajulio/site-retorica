@@ -402,6 +402,7 @@
   .lb-video-head{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-bottom:.7rem}
   .lb-video-share-btn{background:rgba(200,130,10,.1);border:1px solid rgba(200,130,10,.28);color:var(--gold);padding:.34rem .7rem;cursor:pointer;border-radius:999px;font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;transition:all .2s}
   .lb-video-share-btn:hover{border-color:var(--amber);background:rgba(200,130,10,.16);color:var(--cream)}
+  .lb-video-title{display:block;margin-bottom:.45rem;font-family:'Cinzel',serif;font-size:1rem;font-style:normal;line-height:1.4;color:var(--gold)}
   .lb-video-desc{font-size:.92rem;line-height:1.55;color:var(--cream);font-style:italic;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
   .lb-meta{font-size:.7rem;color:var(--smoke);margin-top:.2rem}
   .lb-caption-block.video-mode .lb-meta{margin-top:.75rem;padding-top:.7rem;border-top:1px solid rgba(200,130,10,.1)}
@@ -3413,6 +3414,27 @@ function buildYoutubeMediaData(rawUrl) {
   };
 }
 
+const youtubeTitleCache = new Map();
+
+async function fetchYoutubeOriginalTitle(url, videoId = '') {
+  const canonicalUrl = url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : '');
+  if (!canonicalUrl) return '';
+  const cacheKey = videoId || canonicalUrl;
+  if (youtubeTitleCache.has(cacheKey)) return youtubeTitleCache.get(cacheKey);
+  try {
+    const endpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(canonicalUrl)}&format=json`;
+    const res = await fetch(endpoint);
+    if (!res.ok) throw new Error('oembed');
+    const data = await res.json();
+    const title = String(data?.title || '').trim();
+    youtubeTitleCache.set(cacheKey, title);
+    return title;
+  } catch (e) {
+    youtubeTitleCache.set(cacheKey, '');
+    return '';
+  }
+}
+
 async function ensureGallerySubscription(force = false) {
   await Promise.all([
     loadGalleryTags(force),
@@ -3906,12 +3928,14 @@ window.addYoutubeGalleryMedia = async () => {
   if (!youtube) { showToast('⚠ Link do YouTube inválido'); return; }
 
   const userName = auth.currentUser?.displayName?.split(' ')[0] || 'Membro';
+  const youtubeTitle = await fetchYoutubeOriginalTitle(youtube.url, youtube.videoId);
   await addDoc(collection(db,'gallery'), {
     mediaType: 'youtube',
     sourceType: 'youtube',
     url: youtube.url,
     thumbUrl: youtube.thumbUrl,
     videoId: youtube.videoId,
+    youtubeTitle,
     caption,
     addedBy: userName,
     date: new Date().toLocaleDateString('pt-BR'),
@@ -4064,6 +4088,12 @@ window.openLightbox = async id => {
   const editHtml = isMember
     ? `<button onclick="editCaption('${id}')" style="background:none;border:1px solid rgba(200,130,10,.25);color:var(--amber);padding:.15rem .45rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-left:.5rem;vertical-align:middle;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.25)'">✏</button>`
     : '';
+  const youtubeTitle = mediaType === 'youtube'
+    ? (p.youtubeTitle || await fetchYoutubeOriginalTitle(p.url, p.videoId))
+    : '';
+  if (mediaType === 'youtube' && youtubeTitle && !p.youtubeTitle) {
+    updateDoc(doc(db,'gallery',id), { youtubeTitle }).catch(() => {});
+  }
   const videoCredit = mediaType === 'youtube' && p.addedBy
     ? `<div class="lb-video-credit">Pedrada sugerida por <strong>${p.addedBy}</strong></div>`
     : '';
@@ -4071,7 +4101,11 @@ window.openLightbox = async id => {
     ? `<button class="lb-video-share-btn" type="button" onclick="copyGalleryVideoLink('${String(p.url).replace(/'/g, "\\'")}');event.stopPropagation()">Compartilhar</button>`
     : '';
   videoHeadEl.innerHTML = mediaType === 'youtube' ? `${videoCredit}${videoShareBtn}` : '';
-  captionEl.innerHTML = `${p.caption || ''}${editHtml}`;
+  const videoTitleHtml = mediaType === 'youtube' && youtubeTitle ? `<strong class="lb-video-title">${escapeHtml(youtubeTitle)}</strong>` : '';
+  const captionBody = p.caption ? escapeHtml(p.caption) : '';
+  captionEl.innerHTML = mediaType === 'youtube'
+    ? `${videoTitleHtml}${captionBody}${editHtml}`
+    : `${p.caption || ''}${editHtml}`;
 
   document.getElementById('lbMeta').textContent = `${p.addedBy||''} · ${p.date||''}`;
 
