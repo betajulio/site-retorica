@@ -602,7 +602,10 @@
     .nav-hamburger{display:flex}
     nav{padding:0 1.2rem}
     .nav-logo{font-size:1.15rem}
-    .coin-balance{font-size:.68rem;padding:.24rem .56rem}
+    .nav-auth{gap:.38rem;margin-left:auto;min-width:0}
+    .nav-user{max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.68rem}
+    .nav-auth .btn-sm{padding:.32rem .46rem;font-size:.58rem;letter-spacing:.06em}
+    .coin-balance{font-size:.66rem;padding:.22rem .46rem;gap:.28rem}
     .coin-balance img{width:16px;height:16px}
     .coin-guide{padding:.7rem}
     .coin-guide-panel{padding:1rem .9rem;border-radius:18px;max-height:92vh}
@@ -664,12 +667,24 @@
     /* Setlist */
     .setlist-add-row{flex-wrap:wrap}
     .setlist-input{min-width:0}
-    .setlist-item{padding:.5rem .8rem}
+    .setlist-list{display:flex;flex-direction:column;gap:.55rem;padding:.75rem}
+    .setlist-item{align-items:flex-start;gap:.65rem;padding:.78rem .9rem;background:rgba(42,26,8,.5);border:1px solid rgba(200,130,10,.15);border-radius:1px;flex-wrap:wrap}
+    .setlist-num{flex:0 0 auto;min-width:24px}
+    .setlist-song{flex:1 1 160px;min-width:0;font-size:.9rem;line-height:1.35}
+    .setlist-artist{margin-top:.18rem;font-size:.76rem;line-height:1.35}
+    .setlist-actions{width:100%;justify-content:flex-start;flex-wrap:wrap;padding-left:calc(24px + .65rem)}
+    .setlist-actions .btn-icon,.setlist-actions .setlist-remove{min-height:32px}
 
     /* Repertório */
     .repertorio-grid{grid-template-columns:1fr}
-    .rep-item{padding:.7rem .9rem}
-    .rep-level{display:block;margin:0 0 .2rem;width:fit-content}
+    .rep-item{align-items:flex-start;gap:.65rem;padding:.8rem .9rem;flex-wrap:wrap}
+    .rep-num{flex:0 0 auto;min-width:28px}
+    .rep-info{flex:1 1 160px;min-width:0}
+    .rep-song{font-size:.9rem;line-height:1.35}
+    .rep-artist{margin-top:.18rem;font-size:.76rem;line-height:1.35}
+    .rep-level{display:inline-flex;margin:.28rem 0 0;width:fit-content}
+    .rep-actions{width:100%;justify-content:flex-start;flex-wrap:wrap;padding-left:calc(28px + .65rem)}
+    .rep-actions .btn-icon{min-height:32px}
 
     /* Tabs */
     .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
