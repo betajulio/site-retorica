@@ -9,7 +9,7 @@
 <title>Retórica — Classic Rock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:8%;--vc-right:29.4%;--vc-bottom:23.2%;--vc-left:13.7%;--vc-pos-x:24.3%;--vc-pos-y:16.7%;--vt-top:0%;--vt-right:32.2%;--vt-bottom:11.4%;--vt-left:0%;--vt-pos-x:40%;--vt-pos-y:25.9%;--vt-scale:1.09;--vt-frame-w:100%;--vt-frame-h:100%;--cf-tvglacial-size:1;--cf-tvglacial-w:100%;--cf-tvglacial-h:100%;--cf-tvglacial-x:50%;--cf-tvglacial-y:50%;--cf-tvcorote-size:1;--cf-tvcorote-w:100%;--cf-tvcorote-h:100%;--cf-tvcorote-x:50%;--cf-tvcorote-y:50%;--cf-donabenta-size:1;--cf-donabenta-w:100%;--cf-donabenta-h:100%;--cf-donabenta-x:50%;--cf-donabenta-y:50%}
+  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:9.1%;--vc-right:27%;--vc-bottom:24.3%;--vc-left:19.3%;--vc-pos-x:24%;--vc-pos-y:28.8%;--vt-top:-3.2%;--vt-right:37.9%;--vt-bottom:12.9%;--vt-left:-9.4%;--vt-pos-x:-1.6%;--vt-pos-y:27.6%;--vt-scale:0.64;--vt-frame-w:93%;--vt-frame-h:75.5%;--cf-tvglacial-size:0.88;--cf-tvglacial-w:119%;--cf-tvglacial-h:109.5%;--cf-tvglacial-x:39.9%;--cf-tvglacial-y:50%;--cf-tvcorote-size:1;--cf-tvcorote-w:100%;--cf-tvcorote-h:100%;--cf-tvcorote-x:50%;--cf-tvcorote-y:50%;--cf-donabenta-size:1;--cf-donabenta-w:100%;--cf-donabenta-h:100%;--cf-donabenta-x:50%;--cf-donabenta-y:50%}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
   body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
@@ -3356,6 +3356,7 @@ let carouselTouchStartX = 0;
 let carouselTouchStartY = 0;
 let carouselTouchDragging = false;
 let carouselTouchSuppressClick = false;
+let carouselFramePhase = 0;
 let bulkTagOriginalIds  = [];
 let galleryTagsLoaded   = false;
 let galleryCompressionLoaded = false;
@@ -3473,7 +3474,7 @@ function renderGallery() {
     const del = isMember
       ? `<button onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
       : '';
-    const frameAsset = mediaType === 'youtube' ? getStableFrameAsset(p.id || p.videoId || thumbUrl || id) : '';
+    const frameAsset = mediaType === 'youtube' ? VIDEO_FRAME_ASSETS[(carouselFramePhase + carouselIndex) % VIDEO_FRAME_ASSETS.length] : '';
     const frameClass = frameAsset ? ` frame-${frameAsset.replace('.png','')}` : '';
     const videoFrame = mediaType === 'youtube'
       ? `<div class="video-portrait-frame carousel-video-frame${frameClass}" aria-hidden="true" style="background-image:url('imagens/${frameAsset}')"></div>`
@@ -3557,6 +3558,7 @@ function renderGallery() {
 window.carouselGo = idx => { carouselIndex = idx; renderGallery(); };
 window.carouselMove = dir => {
   carouselIndex = (carouselIndex + dir + Math.max(galleryCache.length,1)) % Math.max(galleryCache.length,1);
+  carouselFramePhase = (carouselFramePhase + 1) % VIDEO_FRAME_ASSETS.length;
   renderGallery();
 };
 
@@ -3602,7 +3604,11 @@ function initCarouselTouch() {
 }
 
 setInterval(() => {
-  if (galleryCache.length > 1) { carouselIndex = (carouselIndex + 1) % galleryCache.length; renderGallery(); }
+  if (galleryCache.length > 1) {
+    carouselIndex = (carouselIndex + 1) % galleryCache.length;
+    carouselFramePhase = (carouselFramePhase + 1) % VIDEO_FRAME_ASSETS.length;
+    renderGallery();
+  }
 }, 5000);
 
 // Preview files before upload
@@ -5727,25 +5733,25 @@ async function completeRepertoryPoll(pollId, pollData) {
 
 const VIDEO_FRAME_DEBUG_KEY = 'retorica_video_frame_debug_values';
 const VIDEO_FRAME_DEBUG_DEFAULTS = {
-  vc_top: '8%',
-  vc_right: '29.4%',
-  vc_bottom: '23.2%',
-  vc_left: '13.7%',
-  vc_pos_x: '24.3%',
-  vc_pos_y: '16.7%',
-  vt_top: '0%',
-  vt_right: '32.2%',
-  vt_bottom: '11.4%',
-  vt_left: '0%',
-  vt_pos_x: '40%',
-  vt_pos_y: '25.9%',
-  vt_scale: '1.09',
-  vt_frame_w: '100%',
-  vt_frame_h: '100%',
-  cf_tvglacial_size: '1',
-  cf_tvglacial_w: '100%',
-  cf_tvglacial_h: '100%',
-  cf_tvglacial_x: '50%',
+  vc_top: '9.1%',
+  vc_right: '27%',
+  vc_bottom: '24.3%',
+  vc_left: '19.3%',
+  vc_pos_x: '24%',
+  vc_pos_y: '28.8%',
+  vt_top: '-3.2%',
+  vt_right: '37.9%',
+  vt_bottom: '12.9%',
+  vt_left: '-9.4%',
+  vt_pos_x: '-1.6%',
+  vt_pos_y: '27.6%',
+  vt_scale: '0.64',
+  vt_frame_w: '93%',
+  vt_frame_h: '75.5%',
+  cf_tvglacial_size: '0.88',
+  cf_tvglacial_w: '119%',
+  cf_tvglacial_h: '109.5%',
+  cf_tvglacial_x: '39.9%',
   cf_tvglacial_y: '50%',
   cf_tvcorote_size: '1',
   cf_tvcorote_w: '100%',
