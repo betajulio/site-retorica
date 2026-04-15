@@ -54,6 +54,7 @@
   .alert{border:1px solid rgba(200,130,10,.14);background:rgba(10,8,4,.5);padding:.7rem .8rem;font-size:.78rem;color:var(--paper);line-height:1.45}
   .alert.critical{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.08)}
   .alert.warning{border-color:rgba(232,168,32,.45);background:rgba(232,168,32,.08)}
+  .export-note{margin-top:.7rem;color:var(--smoke);font-size:.75rem;font-style:italic;line-height:1.5}
   .muted{color:var(--smoke);font-size:.78rem;font-style:italic}
   .hidden{display:none!important}
   .admin-tools{margin:1.8rem 0 2rem;padding:1.1rem 1.2rem;border:1px solid rgba(248,113,113,.24);background:linear-gradient(135deg,rgba(48,20,14,.76),rgba(22,14,10,.94));border-radius:2px;box-shadow:0 10px 30px rgba(0,0,0,.2),0 0 0 1px rgba(248,113,113,.06) inset}
@@ -185,8 +186,11 @@
       <span class="status-pill" id="auditWindow">Sem janela ativa</span>
       <button class="btn" onclick="startAudit()">Iniciar 24h</button>
       <button class="btn-ghost" onclick="stopAudit()">Encerrar agora</button>
+      <button class="btn-ghost" onclick="exportAuditJson()">Exportar JSON</button>
+      <button class="btn-ghost" onclick="exportAuditCsv()">Exportar CSV</button>
       <button class="btn-danger" onclick="clearVisibleEvents()">Limpar eventos visíveis</button>
     </div>
+    <div class="export-note">Ao final da coleta, baixe o JSON e me envie aqui. Ele traz eventos, rankings e alertas da auditoria para análise.</div>
 
     <div class="grid">
       <div class="card"><div class="card-label">Leituras estimadas</div><div class="card-value" id="totalReads">0</div></div>
@@ -279,8 +283,18 @@ function fmtTime(value) {
   return ms ? new Date(ms).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : 'agora';
 }
 
+function isoTime(value) {
+  const ms = tsMs(value);
+  return ms ? new Date(ms).toISOString() : '';
+}
+
 function isActive(config = currentConfig) {
   return !!config?.enabled && tsMs(config.expiresAt) > Date.now();
+}
+
+function getCurrentRunEvents() {
+  const runId = currentConfig?.activeRunId || '';
+  return runId ? visibleEvents.filter(ev => ev.auditId === runId) : visibleEvents;
 }
 
 function rankBy(events, keyFn) {
@@ -308,8 +322,7 @@ function renderAudit() {
   const windowEl = document.getElementById('auditWindow');
   windowEl.textContent = currentConfig?.expiresAt ? `Até ${fmtTime(currentConfig.expiresAt)}` : 'Sem janela ativa';
 
-  const runId = currentConfig?.activeRunId || '';
-  const events = runId ? visibleEvents.filter(ev => ev.auditId === runId) : visibleEvents;
+  const events = getCurrentRunEvents();
   const now = Date.now();
   const totalReads = events.reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0);
   const hourReads = events.filter(ev => now - tsMs(ev.at) <= 3600000).reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0);
@@ -373,6 +386,98 @@ window.clearVisibleEvents = async () => {
   const runId = currentConfig?.activeRunId || '';
   const targets = runId ? visibleEvents.filter(ev => ev.auditId === runId) : visibleEvents;
   await Promise.all(targets.slice(0, 500).map(ev => deleteDoc(doc(db, 'read_audit_events', ev.id))));
+};
+
+function cleanEvent(ev) {
+  return {
+    id: ev.id || '',
+    auditId: ev.auditId || '',
+    at: isoTime(ev.at),
+    hourKey: ev.hourKey || '',
+    userEmail: ev.userEmail || '',
+    userName: ev.userName || '',
+    action: ev.action || '',
+    collection: ev.collection || '',
+    estimatedReads: Number(ev.estimatedReads || 0),
+    severity: ev.severity || '',
+    page: ev.page || '',
+    path: ev.path || '',
+    userAgent: ev.userAgent || ''
+  };
+}
+
+function buildAuditExportPayload() {
+  const events = getCurrentRunEvents()
+    .slice()
+    .sort((a, b) => tsMs(a.at) - tsMs(b.at));
+  const now = Date.now();
+  const totalReads = events.reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0);
+  const alertEvents = events.filter(ev => ev.severity === 'critical' || ev.severity === 'warning');
+  const fiveMinuteBursts = rankBy(events.filter(ev => now - tsMs(ev.at) <= 300000), ev => ev.userEmail || ev.userName)
+    .filter(row => row.reads >= 120);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    site: 'Retorica',
+    activeRunId: currentConfig?.activeRunId || '',
+    auditEnabled: !!currentConfig?.enabled,
+    startedAt: isoTime(currentConfig?.startedAt),
+    expiresAt: isoTime(currentConfig?.expiresAt),
+    eventCount: events.length,
+    totalEstimatedReads: totalReads,
+    summary: {
+      readsLast60Minutes: events.filter(ev => now - tsMs(ev.at) <= 3600000).reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0),
+      readsLast5Minutes: events.filter(ev => now - tsMs(ev.at) <= 300000).reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0),
+      alertCount: alertEvents.length,
+      usersRank: rankBy(events, ev => ev.userEmail || ev.userName),
+      actionsRank: rankBy(events, ev => ev.action),
+      collectionsRank: rankBy(events, ev => ev.collection),
+      hoursRank: rankBy(events, ev => ev.hourKey),
+      fiveMinuteBursts
+    },
+    alerts: alertEvents.map(cleanEvent),
+    events: events.map(cleanEvent)
+  };
+}
+
+function downloadText(filename, mime, text) {
+  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportFileBaseName() {
+  const runId = currentConfig?.activeRunId || `audit-${Date.now()}`;
+  return `retorica-${runId}`;
+}
+
+window.exportAuditJson = () => {
+  const payload = buildAuditExportPayload();
+  if (!payload.eventCount) {
+    showToast('Ainda não há eventos para exportar.');
+    return;
+  }
+  downloadText(`${exportFileBaseName()}.json`, 'application/json', JSON.stringify(payload, null, 2));
+  showToast('Arquivo JSON da auditoria baixado.');
+};
+
+window.exportAuditCsv = () => {
+  const payload = buildAuditExportPayload();
+  if (!payload.eventCount) {
+    showToast('Ainda não há eventos para exportar.');
+    return;
+  }
+  const cols = ['at','hourKey','userEmail','userName','action','collection','estimatedReads','severity','page','path','userAgent','auditId','id'];
+  const csvEscape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const lines = [cols.join(',')].concat(payload.events.map(ev => cols.map(col => csvEscape(ev[col])).join(',')));
+  downloadText(`${exportFileBaseName()}.csv`, 'text/csv', lines.join('\n'));
+  showToast('Arquivo CSV da auditoria baixado.');
 };
 
 window.confirmClearLogs = () => {
