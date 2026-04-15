@@ -357,6 +357,8 @@
   body.is-member .member-admin-only{display:block}
   body.is-member .member-admin-only-flex{display:flex}
   .member-admin-only-flex{display:none}
+  .audit-admin-only{display:none}
+  body.is-audit-admin .audit-admin-only{display:block}
 
   /* TOCA DO MINEIRO */
   .toca-badge{position:relative;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:1.6rem;background:
@@ -540,11 +542,10 @@
   .gallery-thumb-del{position:absolute;top:.3rem;right:.3rem;z-index:8;background:rgba(10,8,4,.8);border:none;color:var(--rust);cursor:pointer;border-radius:50%;width:22px;height:22px;font-size:.7rem;display:none;align-items:center;justify-content:center;transition:all .2s}
   .gallery-thumb:hover .gallery-thumb-del{display:flex}
   .gallery-thumb-del:hover{background:var(--rust);color:var(--cream)}
-  .gallery-rank-medal{position:absolute;right:.35rem;top:2.25rem;z-index:7;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(10,8,4,.55);backdrop-filter:blur(4px);border:none;font-size:1.1rem;box-shadow:0 4px 10px rgba(0,0,0,.35);line-height:1;animation:medal-float 3s ease-in-out infinite}
-  @keyframes medal-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-  .gallery-rank-medal.gold{}
-  .gallery-rank-medal.silver{}
-  .gallery-rank-medal.bronze{}
+  .gallery-rank-medal{position:absolute;right:.35rem;bottom:.35rem;z-index:7;display:flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 .45rem;border-radius:999px;border:1px solid rgba(255,255,255,.18);font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.06em;color:#1a1207;box-shadow:0 8px 16px rgba(0,0,0,.28)}
+  .gallery-rank-medal.gold{background:linear-gradient(135deg,#f7d774,#d89f09);color:#2c1a05}
+  .gallery-rank-medal.silver{background:linear-gradient(135deg,#e8edf3,#9ea8b4);color:#1e242c}
+  .gallery-rank-medal.bronze{background:linear-gradient(135deg,#e4b085,#9b5827);color:#2d1305}
   .img-stats{position:absolute;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 .4rem;pointer-events:none;z-index:5}
   .gallery-thumb .img-stats{bottom:.4rem}
   /* ── GALLERY TAGS ── */
@@ -864,6 +865,7 @@
     <li><a onclick="goTo('galeria')">Galeria</a></li>
     <li style="position:relative"><a href="noticias.html">Notícias</a><span class="badge-new">NEW</span></li>
     <li class="member-admin-only"><a href="logs.html" style="color:var(--amber)">⚙ Admin</a></li>
+    <li class="audit-admin-only"><a href="audit.html" style="color:var(--gold)">Auditoria</a></li>
   </ul>
   <div class="nav-auth">
     <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
@@ -887,6 +889,7 @@
   <a href="noticias.html">Notícias <span class="badge-mobile-inline">NEW</span></a>
   <a onclick="mobileGoTo('galeria')">Galeria</a>
   <a href="logs.html" id="adminLinkMobile" class="member-admin-only" style="color:var(--amber)">⚙ Portal Admin</a>
+  <a href="audit.html" id="auditLinkMobile" class="audit-admin-only" style="color:var(--gold)">Auditoria</a>
   <div class="nav-mobile-auth">
     <span id="navUserMobile" style="display:none;font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif">🎸 Membro</span>
     <span class="coin-balance" id="coinBalanceMobile" style="display:none" role="button" tabindex="0" aria-label="Abrir detalhes das Retorica Coins" onclick="openCoinGuide()" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();openCoinGuide();}"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValueMobile">0</strong></span>
@@ -1351,6 +1354,7 @@ const MEMBER_COIN_BASE = 10;
 const MEMBER_STREAK_BONUS_STEP = 2;
 const MEMBER_STREAK_BONUS_CAP = 10;
 const VIDEO_FRAME_ASSETS = ['tvglacial.png', 'tvcorote.png', 'donabenta.png'];
+const AUDIT_EMAIL = 'juliocereser@gmail.com';
 const MEMBER_SCORE_STREAK_WEIGHT = 12;
 const MEMBER_SCORE_ACTION_WEIGHT = 6;
 const MEMBER_SCORE_CATEGORY_WEIGHT = 8;
@@ -1826,8 +1830,10 @@ onAuthStateChanged(auth, async user => {
 });
 
 function applyAuth() {
+  const isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === AUDIT_EMAIL;
   document.body.classList.toggle('logged-in', isLoggedIn);
   document.body.classList.toggle('is-member', isMember);
+  document.body.classList.toggle('is-audit-admin', isAuditAdmin);
   // desktop nav
   document.getElementById('loginBtn').style.display  = isLoggedIn ? 'none' : '';
   document.getElementById('logoutBtn').style.display = isLoggedIn ? '' : 'none';
@@ -3719,11 +3725,11 @@ function renderGallery() {
         ? `<div class="video-portrait-frame thumb-video-frame" aria-hidden="true" style="background-image:url('imagens/portrait_video.png')"></div>`
         : '';
       const medalHtml = rankIndex === 0
-        ? '<div class="gallery-rank-medal gold" title="1º lugar">🥇</div>'
+        ? '<div class="gallery-rank-medal gold" title="1º lugar">Ouro</div>'
         : rankIndex === 1
-          ? '<div class="gallery-rank-medal silver" title="2º lugar">🥈</div>'
+          ? '<div class="gallery-rank-medal silver" title="2º lugar">Prata</div>'
           : rankIndex === 2
-            ? '<div class="gallery-rank-medal bronze" title="3º lugar">🥉</div>'
+            ? '<div class="gallery-rank-medal bronze" title="3º lugar">Bronze</div>'
             : '';
       const statsHtml = `<div class="img-stats">
         <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
