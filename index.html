@@ -3718,7 +3718,7 @@ function renderGallery() {
   });
 
   // Só re-renderiza a grade se o conjunto de fotos mudou
-  const newGridIds = gridSorted.map(x => x.id).join(',');
+  const newGridIds = `${isMember ? 'member' : 'visitor'}:${gridSorted.map(x => x.id).join(',')}`;
   const gridNeedsUpdate = newGridIds !== galleryLastGridIds;
   galleryLastGridIds = newGridIds;
 
