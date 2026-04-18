@@ -123,6 +123,7 @@
       <div class="admin-tools-grid">
         <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 4+ dislikes</button>
         <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
+        <button class="btn-ghost" style="border-color:#93c5fd;color:#bfdbfe" onclick="forceTop3Tiebreaker()">⚔️ Forçar desempate Top 3</button>
         <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9" href="index.html?videoFrameDebug=1#galeria">🎛 Ajustar vídeos da galeria</a>
         <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
         <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
@@ -249,6 +250,7 @@ const firebaseConfig = {
 };
 
 const AUDIT_EMAIL = 'juliocereser@gmail.com';
+const FORCE_TIEBREAKER_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_force_tiebreaker_top3?token=retorica-force-top3-20260418';
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -478,6 +480,25 @@ window.exportAuditCsv = () => {
   const lines = [cols.join(',')].concat(payload.events.map(ev => cols.map(col => csvEscape(ev[col])).join(',')));
   downloadText(`${exportFileBaseName()}.csv`, 'text/csv', lines.join('\n'));
   showToast('Arquivo CSV da auditoria baixado.');
+};
+
+window.forceTop3Tiebreaker = async () => {
+  if (!confirm('Criar agora uma enquete de desempate com as 3 sugestões atuais do topo? O fluxo posterior continuará normal.')) return;
+  showToast('Forçando enquete de desempate...');
+  try {
+    const resp = await fetch(FORCE_TIEBREAKER_URL, { method: 'POST' });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.ok === false) {
+      const activeRep = data?.activeRepertoryPoll ? ` Enquete ativa: ${data.activeRepertoryPoll}.` : '';
+      showToast((data?.error || 'Não foi possível criar o desempate.') + activeRep);
+      return;
+    }
+    const songs = Array.isArray(data.songs) ? data.songs.map(item => item.song).filter(Boolean).join(', ') : '';
+    showToast(`Desempate criado${songs ? `: ${songs}` : ''}.`);
+  } catch (err) {
+    console.error('Force top3 tiebreaker error:', err);
+    showToast('Erro ao forçar o desempate.');
+  }
 };
 
 window.confirmClearLogs = () => {
