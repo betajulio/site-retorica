@@ -1821,7 +1821,7 @@ onAuthStateChanged(auth, async user => {
   if (currentSection === 'setlist') loadSetlistSnapshot();
   if (currentSection === 'repertorio') loadRepertorioSnapshot();
   if (currentSection === 'sugestoes') loadSuggestionsSnapshot();
-  if (currentSection === 'enquetes') loadPollsSnapshot();
+  if (currentSection === 'enquetes') loadPollsSnapshot(true);
   if (currentSection === 'forum') ensureForumSubscription();
   if (currentSection === 'galeria') ensureGallerySubscription();
   renderMembersFromCache();
@@ -1887,7 +1887,7 @@ function loadSectionData(id) {
   if (id === 'setlist') loadSetlistSnapshot();
   if (id === 'repertorio') loadRepertorioSnapshot();
   if (id === 'sugestoes') loadSuggestionsSnapshot();
-  if (id === 'enquetes') loadPollsSnapshot();
+  if (id === 'enquetes') loadPollsSnapshot(true);
   if (id === 'forum') ensureForumSubscription();
   if (id === 'galeria') ensureGallerySubscription();
   if (id === 'sugestoes') {
