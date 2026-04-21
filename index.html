@@ -127,6 +127,11 @@
   .member-rec-link{display:inline-flex;align-items:center;gap:.3rem;margin-top:.32rem;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);text-decoration:none;font-family:'Cinzel',serif}
   .member-rec-link:hover{color:var(--cream)}
   .member-rec-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem 1rem}
+  .member-rec-edit-card{padding:.85rem;background:rgba(10,8,4,.42);border:1px solid rgba(200,130,10,.12);border-radius:2px}
+  .member-rec-edit-title{display:flex;align-items:center;gap:.4rem;font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.7rem}
+  .member-rec-edit-thumb-row{display:flex;gap:.8rem;align-items:flex-start;flex-wrap:wrap}
+  .member-rec-edit-preview{width:72px;height:72px;border:1px solid rgba(200,130,10,.2);border-radius:2px;background:rgba(15,10,6,.92);display:none;object-fit:cover}
+  .member-rec-edit-actions{display:flex;justify-content:flex-end;margin-bottom:.7rem}
   .instrument-tag{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--amber);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border-radius:1px}
   .member-since{font-size:.7rem;color:var(--smoke);margin-top:.3rem;font-style:italic}
   .remove-btn{position:absolute;top:.5rem;right:.5rem;background:none;border:none;color:rgba(139,58,10,.5);cursor:pointer;font-size:1rem;transition:color .2s;line-height:1;z-index:2}
@@ -673,6 +678,7 @@
     .member-rec-form-grid{grid-template-columns:1fr}
     .member-rec-item{grid-template-columns:44px minmax(0,1fr)}
     .member-rec-thumb{width:44px;height:44px}
+    .member-rec-edit-thumb-row{flex-direction:column}
     .member-edit-hint{opacity:1} /* always visible on mobile */
 
     /* Suggestions */
@@ -867,22 +873,97 @@
     </div>
     <div class="form-group" style="margin-bottom:1.5rem">
       <label>Recomendações do membro</label>
+      <div class="member-rec-edit-actions">
+        <button type="button" class="btn-ghost btn-sm" onclick="fetchAllMemberRecommendationMedia()">⚡ Buscar mídias automaticamente</button>
+      </div>
       <div class="member-rec-form-grid">
-        <div class="form-group">
-          <label>Música</label>
-          <input type="text" id="editMemberRecMusic" placeholder="Ex: Black Dog — Led Zeppelin">
+        <div class="member-rec-edit-card">
+          <div class="member-rec-edit-title"><span>♪</span><span>Música</span></div>
+          <div class="form-group">
+            <label>Recomendação</label>
+            <input type="text" id="editMemberRecMusic" placeholder="Ex: Black Dog — Led Zeppelin">
+          </div>
+          <div class="form-group">
+            <label>Link (opcional)</label>
+            <input type="url" id="editMemberRecMusicLink" placeholder="https://...">
+          </div>
+          <div class="member-rec-edit-thumb-row">
+            <div class="img-upload-area" style="flex:1;min-width:130px">
+              <input type="file" id="editMemberRecMusicThumbFile" accept="image/*" onchange="previewRecommendationThumb('music', event)">
+              <img id="editMemberRecMusicThumbPreview" class="member-rec-edit-preview">
+              <div class="img-upload-hint">📁 Thumb da música</div>
+            </div>
+            <div class="form-group" style="flex:2;min-width:150px">
+              <label>URL da thumb (opcional)</label>
+              <input type="text" id="editMemberRecMusicThumbUrl" placeholder="https://..." oninput="previewRecommendationThumbUrl('music', this.value)">
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Séries</label>
-          <input type="text" id="editMemberRecSeries" placeholder="Ex: The Bear">
+        <div class="member-rec-edit-card">
+          <div class="member-rec-edit-title"><span>◉</span><span>Séries</span></div>
+          <div class="form-group">
+            <label>Recomendação</label>
+            <input type="text" id="editMemberRecSeries" placeholder="Ex: The Bear">
+          </div>
+          <div class="form-group">
+            <label>Link (opcional)</label>
+            <input type="url" id="editMemberRecSeriesLink" placeholder="https://...">
+          </div>
+          <div class="member-rec-edit-thumb-row">
+            <div class="img-upload-area" style="flex:1;min-width:130px">
+              <input type="file" id="editMemberRecSeriesThumbFile" accept="image/*" onchange="previewRecommendationThumb('series', event)">
+              <img id="editMemberRecSeriesThumbPreview" class="member-rec-edit-preview">
+              <div class="img-upload-hint">📁 Thumb da série</div>
+            </div>
+            <div class="form-group" style="flex:2;min-width:150px">
+              <label>URL da thumb (opcional)</label>
+              <input type="text" id="editMemberRecSeriesThumbUrl" placeholder="https://..." oninput="previewRecommendationThumbUrl('series', this.value)">
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Filmes</label>
-          <input type="text" id="editMemberRecMovies" placeholder="Ex: School of Rock">
+        <div class="member-rec-edit-card">
+          <div class="member-rec-edit-title"><span>▣</span><span>Filmes</span></div>
+          <div class="form-group">
+            <label>Recomendação</label>
+            <input type="text" id="editMemberRecMovies" placeholder="Ex: School of Rock">
+          </div>
+          <div class="form-group">
+            <label>Link (opcional)</label>
+            <input type="url" id="editMemberRecMoviesLink" placeholder="https://...">
+          </div>
+          <div class="member-rec-edit-thumb-row">
+            <div class="img-upload-area" style="flex:1;min-width:130px">
+              <input type="file" id="editMemberRecMoviesThumbFile" accept="image/*" onchange="previewRecommendationThumb('movies', event)">
+              <img id="editMemberRecMoviesThumbPreview" class="member-rec-edit-preview">
+              <div class="img-upload-hint">📁 Thumb do filme</div>
+            </div>
+            <div class="form-group" style="flex:2;min-width:150px">
+              <label>URL da thumb (opcional)</label>
+              <input type="text" id="editMemberRecMoviesThumbUrl" placeholder="https://..." oninput="previewRecommendationThumbUrl('movies', this.value)">
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Livros</label>
-          <input type="text" id="editMemberRecBooks" placeholder="Ex: On the Road">
+        <div class="member-rec-edit-card">
+          <div class="member-rec-edit-title"><span>✶</span><span>Livros</span></div>
+          <div class="form-group">
+            <label>Recomendação</label>
+            <input type="text" id="editMemberRecBooks" placeholder="Ex: On the Road">
+          </div>
+          <div class="form-group">
+            <label>Link (opcional)</label>
+            <input type="url" id="editMemberRecBooksLink" placeholder="https://...">
+          </div>
+          <div class="member-rec-edit-thumb-row">
+            <div class="img-upload-area" style="flex:1;min-width:130px">
+              <input type="file" id="editMemberRecBooksThumbFile" accept="image/*" onchange="previewRecommendationThumb('books', event)">
+              <img id="editMemberRecBooksThumbPreview" class="member-rec-edit-preview">
+              <div class="img-upload-hint">📁 Thumb do livro</div>
+            </div>
+            <div class="form-group" style="flex:2;min-width:150px">
+              <label>URL da thumb (opcional)</label>
+              <input type="text" id="editMemberRecBooksThumbUrl" placeholder="https://..." oninput="previewRecommendationThumbUrl('books', this.value)">
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1522,6 +1603,13 @@ const MEMBER_RECOMMENDATION_FIELDS = [
   { key: 'movies', label: 'Filmes', icon: '▣' },
   { key: 'books', label: 'Livros', icon: '✶' }
 ];
+let recommendationThumbUploads = {};
+let editingMemberRecommendationMeta = {};
+
+function memberRecFieldId(key, suffix = '') {
+  const prefix = `editMemberRec${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+  return suffix ? `${prefix}${suffix}` : prefix;
+}
 
 function normalizeMemberRecommendations(value = {}) {
   const source = value && typeof value === 'object' ? value : {};
@@ -1546,6 +1634,39 @@ function normalizeRecommendationMeta(value = {}) {
       : { title: '', thumbUrl: '', sourceUrl: '', sourceLabel: '', pendingConfig: false };
     return acc;
   }, {});
+}
+
+function setRecommendationThumbPreview(key, url = '') {
+  const preview = document.getElementById(memberRecFieldId(key, 'ThumbPreview'));
+  if (!preview) return;
+  if (url) {
+    preview.src = url;
+    preview.style.display = 'block';
+  } else {
+    preview.src = '';
+    preview.style.display = 'none';
+  }
+}
+
+function getMemberRecommendationMetaFromInputs(existingMeta = {}) {
+  const mergedExisting = normalizeRecommendationMeta(existingMeta);
+  const meta = {};
+  MEMBER_RECOMMENDATION_FIELDS.forEach(field => {
+    const key = field.key;
+    const linkValue = document.getElementById(memberRecFieldId(key, 'Link'))?.value.trim() || '';
+    const thumbUrlValue = document.getElementById(memberRecFieldId(key, 'ThumbUrl'))?.value.trim() || '';
+    const uploadedThumb = recommendationThumbUploads[key] || '';
+    const base = mergedExisting[key] || {};
+    const effectiveThumb = uploadedThumb || thumbUrlValue || base.thumbUrl || '';
+    meta[key] = {
+      title: base.title || '',
+      thumbUrl: effectiveThumb,
+      sourceUrl: linkValue || base.sourceUrl || '',
+      sourceLabel: linkValue ? 'Link do membro' : (base.sourceLabel || ''),
+      pendingConfig: Boolean(base.pendingConfig)
+    };
+  });
+  return meta;
 }
 
 function buildRecommendationFallback(field, value) {
@@ -1581,6 +1702,76 @@ async function enrichMemberRecommendations(recommendations = {}) {
   }
   return meta;
 }
+
+window.previewRecommendationThumb = async (key, event) => {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    showToast('⚠ Use uma imagem válida para a thumb.');
+    event.target.value = '';
+    return;
+  }
+  try {
+    const b64 = await compressImage(file, 800, 0.72);
+    recommendationThumbUploads[key] = b64;
+    const urlInput = document.getElementById(memberRecFieldId(key, 'ThumbUrl'));
+    if (urlInput) urlInput.value = '';
+    setRecommendationThumbPreview(key, b64);
+    showToast('✓ Thumb carregada para a recomendação.');
+  } catch (err) {
+    showToast(`⚠ ${err.message || 'Não foi possível carregar a thumb.'}`);
+    event.target.value = '';
+  }
+};
+
+window.previewRecommendationThumbUrl = (key, value) => {
+  if (value && value.trim()) {
+    recommendationThumbUploads[key] = '';
+    const fileInput = document.getElementById(memberRecFieldId(key, 'ThumbFile'));
+    if (fileInput) fileInput.value = '';
+    setRecommendationThumbPreview(key, value.trim());
+  } else {
+    const existing = normalizeRecommendationMeta(editingMemberRecommendationMeta)[key]?.thumbUrl || '';
+    setRecommendationThumbPreview(key, recommendationThumbUploads[key] || existing);
+  }
+};
+
+window.fetchAllMemberRecommendationMedia = async () => {
+  const recommendations = normalizeMemberRecommendations({
+    music: document.getElementById('editMemberRecMusic').value,
+    series: document.getElementById('editMemberRecSeries').value,
+    movies: document.getElementById('editMemberRecMovies').value,
+    books: document.getElementById('editMemberRecBooks').value
+  });
+  const filledCount = Object.values(recommendations).filter(Boolean).length;
+  if (!filledCount) {
+    showToast('⚠ Preencha ao menos uma recomendação antes de buscar as mídias.');
+    return;
+  }
+  showToast('⏳ Buscando mídias das recomendações...', { persist: true });
+  const fetchedMeta = await enrichMemberRecommendations(recommendations);
+  const currentMeta = getMemberRecommendationMetaFromInputs(editingMemberRecommendationMeta);
+  MEMBER_RECOMMENDATION_FIELDS.forEach(field => {
+    const key = field.key;
+    const fetched = fetchedMeta[key] || {};
+    const current = currentMeta[key] || {};
+    const linkInput = document.getElementById(memberRecFieldId(key, 'Link'));
+    const thumbUrlInput = document.getElementById(memberRecFieldId(key, 'ThumbUrl'));
+    if (linkInput && !linkInput.value.trim() && fetched.sourceUrl) linkInput.value = fetched.sourceUrl;
+    if (thumbUrlInput && !thumbUrlInput.value.trim() && !recommendationThumbUploads[key] && fetched.thumbUrl) {
+      thumbUrlInput.value = fetched.thumbUrl;
+    }
+    editingMemberRecommendationMeta[key] = {
+      ...current,
+      ...fetched,
+      sourceUrl: linkInput?.value.trim() || current.sourceUrl || fetched.sourceUrl || '',
+      thumbUrl: recommendationThumbUploads[key] || thumbUrlInput?.value.trim() || current.thumbUrl || fetched.thumbUrl || '',
+      sourceLabel: linkInput?.value.trim() ? 'Link do membro' : (current.sourceLabel || fetched.sourceLabel || '')
+    };
+    setRecommendationThumbPreview(key, editingMemberRecommendationMeta[key].thumbUrl);
+  });
+  showToast('✓ Mídias das recomendações atualizadas.');
+};
 
 function renderMemberRecommendations(recommendations = {}, recommendationMeta = {}) {
   const normalized = normalizeMemberRecommendations(recommendations);
@@ -2565,10 +2756,18 @@ window.previewUrl = url => {
 };
 
 function resetEditModal() {
-  ['editMemberId','editMemberName','editMemberSince','editMemberContact','editPhotoUrl','editMemberRecMusic','editMemberRecSeries','editMemberRecMovies','editMemberRecBooks'].forEach(id => document.getElementById(id).value='');
+  ['editMemberId','editMemberName','editMemberSince','editMemberContact','editPhotoUrl','editMemberRecMusic','editMemberRecSeries','editMemberRecMovies','editMemberRecBooks','editMemberRecMusicLink','editMemberRecSeriesLink','editMemberRecMoviesLink','editMemberRecBooksLink','editMemberRecMusicThumbUrl','editMemberRecSeriesThumbUrl','editMemberRecMoviesThumbUrl','editMemberRecBooksThumbUrl'].forEach(id => document.getElementById(id).value='');
   document.getElementById('editPhotoFile').value='';
   const p = document.getElementById('editPhotoPreview'); p.src=''; p.style.display='none';
   const e = document.getElementById('photoError'); e.style.display='none'; e.textContent='';
+  recommendationThumbUploads = {};
+  editingMemberRecommendationMeta = {};
+  ['Music','Series','Movies','Books'].forEach(key => {
+    const thumbFile = document.getElementById(`editMemberRec${key}ThumbFile`);
+    const thumbPreview = document.getElementById(`editMemberRec${key}ThumbPreview`);
+    if (thumbFile) thumbFile.value = '';
+    if (thumbPreview) { thumbPreview.src = ''; thumbPreview.style.display = 'none'; }
+  });
   INSTRUMENTS.forEach(i => { const cb=document.querySelector(`#editInstrumentsCheck input[value="${i}"]`); if(cb) cb.checked=false; });
 }
 
@@ -2594,6 +2793,16 @@ window.openEditMember = async id => {
   document.getElementById('editMemberRecSeries').value = recommendations.series;
   document.getElementById('editMemberRecMovies').value = recommendations.movies;
   document.getElementById('editMemberRecBooks').value  = recommendations.books;
+  editingMemberRecommendationMeta = normalizeRecommendationMeta(m.recommendationMeta);
+  MEMBER_RECOMMENDATION_FIELDS.forEach(field => {
+    const key = field.key;
+    const meta = editingMemberRecommendationMeta[key] || {};
+    const linkInput = document.getElementById(memberRecFieldId(key, 'Link'));
+    const thumbUrlInput = document.getElementById(memberRecFieldId(key, 'ThumbUrl'));
+    if (linkInput) linkInput.value = meta.sourceUrl || '';
+    if (thumbUrlInput) thumbUrlInput.value = meta.thumbUrl && !meta.thumbUrl.startsWith('data:image/') ? meta.thumbUrl : '';
+    setRecommendationThumbPreview(key, meta.thumbUrl || '');
+  });
   if (m.photo) { const p=document.getElementById('editPhotoPreview'); p.src=m.photo; p.style.display='block'; if(m.photo.startsWith('http')) document.getElementById('editPhotoUrl').value=m.photo; }
   (Array.isArray(m.instruments)?m.instruments:(m.role?[m.role]:[])).forEach(i=>{ const cb=document.querySelector(`#editInstrumentsCheck input[value="${i}"]`); if(cb) cb.checked=true; });
   document.getElementById('editModalTitle').textContent = 'Editar Membro';
@@ -2644,10 +2853,25 @@ window.saveMember = async () => {
 
   const eid  = document.getElementById('editMemberId').value;
   const hasRecommendations = Object.values(recommendations).some(Boolean);
-  let recommendationMeta = {};
+  let recommendationMeta = getMemberRecommendationMetaFromInputs(editingMemberRecommendationMeta);
   if (hasRecommendations) {
-    showToast('⏳ Buscando capas e referências das recomendações...');
-    recommendationMeta = await enrichMemberRecommendations(recommendations);
+    const fetchedMeta = await enrichMemberRecommendations(recommendations);
+    MEMBER_RECOMMENDATION_FIELDS.forEach(field => {
+      const key = field.key;
+      if (!recommendations[key]) {
+        recommendationMeta[key] = { title: '', thumbUrl: '', sourceUrl: '', sourceLabel: '', pendingConfig: false };
+        return;
+      }
+      const current = recommendationMeta[key] || {};
+      const fetched = fetchedMeta[key] || {};
+      recommendationMeta[key] = {
+        title: current.title || fetched.title || recommendations[key],
+        thumbUrl: current.thumbUrl || fetched.thumbUrl || '',
+        sourceUrl: current.sourceUrl || fetched.sourceUrl || '',
+        sourceLabel: current.sourceLabel || fetched.sourceLabel || '',
+        pendingConfig: Boolean(current.pendingConfig || fetched.pendingConfig)
+      };
+    });
   }
 
   const data = {name, since, contact, instruments, photo, recommendations, recommendationMeta};
