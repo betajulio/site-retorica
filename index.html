@@ -113,12 +113,19 @@
   .member-avatar img{width:100%;height:100%;object-fit:cover}
   .member-name{font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--cream);margin-bottom:.5rem}
   .member-instruments{display:flex;flex-wrap:wrap;gap:.3rem;justify-content:center;margin-bottom:.4rem}
-  .member-recommendations{margin-top:1rem;padding-top:.9rem;border-top:1px solid rgba(200,130,10,.14);text-align:left}
-  .member-rec-title{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.65rem}
-  .member-rec-grid{display:grid;gap:.45rem}
-  .member-rec-item{padding:.5rem .6rem;background:rgba(10,8,4,.42);border:1px solid rgba(200,130,10,.12);border-radius:2px}
-  .member-rec-label{display:block;font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:.2rem}
+  .member-recommendations{margin-top:1rem;padding:.95rem .85rem .8rem;border-top:1px solid rgba(200,130,10,.14);background:linear-gradient(180deg,rgba(18,13,7,.88),rgba(10,8,4,.55));border-radius:2px;text-align:left}
+  .member-rec-title{display:flex;align-items:center;gap:.4rem;font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.65rem}
+  .member-rec-title::before{content:'✦';color:var(--amber);font-size:.75rem;line-height:1}
+  .member-rec-grid{display:grid;gap:.5rem}
+  .member-rec-item{display:grid;grid-template-columns:52px minmax(0,1fr);gap:.65rem;padding:.58rem .68rem;background:rgba(10,8,4,.52);border:1px solid rgba(200,130,10,.14);border-left:2px solid rgba(200,130,10,.34);border-radius:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.02)}
+  .member-rec-thumb{width:52px;height:52px;border-radius:2px;border:1px solid rgba(200,130,10,.22);background:rgba(20,14,8,.9);overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .member-rec-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .member-rec-thumb-fallback{font-family:'Cinzel',serif;font-size:.95rem;color:var(--amber);letter-spacing:.08em}
+  .member-rec-copy{min-width:0}
+  .member-rec-label{display:flex;align-items:center;gap:.35rem;font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:.24rem}
   .member-rec-value{display:block;font-size:.78rem;color:var(--cream);line-height:1.35}
+  .member-rec-link{display:inline-flex;align-items:center;gap:.3rem;margin-top:.32rem;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);text-decoration:none;font-family:'Cinzel',serif}
+  .member-rec-link:hover{color:var(--cream)}
   .member-rec-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem 1rem}
   .instrument-tag{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--amber);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border-radius:1px}
   .member-since{font-size:.7rem;color:var(--smoke);margin-top:.3rem;font-style:italic}
@@ -664,6 +671,8 @@
     .member-avatar{width:64px;height:64px;font-size:1.3rem}
     .member-name{font-size:.85rem}
     .member-rec-form-grid{grid-template-columns:1fr}
+    .member-rec-item{grid-template-columns:44px minmax(0,1fr)}
+    .member-rec-thumb{width:44px;height:44px}
     .member-edit-hint{opacity:1} /* always visible on mobile */
 
     /* Suggestions */
@@ -1508,10 +1517,10 @@ function escapeHtml(value = '') {
 }
 
 const MEMBER_RECOMMENDATION_FIELDS = [
-  { key: 'music', label: 'Música' },
-  { key: 'series', label: 'Séries' },
-  { key: 'movies', label: 'Filmes' },
-  { key: 'books', label: 'Livros' }
+  { key: 'music', label: 'Música', icon: '♪' },
+  { key: 'series', label: 'Séries', icon: '◉' },
+  { key: 'movies', label: 'Filmes', icon: '▣' },
+  { key: 'books', label: 'Livros', icon: '✶' }
 ];
 
 function normalizeMemberRecommendations(value = {}) {
@@ -1522,14 +1531,82 @@ function normalizeMemberRecommendations(value = {}) {
   }, {});
 }
 
-function renderMemberRecommendations(recommendations = {}) {
+function normalizeRecommendationMeta(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  return MEMBER_RECOMMENDATION_FIELDS.reduce((acc, field) => {
+    const item = source[field.key];
+    acc[field.key] = item && typeof item === 'object'
+      ? {
+          title: String(item.title || '').trim(),
+          thumbUrl: String(item.thumbUrl || '').trim(),
+          sourceUrl: String(item.sourceUrl || '').trim(),
+          sourceLabel: String(item.sourceLabel || '').trim(),
+          pendingConfig: Boolean(item.pendingConfig)
+        }
+      : { title: '', thumbUrl: '', sourceUrl: '', sourceLabel: '', pendingConfig: false };
+    return acc;
+  }, {});
+}
+
+function buildRecommendationFallback(field, value) {
+  const token = (value || field.label || '?').trim().charAt(0).toUpperCase() || field.icon;
+  return `<div class="member-rec-thumb-fallback">${escapeHtml(token)}</div>`;
+}
+
+async function enrichMemberRecommendations(recommendations = {}) {
   const normalized = normalizeMemberRecommendations(recommendations);
+  const meta = {};
+  for (const field of MEMBER_RECOMMENDATION_FIELDS) {
+    const query = normalized[field.key];
+    if (!query) continue;
+    try {
+      const data = await fetchFunctionJson('lookup_member_recommendation', { category: field.key, query });
+      meta[field.key] = {
+        title: data.title || query,
+        thumbUrl: data.thumbUrl || '',
+        sourceUrl: data.sourceUrl || '',
+        sourceLabel: data.sourceLabel || '',
+        pendingConfig: Boolean(data.pendingConfig)
+      };
+    } catch (err) {
+      console.warn(`Recommendation lookup error (${field.key}):`, err);
+      meta[field.key] = {
+        title: query,
+        thumbUrl: '',
+        sourceUrl: '',
+        sourceLabel: '',
+        pendingConfig: false
+      };
+    }
+  }
+  return meta;
+}
+
+function renderMemberRecommendations(recommendations = {}, recommendationMeta = {}) {
+  const normalized = normalizeMemberRecommendations(recommendations);
+  const normalizedMeta = normalizeRecommendationMeta(recommendationMeta);
   const filled = MEMBER_RECOMMENDATION_FIELDS.filter(field => normalized[field.key]);
   if (!filled.length) return '';
   return `<div class="member-recommendations">
-    <div class="member-rec-title">Recomendações da banda</div>
+    <div class="member-rec-title">Recomendações do membro</div>
     <div class="member-rec-grid">
-      ${filled.map(field => `<div class="member-rec-item"><span class="member-rec-label">${field.label}</span><span class="member-rec-value">${escapeHtml(normalized[field.key])}</span></div>`).join('')}
+      ${filled.map(field => {
+        const meta = normalizedMeta[field.key] || {};
+        const thumb = meta.thumbUrl
+          ? `<div class="member-rec-thumb"><img src="${escapeHtml(meta.thumbUrl)}" alt="${escapeHtml(meta.title || normalized[field.key])}" loading="lazy"></div>`
+          : `<div class="member-rec-thumb">${buildRecommendationFallback(field, normalized[field.key])}</div>`;
+        const sourceLink = meta.sourceUrl
+          ? `<a href="${escapeHtml(meta.sourceUrl)}" target="_blank" class="member-rec-link" onclick="event.stopPropagation()">${escapeHtml(meta.sourceLabel || 'Abrir referência')}</a>`
+          : (meta.pendingConfig ? `<span class="member-rec-link" style="opacity:.8">Thumb automática pendente de configuração</span>` : '');
+        return `<div class="member-rec-item">
+          ${thumb}
+          <div class="member-rec-copy">
+            <span class="member-rec-label"><span>${field.icon}</span><span>${field.label}</span></span>
+            <span class="member-rec-value">${escapeHtml(normalized[field.key])}</span>
+            ${sourceLink}
+          </div>
+        </div>`;
+      }).join('')}
     </div>
   </div>`;
 }
@@ -2378,7 +2455,7 @@ function renderMembersFromCache() {
   grid.innerHTML = membersCache.map(({id, data: m}) => {
     const instruments = Array.isArray(m.instruments) ? m.instruments : (m.role ? [m.role] : []);
     const tags    = instruments.map(i => `<span class="instrument-tag">${i}</span>`).join('');
-    const recommendationsHtml = renderMemberRecommendations(m.recommendations);
+    const recommendationsHtml = renderMemberRecommendations(m.recommendations, m.recommendationMeta);
     const avatar  = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
@@ -2566,7 +2643,14 @@ window.saveMember = async () => {
   }
 
   const eid  = document.getElementById('editMemberId').value;
-  const data = {name, since, contact, instruments, photo, recommendations};
+  const hasRecommendations = Object.values(recommendations).some(Boolean);
+  let recommendationMeta = {};
+  if (hasRecommendations) {
+    showToast('⏳ Buscando capas e referências das recomendações...');
+    recommendationMeta = await enrichMemberRecommendations(recommendations);
+  }
+
+  const data = {name, since, contact, instruments, photo, recommendations, recommendationMeta};
 
   try {
     if (eid) {
