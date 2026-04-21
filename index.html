@@ -13,8 +13,8 @@
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
   section,.modal,.form-card,.member-card,.poll-card,.setlist-panel,.rep-item,.forum-thread,.suggestion-item,.carousel-info-panel,.lb-caption-block,.lb-comments-wrap,.coin-guide-panel,.coin-guide-card{min-width:0}
-  .section-title-wrap,.news-popup-copy,.nav-auth,.form-group,.member-instruments,.poll-option-label,.poll-bar-item,.poll-bar-right,.poll-footer,.setlist-item,.setlist-song,.rep-info,.forum-thread-header,.forum-thread-header>div,.post-content,.post-meta,.suggestion-main,.suggestion-actions,.carousel-info-main,.carousel-badges-row,.carousel-caption-meta,.media-caption-copy,.lb-video-head,.lb-cmt-l1,.lb-rpform,.frp-rform,.tag-manager-row,.upload-tag-select,.coin-guide-stat,.coin-guide-cat{min-width:0;max-width:100%}
-  .safe-text,.section-title-wrap h2,.section-title-wrap p,.news-popup-text,.news-popup-sub,.nav-user,.member-name,.member-since,.instrument-tag,.form-group label,input,select,textarea,.btn,.btn-ghost,.btn-icon,.poll-question,.poll-option-label,.poll-bar-label,.poll-bar-pct,.poll-winner,.poll-total,.poll-my-vote,.setlist-song,.setlist-artist,.rep-song,.rep-artist,.forum-thread-title,.forum-thread-meta,.post-author,.post-date,.post-text,.suggestion-song,.suggestion-artist,.suggestion-note,.suggestion-by,.countdown-badge,.tab-btn,.toast,.coin-reward-title,.coin-reward-copy,.coin-reward-pill,.coin-guide-title,.coin-guide-sub,.coin-guide-stat-label,.coin-guide-stat-value,.coin-guide-card h3,.coin-guide-copy,.coin-guide-note,.coin-guide-cat,.coin-guide-scoreline,.modal-title,.modal-subtitle,.toca-badge-name,.toca-badge-sub,.toca-chip,.carousel-media-tag,.carousel-panel-tag,.carousel-caption-text,.media-recommended-by,.thumb-media-tag,.thumb-video-credit,.lb-video-credit,.lb-video-title,.lb-video-desc,.lb-meta,.lb-ctitle,.lb-cmt-au,.lb-cmt-dt,.lb-cmt-tx,.lb-rp,.frp,.gallery-tag-btn,.lb-photo-tag,.tag-manager-chip,.upload-hint,.img-upload-hint,.loading-title,.nav-mobile-menu a,.install-banner-text strong,.install-banner-text span,.install-banner-note,.install-banner-btn{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+  .section-title-wrap,.news-popup-copy,.nav-auth,.form-group,.member-instruments,.member-recommendations,.member-rec-item,.poll-option-label,.poll-bar-item,.poll-bar-right,.poll-footer,.setlist-item,.setlist-song,.rep-info,.forum-thread-header,.forum-thread-header>div,.post-content,.post-meta,.suggestion-main,.suggestion-actions,.carousel-info-main,.carousel-badges-row,.carousel-caption-meta,.media-caption-copy,.lb-video-head,.lb-cmt-l1,.lb-rpform,.frp-rform,.tag-manager-row,.upload-tag-select,.coin-guide-stat,.coin-guide-cat{min-width:0;max-width:100%}
+  .safe-text,.section-title-wrap h2,.section-title-wrap p,.news-popup-text,.news-popup-sub,.nav-user,.member-name,.member-since,.member-rec-title,.member-rec-label,.member-rec-value,.instrument-tag,.form-group label,input,select,textarea,.btn,.btn-ghost,.btn-icon,.poll-question,.poll-option-label,.poll-bar-label,.poll-bar-pct,.poll-winner,.poll-total,.poll-my-vote,.setlist-song,.setlist-artist,.rep-song,.rep-artist,.forum-thread-title,.forum-thread-meta,.post-author,.post-date,.post-text,.suggestion-song,.suggestion-artist,.suggestion-note,.suggestion-by,.countdown-badge,.tab-btn,.toast,.coin-reward-title,.coin-reward-copy,.coin-reward-pill,.coin-guide-title,.coin-guide-sub,.coin-guide-stat-label,.coin-guide-stat-value,.coin-guide-card h3,.coin-guide-copy,.coin-guide-note,.coin-guide-cat,.coin-guide-scoreline,.modal-title,.modal-subtitle,.toca-badge-name,.toca-badge-sub,.toca-chip,.carousel-media-tag,.carousel-panel-tag,.carousel-caption-text,.media-recommended-by,.thumb-media-tag,.thumb-video-credit,.lb-video-credit,.lb-video-title,.lb-video-desc,.lb-meta,.lb-ctitle,.lb-cmt-au,.lb-cmt-dt,.lb-cmt-tx,.lb-rp,.frp,.gallery-tag-btn,.lb-photo-tag,.tag-manager-chip,.upload-hint,.img-upload-hint,.loading-title,.nav-mobile-menu a,.install-banner-text strong,.install-banner-text span,.install-banner-note,.install-banner-btn{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
   body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
 
   /* NAV */
@@ -113,6 +113,13 @@
   .member-avatar img{width:100%;height:100%;object-fit:cover}
   .member-name{font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--cream);margin-bottom:.5rem}
   .member-instruments{display:flex;flex-wrap:wrap;gap:.3rem;justify-content:center;margin-bottom:.4rem}
+  .member-recommendations{margin-top:1rem;padding-top:.9rem;border-top:1px solid rgba(200,130,10,.14);text-align:left}
+  .member-rec-title{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.65rem}
+  .member-rec-grid{display:grid;gap:.45rem}
+  .member-rec-item{padding:.5rem .6rem;background:rgba(10,8,4,.42);border:1px solid rgba(200,130,10,.12);border-radius:2px}
+  .member-rec-label{display:block;font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:.2rem}
+  .member-rec-value{display:block;font-size:.78rem;color:var(--cream);line-height:1.35}
+  .member-rec-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem 1rem}
   .instrument-tag{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--amber);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .5rem;border-radius:1px}
   .member-since{font-size:.7rem;color:var(--smoke);margin-top:.3rem;font-style:italic}
   .remove-btn{position:absolute;top:.5rem;right:.5rem;background:none;border:none;color:rgba(139,58,10,.5);cursor:pointer;font-size:1rem;transition:color .2s;line-height:1;z-index:2}
@@ -656,6 +663,7 @@
     .member-card{padding:1.2rem .8rem}
     .member-avatar{width:64px;height:64px;font-size:1.3rem}
     .member-name{font-size:.85rem}
+    .member-rec-form-grid{grid-template-columns:1fr}
     .member-edit-hint{opacity:1} /* always visible on mobile */
 
     /* Suggestions */
@@ -847,6 +855,27 @@
     <div class="form-group" style="margin-bottom:1.5rem">
       <label>Contato (opcional)</label>
       <input type="text" id="editMemberContact" placeholder="WhatsApp ou e-mail">
+    </div>
+    <div class="form-group" style="margin-bottom:1.5rem">
+      <label>Recomendações do membro</label>
+      <div class="member-rec-form-grid">
+        <div class="form-group">
+          <label>Música</label>
+          <input type="text" id="editMemberRecMusic" placeholder="Ex: Black Dog — Led Zeppelin">
+        </div>
+        <div class="form-group">
+          <label>Séries</label>
+          <input type="text" id="editMemberRecSeries" placeholder="Ex: The Bear">
+        </div>
+        <div class="form-group">
+          <label>Filmes</label>
+          <input type="text" id="editMemberRecMovies" placeholder="Ex: School of Rock">
+        </div>
+        <div class="form-group">
+          <label>Livros</label>
+          <input type="text" id="editMemberRecBooks" placeholder="Ex: On the Road">
+        </div>
+      </div>
     </div>
     <div style="display:flex;gap:.8rem;justify-content:flex-end">
       <button class="btn-ghost" onclick="closeEditMember()">Cancelar</button>
@@ -1476,6 +1505,33 @@ function escapeHtml(value = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+const MEMBER_RECOMMENDATION_FIELDS = [
+  { key: 'music', label: 'Música' },
+  { key: 'series', label: 'Séries' },
+  { key: 'movies', label: 'Filmes' },
+  { key: 'books', label: 'Livros' }
+];
+
+function normalizeMemberRecommendations(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  return MEMBER_RECOMMENDATION_FIELDS.reduce((acc, field) => {
+    acc[field.key] = String(source[field.key] || '').trim();
+    return acc;
+  }, {});
+}
+
+function renderMemberRecommendations(recommendations = {}) {
+  const normalized = normalizeMemberRecommendations(recommendations);
+  const filled = MEMBER_RECOMMENDATION_FIELDS.filter(field => normalized[field.key]);
+  if (!filled.length) return '';
+  return `<div class="member-recommendations">
+    <div class="member-rec-title">Recomendações da banda</div>
+    <div class="member-rec-grid">
+      ${filled.map(field => `<div class="member-rec-item"><span class="member-rec-label">${field.label}</span><span class="member-rec-value">${escapeHtml(normalized[field.key])}</span></div>`).join('')}
+    </div>
+  </div>`;
 }
 
 function createMemberCategoryBucket() {
@@ -2322,6 +2378,7 @@ function renderMembersFromCache() {
   grid.innerHTML = membersCache.map(({id, data: m}) => {
     const instruments = Array.isArray(m.instruments) ? m.instruments : (m.role ? [m.role] : []);
     const tags    = instruments.map(i => `<span class="instrument-tag">${i}</span>`).join('');
+    const recommendationsHtml = renderMemberRecommendations(m.recommendations);
     const avatar  = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
@@ -2333,6 +2390,7 @@ function renderMembersFromCache() {
       <div class="member-name">${m.name}</div>
       <div class="member-instruments">${tags}</div>
       ${m.since ? `<div class="member-since">${sinceLabel(m.since)}</div>` : ''}
+      ${recommendationsHtml}
       ${hint}
     </div>`;
   }).join('');
@@ -2430,7 +2488,7 @@ window.previewUrl = url => {
 };
 
 function resetEditModal() {
-  ['editMemberId','editMemberName','editMemberSince','editMemberContact','editPhotoUrl'].forEach(id => document.getElementById(id).value='');
+  ['editMemberId','editMemberName','editMemberSince','editMemberContact','editPhotoUrl','editMemberRecMusic','editMemberRecSeries','editMemberRecMovies','editMemberRecBooks'].forEach(id => document.getElementById(id).value='');
   document.getElementById('editPhotoFile').value='';
   const p = document.getElementById('editPhotoPreview'); p.src=''; p.style.display='none';
   const e = document.getElementById('photoError'); e.style.display='none'; e.textContent='';
@@ -2454,6 +2512,11 @@ window.openEditMember = async id => {
   document.getElementById('editMemberName').value    = m.name||'';
   document.getElementById('editMemberSince').value   = m.since||'';
   document.getElementById('editMemberContact').value = m.contact||'';
+  const recommendations = normalizeMemberRecommendations(m.recommendations);
+  document.getElementById('editMemberRecMusic').value  = recommendations.music;
+  document.getElementById('editMemberRecSeries').value = recommendations.series;
+  document.getElementById('editMemberRecMovies').value = recommendations.movies;
+  document.getElementById('editMemberRecBooks').value  = recommendations.books;
   if (m.photo) { const p=document.getElementById('editPhotoPreview'); p.src=m.photo; p.style.display='block'; if(m.photo.startsWith('http')) document.getElementById('editPhotoUrl').value=m.photo; }
   (Array.isArray(m.instruments)?m.instruments:(m.role?[m.role]:[])).forEach(i=>{ const cb=document.querySelector(`#editInstrumentsCheck input[value="${i}"]`); if(cb) cb.checked=true; });
   document.getElementById('editModalTitle').textContent = 'Editar Membro';
@@ -2467,6 +2530,12 @@ window.saveMember = async () => {
   const name    = document.getElementById('editMemberName').value.trim();
   const since   = document.getElementById('editMemberSince').value;
   const contact = document.getElementById('editMemberContact').value.trim();
+  const recommendations = normalizeMemberRecommendations({
+    music: document.getElementById('editMemberRecMusic').value,
+    series: document.getElementById('editMemberRecSeries').value,
+    movies: document.getElementById('editMemberRecMovies').value,
+    books: document.getElementById('editMemberRecBooks').value
+  });
   const instruments = Array.from(document.querySelectorAll('#editInstrumentsCheck input:checked')).map(cb=>cb.value);
   if (!name) { showToast('⚠ Digite o nome'); return; }
   if (!instruments.length) { showToast('⚠ Selecione ao menos um instrumento'); return; }
@@ -2497,7 +2566,7 @@ window.saveMember = async () => {
   }
 
   const eid  = document.getElementById('editMemberId').value;
-  const data = {name, since, contact, instruments, photo};
+  const data = {name, since, contact, instruments, photo, recommendations};
 
   try {
     if (eid) {
