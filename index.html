@@ -1670,7 +1670,7 @@ function getMemberRecommendationMetaFromInputs(existingMeta = {}) {
       title: base.title || '',
       thumbUrl: effectiveThumb,
       sourceUrl: linkValue || base.sourceUrl || '',
-      sourceLabel: linkValue ? 'Link do membro' : (base.sourceLabel || ''),
+      sourceLabel: linkValue ? 'Link ' : (base.sourceLabel || ''),
       pendingConfig: Boolean(base.pendingConfig)
     };
   });
@@ -1774,7 +1774,7 @@ window.fetchAllMemberRecommendationMedia = async () => {
       ...fetched,
       sourceUrl: linkInput?.value.trim() || current.sourceUrl || fetched.sourceUrl || '',
       thumbUrl: recommendationThumbUploads[key] || thumbUrlInput?.value.trim() || current.thumbUrl || fetched.thumbUrl || '',
-      sourceLabel: linkInput?.value.trim() ? 'Link do membro' : (current.sourceLabel || fetched.sourceLabel || '')
+      sourceLabel: linkInput?.value.trim() ? 'Link ' : (current.sourceLabel || fetched.sourceLabel || '')
     };
     setRecommendationThumbPreview(key, editingMemberRecommendationMeta[key].thumbUrl);
   });
