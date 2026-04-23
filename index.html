@@ -1795,7 +1795,7 @@ function renderMemberRecommendations(recommendations = {}, recommendationMeta = 
           ? `<div class="member-rec-thumb"><img src="${escapeHtml(meta.thumbUrl)}" alt="${escapeHtml(meta.title || normalized[field.key])}" loading="lazy"></div>`
           : `<div class="member-rec-thumb">${buildRecommendationFallback(field, normalized[field.key])}</div>`;
         const sourceLink = meta.sourceUrl
-          ? `<a href="${escapeHtml(meta.sourceUrl)}" target="_blank" class="member-rec-link" onclick="event.stopPropagation()">${escapeHtml(meta.sourceLabel || 'Abrir referência')}</a>`
+          ? `<a href="${escapeHtml(meta.sourceUrl)}" target="_blank" class="member-rec-link" onclick="event.stopPropagation()">Link</a>`
           : (meta.pendingConfig ? `<span class="member-rec-link" style="opacity:.8">Thumb automática pendente de configuração</span>` : '');
         return `<div class="member-rec-item">
           ${thumb}
