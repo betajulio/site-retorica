@@ -679,12 +679,13 @@
     .member-rec-title{margin-bottom:.55rem;font-size:.64rem;letter-spacing:.1em}
     .member-rec-grid{gap:.65rem}
     .member-rec-form-grid{grid-template-columns:1fr}
-    .member-rec-item{grid-template-columns:56px minmax(0,1fr);gap:.7rem;align-items:flex-start;padding:.72rem .7rem;background:linear-gradient(180deg,rgba(18,13,7,.95),rgba(10,8,4,.78));border-left-width:3px}
-    .member-rec-thumb{width:56px;height:56px;flex-shrink:0}
-    .member-rec-copy{padding-top:.08rem}
+    .member-rec-item{grid-template-columns:1fr;gap:.6rem;justify-items:center;padding:.82rem .75rem;background:linear-gradient(180deg,rgba(18,13,7,.95),rgba(10,8,4,.78));border-left-width:3px;text-align:center}
+    .member-rec-thumb{width:72px;height:72px;flex-shrink:0}
+    .member-rec-copy{padding-top:0;width:100%}
+    .member-rec-label{justify-content:center}
     .member-rec-label{font-size:.55rem;line-height:1.2;margin-bottom:.3rem}
     .member-rec-value{font-size:.8rem;line-height:1.45}
-    .member-rec-link{margin-top:.4rem;font-size:.58rem}
+    .member-rec-link{margin-top:.4rem;font-size:.58rem;justify-content:center}
     .member-rec-edit-thumb-row{flex-direction:column}
     .member-edit-hint{opacity:1} /* always visible on mobile */
 
@@ -879,7 +880,7 @@
       <input type="text" id="editMemberContact" placeholder="WhatsApp ou e-mail">
     </div>
     <div class="form-group" style="margin-bottom:1.5rem">
-      <label>Recomendações do membro</label>
+      <label>Recomendações</label>
       <div class="member-rec-edit-actions">
         <button type="button" class="btn-ghost btn-sm" onclick="fetchAllMemberRecommendationMedia()">⚡ Buscar mídias automaticamente</button>
       </div>
@@ -1786,7 +1787,7 @@ function renderMemberRecommendations(recommendations = {}, recommendationMeta = 
   const filled = MEMBER_RECOMMENDATION_FIELDS.filter(field => normalized[field.key]);
   if (!filled.length) return '';
   return `<div class="member-recommendations">
-    <div class="member-rec-title">Recomendações do membro</div>
+    <div class="member-rec-title">Recomendações</div>
     <div class="member-rec-grid">
       ${filled.map(field => {
         const meta = normalizedMeta[field.key] || {};
