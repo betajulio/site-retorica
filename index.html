@@ -256,6 +256,10 @@
 
   /* SUGGESTIONS */
   .suggestions-list{display:flex;flex-direction:column;gap:.6rem;margin-top:1.5rem}
+  .suggestions-list.scroll-limited{overflow-y:auto;overflow-x:hidden;padding-right:.35rem;scrollbar-width:thin;scrollbar-color:rgba(200,130,10,.45) rgba(10,8,4,.28)}
+  .suggestions-list.scroll-limited::-webkit-scrollbar{width:8px}
+  .suggestions-list.scroll-limited::-webkit-scrollbar-track{background:rgba(10,8,4,.28);border-radius:999px}
+  .suggestions-list.scroll-limited::-webkit-scrollbar-thumb{background:rgba(200,130,10,.45);border-radius:999px}
   .suggestion-item{display:flex;align-items:center;gap:.8rem;padding:.8rem 1.2rem;background:rgba(42,26,8,.5);border:1px solid rgba(200,130,10,.15);border-radius:1px;transition:all .2s;font-size:.88rem;flex-wrap:wrap;position:relative}
   .suggestion-item:hover{border-color:rgba(200,130,10,.35)}
   .suggestion-item.rank-1{border-color:rgba(255,200,0,.4);background:rgba(255,200,0,.04)}
@@ -2938,7 +2942,12 @@ async function loadSuggestionsSnapshot(force = false) {
 
 function renderSuggestions() {
   const list = document.getElementById('suggestionsList');
-  if (!suggestionsCache.length) { list.innerHTML='<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p>'; return; }
+  if (!suggestionsCache.length) {
+    list.classList.remove('scroll-limited');
+    list.style.maxHeight = '';
+    list.innerHTML='<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p>';
+    return;
+  }
 
   const uid = auth.currentUser?.uid || null;
 
@@ -3000,7 +3009,28 @@ function renderSuggestions() {
       </div>
     </div>`;
   }).join('');
+
+  applySuggestionsViewportLimit();
 }
+
+function applySuggestionsViewportLimit() {
+  const list = document.getElementById('suggestionsList');
+  if (!list) return;
+  const items = Array.from(list.querySelectorAll('.suggestion-item'));
+  if (items.length <= 20) {
+    list.classList.remove('scroll-limited');
+    list.style.maxHeight = '';
+    return;
+  }
+  const styles = getComputedStyle(list);
+  const gap = parseFloat(styles.rowGap || styles.gap || '0') || 0;
+  const visibleItems = items.slice(0, 20);
+  const totalHeight = visibleItems.reduce((sum, item) => sum + item.offsetHeight, 0) + gap * Math.max(visibleItems.length - 1, 0);
+  list.style.maxHeight = `${Math.ceil(totalHeight)}px`;
+  list.classList.add('scroll-limited');
+}
+
+window.addEventListener('resize', applySuggestionsViewportLimit);
 
 window.voteSuggestion = async (id, type) => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
