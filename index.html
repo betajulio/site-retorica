@@ -3057,17 +3057,17 @@ window.voteSuggestion = async (id, type) => {
   }
 
   // EXCLUSÃO AUTOMÁTICA
-  if (dislikes >= 4) {
+  if (dislikes >= 3) {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 4 dislikes`,
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 3 dislikes`,
       song: s.song,
       artist: s.artist,
       by: s.by,
       likes: likes,
       dislikes: dislikes,
-      reason: 'Atingiu o limite de 4 dislikes',
+      reason: 'Atingiu o limite de 3 dislikes',
       removedBy: 'Sistema',
       category: 'sugestoes',
       who: 'Sistema',
