@@ -3506,23 +3506,54 @@ function getActiveSetlistSongs() {
   return nextSongs.length ? nextSongs : legacySongs;
 }
 
+function getSetlistVoteCounts(song) {
+  const votes = Object.values(song?.voterMap || {});
+  const likes = votes.length ? votes.filter(v => v === 'like').length : (song?.likes || 0);
+  const dislikes = votes.length ? votes.filter(v => v === 'dislike').length : (song?.dislikes || 0);
+  return { likes, dislikes, score: likes - dislikes };
+}
+
+function sortSetlistByRanking(songs) {
+  return songs
+    .map((song, index) => ({ song, index, votes: getSetlistVoteCounts(song) }))
+    .sort((a, b) => {
+      if (b.votes.score !== a.votes.score) return b.votes.score - a.votes.score;
+      if (b.votes.likes !== a.votes.likes) return b.votes.likes - a.votes.likes;
+      return a.index - b.index;
+    })
+    .map(item => item.song);
+}
+
 function renderSetlist() {
   const c = document.getElementById('setlistContainer');
   const songs = getActiveSetlistSongs();
   const totalSongs = songs.length;
   const displaySongs = setlistExpanded ? songs : songs.slice(0, 5);
   
-  const items = displaySongs.map((s,i)=>`
+  const items = displaySongs.map((s,i)=>{
+    const votes = getSetlistVoteCounts(s);
+    const myVote = auth.currentUser?.uid && s.voterMap ? s.voterMap[auth.currentUser.uid] : null;
+    const rankControls = isMember ? `
+        <button class="vote-btn${myVote==='like'?' liked':''}" onclick="voteSetSong(${i},'like');event.stopPropagation()" title="Gostei">
+          👍 <span class="score-num">${votes.likes}</span>
+        </button>
+        <button class="vote-btn${myVote==='dislike'?' disliked':''}" onclick="voteSetSong(${i},'dislike');event.stopPropagation()" title="Não curti">
+          👎 <span class="score-num">${votes.dislikes}</span>
+        </button>
+        <span class="poll-my-vote" title="Ranking">Rank ${votes.score > 0 ? '+' : ''}${votes.score}</span>` : '';
+    return `
     <li class="setlist-item${isMember?' editable':''}" ${isMember?`draggable="true" data-idx="${i}" ondragstart="dStart(event)" ondragover="dOver(event)" ondrop="dDrop(event)" ondragend="dEnd(event)"`:''}">
       <span class="setlist-num">${i+1}</span>
       <div class="setlist-song">${s.song}<div class="setlist-artist">${s.artist}</div></div>
       <div class="setlist-actions">
+        ${rankControls}
         ${s.youtube ? ytBtn(s.youtube) : `<button class="btn-icon" onclick="findSetlistYoutube(${i});event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(s.song, s.artist)}`}
         ${s.cifra ? cifraBtn(s.cifra) : `<button class="btn-icon" onclick="chooseSetlistCifra(${i});event.stopPropagation()">♫ Auto cifra</button>`}
         ${isMember ? `<button class="btn-icon" onclick="editSetSongLinks(${i});event.stopPropagation()">✎ Links</button>` : ''}
         ${isMember ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
       </div>
-    </li>`).join('');
+    </li>`;
+  }).join('');
   
   // Botão "Ver mais" / "Ver menos"
   const toggleBtn = totalSongs > 5 ? `
@@ -3560,13 +3591,42 @@ window.addSetSong = async () => {
   const youtube = document.getElementById('setYt').value.trim();
   const cifra = document.getElementById('setCifra').value.trim();
   if (!song) { showToast('⚠ Digite o nome da música'); return; }
-  const arr = [...(setlistData[NEXT_SETLIST_KEY]||[]),{song,artist:artist||'—',youtube,cifra}];
+  const arr = sortSetlistByRanking([...(setlistData[NEXT_SETLIST_KEY]||[]),{song,artist:artist||'—',youtube,cifra}]);
   setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
   await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
   renderSetlist();
   await writeLog('Música adicionada ao setlist', `${song} — ${artist||'—'} (Próximo Ensaio)`, 'setlist');
   ['setSong','setArtist','setYt','setCifra'].forEach(id => document.getElementById(id).value = '');
   showToast(`✓ "${song}" adicionada!`);
+};
+
+window.voteSetSong = async (idx, type) => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const uid = auth.currentUser?.uid;
+  if (!uid) { showToast('⚠ Faça login para votar'); return; }
+  const arr = [...getActiveSetlistSongs()].map(song => ({
+    ...song,
+    voterMap: { ...(song.voterMap || {}) }
+  }));
+  const current = arr[idx];
+  if (!current) return;
+
+  const voterMap = { ...(current.voterMap || {}) };
+  if (voterMap[uid] === type) delete voterMap[uid];
+  else voterMap[uid] = type;
+
+  const nextSong = { ...current, voterMap };
+  const counts = getSetlistVoteCounts(nextSong);
+  arr[idx] = {
+    ...nextSong,
+    likes: counts.likes,
+    dislikes: counts.dislikes
+  };
+
+  const ranked = sortSetlistByRanking(arr);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: ranked };
+  await updateDoc(doc(db,'setlists','data'), { [NEXT_SETLIST_KEY]: ranked });
+  renderSetlist();
 };
 
 window.editSetSongLinks = async idx => {
@@ -3579,8 +3639,9 @@ window.editSetSongLinks = async idx => {
   const cifra = prompt(`Link de cifra para "${current.song}"`, current.cifra || '');
   if (cifra === null) return;
   arr[idx] = {...current, youtube: youtube.trim(), cifra: cifra.trim()};
-  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
-  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  const ranked = sortSetlistByRanking(arr);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: ranked };
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:ranked});
   renderSetlist();
   await writeLog('Links do setlist atualizados', `${current.song} · YouTube: ${youtube.trim() ? 'sim' : 'nao'} · Cifra: ${cifra.trim() ? 'sim' : 'nao'}`, 'setlist');
   showToast('Links atualizados.');
@@ -3605,8 +3666,9 @@ window.dDrop  = async e=>{
   const fi=parseInt(dragSrc.dataset.idx), ti=parseInt(t.dataset.idx);
   const arr=[...getActiveSetlistSongs()];
   const [item]=arr.splice(fi,1); arr.splice(ti,0,item);
-  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
-  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  const ranked = sortSetlistByRanking(arr);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: ranked };
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:ranked});
   await writeLog('Setlist reordenado', `${item?.song||'?'}: posição ${fi+1} → ${ti+1} (Próximo Ensaio)`, 'setlist');
   renderSetlist();
 };
@@ -3709,8 +3771,9 @@ window.addRepToSetlist = async id => {
     cifra: r.cifra || ''
   };
   arr.push(nextSong);
-  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
-  await updateDoc(doc(db,'setlists','data'), { [NEXT_SETLIST_KEY]: arr });
+  const ranked = sortSetlistByRanking(arr);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: ranked };
+  await updateDoc(doc(db,'setlists','data'), { [NEXT_SETLIST_KEY]: ranked });
   setlistLoaded = true;
   renderSetlist();
   await writeLog('Música do repertório enviada ao ensaio', `${song} — ${artist}`, 'setlist');
