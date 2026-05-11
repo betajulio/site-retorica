@@ -216,11 +216,14 @@
   /* REPERTÓRIO */
   .repertorio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
   .rep-item{background:rgba(42,26,8,.5);border:1px solid rgba(200,130,10,.15);border-radius:1px;padding:.8rem 1.1rem;display:flex;align-items:center;gap:.8rem;transition:border-color .2s}
+  .rep-item.in-setlist{background:linear-gradient(135deg,rgba(60,180,80,.12),rgba(42,26,8,.62));border-color:rgba(60,180,80,.45);box-shadow:0 0 0 1px rgba(60,180,80,.08) inset}
   .rep-item:hover{border-color:rgba(200,130,10,.35)}
+  .rep-item.in-setlist:hover{border-color:rgba(60,180,80,.65)}
   .rep-num{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:rgba(200,130,10,.3);min-width:28px}
   .rep-info{flex:1}
   .rep-song{color:var(--cream);font-size:.9rem}
   .rep-artist{font-size:.75rem;color:var(--smoke);font-style:italic}
+  .rep-setlist-tag{display:inline-flex;align-items:center;gap:.25rem;margin-left:.45rem;background:rgba(60,180,80,.16);border:1px solid rgba(60,180,80,.38);color:#86efac;font-family:'Cinzel',serif;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.08rem .4rem;border-radius:1px;vertical-align:middle}
   .rep-level{font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .5rem;border-radius:1px;margin-left:.4rem}
   .rep-level.ok{background:rgba(30,100,30,.3);border:1px solid rgba(60,150,60,.3);color:#7ec87e}
   .rep-level.wip{background:rgba(100,80,10,.3);border:1px solid rgba(180,140,20,.3);color:#d4b84a}
@@ -3524,6 +3527,10 @@ function sortSetlistByRanking(songs) {
     .map(item => item.song);
 }
 
+function normalizeSongKey(song, artist) {
+  return `${String(song || '').trim().toLowerCase()}::${String(artist || '—').trim().toLowerCase()}`;
+}
+
 function renderSetlist() {
   const c = document.getElementById('setlistContainer');
   const songs = getActiveSetlistSongs();
@@ -3595,6 +3602,7 @@ window.addSetSong = async () => {
   setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
   await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
   renderSetlist();
+  renderRepFromCache();
   await writeLog('Música adicionada ao setlist', `${song} — ${artist||'—'} (Próximo Ensaio)`, 'setlist');
   ['setSong','setArtist','setYt','setCifra'].forEach(id => document.getElementById(id).value = '');
   showToast(`✓ "${song}" adicionada!`);
@@ -3656,6 +3664,7 @@ window.removeSetSong = async idx => {
   await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
   await writeLog('Música removida do setlist', `${removed?.song||'?'} (Próximo Ensaio)`, 'setlist');
   renderSetlist();
+  renderRepFromCache();
 };
 
 window.dStart = e=>{ dragSrc=e.currentTarget; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; };
@@ -3684,15 +3693,18 @@ function renderRepFromCache() {
   
   const totalSongs = repCache.length;
   const displaySongs = repertorioExpanded ? repCache : repCache.slice(0, 5);
+  const setlistKeys = new Set(getActiveSetlistSongs().map(s => normalizeSongKey(s.song, s.artist)));
   
   const items = displaySongs.map(({id, data: r}, i) => {
+    const isInSetlist = setlistKeys.has(normalizeSongKey(r.song, r.artist));
+    const setlistTag = isInSetlist ? '<span class="rep-setlist-tag">No ensaio</span>' : '';
     const sendToSetlistBtn = isMember ? `<button class="btn-icon" onclick="addRepToSetlist('${id}');event.stopPropagation()">➕ Ensaio</button>` : '';
     const editBtn = isMember ? `<button class="btn-icon" onclick="openRepEdit('${id}');event.stopPropagation()">✎ Editar</button>` : '';
     const rmBtn   = isMember ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
-    return `<div class="rep-item">
+    return `<div class="rep-item${isInSetlist ? ' in-setlist' : ''}">
       <span class="rep-num">${i+1}</span>
       <div class="rep-info">
-        <div class="rep-song">${r.song}</div>
+        <div class="rep-song">${r.song}${setlistTag}</div>
         <div class="rep-artist">${r.artist}</div>
       </div>
       <div class="rep-actions">
@@ -3722,7 +3734,12 @@ window.toggleRepertorioExpand = () => {
 };
 
 async function loadRepertorioSnapshot(force = false) {
-  if (repertorioLoaded && !force) return;
+  if (repertorioLoaded && !force) {
+    await loadSetlist();
+    renderRepFromCache();
+    return;
+  }
+  await loadSetlist(force);
   const snap = await getDocs(query(collection(db,'repertorio'), orderBy('addedAt','asc')));
   repCache = snap.docs.map(d=>({id:d.id,data:d.data()}));
   repertorioLoaded = true;
@@ -3776,6 +3793,7 @@ window.addRepToSetlist = async id => {
   await updateDoc(doc(db,'setlists','data'), { [NEXT_SETLIST_KEY]: ranked });
   setlistLoaded = true;
   renderSetlist();
+  renderRepFromCache();
   await writeLog('Música do repertório enviada ao ensaio', `${song} — ${artist}`, 'setlist');
   showToast(`✓ "${song}" foi para o ensaio atual!`);
 };
