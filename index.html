@@ -3624,6 +3624,7 @@ function renderRepFromCache() {
   const displaySongs = repertorioExpanded ? repCache : repCache.slice(0, 5);
   
   const items = displaySongs.map(({id, data: r}, i) => {
+    const sendToSetlistBtn = isMember ? `<button class="btn-icon" onclick="addRepToSetlist('${id}');event.stopPropagation()">➕ Ensaio</button>` : '';
     const editBtn = isMember ? `<button class="btn-icon" onclick="openRepEdit('${id}');event.stopPropagation()">✎ Editar</button>` : '';
     const rmBtn   = isMember ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
     return `<div class="rep-item">
@@ -3635,6 +3636,7 @@ function renderRepFromCache() {
       <div class="rep-actions">
         ${r.youtube ? ytBtn(r.youtube) : `<button class="btn-icon" onclick="findRepYoutube('${id}');event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(r.song, r.artist)}`}
         ${r.cifra ? cifraBtn(r.cifra) : `<button class="btn-icon" onclick="chooseRepCifra('${id}');event.stopPropagation()">♫ Auto cifra</button>`}
+        ${sendToSetlistBtn}
         ${editBtn}
         ${rmBtn}
       </div>
@@ -3677,6 +3679,42 @@ window.addRepSong = async () => {
   await writeLog('Música adicionada ao repertório', `${song} — ${artist}`, 'repertorio');
   ['repSong','repArtist','repYt','repCifra'].forEach(id=>document.getElementById(id).value='');
   showToast(`✓ "${song}" adicionada ao repertório!`);
+};
+
+window.addRepToSetlist = async id => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const item = repCache.find(entry => entry.id === id);
+  if (!item) { showToast('⚠ Música não encontrada no repertório'); return; }
+
+  await loadSetlist();
+  const r = item.data || {};
+  const song = String(r.song || '').trim();
+  const artist = String(r.artist || '—').trim() || '—';
+  if (!song) { showToast('⚠ Música sem título'); return; }
+
+  const arr = [...(setlistData[NEXT_SETLIST_KEY] || [])];
+  const normalizedSong = song.toLowerCase();
+  const normalizedArtist = artist.toLowerCase();
+  const alreadyAdded = arr.some(s => {
+    const setSong = String(s.song || '').trim().toLowerCase();
+    const setArtist = String(s.artist || '—').trim().toLowerCase();
+    return setSong === normalizedSong && setArtist === normalizedArtist;
+  });
+  if (alreadyAdded) { showToast('✓ Essa música já está no ensaio atual'); return; }
+
+  const nextSong = {
+    song,
+    artist,
+    youtube: r.youtube || '',
+    cifra: r.cifra || ''
+  };
+  arr.push(nextSong);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
+  await updateDoc(doc(db,'setlists','data'), { [NEXT_SETLIST_KEY]: arr });
+  setlistLoaded = true;
+  renderSetlist();
+  await writeLog('Música do repertório enviada ao ensaio', `${song} — ${artist}`, 'setlist');
+  showToast(`✓ "${song}" foi para o ensaio atual!`);
 };
 
 window.openRepEdit = async id => {
