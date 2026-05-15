@@ -145,6 +145,14 @@
   .img-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
   .img-preview{width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid rgba(200,130,10,.3);margin:0 auto .5rem;display:none}
   .img-upload-hint{font-size:.75rem;color:var(--smoke);font-style:italic}
+  .photo-crop-overlay{position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:1rem}
+  .photo-crop-box{width:min(92vw,420px);background:linear-gradient(160deg,#1a1207,#0f0b04);border:1px solid rgba(200,130,10,.32);border-radius:2px;padding:1.2rem;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .photo-crop-title{font-family:'Cinzel',serif;color:var(--gold);font-size:.86rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.8rem}
+  .photo-crop-stage{width:min(76vw,320px);height:min(76vw,320px);margin:0 auto;background:#050403;border:1px solid rgba(200,130,10,.28);overflow:hidden;touch-action:none;cursor:grab}
+  .photo-crop-stage:active{cursor:grabbing}
+  .photo-crop-stage canvas{width:100%;height:100%;display:block}
+  .photo-crop-actions{display:flex;gap:.6rem;justify-content:flex-end;flex-wrap:wrap;margin-top:1rem}
+  .photo-crop-zoom{width:100%;margin:.9rem 0 .2rem;accent-color:var(--amber)}
 
   /* FORMS */
   .form-card{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;padding:2rem}
@@ -1620,6 +1628,7 @@ const MEMBER_RECOMMENDATION_FIELDS = [
 ];
 let recommendationThumbUploads = {};
 let editingMemberRecommendationMeta = {};
+let memberPhotoCroppedDataUrl = '';
 
 function memberRecFieldId(key, suffix = '') {
   const prefix = `editMemberRec${key.charAt(0).toUpperCase()}${key.slice(1)}`;
@@ -2729,6 +2738,145 @@ function fileToBase64(file) {
   return new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
 }
 
+function readImageFile(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onerror = () => rej(new Error('Falha ao ler o arquivo.'));
+    reader.onload = ev => res(ev.target.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onerror = () => rej(new Error('Arquivo inválido. Use JPG, PNG ou WebP.'));
+    img.onload = () => res(img);
+    img.src = src;
+  });
+}
+
+function exportMemberCrop(state, size = 800) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const ratio = size / state.viewSize;
+  ctx.fillStyle = '#050403';
+  ctx.fillRect(0, 0, size, size);
+  ctx.drawImage(
+    state.img,
+    (state.x - state.drawW / 2) * ratio,
+    (state.y - state.drawH / 2) * ratio,
+    state.drawW * ratio,
+    state.drawH * ratio
+  );
+
+  for (const quality of [0.82, 0.68, 0.52]) {
+    const b64 = canvas.toDataURL('image/jpeg', quality);
+    const kb = Math.round(b64.length * 0.75 / 1024);
+    if (kb <= 750) return { b64, kb };
+  }
+  throw new Error('Recorte ainda ficou grande demais. Use uma foto menor.');
+}
+
+function drawMemberCrop(state) {
+  const { canvas, ctx, img, viewSize } = state;
+  const baseScale = Math.max(viewSize / img.width, viewSize / img.height);
+  const scale = baseScale * state.zoom;
+  state.drawW = img.width * scale;
+  state.drawH = img.height * scale;
+  const minX = viewSize - state.drawW / 2;
+  const maxX = state.drawW / 2;
+  const minY = viewSize - state.drawH / 2;
+  const maxY = state.drawH / 2;
+  state.x = state.drawW > viewSize ? Math.min(maxX, Math.max(minX, state.x)) : viewSize / 2;
+  state.y = state.drawH > viewSize ? Math.min(maxY, Math.max(minY, state.y)) : viewSize / 2;
+  ctx.clearRect(0, 0, viewSize, viewSize);
+  ctx.fillStyle = '#050403';
+  ctx.fillRect(0, 0, viewSize, viewSize);
+  ctx.drawImage(img, state.x - state.drawW / 2, state.y - state.drawH / 2, state.drawW, state.drawH);
+}
+
+async function openMemberPhotoCropper(file) {
+  const dataUrl = await readImageFile(file);
+  const img = await loadImage(dataUrl);
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'photo-crop-overlay';
+    overlay.innerHTML = `
+      <div class="photo-crop-box">
+        <div class="photo-crop-title">Ajustar foto do perfil</div>
+        <div class="photo-crop-stage"><canvas width="320" height="320"></canvas></div>
+        <input class="photo-crop-zoom" type="range" min="1" max="3" step="0.01" value="1">
+        <div style="font-size:.72rem;color:var(--smoke);text-align:center">Arraste a imagem e ajuste o zoom</div>
+        <div class="photo-crop-actions">
+          <button class="btn-ghost btn-sm" type="button" data-cancel>Cancelar</button>
+          <button class="btn btn-sm" type="button" data-apply>Usar recorte</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const canvas = overlay.querySelector('canvas');
+    const stage = overlay.querySelector('.photo-crop-stage');
+    const zoom = overlay.querySelector('.photo-crop-zoom');
+    const state = {
+      img,
+      canvas,
+      ctx: canvas.getContext('2d'),
+      viewSize: 320,
+      zoom: 1,
+      x: 160,
+      y: 160,
+      drawW: 0,
+      drawH: 0,
+      dragging: false,
+      lastX: 0,
+      lastY: 0
+    };
+    drawMemberCrop(state);
+
+    zoom.addEventListener('input', () => {
+      state.zoom = Number(zoom.value) || 1;
+      drawMemberCrop(state);
+    });
+    const startDrag = ev => {
+      ev.preventDefault();
+      state.dragging = true;
+      stage.setPointerCapture?.(ev.pointerId);
+      state.lastX = ev.clientX;
+      state.lastY = ev.clientY;
+    };
+    const moveDrag = ev => {
+      if (!state.dragging) return;
+      state.x += ev.clientX - state.lastX;
+      state.y += ev.clientY - state.lastY;
+      state.lastX = ev.clientX;
+      state.lastY = ev.clientY;
+      drawMemberCrop(state);
+    };
+    const endDrag = () => { state.dragging = false; };
+    stage.addEventListener('pointerdown', startDrag);
+    stage.addEventListener('pointermove', moveDrag);
+    stage.addEventListener('pointerup', endDrag);
+    stage.addEventListener('pointercancel', endDrag);
+
+    overlay.querySelector('[data-cancel]').onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+    overlay.querySelector('[data-apply]').onclick = () => {
+      try {
+        const result = exportMemberCrop(state);
+        overlay.remove();
+        resolve(result);
+      } catch (err) {
+        showToast(`⚠ ${err.message}`);
+      }
+    };
+  });
+}
+
 window.previewPhoto = async e => {
   const f = e.target.files[0]; if (!f) return;
   const errEl = document.getElementById('photoError');
@@ -2748,12 +2896,16 @@ window.previewPhoto = async e => {
     return;
   }
   try {
-    const b64 = await compressImage(f);
+    const cropped = await openMemberPhotoCropper(f);
+    if (!cropped) {
+      e.target.value = '';
+      return;
+    }
+    memberPhotoCroppedDataUrl = cropped.b64;
     const p = document.getElementById('editPhotoPreview');
-    p.src = b64; p.style.display = 'block';
+    p.src = memberPhotoCroppedDataUrl; p.style.display = 'block';
     document.getElementById('editPhotoUrl').value = '';
-    const kb = Math.round(b64.length * 0.75 / 1024);
-    errEl.textContent = `✓ Imagem comprimida com sucesso (${kb}KB)`;
+    errEl.textContent = `✓ Recorte salvo (${cropped.kb}KB)`;
     errEl.style.display = 'block';
     errEl.style.color = '#6ee7b7';
   } catch(err) {
@@ -2768,6 +2920,7 @@ window.previewUrl = url => {
   const p = document.getElementById('editPhotoPreview');
   if (url) { p.src=url; p.style.display='block'; } else p.style.display='none';
   document.getElementById('editPhotoFile').value = '';
+  memberPhotoCroppedDataUrl = '';
 };
 
 function resetEditModal() {
@@ -2775,6 +2928,7 @@ function resetEditModal() {
   document.getElementById('editPhotoFile').value='';
   const p = document.getElementById('editPhotoPreview'); p.src=''; p.style.display='none';
   const e = document.getElementById('photoError'); e.style.display='none'; e.textContent='';
+  memberPhotoCroppedDataUrl = '';
   recommendationThumbUploads = {};
   editingMemberRecommendationMeta = {};
   ['Music','Series','Movies','Books'].forEach(key => {
@@ -2848,17 +3002,11 @@ window.saveMember = async () => {
   const fi = document.getElementById('editPhotoFile');
   const ui = document.getElementById('editPhotoUrl').value.trim();
 
-  if (fi.files[0]) {
-    try {
-      showToast('⏳ Comprimindo imagem…');
-      photo = await compressImage(fi.files[0]);
-    } catch(err) {
-      errEl.textContent = `⚠ ${err.message}`;
-      errEl.style.color = '#fca5a5';
-      errEl.style.display = 'block';
-      showToast(`⚠ ${err.message}`);
-      return;
-    }
+  if (memberPhotoCroppedDataUrl) {
+    photo = memberPhotoCroppedDataUrl;
+  } else if (fi.files[0]) {
+    showToast('⚠ Ajuste o recorte da foto antes de salvar');
+    return;
   } else if (ui) {
     photo = ui;
   } else {
