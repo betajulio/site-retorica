@@ -6124,7 +6124,8 @@ async function initPromotionState() {
         activeRepertoryPoll: null,
         completionLockToken: null,
         completionLockUntil: null,
-        completionLockPollId: null
+        completionLockPollId: null,
+        promotionPaused: false
       });
     }
   } catch (e) {
@@ -6172,6 +6173,7 @@ async function claimPromotionExecution() {
     const state = stateSnap.data();
     const now = new Date();
     const nextPromo = toDateOrNull(state.nextPromotionDate);
+    if (state.promotionPaused === true) return { action: 'noop' };
     if (!nextPromo || now < nextPromo) return { action: 'noop' };
 
     if (state.activeTiebreakerPoll || state.activeRepertoryPoll) {
@@ -6299,13 +6301,13 @@ function formatTimeRemaining(ms) {
   return `${minutes}m`;
 }
 
-function renderPromotionBanner(timeUntil) {
+function renderPromotionBanner(timeUntil, paused = false) {
   const navBadge = document.getElementById('promoCountdownNav');
   const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
   const bannerHost = document.getElementById('promotionCountdownBanner');
   const timeLabel = formatTimeRemaining(timeUntil);
-  const shouldShowNav = timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
-  const shouldShowSection = timeUntil > 0;
+  const shouldShowNav = !paused && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+  const shouldShowSection = paused || timeUntil > 0;
 
   if (navBadge) {
     navBadge.textContent = timeLabel;
@@ -6322,6 +6324,16 @@ function renderPromotionBanner(timeUntil) {
     return;
   }
 
+  if (paused) {
+    bannerHost.innerHTML = `
+      <div class="countdown-badge-big">
+        <div style="font-size:2rem;margin-bottom:.3rem">⏸</div>
+        <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;letter-spacing:.08em;margin-bottom:.4rem">Inclusão de novas músicas no repertório pausada</div>
+      </div>
+    `;
+    return;
+  }
+
   bannerHost.innerHTML = `
     <div class="countdown-badge-big ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}">
       <div style="font-size:2rem;margin-bottom:.3rem">🏆</div>
@@ -6335,7 +6347,19 @@ function renderPromotionBanner(timeUntil) {
 async function updatePromotionCountdowns() {
   try {
     const now = Date.now();
-    const nextPromoDate = getNextFriday(new Date(now + 60000));
+    let state = {};
+    try {
+      const stateSnap = await getDoc(promotionStateRef);
+      state = stateSnap.exists() ? (stateSnap.data() || {}) : {};
+    } catch (stateErr) {
+      console.warn('[COUNTDOWN] Não foi possível ler promotion_state, usando fallback local.', stateErr);
+    }
+    if (state.promotionPaused === true) {
+      renderPromotionBanner(0, true);
+      return;
+    }
+    const stateNextPromo = toDateOrNull(state.nextPromotionDate);
+    const nextPromoDate = stateNextPromo || getNextFriday(new Date(now + 60000));
     const nextPromo = nextPromoDate.getTime();
     const timeUntil = nextPromo - now;
     
@@ -6622,8 +6646,8 @@ async function completeRepertoryPoll(pollId, pollData) {
 
 // Iniciar sistema de promoção
 (async function startPromotionSystem() {
-  renderPromotionBanner(getNextFriday().getTime() - Date.now());
   await initPromotionState();
+  await updatePromotionCountdowns();
   
   // Verificar a cada minuto
   setInterval(async () => {
