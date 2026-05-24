@@ -124,6 +124,7 @@
         <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
         <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
         <button class="btn-ghost" style="border-color:#93c5fd;color:#bfdbfe" onclick="forceTop3Tiebreaker()">⚔️ Forçar desempate Top 3</button>
+        <button id="promotionPauseBtn" class="btn-ghost" style="border-color:#fbbf24;color:#fde68a" onclick="togglePromotionPause()">⏸ Pausar ciclo de sugestões</button>
         <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9" href="index.html?videoFrameDebug=1#galeria">🎛 Ajustar vídeos da galeria</a>
         <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
         <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
@@ -251,6 +252,8 @@ const firebaseConfig = {
 
 const AUDIT_EMAIL = 'juliocereser@gmail.com';
 const FORCE_TIEBREAKER_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_force_tiebreaker_top3?token=retorica-force-top3-20260418';
+const INSPECT_PROMOTION_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_inspect_promotion?token=retorica-force-top3-20260418';
+const SET_PROMOTION_PAUSE_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_set_promotion_pause?token=retorica-force-top3-20260418';
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -261,6 +264,7 @@ let currentConfig = null;
 let visibleEvents = [];
 let unsubConfig = null;
 let unsubEvents = null;
+let promotionPaused = false;
 
 function showToast(msg) {
   const toast = document.getElementById('toast');
@@ -498,6 +502,49 @@ window.forceTop3Tiebreaker = async () => {
   } catch (err) {
     console.error('Force top3 tiebreaker error:', err);
     showToast('Erro ao forçar o desempate.');
+  }
+};
+
+function updatePromotionPauseUi(paused) {
+  promotionPaused = !!paused;
+  const btn = document.getElementById('promotionPauseBtn');
+  if (!btn) return;
+  btn.textContent = promotionPaused ? '▶ Retomar ciclo de sugestões' : '⏸ Pausar ciclo de sugestões';
+  btn.style.borderColor = promotionPaused ? '#34d399' : '#fbbf24';
+  btn.style.color = promotionPaused ? '#a7f3d0' : '#fde68a';
+  btn.title = promotionPaused
+    ? 'A contagem das sugestões está pausada; clique para retomar o próximo ciclo de revisão.'
+    : 'Pausa a contagem das sugestões e impede o próximo ciclo automático de revisão.';
+}
+
+async function loadPromotionPauseState() {
+  try {
+    const resp = await fetch(INSPECT_PROMOTION_URL);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.ok === false) return;
+    updatePromotionPauseUi(data?.state?.promotionPaused === true);
+  } catch (err) {
+    console.error('Promotion pause state error:', err);
+  }
+}
+
+window.togglePromotionPause = async () => {
+  const nextPaused = !promotionPaused;
+  const action = nextPaused ? 'pausar' : 'retomar';
+  if (!confirm(`Deseja ${action} o ciclo automático de revisão das sugestões?`)) return;
+  showToast(nextPaused ? 'Pausando ciclo de sugestões...' : 'Retomando ciclo de sugestões...');
+  try {
+    const resp = await fetch(`${SET_PROMOTION_PAUSE_URL}&paused=${nextPaused ? 'true' : 'false'}`, { method: 'POST' });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.ok === false) {
+      showToast(data?.error || `Não foi possível ${action} o ciclo.`);
+      return;
+    }
+    updatePromotionPauseUi(data?.state?.promotionPaused === true);
+    showToast(nextPaused ? 'Ciclo de sugestões pausado.' : 'Ciclo de sugestões retomado.');
+  } catch (err) {
+    console.error('Promotion pause toggle error:', err);
+    showToast(`Erro ao ${action} o ciclo.`);
   }
 };
 
@@ -775,6 +822,7 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('auditContent').classList.remove('hidden');
   document.body.classList.add('auth-resolved');
   loadGalleryConfig();
+  loadPromotionPauseState();
   startStreams();
 });
 </script>
