@@ -1646,9 +1646,9 @@ async function enrichMemberRecommendationItems(items = []) {
       enriched.push({
         ...item,
         title: item.title || data.title || query,
-        thumbUrl: item.thumbUrl || data.thumbUrl || '',
-        sourceUrl: item.sourceUrl || data.sourceUrl || '',
-        sourceLabel: item.sourceLabel || data.sourceLabel || '',
+        thumbUrl: data.thumbUrl || item.thumbUrl || '',
+        sourceUrl: data.sourceUrl || item.sourceUrl || '',
+        sourceLabel: data.sourceLabel || item.sourceLabel || '',
         pendingConfig: Boolean(item.pendingConfig || data.pendingConfig)
       });
     } catch (err) {
