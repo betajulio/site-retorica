@@ -1,4 +1,4 @@
-const CACHE_NAME = 'retorica-v5';
+const CACHE_NAME = 'retorica-v6';
 const ASSETS = ['./index.html', './logs.html', './noticias.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
@@ -17,10 +17,17 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   
-  // Não cachear requisições ao Firebase/Firestore
+  // Não cachear requisições dinâmicas e mídias externas.
   if (e.request.url.includes('firebase') || 
       e.request.url.includes('firestore') ||
-      e.request.url.includes('googleapis')) {
+      e.request.url.includes('googleapis') ||
+      e.request.url.includes('cloudfunctions.net') ||
+      e.request.url.includes('.a.run.app') ||
+      e.request.url.includes('themoviedb.org') ||
+      e.request.url.includes('image.tmdb.org') ||
+      e.request.url.includes('openlibrary.org') ||
+      e.request.url.includes('covers.openlibrary.org') ||
+      e.request.url.includes('img.youtube.com')) {
     e.respondWith(fetch(e.request));
     return;
   }

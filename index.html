@@ -1554,7 +1554,9 @@ function memberRecFieldId(index, suffix = '') {
 }
 
 function getRecommendationField(key) {
-  return MEMBER_RECOMMENDATION_FIELDS.find(field => field.key === key) || MEMBER_RECOMMENDATION_FIELDS[0];
+  const aliases = { movie: 'movies', film: 'movies', filme: 'movies', serie: 'series', series: 'series', livro: 'books', book: 'books', musica: 'music' };
+  const normalizedKey = aliases[String(key || '').toLowerCase()] || key;
+  return MEMBER_RECOMMENDATION_FIELDS.find(field => field.key === normalizedKey) || MEMBER_RECOMMENDATION_FIELDS[0];
 }
 
 function normalizeMemberRecommendations(value = {}) {
