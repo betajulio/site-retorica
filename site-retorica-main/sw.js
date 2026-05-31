@@ -1,4 +1,4 @@
-const CACHE_NAME = 'retorica-v7';
+const CACHE_NAME = 'retorica-v8';
 const ASSETS = [
   './index.html',
   './logs.html',
