@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email != null;
+    }
+
+    function emailKey() {
+      return request.auth.token.email.lower();
+    }
+
+    function isMember() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/approved_emails/$(emailKey()));
+    }
+
+    function isAuditAdmin() {
+      return signedIn() && emailKey() == 'juliocereser@gmail.com';
+    }
+
+    function isOwnApprovedEmailDoc(emailId) {
+      return signedIn() && emailId == emailKey();
+    }
+
+    function publicConfigDoc(docId) {
+      return docId in ['galleryTags', 'galleryCompression'];
+    }
+
+    match /approved_emails/{emailId} {
+      allow get: if isOwnApprovedEmailDoc(emailId) || isMember();
+      allow list: if isMember();
+      allow create, update, delete: if false;
+    }
+
+    match /members/{memberId} {
+      allow read: if true;
+      allow create, update, delete: if isMember();
+    }
+
+    match /suggestions/{suggestionId} {
+      allow read: if true;
+      allow create: if signedIn();
+      allow update, delete: if isMember();
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create, update, delete: if isMember();
+
+      match /votes/{userId} {
+        allow get: if signedIn() && request.auth.uid == userId;
+        allow list: if false;
+        allow create, update, delete: if isMember() && request.auth.uid == userId;
+      }
+    }
+
+    match /setlists/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isMember();
+    }
+
+    match /repertorio/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isMember();
+    }
+
+    match /forum/{threadId} {
+      allow read: if true;
+      allow create, update, delete: if isMember();
+
+      match /posts/{postId} {
+        allow read: if true;
+        allow create, update, delete: if isMember();
+      }
+    }
+
+    match /gallery/{photoId} {
+      allow read: if true;
+      allow create: if isMember();
+      allow delete: if isMember();
+      allow update: if isMember()
+        || (
+          signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'commentCount', 'replyCount'])
+        );
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if signedIn();
+        allow update: if signedIn();
+        allow delete: if isMember();
+      }
+    }
+
+    match /logs/{logId} {
+      allow read, create, delete: if isMember();
+      allow update: if false;
+    }
+
+    match /member_stats/{memberId} {
+      allow read: if isMember();
+      allow create, update: if isMember() && memberId == emailKey();
+      allow delete: if false;
+    }
+
+    match /config/{docId} {
+      allow read: if publicConfigDoc(docId)
+        || (docId == 'readAudit' && isMember());
+      allow create, update, delete: if (docId == 'readAudit' && isAuditAdmin())
+        || (docId != 'readAudit' && isMember());
+    }
+
+    match /read_audit_events/{eventId} {
+      allow read, delete: if isAuditAdmin();
+      allow create: if isMember()
+        && get(/databases/$(database)/documents/config/readAudit).data.enabled == true
+        && get(/databases/$(database)/documents/config/readAudit).data.expiresAt > request.time
+        && request.resource.data.auditId == get(/databases/$(database)/documents/config/readAudit).data.activeRunId;
+      allow update: if false;
+    }
+
+    match /promotion_state/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isMember();
+    }
+
+    match /rehearsal_state/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isMember();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

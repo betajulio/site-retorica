@@ -20,8 +20,7 @@
   .auth-boot-panel{width:min(88vw,520px);border:1px solid rgba(200,130,10,.32);background:linear-gradient(180deg,rgba(36,23,10,.96),rgba(14,10,6,.96));box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 2px rgba(200,130,10,.08) inset;padding:1.4rem 1.2rem 1.2rem;position:relative;overflow:hidden}
   .auth-boot-panel::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);opacity:.25;pointer-events:none}
   .auth-boot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;font-family:'Bebas Neue',sans-serif;letter-spacing:.18em;color:var(--gold);font-size:1rem}
-  .auth-boot-disc{width:84px;height:84px;border-radius:50%;margin:0 auto .9rem;background:
-    radial-gradient(circle at center,#f7d76f 0 8%,#1a1208 8% 17%,#d7a02a 17% 21%,#0c0905 21% 52%,#b57614 52% 56%,#080603 56% 100%);
+  .auth-boot-disc{width:84px;height:84px;border-radius:50%;margin:0 auto .9rem;background:url('imagens/Toca_do_Mineiro_logo_final.png') center/cover no-repeat;
     border:1px solid rgba(200,130,10,.3);box-shadow:0 0 0 10px rgba(200,130,10,.05);animation:psxSpin 2.8s linear infinite}
   .auth-boot-title{font-family:'Cinzel',serif;text-align:center;color:var(--cream);font-size:1.3rem;letter-spacing:.08em}
   .auth-boot-sub{margin-top:.45rem;text-align:center;color:var(--smoke);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
@@ -37,6 +36,7 @@
   .nav-logo{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:900;color:var(--gold);letter-spacing:.15em;text-decoration:none}
   .nav-back{font-family:'Cinzel',serif;font-size:.75rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid rgba(200,130,10,.3);padding:.4rem .9rem;border-radius:1px;transition:all .2s}
   .nav-back:hover{background:rgba(200,130,10,.1);border-color:var(--amber)}
+  .audit-only{display:none}
 
   /* LAYOUT */
   main{max-width:1000px;margin:0 auto;padding:3rem 1.5rem}
@@ -89,6 +89,38 @@
   .top-table td:first-child{color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:1rem;text-align:center;width:32px}
   .top-table td:nth-child(2){color:var(--cream)}
   .top-table td:last-child{text-align:right;color:var(--smoke);font-size:.75rem}
+  .participation-shell{margin-bottom:2.2rem}
+  .participation-note{font-size:.76rem;color:var(--smoke);font-style:italic;margin:-.35rem 0 1rem}
+  .podium-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem;margin-bottom:1rem}
+  .podium-card{position:relative;padding:1.1rem 1rem 1rem;border:1px solid rgba(200,130,10,.16);background:linear-gradient(145deg,rgba(42,26,8,.78),rgba(17,13,8,.94));overflow:hidden}
+  .podium-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(232,168,32,.12),transparent 44%);pointer-events:none}
+  .podium-card.top-1{border-color:rgba(232,168,32,.3)}
+  .podium-card.top-2{border-color:rgba(180,180,190,.26)}
+  .podium-card.top-3{border-color:rgba(181,101,29,.3)}
+  .podium-rank{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.08em;color:var(--gold);margin-bottom:.7rem}
+  .podium-profile{display:flex;align-items:center;gap:.8rem}
+  .podium-avatar,.member-part-avatar{width:58px;height:58px;border-radius:50%;border:1px solid rgba(200,130,10,.22);background:linear-gradient(135deg,rgba(200,130,10,.14),rgba(20,16,10,.9));display:grid;place-items:center;overflow:hidden;color:var(--gold);font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.08em}
+  .podium-avatar img,.member-part-avatar img{width:100%;height:100%;object-fit:cover}
+  .podium-name{font-family:'Cinzel',serif;font-size:.96rem;color:var(--cream)}
+  .podium-meta{font-size:.72rem;color:var(--smoke);margin-top:.16rem}
+  .podium-score{margin-top:.85rem;display:flex;gap:.7rem;flex-wrap:wrap}
+  .score-pill{display:inline-flex;align-items:center;gap:.32rem;padding:.24rem .58rem;border:1px solid rgba(200,130,10,.22);background:rgba(200,130,10,.08);font-size:.7rem;color:var(--paper);letter-spacing:.06em;text-transform:uppercase}
+  .member-part-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+  .member-part-card{padding:1rem;border:1px solid rgba(200,130,10,.12);background:linear-gradient(145deg,rgba(29,21,12,.86),rgba(12,10,6,.94))}
+  .member-part-head{display:flex;gap:.85rem;align-items:center;margin-bottom:1rem}
+  .member-part-name{font-family:'Cinzel',serif;color:var(--cream);font-size:.95rem}
+  .member-part-email{font-size:.69rem;color:var(--smoke);word-break:break-word}
+  .member-part-goal{display:inline-flex;align-items:center;gap:.35rem;margin-top:.35rem;padding:.22rem .5rem;border:1px solid rgba(200,130,10,.18);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase}
+  .member-part-goal.ok{color:#86efac;border-color:rgba(80,200,80,.28);background:rgba(80,200,80,.08)}
+  .member-part-goal.miss{color:#fbbf24;border-color:rgba(251,191,36,.28);background:rgba(251,191,36,.08)}
+  .member-stat-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem;margin-bottom:.9rem}
+  .member-mini-stat{padding:.55rem .45rem;border:1px solid rgba(200,130,10,.1);background:rgba(200,130,10,.04);text-align:center}
+  .member-mini-stat strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1.22rem;color:var(--gold);line-height:1}
+  .member-mini-stat span{display:block;font-size:.63rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;margin-top:.18rem}
+  .member-part-sub{font-size:.72rem;color:var(--smoke);margin-bottom:.7rem}
+  .member-cat-grid{display:flex;gap:.45rem;flex-wrap:wrap}
+  .member-cat-pill{display:inline-flex;align-items:center;justify-content:space-between;gap:.45rem;min-width:88px;padding:.28rem .48rem;border:1px solid rgba(200,130,10,.12);background:rgba(200,130,10,.04);font-size:.68rem;color:var(--paper)}
+  .member-cat-pill b{color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:.95rem;font-weight:400}
 
   /* LOG TABLE */
   .log-table{width:100%;border-collapse:collapse}
@@ -132,6 +164,25 @@
   .admin-tools-sub{font-size:.77rem;color:#d6b59a;max-width:720px;line-height:1.6}
   .admin-tools-grid{display:flex;gap:.8rem;flex-wrap:wrap}
   .admin-tools-warning{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .6rem;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:#fca5a5;font-size:.67rem;letter-spacing:.12em;text-transform:uppercase;font-family:'Cinzel',serif}
+  .admin-inline-config{margin-top:1rem;padding:1rem 1.1rem;border:1px solid rgba(200,130,10,.2);background:rgba(255,255,255,.025);display:flex;gap:1rem;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+  .admin-inline-config-copy{flex:1 1 260px;min-width:220px}
+  .admin-inline-config-title{font-family:'Cinzel',serif;color:var(--cream);letter-spacing:.08em;text-transform:uppercase;font-size:.9rem}
+  .admin-inline-config-sub{margin-top:.25rem;color:var(--smoke);font-size:.8rem;line-height:1.5}
+  .admin-inline-config-controls{display:flex;gap:.7rem;align-items:flex-end;flex-wrap:wrap}
+  .admin-inline-field{display:flex;flex-direction:column;gap:.35rem;min-width:150px}
+  .admin-inline-field label{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke)}
+  .admin-inline-field input{background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.28);color:var(--cream);padding:.7rem .8rem;font:inherit}
+  .coin-inline{display:inline-flex;align-items:center;gap:.32rem;line-height:1.2;vertical-align:middle;max-width:100%}
+  .coin-inline img{display:block;width:14px;height:14px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.22));flex:0 0 auto}
+  .coin-inline strong,.coin-inline b{line-height:1}
+  .coin-amount{display:inline-flex;align-items:center;justify-content:center;gap:.42rem;line-height:1;white-space:nowrap;vertical-align:middle}
+  .coin-amount img{display:block;width:1.25em;height:1.25em;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.28));flex:0 0 auto}
+  .metric-value.coin-amount{justify-content:flex-start;gap:.5rem}
+  .metric-value.coin-amount img{width:32px;height:32px}
+  .score-pill.coin-score{font-size:.82rem;gap:.4rem}
+  .score-pill.coin-score img{width:22px;height:22px}
+  .member-mini-stat .coin-amount{width:100%}
+  .member-mini-stat .coin-amount img{width:26px;height:26px}
 
   /* TOAST */
   .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1)}
@@ -143,6 +194,8 @@
     .log-table th:nth-child(3),.log-table td:nth-child(3){display:none}
     .filters{gap:.4rem}
     .stats-grid{grid-template-columns:repeat(3,1fr)}
+    .podium-grid{grid-template-columns:1fr}
+    .member-stat-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
 </style>
 </head>
@@ -167,7 +220,10 @@
 
 <nav>
   <a class="nav-logo" href="index.html">Retórica</a>
-  <a class="nav-back" href="index.html">← Voltar ao site</a>
+  <div style="display:flex;gap:.55rem;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+    <a class="nav-back audit-only" id="auditLink" href="audit.html">Auditoria</a>
+    <a class="nav-back" href="index.html">← Voltar ao site</a>
+  </div>
 </nav>
 
 <main>
@@ -201,6 +257,19 @@
     <!-- REALTIME METRICS -->
     <div id="realtimeMetrics"></div>
 
+    <!-- PARTICIPAÇÃO DOS MEMBROS -->
+    <div id="memberParticipationStats"></div>
+
+    <div class="admin-tools audit-only" id="auditToolsNotice">
+      <div class="admin-tools-head">
+        <div>
+          <div class="admin-tools-title">Ferramentas Administrativas</div>
+          <div class="admin-tools-sub">As ações sensíveis foram movidas para a página de Auditoria para ficarem junto do monitoramento de leituras.</div>
+        </div>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="audit.html">Abrir Auditoria</a>
+      </div>
+    </div>
+
     <!-- FILTERS -->
     <div class="filters">
       <button class="filter-btn active" onclick="setFilter('all',this)">Todas</button>
@@ -214,22 +283,6 @@
       <button class="filter-btn" onclick="setFilter('acesso',this)">🔑 Acesso</button>
       <input class="filter-search" type="text" placeholder="Buscar nos logs…" oninput="applySearch(this.value)" id="searchInput">
       <span class="filter-count" id="filterCount"></span>
-    </div>
-
-    <div class="admin-tools">
-      <div class="admin-tools-head">
-        <div>
-          <div class="admin-tools-title">Ferramentas Administrativas</div>
-          <div class="admin-tools-sub">Use estes atalhos com cuidado. Eles disparam ações reais de manutenção e comunicação para a banda, incluindo WhatsApp e cancelamento de ensaio.</div>
-        </div>
-        <div class="admin-tools-warning">⚠ Ações sensíveis</div>
-      </div>
-      <div class="admin-tools-grid">
-        <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 4+ dislikes</button>
-        <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
-        <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
-        <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
-      </div>
     </div>
 
     <!-- TABLE -->
@@ -247,53 +300,9 @@
       </table>
       <div class="empty-state" id="emptyState" style="display:none">Nenhum log encontrado.</div>
     </div>
-
-    <!-- CONFIGURAÇÕES DA GALERIA -->
-    <div class="detail-section" style="margin-top:2.5rem">
-      <div class="detail-title">⚙️ Configurações da Galeria</div>
-      <div style="background:linear-gradient(135deg,rgba(42,26,8,.5),rgba(19,15,9,.7));border:1px solid rgba(200,130,10,.15);border-radius:2px;padding:1.2rem 1.4rem">
-        <p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-bottom:1.2rem">
-          Controla a compressão aplicada a todas as fotos enviadas para a galeria.<br>
-          Quanto maior a qualidade, maior o arquivo enviado ao Storage.
-        </p>
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div>
-            <label style="font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;color:var(--amber);text-transform:uppercase;display:block;margin-bottom:.5rem">
-              Qualidade da compressão: <span id="qualityLabel" style="color:var(--gold)">carregando…</span>
-            </label>
-            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-              <input type="range" id="qualitySlider" min="30" max="100" step="5" value="70"
-                style="flex:1;min-width:180px;max-width:360px;accent-color:var(--amber);cursor:pointer"
-                oninput="onQualitySlide(this.value)">
-              <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="qualityPresets">
-                <button class="filter-btn" onclick="setQualityPreset(50)">Baixa (50%)</button>
-                <button class="filter-btn" onclick="setQualityPreset(70)">Média (70%)</button>
-                <button class="filter-btn" onclick="setQualityPreset(85)">Alta (85%)</button>
-                <button class="filter-btn" onclick="setQualityPreset(95)">Máxima (95%)</button>
-              </div>
-            </div>
-            <p style="font-size:.72rem;color:var(--smoke);margin-top:.5rem;font-style:italic" id="qualityHint"></p>
-          </div>
-          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
-            <label style="font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;color:var(--amber);text-transform:uppercase">
-              Resolução máxima:
-            </label>
-            <select id="maxPxSelect" onchange="onMaxPxChange(this.value)"
-              style="background:rgba(10,8,4,.8);border:1px solid rgba(200,130,10,.3);color:var(--cream);padding:.3rem .6rem;font-family:'Lora',serif;font-size:.82rem;border-radius:1px;cursor:pointer">
-              <option value="1280">1280px (compacto)</option>
-              <option value="1920" selected>1920px (recomendado)</option>
-              <option value="2560">2560px (grande)</option>
-              <option value="4096">4096px (original)</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
-            <button class="btn-ghost" onclick="saveGalleryConfig()" style="border-color:var(--amber);color:var(--gold)">
-              💾 Salvar configurações
-            </button>
-            <span id="configSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
-          </div>
-        </div>
-      </div>
+    <div style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+      <div id="logsLoadedInfo" style="font-size:.72rem;color:var(--smoke)"></div>
+      <button class="btn-ghost btn-sm" id="loadMoreLogsBtn" onclick="loadMoreLogs()" style="display:none">Carregar mais logs</button>
     </div>
 
   </div>
@@ -305,8 +314,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs,
-  onSnapshot, deleteDoc, orderBy, query, writeBatch,
-  addDoc, setDoc, serverTimestamp
+  orderBy, query, where, limit, startAfter,
+  addDoc, serverTimestamp, getCountFromServer
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
@@ -331,15 +340,92 @@ const auth     = getAuth(app);
 const provider = new GoogleAuthProvider();
 const storage  = getStorage(app);
 let authResolved = false;
+const AUDIT_EMAIL = 'juliocereser@gmail.com';
 
 let allLogs      = [];
 let activeFilter = 'all';
 let activeSearch = '';
 let sortField    = 'ts';       // 'action','category','who','ts'
 let sortDir      = -1;          // -1 = desc, 1 = asc
-let realtimeData = {};
+let lastLogDoc   = null;
+let hasMoreLogs  = true;
+const LOGS_PAGE_SIZE = 200;
 let storageStats   = { files: 0, bytes: 0 };
+let metricsSnapshot = null;
+let metricsLoadedAt = null;
+let participationLoadedAt = null;
+const READ_AUDIT_CONFIG_ID = 'readAudit';
+let readAuditCache = { checkedAt: 0, data: null };
 const TS_FIELDS  = ['ts','createdAt'];
+const PARTICIPATION_DAILY_GOAL = 1;
+const PARTICIPATION_BASE_COINS = 10;
+const PARTICIPATION_STREAK_BONUS_STEP = 2;
+const PARTICIPATION_STREAK_BONUS_CAP = 10;
+const PARTICIPATION_POINTS = {
+  acesso: 2,
+  sugestoes: 8,
+  enquetes: 6,
+  setlist: 6,
+  repertorio: 5,
+  forum: 5,
+  galeria: 5,
+  membros: 3
+};
+
+function auditDateKey(date = new Date()) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:00`;
+}
+
+function auditTimestampMs(value) {
+  if (!value) return 0;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  return new Date(value).getTime() || 0;
+}
+
+async function getReadAuditConfig(force = false) {
+  const now = Date.now();
+  if (!force && readAuditCache.checkedAt && now - readAuditCache.checkedAt < 60000) return readAuditCache.data;
+  const snap = await getDoc(doc(db, 'config', READ_AUDIT_CONFIG_ID));
+  const data = snap.exists() ? snap.data() : null;
+  readAuditCache = { checkedAt: now, data };
+  return data;
+}
+
+function readAuditSeverity(estimatedReads) {
+  if (estimatedReads >= 200) return 'critical';
+  if (estimatedReads >= 50) return 'warning';
+  return 'info';
+}
+
+async function auditReadEvent({ action, collectionName, estimatedReads = 0, meta = {} }) {
+  if (!auth.currentUser || !action || !collectionName) return;
+  const config = await getReadAuditConfig().catch(() => null);
+  const expiresAt = auditTimestampMs(config?.expiresAt);
+  if (!config?.enabled || !config?.activeRunId || !expiresAt || expiresAt <= Date.now()) return;
+  const reads = Number(estimatedReads || 0);
+  try {
+    await addDoc(collection(db, 'read_audit_events'), {
+      auditId: config.activeRunId,
+      at: serverTimestamp(),
+      atLocal: new Date().toLocaleString('pt-BR'),
+      hourKey: auditDateKey(),
+      userEmail: auth.currentUser.email || '',
+      userName: auth.currentUser.displayName || auth.currentUser.email || 'Membro',
+      page: 'admin-logs',
+      action,
+      collection: collectionName,
+      estimatedReads: reads,
+      severity: readAuditSeverity(reads),
+      path: location.pathname,
+      userAgent: navigator.userAgent.slice(0, 180),
+      meta
+    });
+  } catch (err) {
+    console.warn('Read audit event error:', err);
+  }
+}
 
 // Firebase Storage Spark free tier: 5 GB
 const STORAGE_LIMIT = 5 * 1024 * 1024 * 1024; // 5 GB in bytes
@@ -351,8 +437,39 @@ function formatBytes(b) {
   return (b / (1024 * 1024 * 1024)).toFixed(3) + ' GB';
 }
 
-function calcStorageStats() {
-  const galleryData = realtimeData.gallery || [];
+function getBrazilDateKey(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+}
+
+function normalizeName(value = '') {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+function nameFromEmail(email = '') {
+  const local = (email || '').split('@')[0] || 'membro';
+  return local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ') || 'Membro';
+}
+
+function getInitials(name = '') {
+  const parts = (name || 'Membro').split(/\s+/).filter(Boolean).slice(0, 2);
+  return parts.map(part => part.charAt(0).toUpperCase()).join('') || 'M';
+}
+
+function calcStorageStats(galleryData = []) {
   let totalBytes = 0;
   galleryData.forEach(p => {
     if (p.compSize) totalBytes += p.compSize * 1024;
@@ -384,6 +501,8 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('loginWall').style.display    = 'none';
     document.getElementById('logContent').style.display   = 'block';
     document.getElementById('loggedAs').textContent       = `Logado como ${user.displayName || user.email}`;
+    const isAuditUser = (user.email || '').toLowerCase() === AUDIT_EMAIL;
+    document.querySelectorAll('.audit-only').forEach(el => el.style.display = isAuditUser ? '' : 'none');
     startListening();
   } else {
     document.getElementById('loginWall').style.display  = 'flex';
@@ -410,113 +529,363 @@ window.doLogin = async () => {
 
 window.doLogout = async () => { await signOut(auth); };
 
-// ─── REALTIME COLLECTIONS ─────────────────────────────────────────
-const RT_COLLECTIONS = ['members','gallery','forum','suggestions','polls','approved_emails'];
+async function loadAdminMetricsSnapshot() {
+  const [
+    membersCountSnap,
+    approvedCountSnap,
+    forumCountSnap,
+    suggestionsCountSnap,
+    pollsCountSnap,
+    closedPollsCountSnap,
+    galleryCountSnap,
+    gallerySampleSnap
+  ] = await Promise.all([
+    getCountFromServer(collection(db, 'members')),
+    getCountFromServer(collection(db, 'approved_emails')),
+    getCountFromServer(collection(db, 'forum')),
+    getCountFromServer(collection(db, 'suggestions')),
+    getCountFromServer(collection(db, 'polls')),
+    getCountFromServer(query(collection(db, 'polls'), where('closed', '==', true))),
+    getCountFromServer(collection(db, 'gallery')),
+    getDocs(query(collection(db, 'gallery'), orderBy('createdAt', 'desc'), limit(50)))
+  ]);
 
-function startRTListeners() {
-  RT_COLLECTIONS.forEach(colName => {
-    onSnapshot(collection(db, colName), snap => {
-      realtimeData[colName] = snap.docs.map(d => ({id: d.id, ...d.data()}));
-      renderRealtimeMetrics();
-    });
+  const galleryDocs = gallerySampleSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  auditReadEvent({
+    action: 'admin-metrics',
+    collectionName: 'gallery',
+    estimatedReads: gallerySampleSnap.size,
+    meta: { gallerySample: gallerySampleSnap.size, aggregationQueries: 7 }
   });
+  calcStorageStats(galleryDocs);
+
+  let totalGallLikes = 0, totalGallComments = 0, totalGallReplies = 0;
+  galleryDocs.forEach(p => {
+    const r = p.reactions || {};
+    totalGallLikes += Object.keys(r).filter(k => r[k] === 'like').length;
+    totalGallComments += typeof p.commentCount === 'number' ? p.commentCount : (p.comments || []).length;
+    totalGallReplies += typeof p.replyCount === 'number'
+      ? p.replyCount
+      : (p.comments || []).reduce((sum, c) => sum + ((c.replies || []).length), 0);
+  });
+
+  metricsSnapshot = {
+    members: membersCountSnap.data().count,
+    approvals: approvedCountSnap.data().count,
+    forums: forumCountSnap.data().count,
+    suggestions: suggestionsCountSnap.data().count,
+    polls: pollsCountSnap.data().count,
+    closedPolls: closedPollsCountSnap.data().count,
+    gallery: galleryCountSnap.data().count,
+    totalGallLikes,
+    totalGallComments,
+    totalGallReplies,
+    galleryMetricsSampleSize: galleryDocs.length
+  };
+  metricsLoadedAt = new Date();
+  renderRealtimeMetrics();
 }
 
 function renderRealtimeMetrics() {
-  // Recalculate storage stats when gallery data arrives
-  const galForStorage = realtimeData.gallery || [];
-  if (galForStorage.length) {
-    let totalBytes = 0;
-    galForStorage.forEach(p => {
-      if (p.compSize) totalBytes += p.compSize * 1024;
-      else if (p.origSize) totalBytes += p.origSize * 1024;
-      else totalBytes += 500 * 1024;
-    });
-    storageStats.files = galForStorage.length;
-    storageStats.bytes = totalBytes;
-    renderStorageMetric();
-  }
-
   const el = document.getElementById('realtimeMetrics');
-  if (!el || !Object.keys(realtimeData).length) return;
-
-  const members    = realtimeData.members || [];
-  const gallery    = realtimeData.gallery || [];
-  const forums     = realtimeData.forum || [];
-  const suggestions= realtimeData.suggestions || [];
-  const polls      = realtimeData.polls || [];
-  const approvals  = realtimeData.approved_emails || [];
-
-  // Gallery stats: total views, reactions, comments
-  let totalGallLikes = 0, totalGallComments = 0, totalGallReplies = 0;
-  gallery.forEach(p => {
-    const r = p.reactions || {};
-    totalGallLikes += Object.keys(r).filter(k => r[k]==='like').length;
-    const cmts = p.comments || [];
-    totalGallComments += cmts.length;
-    cmts.forEach(c => { totalGallReplies += (c.replies||[]).length; });
-  });
-
-  // Forum stats
-  let totalForumPosts = 0, totalForumReplies = 0, totalForumLikes = 0;
-  forums.forEach(t => {
-    const posts = t.posts || [];
-    totalForumPosts += posts.length;
-    posts.forEach(p => {
-      const r = p.reactions || {};
-      totalForumLikes += Object.values(r).filter(v=>v==='like').length;
-      totalForumReplies += (p.replies||[]).length;
-    });
-  });
-
-  // Suggestions stats
-  let totalSugVotes = 0;
-  suggestions.forEach(s => { totalSugVotes += (s.likes||0) + (s.dislikes||0); });
-  const topSuggestion = suggestions.length
-    ? suggestions.reduce((a,b) => (a.likes||0) > (b.likes||0) ? a : b)
-    : null;
-
-  // Polls stats
-  let totalPollVotes = 0;
-  polls.forEach(p => { totalPollVotes += (p.options||[]).reduce((s,o)=>s+(o.votes||0),0); });
-
-  // Members approved vs actual
-  const numMembers = members.length;
-  const numApproved = approvals.length;
+  if (!el || !metricsSnapshot) return;
+  const {
+    members,
+    approvals,
+    forums,
+    suggestions,
+    polls,
+    closedPolls,
+    gallery,
+    totalGallLikes,
+    totalGallComments,
+    totalGallReplies,
+    galleryMetricsSampleSize
+  } = metricsSnapshot;
+  const updatedLabel = metricsLoadedAt
+    ? metricsLoadedAt.toLocaleString('pt-BR')
+    : '—';
 
   el.innerHTML = `
     <div class="detail-section">
-      <div class="detail-title">Dados em Tempo Real</div>
+      <div class="detail-title">Resumo Atual <span style="font-size:.68rem;color:var(--smoke);font-style:italic;font-weight:400;letter-spacing:.04em">Atualizado em ${updatedLabel}</span></div>
       <div class="metric-row">
         <div class="metric-card">
           <div class="metric-label">Membros da Banda</div>
-          <div class="metric-value gold">${numMembers}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">${numApproved} e-mail${numApproved!==1?'s':''} aprovado${numApproved!==1?'s':''}</div>
+          <div class="metric-value gold">${members}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">${approvals} e-mail${approvals!==1?'s':''} aprovado${approvals!==1?'s':''}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Fotos na Galeria</div>
-          <div class="metric-value gold">${gallery.length}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">👍 ${totalGallLikes} · 💬 ${totalGallComments} comentários · ↩ ${totalGallReplies} respostas</div>
+          <div class="metric-value gold">${gallery}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Últimas ${galleryMetricsSampleSize}: 👍 ${totalGallLikes} · 💬 ${totalGallComments} comentários · ↩ ${totalGallReplies} respostas</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Tópicos no Fórum</div>
-          <div class="metric-value gold">${forums.length}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">💬 ${totalForumPosts} posts · 👍 ${totalForumLikes} · ↩ ${totalForumReplies} respostas</div>
+          <div class="metric-value gold">${forums}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Contagem de tópicos cadastrados</div>
         </div>
       </div>
       <div class="metric-row">
         <div class="metric-card">
           <div class="metric-label">Sugestões de Músicas</div>
-          <div class="metric-value gold">${suggestions.length}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">🗳 ${totalSugVotes} votos${topSuggestion && topSuggestion.likes ? ` · 🏆 "${topSuggestion.song||'?'}"` : ''}</div>
+          <div class="metric-value gold">${suggestions}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Total atual de sugestões abertas</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Enquetes Ativas</div>
-          <div class="metric-value gold">${polls.length}</div>
-          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">🗳 ${totalPollVotes} votos totais · ${polls.filter(p=>p.closed).length} encerrada${polls.filter(p=>p.closed).length!==1?'s':''}</div>
+          <div class="metric-value gold">${polls}</div>
+          <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">${closedPolls} encerrada${closedPolls!==1?'s':''} registradas</div>
         </div>
       </div>
     </div>`;
+}
+
+function createParticipant(seed = {}) {
+  return {
+    key: seed.key || '',
+    email: seed.email || '',
+    name: seed.name || '',
+    photo: seed.photo || '',
+    coins: Number(seed.coins || 0),
+    streakDays: Number(seed.streakDays || 0),
+    longestStreak: Number(seed.longestStreak || 0),
+    totalLoginDays: Number(seed.totalLoginDays || 0),
+    lastAwardCoins: Number(seed.lastAwardCoins || 0),
+    lastLoginKey: seed.lastLoginKey || '',
+    recentLoginKeys: Array.isArray(seed.recentLoginKeys) ? [...seed.recentLoginKeys] : [],
+    lastSeenLocal: seed.lastSeenLocal || '',
+    totalActions: 0,
+    actionsByCat: {
+      acesso: 0,
+      sugestoes: 0,
+      enquetes: 0,
+      setlist: 0,
+      repertorio: 0,
+      forum: 0,
+      galeria: 0,
+      membros: 0
+    },
+    actionPoints: 0,
+    loginDaysSet: new Set()
+  };
+}
+
+function mergeParticipant(target, incoming = {}) {
+  if (incoming.email && !target.email) target.email = incoming.email;
+  if (incoming.name && (!target.name || target.name === nameFromEmail(target.email))) target.name = incoming.name;
+  if (incoming.photo && !target.photo) target.photo = incoming.photo;
+  if (incoming.coins !== undefined) target.coins = Number(incoming.coins || 0);
+  if (incoming.streakDays !== undefined) target.streakDays = Number(incoming.streakDays || 0);
+  if (incoming.longestStreak !== undefined) target.longestStreak = Number(incoming.longestStreak || 0);
+  if (incoming.totalLoginDays !== undefined) target.totalLoginDays = Number(incoming.totalLoginDays || 0);
+  if (incoming.lastAwardCoins !== undefined) target.lastAwardCoins = Number(incoming.lastAwardCoins || 0);
+  if (incoming.lastLoginKey) target.lastLoginKey = incoming.lastLoginKey;
+  if (Array.isArray(incoming.recentLoginKeys) && incoming.recentLoginKeys.length) target.recentLoginKeys = [...incoming.recentLoginKeys];
+  if (incoming.lastSeenLocal) target.lastSeenLocal = incoming.lastSeenLocal;
+  if (incoming.totalActions !== undefined) target.totalActions = Number(incoming.totalActions || 0);
+  if (incoming.actionsByCat && typeof incoming.actionsByCat === 'object') {
+    Object.entries(incoming.actionsByCat).forEach(([cat, count]) => {
+      if (target.actionsByCat[cat] !== undefined) target.actionsByCat[cat] = Number(count || 0);
+    });
+  }
+}
+
+function buildParticipantScore(member) {
+  const activeCategories = Object.values(member.actionsByCat).filter(count => count > 0).length;
+  return (
+    member.coins +
+    (member.streakDays * 12) +
+    (member.totalActions * 6) +
+    (activeCategories * 8) +
+    (member.totalLoginDays * 3)
+  );
+}
+
+function renderParticipationStats(participants = []) {
+  const el = document.getElementById('memberParticipationStats');
+  if (!el) return;
+
+  if (!participants.length) {
+    el.innerHTML = `
+      <div class="detail-section participation-shell">
+        <div class="detail-title">🏆 Participação dos Membros</div>
+        <div class="participation-note">Assim que os membros logarem e interagirem, esta área começa a montar a trilha de participação, Retorica Coin e streaks.</div>
+      </div>`;
+    return;
+  }
+
+  const todayKey = getBrazilDateKey();
+  const membersDoneToday = participants.filter(member => member.lastLoginKey === todayKey).length;
+  const totalCoins = participants.reduce((sum, member) => sum + member.coins, 0);
+  const topStreak = participants.reduce((max, member) => Math.max(max, member.longestStreak || 0), 0);
+  const podium = [...participants].sort((a, b) => b.score - a.score).slice(0, 3);
+  const updatedLabel = participationLoadedAt ? participationLoadedAt.toLocaleString('pt-BR') : '—';
+
+  const summaryCards = `
+    <div class="metric-row">
+      <div class="metric-card">
+        <div class="metric-label">Meta diária de login</div>
+        <div class="metric-value gold">${membersDoneToday}/${participants.length}</div>
+        <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Meta definida: ${PARTICIPATION_DAILY_GOAL} login por dia</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Retorica Coin em circulação</div>
+        <div class="metric-value gold coin-amount"><img src="imagens/coin.png" alt="Retorica Coin"><span>${totalCoins}</span></div>
+        <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Cada login diário rende ${PARTICIPATION_BASE_COINS} Retorica Coin + bônus de sequência</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Maior streak já registrado</div>
+        <div class="metric-value gold">${topStreak}</div>
+        <div style="font-size:.7rem;color:var(--smoke);margin-top:.2rem">Bônus de sequência atual: +${PARTICIPATION_STREAK_BONUS_STEP} por dia, até +${PARTICIPATION_STREAK_BONUS_CAP}</div>
+      </div>
+    </div>`;
+
+  const podiumCards = podium.map((member, index) => `
+    <div class="podium-card top-${index + 1}">
+      <div class="podium-rank">${['🥇 #1', '🥈 #2', '🥉 #3'][index]}</div>
+      <div class="podium-profile">
+        <div class="podium-avatar">${member.photo ? `<img src="${member.photo}" alt="${member.name}">` : getInitials(member.name)}</div>
+        <div>
+          <div class="podium-name">${member.name}</div>
+          <div class="podium-meta">${member.totalActions} ações · ${member.totalLoginDays} login${member.totalLoginDays !== 1 ? 's' : ''} com recompensa</div>
+        </div>
+      </div>
+      <div class="podium-score">
+        <span class="score-pill">Score <strong>${member.score}</strong></span>
+        <span class="score-pill coin-score"><span class="coin-amount"><img src="imagens/coin.png" alt="Retorica Coin"><strong>${member.coins}</strong><span>RC</span></span></span>
+        <span class="score-pill">🔥 ${member.streakDays}</span>
+      </div>
+    </div>`).join('');
+
+  const memberCards = participants.map(member => {
+    const goalDone = member.lastLoginKey === todayKey;
+    const lastSeen = member.lastSeenLocal || 'Ainda sem login premiado';
+    const sortedCats = Object.entries(member.actionsByCat)
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1]);
+    const catMarkup = sortedCats.length
+      ? sortedCats.map(([cat, count]) => `<span class="member-cat-pill">${CAT_LABELS[cat] || cat}<b>${count}</b></span>`).join('')
+      : `<span class="member-part-sub">Sem atividade registrada além do login até agora.</span>`;
+
+    return `
+      <article class="member-part-card">
+        <div class="member-part-head">
+          <div class="member-part-avatar">${member.photo ? `<img src="${member.photo}" alt="${member.name}">` : getInitials(member.name)}</div>
+          <div style="min-width:0">
+            <div class="member-part-name">${member.name}</div>
+            <div class="member-part-email">${member.email || 'Sem e-mail vinculado'}</div>
+            <div class="member-part-goal ${goalDone ? 'ok' : 'miss'}">${goalDone ? '✓ meta diária batida' : '⌛ falta login hoje'}</div>
+          </div>
+        </div>
+        <div class="member-stat-strip">
+          <div class="member-mini-stat"><strong>${member.score}</strong><span>Score</span></div>
+          <div class="member-mini-stat"><div class="coin-amount"><img src="imagens/coin.png" alt="Retorica Coin"><strong>${member.coins}</strong></div><span>Retorica Coin</span></div>
+          <div class="member-mini-stat"><strong>${member.streakDays}</strong><span>Streak</span></div>
+          <div class="member-mini-stat"><strong>${member.totalActions}</strong><span>Ações</span></div>
+        </div>
+        <div class="member-part-sub">Último login com recompensa: ${lastSeen}</div>
+        <div class="member-part-sub">Recorde de sequência: ${member.longestStreak} · Último ganho: <span class="coin-inline"><img src="imagens/coin.png" alt="Retorica Coin">${member.lastAwardCoins} Retorica Coin</span></div>
+        <div class="member-cat-grid">${catMarkup}</div>
+      </article>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="detail-section participation-shell">
+      <div class="detail-title">🏆 Participação dos Membros <span style="font-size:.68rem;color:var(--smoke);font-style:italic;font-weight:400;letter-spacing:.04em">Atualizado em ${updatedLabel}</span></div>
+      <div class="participation-note">Score calculado por <span class="coin-inline"><img src="imagens/coin.png" alt="Retorica Coin">Retorica Coin</span> de presença, streak de login e volume de interação nas áreas do site.</div>
+      ${summaryCards}
+      <div class="podium-grid">${podiumCards}</div>
+      <div class="member-part-grid">${memberCards}</div>
+    </div>`;
+}
+
+async function loadParticipationStats() {
+  const [membersSnap, approvedSnap, memberStatsSnap] = await Promise.all([
+    getDocs(collection(db, 'members')),
+    getDocs(collection(db, 'approved_emails')),
+    getDocs(collection(db, 'member_stats'))
+  ]);
+  auditReadEvent({
+    action: 'admin-participation',
+    collectionName: 'members+approved_emails+member_stats',
+    estimatedReads: membersSnap.size + approvedSnap.size + memberStatsSnap.size,
+    meta: { members: membersSnap.size, approved: approvedSnap.size, memberStats: memberStatsSnap.size }
+  });
+
+  const participants = new Map();
+  const aliasByName = new Map();
+  const membersByName = new Map();
+  const approvedEmails = new Set(approvedSnap.docs.map(docSnap => docSnap.id.toLowerCase()));
+
+  function ensureParticipant(key, seed = {}) {
+    if (!participants.has(key)) participants.set(key, createParticipant({ key, ...seed }));
+    const target = participants.get(key);
+    mergeParticipant(target, seed);
+    if (target.name) aliasByName.set(normalizeName(target.name), key);
+    return target;
+  }
+
+  membersSnap.docs.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    const normName = normalizeName(data.name || '');
+    if (normName) membersByName.set(normName, { ...data, id: docSnap.id });
+  });
+
+  approvedSnap.docs.forEach(docSnap => {
+    const email = docSnap.id.toLowerCase();
+    ensureParticipant(`email:${email}`, {
+      email,
+      name: nameFromEmail(email)
+    });
+  });
+
+  memberStatsSnap.docs.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    const email = docSnap.id.toLowerCase();
+    if (!approvedEmails.has(email)) return;
+    const participant = ensureParticipant(`email:${email}`, {
+      email,
+      name: data.name || nameFromEmail(email),
+      coins: data.coins,
+      streakDays: data.streakDays,
+      longestStreak: data.longestStreak,
+      totalLoginDays: data.totalLoginDays,
+      lastAwardCoins: data.lastAwardCoins,
+      lastLoginKey: data.lastLoginKey,
+      recentLoginKeys: data.recentLoginKeys,
+      lastSeenLocal: data.lastSeenLocal,
+      totalActions: data.totalActions,
+      actionsByCat: data.actionsByCat
+    });
+    const memberMatch = membersByName.get(normalizeName(participant.name));
+    if (memberMatch?.photo) participant.photo = memberMatch.photo;
+  });
+
+  membersSnap.docs.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    const normName = normalizeName(data.name || '');
+    const aliasKey = aliasByName.get(normName);
+    if (!aliasKey || !participants.has(aliasKey)) return;
+    const participant = participants.get(aliasKey);
+    if (data.name && !participant.name) participant.name = data.name;
+    if (data.photo && !participant.photo) participant.photo = data.photo;
+  });
+
+  const todayKey = getBrazilDateKey();
+  const finalParticipants = [...participants.values()].map(member => {
+    if ((!member.photo || !member.photo.trim()) && member.name) {
+      const memberMatch = membersByName.get(normalizeName(member.name));
+      if (memberMatch?.photo) member.photo = memberMatch.photo;
+    }
+    if (!member.totalLoginDays && member.loginDaysSet.size) member.totalLoginDays = member.loginDaysSet.size;
+    if (!member.lastLoginKey && member.loginDaysSet.has(todayKey)) member.lastLoginKey = todayKey;
+    member.score = buildParticipantScore(member);
+    return member;
+  }).sort((a, b) => b.score - a.score || b.coins - a.coins || a.name.localeCompare(b.name, 'pt-BR'));
+
+  participationLoadedAt = new Date();
+  renderParticipationStats(finalParticipants);
 }
 
 // ─── LOGS ──────────────────────────────────────────────────────────
@@ -527,13 +896,57 @@ const CAT_LABELS = {
 };
 
 function startListening() {
-  startRTListeners();
-  // Listen to logs collection in Firestore
-  onSnapshot(collection(db, 'logs'), snap => {
-    allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() })).reverse();
-    renderTable();
+  loadAdminMetricsSnapshot().catch(err => {
+    console.warn('Metrics load error:', err);
+  });
+  loadParticipationStats().catch(err => {
+    console.warn('Participation load error:', err);
+    showToast('⚠ Não foi possível montar o painel de participação.');
+  });
+  loadInitialLogs().catch(err => {
+    console.warn('Logs load error:', err);
+    showToast('⚠ Não foi possível carregar os logs.');
   });
 }
+
+async function loadLogsPage() {
+  let q = query(collection(db, 'logs'), orderBy('ts', 'desc'), limit(LOGS_PAGE_SIZE));
+  if (lastLogDoc) q = query(collection(db, 'logs'), orderBy('ts', 'desc'), startAfter(lastLogDoc), limit(LOGS_PAGE_SIZE));
+  const snap = await getDocs(q);
+  auditReadEvent({ action: 'admin-logs-page', collectionName: 'logs', estimatedReads: snap.size, meta: { pageSize: LOGS_PAGE_SIZE } });
+  const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (snap.docs.length) lastLogDoc = snap.docs[snap.docs.length - 1];
+  hasMoreLogs = snap.docs.length === LOGS_PAGE_SIZE;
+  return docs;
+}
+
+async function loadInitialLogs() {
+  allLogs = [];
+  lastLogDoc = null;
+  hasMoreLogs = true;
+  const docs = await loadLogsPage();
+  allLogs = docs;
+  renderTable();
+}
+
+window.loadMoreLogs = async () => {
+  const btn = document.getElementById('loadMoreLogsBtn');
+  if (!hasMoreLogs || !btn) return;
+  const prevText = btn.textContent;
+  btn.textContent = 'Carregando...';
+  btn.disabled = true;
+  try {
+    const docs = await loadLogsPage();
+    allLogs = [...allLogs, ...docs];
+    renderTable();
+  } catch (err) {
+    console.error('Load more logs error:', err);
+    showToast('⚠ Não foi possível carregar mais logs.');
+  } finally {
+    btn.textContent = prevText;
+    btn.disabled = false;
+  }
+};
 
 function renderStorageMetric() {
   const el = document.getElementById('storageMetric');
@@ -545,17 +958,18 @@ function renderStorageMetric() {
   const isCritical = pct > 85;
   const barColor = isCritical ? '#f87171' : isWarn ? '#fbbf24' : 'var(--amber)';
 
-  const limitLabel = '5 GB (plano gratuito)';
+  const limitLabel = '5 GB (limite de referência do Storage)';
 
   el.innerHTML = `
     <div class="detail-section">
-      <div class="detail-title">☁️ Firebase Storage</div>
+      <div class="detail-title">☁️ Uso estimado da galeria no Storage</div>
       <div class="metric-row">
         <div class="metric-card">
-          <div class="metric-label">Espaço utilizado</div>
+          <div class="metric-label">Espaço estimado utilizado</div>
           <div class="metric-value ${isCritical ? '' : isWarn ? '' : 'gold'}" style="${isCritical?'color:#f87171':isWarn?'color:#fbbf24':''}">${formatBytes(bytes)}</div>
           <div class="metric-bar"><div class="metric-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${barColor},${barColor}dd)"></div></div>
           <div style="font-size:.68rem;color:var(--smoke);margin-top:.4rem">${pct}% de ${limitLabel} · Restam ${formatBytes(remaining)}</div>
+          <div style="font-size:.66rem;color:var(--smoke);margin-top:.35rem">Baseado nas fotos listadas na galeria. Este painel não mede o uso exato do Firestore.</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Arquivos na galeria</div>
@@ -593,16 +1007,20 @@ function getSortScore(log) {
 }
 
 function getLogDetail(log) {
-  if (log.detail) return log.detail;
+  const waParts = [];
+  if (log.whatsAppStatus === 'sent') waParts.push('Zap: enviado');
+  else if (log.whatsAppStatus === 'failed') waParts.push(`Zap: falhou${log.whatsAppDetail ? ` (${log.whatsAppDetail})` : ''}`);
+
+  if (log.detail) return [log.detail, ...waParts].join(' · ');
   if (log.category === 'sugestoes') {
     const parts = [];
     if (log.song || log.artist) parts.push(`${log.song || '?'}${log.artist ? ` — ${log.artist}` : ''}`);
     if (log.likes !== undefined || log.dislikes !== undefined) parts.push(`${log.likes || 0}👍 ${log.dislikes || 0}👎`);
     if (log.reason) parts.push(`Motivo: ${log.reason}`);
     if (log.by) parts.push(`Sugerida por ${log.by}`);
-    return parts.join(' · ') || '—';
+    return [...parts, ...waParts].join(' · ') || '—';
   }
-  return '—';
+  return waParts.join(' · ') || '—';
 }
 
 function getLogWho(log) {
@@ -613,6 +1031,12 @@ function getLogWhen(log) {
   if (log.tsLocal) return log.tsLocal;
   const ts = log.ts?.toDate?.() || log.createdAt?.toDate?.() || null;
   return ts ? ts.toLocaleString('pt-BR') : '—';
+}
+
+function getLogDateKey(log) {
+  const ts = log.ts?.toDate?.() || log.createdAt?.toDate?.() || null;
+  if (!ts) return '';
+  return getBrazilDateKey(ts);
 }
 
 window.sortBy = field => {
@@ -636,6 +1060,8 @@ function renderTable() {
   const body  = document.getElementById('logBody');
   const empty = document.getElementById('emptyState');
   const count = document.getElementById('filterCount');
+  const loadInfo = document.getElementById('logsLoadedInfo');
+  const loadBtn  = document.getElementById('loadMoreLogsBtn');
 
   const filtered = allLogs.filter(l => {
     const matchCat    = activeFilter === 'all' || l.category === activeFilter;
@@ -656,6 +1082,12 @@ function renderTable() {
   });
 
   count.textContent = `${filtered.length} registro${filtered.length!==1?'s':''}`;
+  if (loadInfo) {
+    loadInfo.textContent = `Carregados ${allLogs.length} logs${hasMoreLogs ? ' até agora' : ' no total'}`;
+  }
+  if (loadBtn) {
+    loadBtn.style.display = hasMoreLogs ? 'inline-flex' : 'none';
+  }
 
   if (!filtered.length) {
     body.innerHTML = '';
@@ -687,233 +1119,6 @@ window.applySearch = val => {
   activeSearch = val.toLowerCase().trim();
   renderTable();
 };
-
-window.confirmClearLogs = () => {
-  if (!confirm('Tem certeza? Isso vai apagar TODOS os logs permanentemente. Esta ação não pode ser desfeita.')) return;
-  clearAllLogs();
-};
-
-async function clearAllLogs() {
-  showToast('⏳ Limpando logs…');
-  const snap = await getDocs(collection(db,'logs'));
-  // Batch delete in groups of 500
-  const batchSize = 499;
-  let batch = writeBatch(db);
-  let i = 0;
-  for (const d of snap.docs) {
-    batch.delete(d.ref);
-    i++;
-    if (i % batchSize === 0) { await batch.commit(); batch = writeBatch(db); }
-  }
-  await batch.commit();
-  showToast(`✓ ${snap.size} log${snap.size!==1?'s':''} removido${snap.size!==1?'s':''}.`);
-}
-
-window.runSuggestionsCleanup = async () => {
-  if (!confirm('Deseja iniciar a varredura? Todas as músicas com 4 ou mais dislikes serão removidas e as mensagens de motivação serão enviadas ao WhatsApp.')) return;
-  
-  showToast('⏳ Iniciando varredura…');
-  let removedCount = 0;
-  
-  try {
-    await addDoc(collection(db, 'logs'), {
-      action: 'Varredura Manual de Sugestões',
-      detail: 'Solicitação manual via painel de logs para remover sugestões com 4 ou mais dislikes',
-      category: 'sugestoes',
-      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
-      whoEmail: auth.currentUser?.email || '',
-      ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
-    });
-
-    const snap = await getDocs(collection(db, 'suggestions'));
-    const toRemove = snap.docs.filter(d => {
-      const s = d.data();
-      return (s.dislikes || 0) >= 4;
-    });
-    
-    if (toRemove.length === 0) {
-      showToast('✨ Nenhuma música com 4+ dislikes encontrada.');
-      return;
-    }
-    
-    for (const d of toRemove) {
-      const s = d.data();
-      const id = d.id;
-      
-      // Deleta a sugestão
-      await deleteDoc(doc(db, 'suggestions', id));
-      
-      // Cria o log que dispara o WhatsApp
-      await addDoc(collection(db, 'logs'), {
-        action: 'Sugestão Removida',
-        detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: Atingiu o limite de 4 dislikes (Varredura de manutenção)`,
-        song: s.song,
-        artist: s.artist,
-        by: s.by || 'Membro',
-        likes: s.likes || 0,
-        dislikes: s.dislikes || 0,
-        reason: 'Atingiu o limite de 4 dislikes (Varredura de manutenção)',
-        removedBy: 'Varredura Automática',
-        category: 'sugestoes',
-        who: 'Varredura Automática',
-        whoEmail: '',
-        ts: serverTimestamp(),
-        tsLocal: new Date().toLocaleString('pt-BR')
-      });
-      
-      removedCount++;
-    }
-    
-    showToast(`✅ Varredura concluída! ${removedCount} música(s) removida(s).`);
-  } catch (e) {
-    console.error('Cleanup error:', e);
-    showToast('❌ Erro durante a varredura. Veja o console.');
-  }
-};
-
-window.triggerManualRehearsalZap = async () => {
-  if (!confirm('Deseja enviar a lista do "Ensaio Atual" para o WhatsApp agora?')) return;
-  
-  showToast('⏳ Disparando WhatsApp…');
-  try {
-    await addDoc(collection(db, 'logs'), {
-      action: 'Disparar Zap Ensaio',
-      detail: 'Solicitação manual via painel de logs',
-      category: 'setlist',
-      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
-      ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
-    });
-    showToast('🚀 Comando enviado!');
-  } catch (e) {
-    console.error('Manual zap error:', e);
-    showToast('❌ Erro ao disparar. Veja o console.');
-  }
-};
-
-window.cancelThisWeeksRehearsal = async () => {
-  const reason = prompt('Informe o motivo do cancelamento do ensaio desta semana:');
-  if (reason === null) return;
-
-  const trimmedReason = reason.trim();
-  if (!trimmedReason) {
-    showToast('⚠ Informe o motivo do cancelamento para continuar.');
-    return;
-  }
-
-  if (!confirm(`Confirmar cancelamento do ensaio com o motivo abaixo?\n\n${trimmedReason}`)) return;
-
-  showToast('⏳ Registrando cancelamento…');
-  try {
-    await addDoc(collection(db, 'logs'), {
-      action: 'Cancelar Ensaio',
-      detail: `Motivo: ${trimmedReason}`,
-      reason: trimmedReason,
-      category: 'setlist',
-      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
-      whoEmail: auth.currentUser?.email || '',
-      ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
-    });
-    showToast('🚫 Cancelamento registrado e envio acionado.');
-  } catch (e) {
-    console.error('Cancel rehearsal error:', e);
-    showToast('❌ Erro ao cancelar ensaio. Veja o console.');
-  }
-};
-
-// ─── UTILS ─────────────────────────────────────────────────────────
-
-// ═══════════════════════════════════════════════════════════════════
-// GALLERY COMPRESSION CONFIG
-// ═══════════════════════════════════════════════════════════════════
-
-const QUALITY_HINTS = {
-  30: 'Compressão máxima — arquivos bem pequenos, qualidade visivelmente reduzida.',
-  40: 'Compressão alta — boa para economizar storage, perda perceptível em detalhes.',
-  50: 'Baixa qualidade — arquivos compactos, aceitável para fotos de bastidores.',
-  55: 'Qualidade baixa-média.',
-  60: 'Qualidade moderada — bom equilíbrio para a maioria dos usos.',
-  65: 'Qualidade moderada-boa.',
-  70: 'Qualidade média (padrão anterior) — redução de 30%, boa relação tamanho/visual.',
-  75: 'Qualidade boa — compressão suave, perda mínima.',
-  80: 'Qualidade alta — arquivos maiores, detalhes bem preservados.',
-  85: 'Alta qualidade — recomendado para fotos de shows e apresentações.',
-  90: 'Qualidade muito alta — pouca compressão, arquivos grandes.',
-  95: 'Qualidade máxima — quase sem perda, arquivos bem pesados.',
-  100: 'Sem compressão JPEG — arquivos muito grandes, não recomendado.',
-};
-
-async function loadGalleryConfig() {
-  try {
-    const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
-    if (snap.exists()) {
-      const { quality = 70, maxPx = 1920 } = snap.data();
-      applyConfigToUI(quality, maxPx);
-    } else {
-      applyConfigToUI(70, 1920);
-    }
-  } catch(e) {
-    applyConfigToUI(70, 1920);
-  }
-}
-
-function applyConfigToUI(quality, maxPx) {
-  const slider = document.getElementById('qualitySlider');
-  const label  = document.getElementById('qualityLabel');
-  const hint   = document.getElementById('qualityHint');
-  const sel    = document.getElementById('maxPxSelect');
-  if (slider) slider.value = quality;
-  if (label)  label.textContent = `${quality}%`;
-  if (hint)   hint.textContent  = QUALITY_HINTS[quality] || '';
-  if (sel)    sel.value = String(maxPx);
-  updatePresetHighlight(quality);
-}
-
-function updatePresetHighlight(quality) {
-  document.querySelectorAll('#qualityPresets .filter-btn').forEach(btn => {
-    const val = parseInt(btn.getAttribute('onclick').match(/\d+/)?.[0]);
-    btn.classList.toggle('active', val === quality);
-  });
-}
-
-window.onQualitySlide = val => {
-  const q = parseInt(val);
-  const label = document.getElementById('qualityLabel');
-  const hint  = document.getElementById('qualityHint');
-  if (label) label.textContent = `${q}%`;
-  if (hint)  hint.textContent  = QUALITY_HINTS[q] || '';
-  updatePresetHighlight(q);
-};
-
-window.setQualityPreset = val => {
-  const slider = document.getElementById('qualitySlider');
-  if (slider) { slider.value = val; onQualitySlide(val); }
-};
-
-window.onMaxPxChange = val => {
-  // nothing extra needed, value read on save
-};
-
-window.saveGalleryConfig = async () => {
-  const slider  = document.getElementById('qualitySlider');
-  const sel     = document.getElementById('maxPxSelect');
-  const status  = document.getElementById('configSaveStatus');
-  const quality = parseInt(slider?.value || 70);
-  const maxPx   = parseInt(sel?.value || 1920);
-  try {
-    await setDoc(doc(db, 'config', 'galleryCompression'), { quality, maxPx, updatedAt: new Date().toISOString() });
-    if (status) { status.textContent = '✓ Salvo! Próximos uploads já usam a nova configuração.'; status.style.color = 'var(--gold)'; }
-    showToast(`✓ Configuração salva — qualidade ${quality}%, max ${maxPx}px`);
-    setTimeout(() => { if (status) status.textContent = ''; }, 5000);
-  } catch(e) {
-    if (status) { status.textContent = '⚠ Erro ao salvar.'; status.style.color = '#fca5a5'; }
-    showToast('⚠ Erro ao salvar configuração');
-  }
-};
-
-loadGalleryConfig();
 
 window.showToast = msg => {
   const el = document.getElementById('toast');

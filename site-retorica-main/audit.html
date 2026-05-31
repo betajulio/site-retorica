@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retórica — Auditoria</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--red:#ef4444;--green:#86efac}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:radial-gradient(circle at top,rgba(200,130,10,.08),transparent 32%),var(--black);color:var(--cream);font-family:'Lora',serif;min-height:100vh}
+  body.auth-resolved #authBoot{opacity:0;pointer-events:none}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+  #authBoot{position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at top,rgba(200,130,10,.12),transparent 35%),linear-gradient(180deg,#140d07 0%,#090603 100%);transition:opacity .35s ease}
+  .auth-boot-panel{width:min(88vw,520px);border:1px solid rgba(200,130,10,.32);background:linear-gradient(180deg,rgba(36,23,10,.96),rgba(14,10,6,.96));box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 2px rgba(200,130,10,.08) inset;padding:1.4rem 1.2rem 1.2rem;position:relative;overflow:hidden}
+  .auth-boot-panel::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);opacity:.25;pointer-events:none}
+  .auth-boot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;font-family:'Bebas Neue',sans-serif;letter-spacing:.18em;color:var(--gold);font-size:1rem}
+  .auth-boot-disc{width:84px;height:84px;border-radius:50%;margin:0 auto .9rem;background:url('imagens/Toca_do_Mineiro_logo_final.png') center/cover no-repeat;border:1px solid rgba(200,130,10,.3);box-shadow:0 0 0 10px rgba(200,130,10,.05);animation:psxSpin 2.8s linear infinite}
+  .auth-boot-title{font-family:'Cinzel',serif;text-align:center;color:var(--cream);font-size:1.3rem;letter-spacing:.08em}
+  .auth-boot-sub{margin-top:.45rem;text-align:center;color:var(--smoke);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+  .auth-boot-bar{margin:1.1rem 0 .7rem;height:12px;border:1px solid rgba(200,130,10,.28);background:rgba(8,6,3,.95);position:relative;overflow:hidden}
+  .auth-boot-fill{height:100%;width:34%;background:linear-gradient(90deg,var(--rust),var(--amber),#f3cf62);box-shadow:0 0 12px rgba(200,130,10,.35);animation:psxLoad 1.2s steps(12,end) infinite}
+  .auth-boot-status{display:flex;justify-content:space-between;gap:1rem;font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.12em;color:var(--paper)}
+  .auth-boot-status span:last-child{color:var(--gold)}
+  @keyframes psxSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes psxLoad{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
+  nav{height:60px;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(10,8,4,.98),rgba(10,8,4,.85));border-bottom:1px solid rgba(200,130,10,.3);position:sticky;top:0;z-index:10}
+  .nav-logo{font-family:'Cinzel',serif;font-size:1.15rem;font-weight:900;color:var(--gold);letter-spacing:.15em;text-decoration:none}
+  .nav-back{font-family:'Cinzel',serif;font-size:.72rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid rgba(200,130,10,.3);padding:.42rem .8rem}
+  main{max-width:1120px;margin:0 auto;padding:2.5rem 1.3rem 4rem}
+  .page-title{font-family:'Cinzel',serif;font-size:2rem;color:var(--cream);margin-bottom:.35rem}
+  .page-sub{font-size:.86rem;color:var(--smoke);font-style:italic;line-height:1.6;max-width:760px}
+  .panel{margin-top:1.3rem;border:1px solid rgba(200,130,10,.16);background:linear-gradient(145deg,rgba(42,26,8,.62),rgba(12,10,6,.9));padding:1rem 1.1rem}
+  .auth-wall{min-height:58vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1rem}
+  .btn{background:linear-gradient(135deg,var(--amber),var(--rust));color:var(--black);border:none;padding:.72rem 1.25rem;font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+  .btn-ghost{background:transparent;border:1px solid rgba(200,130,10,.35);color:var(--amber);padding:.62rem 1rem;font-family:'Cinzel',serif;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+  .btn-danger{background:rgba(139,58,10,.18);border:1px solid rgba(239,68,68,.38);color:#fca5a5;padding:.62rem 1rem;font-family:'Cinzel',serif;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+  .toolbar{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;margin-top:1.3rem}
+  .status-pill{display:inline-flex;align-items:center;gap:.45rem;border:1px solid rgba(200,130,10,.2);background:rgba(200,130,10,.08);color:var(--paper);padding:.42rem .72rem;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
+  .status-pill.on{border-color:rgba(134,239,172,.35);color:var(--green);background:rgba(80,200,80,.08)}
+  .status-pill.off{border-color:rgba(239,68,68,.3);color:#fca5a5;background:rgba(239,68,68,.07)}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;margin-top:1rem}
+  .card{border:1px solid rgba(200,130,10,.14);background:rgba(10,8,4,.48);padding:.9rem}
+  .card-label{font-size:.66rem;color:var(--smoke);letter-spacing:.12em;text-transform:uppercase}
+  .card-value{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--gold);line-height:1;margin-top:.28rem}
+  .section-title{font-family:'Cinzel',serif;font-size:.9rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin:1.5rem 0 .75rem;display:flex;align-items:center;gap:.6rem}
+  .section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(200,130,10,.25),transparent)}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:.55rem .65rem;border-bottom:1px solid rgba(200,130,10,.07);font-size:.78rem;text-align:left;vertical-align:top}
+  th{font-family:'Cinzel',serif;color:var(--amber);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;background:rgba(200,130,10,.05)}
+  td.num{text-align:right;color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:1rem}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .alert-list{display:grid;gap:.55rem}
+  .alert{border:1px solid rgba(200,130,10,.14);background:rgba(10,8,4,.5);padding:.7rem .8rem;font-size:.78rem;color:var(--paper);line-height:1.45}
+  .alert.critical{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.08)}
+  .alert.warning{border-color:rgba(232,168,32,.45);background:rgba(232,168,32,.08)}
+  .export-note{margin-top:.7rem;color:var(--smoke);font-size:.75rem;font-style:italic;line-height:1.5}
+  .muted{color:var(--smoke);font-size:.78rem;font-style:italic}
+  .hidden{display:none!important}
+  .admin-tools{margin:1.8rem 0 2rem;padding:1.1rem 1.2rem;border:1px solid rgba(248,113,113,.24);background:linear-gradient(135deg,rgba(48,20,14,.76),rgba(22,14,10,.94));border-radius:2px;box-shadow:0 10px 30px rgba(0,0,0,.2),0 0 0 1px rgba(248,113,113,.06) inset}
+  .admin-tools-head{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;margin-bottom:1rem}
+  .admin-tools-title{font-family:'Cinzel',serif;font-size:1rem;color:#fcd6a5;letter-spacing:.06em}
+  .admin-tools-sub{font-size:.77rem;color:#d6b59a;max-width:720px;line-height:1.6}
+  .admin-tools-grid{display:flex;gap:.8rem;flex-wrap:wrap}
+  .admin-tools-warning{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .6rem;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:#fca5a5;font-size:.67rem;letter-spacing:.12em;text-transform:uppercase;font-family:'Cinzel',serif}
+  .admin-inline-config{margin-top:1rem;padding:1rem 1.1rem;border:1px solid rgba(200,130,10,.2);background:rgba(255,255,255,.025);display:flex;gap:1rem;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+  .admin-inline-config-copy{flex:1 1 260px;min-width:220px}
+  .admin-inline-config-title{font-family:'Cinzel',serif;color:var(--cream);letter-spacing:.08em;text-transform:uppercase;font-size:.9rem}
+  .admin-inline-config-sub{margin-top:.25rem;color:var(--smoke);font-size:.8rem;line-height:1.5}
+  .admin-inline-config-controls{display:flex;gap:.7rem;align-items:flex-end;flex-wrap:wrap}
+  .admin-inline-field{display:flex;flex-direction:column;gap:.35rem;min-width:150px}
+  .admin-inline-field label{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke)}
+  .admin-inline-field input,.admin-inline-field select{background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.28);color:var(--cream);padding:.7rem .8rem;font:inherit}
+  .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1)}
+  .toast.show{transform:translateY(0);opacity:1}
+  @media(max-width:760px){nav{padding:0 1rem}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}.page-title{font-size:1.45rem}th,td{font-size:.72rem;padding:.48rem}.toolbar{align-items:stretch}.toolbar button{width:100%}}
+</style>
+</head>
+<body>
+<div id="authBoot">
+  <div class="auth-boot-panel">
+    <div class="auth-boot-head">
+      <span>Retorica Audit</span>
+      <span>PSX-AUD 24H</span>
+    </div>
+    <div class="auth-boot-disc"></div>
+    <div class="auth-boot-title">Carregando Auditoria</div>
+    <div class="auth-boot-sub">Verificando sessao e permissoes</div>
+    <div class="auth-boot-bar"><div class="auth-boot-fill"></div></div>
+    <div class="auth-boot-status">
+      <span>READ MONITOR</span>
+      <span>BOOT</span>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <a class="nav-logo" href="index.html">Retórica</a>
+  <a class="nav-back" href="index.html">Voltar ao site</a>
+</nav>
+
+<main>
+  <div class="page-title">Auditoria de Leituras</div>
+  <div class="page-sub">Monitoramento sob demanda por 24h. A página é restrita ao e-mail autorizado e mostra leituras estimadas por consulta, alertas, horários e possíveis ofensores.</div>
+
+  <section id="loginWall" class="auth-wall">
+    <div style="font-size:2.6rem;opacity:.45">🔎</div>
+    <div class="page-title" style="font-size:1.25rem">Acesso restrito</div>
+    <div class="page-sub">Entre com a conta autorizada para acompanhar a auditoria.</div>
+    <button class="btn" onclick="doLogin()">Entrar com Google</button>
+    <div id="deniedMsg" class="muted"></div>
+  </section>
+
+  <section id="auditContent" class="hidden">
+    <div class="admin-tools">
+      <div class="admin-tools-head">
+        <div>
+          <div class="admin-tools-title">Ferramentas Administrativas</div>
+          <div class="admin-tools-sub">Ações sensíveis ficam aqui para serem acompanhadas junto da auditoria de leituras e alertas em tempo real.</div>
+        </div>
+        <div class="admin-tools-warning">⚠ Ações sensíveis</div>
+      </div>
+      <div class="admin-tools-grid">
+        <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
+        <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
+        <button class="btn-ghost" style="border-color:#93c5fd;color:#bfdbfe" onclick="forceTop3Tiebreaker()">⚔️ Forçar desempate Top 3</button>
+        <button id="promotionPauseBtn" class="btn-ghost" style="border-color:#fbbf24;color:#fde68a" onclick="togglePromotionPause()">⏸ Pausar ciclo de sugestões</button>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9" href="index.html?videoFrameDebug=1#galeria">🎛 Ajustar vídeos da galeria</a>
+        <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
+        <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
+      </div>
+      <div class="admin-tools-grid" style="margin-top:.8rem">
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=default#hero">Logo padrão</a>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=pascoa#hero">Páscoa</a>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=festajunina#hero">Festa Junina</a>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=independencia#hero">Independência</a>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=halloween#hero">Halloween</a>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=natal#hero">Natal</a>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=anonovo#hero">Ano Novo</a>
+      </div>
+      <div class="admin-inline-config">
+        <div class="admin-inline-config-copy">
+          <div class="admin-inline-config-title">Tempo do carrossel</div>
+          <div class="admin-inline-config-sub">Escolha quantos segundos cada item da galeria principal fica em destaque antes de passar para o próximo.</div>
+        </div>
+        <div class="admin-inline-config-controls">
+          <div class="admin-inline-field">
+            <label for="carouselDelaySecondsInput">Segundos por imagem</label>
+            <input id="carouselDelaySecondsInput" type="number" min="2" max="30" step="1" value="5">
+          </div>
+          <button class="btn-ghost" onclick="saveCarouselTimingConfig()" style="border-color:var(--amber);color:var(--gold)">⏱ Salvar tempo</button>
+          <span id="carouselTimingSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
+        </div>
+      </div>
+      <div class="admin-inline-config">
+        <div class="admin-inline-config-copy">
+          <div class="admin-inline-config-title">Compressão da galeria</div>
+          <div class="admin-inline-config-sub">Define a qualidade e o tamanho máximo usados nos próximos uploads de imagens.</div>
+        </div>
+        <div class="admin-inline-config-controls">
+          <div class="admin-inline-field">
+            <label>Qualidade: <span id="qualityLabel" style="color:var(--gold)">carregando…</span></label>
+            <input type="range" id="qualitySlider" min="30" max="100" step="5" value="70" oninput="onQualitySlide(this.value)">
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="qualityPresets">
+              <button class="btn-ghost" onclick="setQualityPreset(50)">50%</button>
+              <button class="btn-ghost" onclick="setQualityPreset(70)">70%</button>
+              <button class="btn-ghost" onclick="setQualityPreset(85)">85%</button>
+            </div>
+            <p style="font-size:.72rem;color:var(--smoke);margin-top:.5rem;font-style:italic" id="qualityHint"></p>
+          </div>
+          <div class="admin-inline-field">
+            <label for="maxPxSelect">Tamanho máximo</label>
+            <select id="maxPxSelect" onchange="onMaxPxChange(this.value)">
+              <option value="1280">1280px</option>
+              <option value="1600">1600px</option>
+              <option value="1920">1920px</option>
+              <option value="2400">2400px</option>
+            </select>
+          </div>
+          <button class="btn-ghost" onclick="saveGalleryConfig()" style="border-color:var(--amber);color:var(--gold)">Salvar compressão</button>
+          <span id="configSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <span class="status-pill off" id="auditStatus">Auditoria desligada</span>
+      <span class="status-pill" id="auditWindow">Sem janela ativa</span>
+      <button class="btn" onclick="startAudit()">Iniciar 24h</button>
+      <button class="btn-ghost" onclick="stopAudit()">Encerrar agora</button>
+      <button class="btn-ghost" onclick="exportAuditJson()">Exportar JSON</button>
+      <button class="btn-ghost" onclick="exportAuditCsv()">Exportar CSV</button>
+      <button class="btn-danger" onclick="clearVisibleEvents()">Limpar eventos visíveis</button>
+    </div>
+    <div class="export-note">Ao final da coleta, baixe o JSON e me envie aqui. Ele traz eventos, rankings e alertas da auditoria para análise.</div>
+
+    <div class="grid">
+      <div class="card"><div class="card-label">Leituras estimadas</div><div class="card-value" id="totalReads">0</div></div>
+      <div class="card"><div class="card-label">Últimos 60 min</div><div class="card-value" id="hourReads">0</div></div>
+      <div class="card"><div class="card-label">Últimos 5 min</div><div class="card-value" id="burstReads">0</div></div>
+      <div class="card"><div class="card-label">Alertas</div><div class="card-value" id="alertCount">0</div></div>
+    </div>
+
+    <div class="section-title">Alertas em tempo real</div>
+    <div class="alert-list" id="alertsBox"><div class="muted">Nenhum alerta ainda.</div></div>
+
+    <div class="split">
+      <div>
+        <div class="section-title">Ofensores por usuário</div>
+        <div class="panel"><table><thead><tr><th>Usuário</th><th class="num">Leituras</th><th class="num">Eventos</th></tr></thead><tbody id="usersRank"></tbody></table></div>
+      </div>
+      <div>
+        <div class="section-title">Ações mais caras</div>
+        <div class="panel"><table><thead><tr><th>Ação</th><th class="num">Leituras</th><th class="num">Eventos</th></tr></thead><tbody id="actionsRank"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div>
+        <div class="section-title">Coleções</div>
+        <div class="panel"><table><thead><tr><th>Coleção</th><th class="num">Leituras</th><th class="num">Eventos</th></tr></thead><tbody id="collectionsRank"></tbody></table></div>
+      </div>
+      <div>
+        <div class="section-title">Por horário</div>
+        <div class="panel"><table><thead><tr><th>Hora</th><th class="num">Leituras</th><th class="num">Eventos</th></tr></thead><tbody id="hoursRank"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="section-title">Eventos recentes</div>
+    <div class="panel"><table><thead><tr><th>Hora</th><th>Usuário</th><th>Ação</th><th>Coleção</th><th class="num">Leituras</th></tr></thead><tbody id="eventsTable"></tbody></table></div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, addDoc, getDoc, setDoc, getDocs, deleteDoc,
+  onSnapshot, orderBy, query, limit, serverTimestamp, Timestamp, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDUgxw6RxmiQJnlo1trXL7l8lLYKuk0984",
+  authDomain: "retorica-b05b3.firebaseapp.com",
+  projectId: "retorica-b05b3",
+  storageBucket: "retorica-b05b3.firebasestorage.app",
+  messagingSenderId: "299312853191",
+  appId: "1:299312853191:web:f3f2536da460743940cee2",
+  measurementId: "G-2TQ7Q80QPK"
+};
+
+const AUDIT_EMAIL = 'juliocereser@gmail.com';
+const FORCE_TIEBREAKER_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_force_tiebreaker_top3?token=retorica-force-top3-20260418';
+const INSPECT_PROMOTION_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_inspect_promotion?token=retorica-force-top3-20260418';
+const SET_PROMOTION_PAUSE_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_set_promotion_pause?token=retorica-force-top3-20260418';
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+const auditRef = doc(db, 'config', 'readAudit');
+
+let currentConfig = null;
+let visibleEvents = [];
+let unsubConfig = null;
+let unsubEvents = null;
+let promotionPaused = false;
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3200);
+}
+
+function esc(value = '') {
+  return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function tsMs(value) {
+  if (!value) return 0;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  return new Date(value).getTime() || 0;
+}
+
+function fmtTime(value) {
+  const ms = tsMs(value);
+  return ms ? new Date(ms).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : 'agora';
+}
+
+function isoTime(value) {
+  const ms = tsMs(value);
+  return ms ? new Date(ms).toISOString() : '';
+}
+
+function isActive(config = currentConfig) {
+  return !!config?.enabled && tsMs(config.expiresAt) > Date.now();
+}
+
+function getCurrentRunEvents() {
+  const runId = currentConfig?.activeRunId || '';
+  return runId ? visibleEvents.filter(ev => ev.auditId === runId) : visibleEvents;
+}
+
+function rankBy(events, keyFn) {
+  const map = new Map();
+  events.forEach(ev => {
+    const key = keyFn(ev) || '—';
+    const row = map.get(key) || { key, reads: 0, events: 0 };
+    row.reads += Number(ev.estimatedReads || 0);
+    row.events += 1;
+    map.set(key, row);
+  });
+  return [...map.values()].sort((a,b) => b.reads - a.reads || b.events - a.events).slice(0, 8);
+}
+
+function renderRank(id, rows) {
+  const el = document.getElementById(id);
+  el.innerHTML = rows.length ? rows.map(row => `<tr><td>${esc(row.key)}</td><td class="num">${row.reads}</td><td class="num">${row.events}</td></tr>`).join('') : '<tr><td colspan="3" class="muted">Sem dados.</td></tr>';
+}
+
+function renderAudit() {
+  const active = isActive();
+  const status = document.getElementById('auditStatus');
+  status.textContent = active ? 'Auditoria ativa' : 'Auditoria desligada';
+  status.className = `status-pill ${active ? 'on' : 'off'}`;
+  const windowEl = document.getElementById('auditWindow');
+  windowEl.textContent = currentConfig?.expiresAt ? `Até ${fmtTime(currentConfig.expiresAt)}` : 'Sem janela ativa';
+
+  const events = getCurrentRunEvents();
+  const now = Date.now();
+  const totalReads = events.reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0);
+  const hourReads = events.filter(ev => now - tsMs(ev.at) <= 3600000).reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0);
+  const burstReads = events.filter(ev => now - tsMs(ev.at) <= 300000).reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0);
+  const alertEvents = events.filter(ev => ev.severity === 'critical' || ev.severity === 'warning');
+
+  document.getElementById('totalReads').textContent = totalReads;
+  document.getElementById('hourReads').textContent = hourReads;
+  document.getElementById('burstReads').textContent = burstReads;
+  document.getElementById('alertCount').textContent = alertEvents.length;
+
+  renderRank('usersRank', rankBy(events, ev => ev.userEmail || ev.userName));
+  renderRank('actionsRank', rankBy(events, ev => ev.action));
+  renderRank('collectionsRank', rankBy(events, ev => ev.collection));
+  renderRank('hoursRank', rankBy(events, ev => ev.hourKey));
+
+  const alerts = [];
+  alertEvents.slice(0, 8).forEach(ev => alerts.push(`<div class="alert ${ev.severity}"><strong>${esc(ev.severity)}</strong> · ${esc(ev.action)} em ${esc(ev.collection)} gerou ${Number(ev.estimatedReads || 0)} leituras estimadas · ${esc(ev.userEmail || ev.userName)}</div>`));
+  rankBy(events.filter(ev => now - tsMs(ev.at) <= 300000), ev => ev.userEmail || ev.userName)
+    .filter(row => row.reads >= 120)
+    .forEach(row => alerts.unshift(`<div class="alert critical"><strong>burst</strong> · ${esc(row.key)} gerou ${row.reads} leituras estimadas nos últimos 5 minutos.</div>`));
+  document.getElementById('alertsBox').innerHTML = alerts.length ? alerts.join('') : '<div class="muted">Nenhum alerta ainda.</div>';
+
+  document.getElementById('eventsTable').innerHTML = events.slice(0, 60).map(ev => `
+    <tr><td>${fmtTime(ev.at)}</td><td>${esc(ev.userEmail || ev.userName)}</td><td>${esc(ev.action)}</td><td>${esc(ev.collection)}</td><td class="num">${Number(ev.estimatedReads || 0)}</td></tr>
+  `).join('') || '<tr><td colspan="5" class="muted">Sem eventos nesta auditoria.</td></tr>';
+}
+
+function startStreams() {
+  if (unsubConfig) unsubConfig();
+  if (unsubEvents) unsubEvents();
+  unsubConfig = onSnapshot(auditRef, snap => {
+    currentConfig = snap.exists() ? snap.data() : null;
+    renderAudit();
+  });
+  unsubEvents = onSnapshot(query(collection(db, 'read_audit_events'), orderBy('at', 'desc'), limit(500)), snap => {
+    visibleEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAudit();
+  });
+}
+
+window.startAudit = async () => {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  await setDoc(auditRef, {
+    enabled: true,
+    activeRunId: `audit-${now.getTime()}`,
+    startedAt: serverTimestamp(),
+    startedBy: auth.currentUser?.email || '',
+    expiresAt: Timestamp.fromDate(expiresAt),
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+};
+
+window.stopAudit = async () => {
+  await setDoc(auditRef, { enabled: false, updatedAt: serverTimestamp(), stoppedAt: serverTimestamp(), stoppedBy: auth.currentUser?.email || '' }, { merge: true });
+};
+
+window.clearVisibleEvents = async () => {
+  if (!confirm('Limpar os eventos visíveis desta auditoria?')) return;
+  const runId = currentConfig?.activeRunId || '';
+  const targets = runId ? visibleEvents.filter(ev => ev.auditId === runId) : visibleEvents;
+  await Promise.all(targets.slice(0, 500).map(ev => deleteDoc(doc(db, 'read_audit_events', ev.id))));
+};
+
+function cleanEvent(ev) {
+  return {
+    id: ev.id || '',
+    auditId: ev.auditId || '',
+    at: isoTime(ev.at),
+    hourKey: ev.hourKey || '',
+    userEmail: ev.userEmail || '',
+    userName: ev.userName || '',
+    action: ev.action || '',
+    collection: ev.collection || '',
+    estimatedReads: Number(ev.estimatedReads || 0),
+    severity: ev.severity || '',
+    page: ev.page || '',
+    path: ev.path || '',
+    userAgent: ev.userAgent || ''
+  };
+}
+
+function buildAuditExportPayload() {
+  const events = getCurrentRunEvents()
+    .slice()
+    .sort((a, b) => tsMs(a.at) - tsMs(b.at));
+  const now = Date.now();
+  const totalReads = events.reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0);
+  const alertEvents = events.filter(ev => ev.severity === 'critical' || ev.severity === 'warning');
+  const fiveMinuteBursts = rankBy(events.filter(ev => now - tsMs(ev.at) <= 300000), ev => ev.userEmail || ev.userName)
+    .filter(row => row.reads >= 120);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    site: 'Retorica',
+    activeRunId: currentConfig?.activeRunId || '',
+    auditEnabled: !!currentConfig?.enabled,
+    startedAt: isoTime(currentConfig?.startedAt),
+    expiresAt: isoTime(currentConfig?.expiresAt),
+    eventCount: events.length,
+    totalEstimatedReads: totalReads,
+    summary: {
+      readsLast60Minutes: events.filter(ev => now - tsMs(ev.at) <= 3600000).reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0),
+      readsLast5Minutes: events.filter(ev => now - tsMs(ev.at) <= 300000).reduce((sum, ev) => sum + Number(ev.estimatedReads || 0), 0),
+      alertCount: alertEvents.length,
+      usersRank: rankBy(events, ev => ev.userEmail || ev.userName),
+      actionsRank: rankBy(events, ev => ev.action),
+      collectionsRank: rankBy(events, ev => ev.collection),
+      hoursRank: rankBy(events, ev => ev.hourKey),
+      fiveMinuteBursts
+    },
+    alerts: alertEvents.map(cleanEvent),
+    events: events.map(cleanEvent)
+  };
+}
+
+function downloadText(filename, mime, text) {
+  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportFileBaseName() {
+  const runId = currentConfig?.activeRunId || `audit-${Date.now()}`;
+  return `retorica-${runId}`;
+}
+
+window.exportAuditJson = () => {
+  const payload = buildAuditExportPayload();
+  if (!payload.eventCount) {
+    showToast('Ainda não há eventos para exportar.');
+    return;
+  }
+  downloadText(`${exportFileBaseName()}.json`, 'application/json', JSON.stringify(payload, null, 2));
+  showToast('Arquivo JSON da auditoria baixado.');
+};
+
+window.exportAuditCsv = () => {
+  const payload = buildAuditExportPayload();
+  if (!payload.eventCount) {
+    showToast('Ainda não há eventos para exportar.');
+    return;
+  }
+  const cols = ['at','hourKey','userEmail','userName','action','collection','estimatedReads','severity','page','path','userAgent','auditId','id'];
+  const csvEscape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const lines = [cols.join(',')].concat(payload.events.map(ev => cols.map(col => csvEscape(ev[col])).join(',')));
+  downloadText(`${exportFileBaseName()}.csv`, 'text/csv', lines.join('\n'));
+  showToast('Arquivo CSV da auditoria baixado.');
+};
+
+window.forceTop3Tiebreaker = async () => {
+  if (!confirm('Criar agora uma enquete de desempate com as 3 sugestões atuais do topo? O fluxo posterior continuará normal.')) return;
+  showToast('Forçando enquete de desempate...');
+  try {
+    const resp = await fetch(FORCE_TIEBREAKER_URL, { method: 'POST' });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.ok === false) {
+      const activeRep = data?.activeRepertoryPoll ? ` Enquete ativa: ${data.activeRepertoryPoll}.` : '';
+      showToast((data?.error || 'Não foi possível criar o desempate.') + activeRep);
+      return;
+    }
+    const songs = Array.isArray(data.songs) ? data.songs.map(item => item.song).filter(Boolean).join(', ') : '';
+    showToast(`Desempate criado${songs ? `: ${songs}` : ''}.`);
+  } catch (err) {
+    console.error('Force top3 tiebreaker error:', err);
+    showToast('Erro ao forçar o desempate.');
+  }
+};
+
+function updatePromotionPauseUi(paused) {
+  promotionPaused = !!paused;
+  const btn = document.getElementById('promotionPauseBtn');
+  if (!btn) return;
+  btn.textContent = promotionPaused ? '▶ Retomar ciclo de sugestões' : '⏸ Pausar ciclo de sugestões';
+  btn.style.borderColor = promotionPaused ? '#34d399' : '#fbbf24';
+  btn.style.color = promotionPaused ? '#a7f3d0' : '#fde68a';
+  btn.title = promotionPaused
+    ? 'A contagem das sugestões está pausada; clique para retomar o próximo ciclo de revisão.'
+    : 'Pausa a contagem das sugestões e impede o próximo ciclo automático de revisão.';
+}
+
+async function loadPromotionPauseState() {
+  try {
+    const resp = await fetch(INSPECT_PROMOTION_URL);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.ok === false) return;
+    updatePromotionPauseUi(data?.state?.promotionPaused === true);
+  } catch (err) {
+    console.error('Promotion pause state error:', err);
+  }
+}
+
+window.togglePromotionPause = async () => {
+  const nextPaused = !promotionPaused;
+  const action = nextPaused ? 'pausar' : 'retomar';
+  if (!confirm(`Deseja ${action} o ciclo automático de revisão das sugestões?`)) return;
+  showToast(nextPaused ? 'Pausando ciclo de sugestões...' : 'Retomando ciclo de sugestões...');
+  try {
+    const resp = await fetch(`${SET_PROMOTION_PAUSE_URL}&paused=${nextPaused ? 'true' : 'false'}`, { method: 'POST' });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.ok === false) {
+      showToast(data?.error || `Não foi possível ${action} o ciclo.`);
+      return;
+    }
+    updatePromotionPauseUi(data?.state?.promotionPaused === true);
+    showToast(nextPaused ? 'Ciclo de sugestões pausado.' : 'Ciclo de sugestões retomado.');
+  } catch (err) {
+    console.error('Promotion pause toggle error:', err);
+    showToast(`Erro ao ${action} o ciclo.`);
+  }
+};
+
+window.confirmClearLogs = () => {
+  if (!confirm('Tem certeza? Isso vai apagar TODOS os logs permanentemente. Esta ação não pode ser desfeita.')) return;
+  clearAllLogs();
+};
+
+async function clearAllLogs() {
+  showToast('Limpando logs...');
+  const snap = await getDocs(collection(db,'logs'));
+  const batchSize = 499;
+  let batch = writeBatch(db);
+  let i = 0;
+  for (const d of snap.docs) {
+    batch.delete(d.ref);
+    i++;
+    if (i % batchSize === 0) {
+      await batch.commit();
+      batch = writeBatch(db);
+    }
+  }
+  await batch.commit();
+  showToast(`${snap.size} log${snap.size !== 1 ? 's' : ''} removido${snap.size !== 1 ? 's' : ''}.`);
+}
+
+window.runSuggestionsCleanup = async () => {
+  if (!confirm('Deseja iniciar a varredura? Todas as músicas com 3 ou mais dislikes serão removidas e as mensagens de motivação serão enviadas ao WhatsApp.')) return;
+
+  showToast('Iniciando varredura...');
+  let removedCount = 0;
+
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Varredura Manual de Sugestões',
+      detail: 'Solicitação manual via página de auditoria para remover sugestões com 3 ou mais dislikes',
+      category: 'sugestoes',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+
+    const snap = await getDocs(collection(db, 'suggestions'));
+    const toRemove = snap.docs.filter(d => (d.data().dislikes || 0) >= 3);
+
+    if (toRemove.length === 0) {
+      showToast('Nenhuma música com 3+ dislikes encontrada.');
+      return;
+    }
+
+    for (const d of toRemove) {
+      const s = d.data();
+      await deleteDoc(doc(db, 'suggestions', d.id));
+      await addDoc(collection(db, 'logs'), {
+        action: 'Sugestão Removida',
+        detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: Atingiu o limite de 3 dislikes (Varredura de manutenção)`,
+        song: s.song,
+        artist: s.artist,
+        by: s.by || 'Membro',
+        likes: s.likes || 0,
+        dislikes: s.dislikes || 0,
+        reason: 'Atingiu o limite de 3 dislikes (Varredura de manutenção)',
+        removedBy: 'Varredura Automática',
+        category: 'sugestoes',
+        who: 'Varredura Automática',
+        whoEmail: '',
+        ts: serverTimestamp(),
+        tsLocal: new Date().toLocaleString('pt-BR')
+      });
+      removedCount++;
+    }
+
+    showToast(`Varredura concluída: ${removedCount} música(s) removida(s).`);
+  } catch (e) {
+    console.error('Cleanup error:', e);
+    showToast('Erro durante a varredura. Veja o console.');
+  }
+};
+
+window.triggerManualRehearsalZap = async () => {
+  if (!confirm('Deseja enviar a lista do "Ensaio Atual" para o WhatsApp agora?')) return;
+
+  showToast('Disparando WhatsApp...');
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Disparar Zap Ensaio',
+      detail: 'Solicitação manual via página de auditoria',
+      category: 'setlist',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    showToast('Comando enviado.');
+  } catch (e) {
+    console.error('Manual zap error:', e);
+    showToast('Erro ao disparar. Veja o console.');
+  }
+};
+
+window.cancelThisWeeksRehearsal = async () => {
+  const reason = prompt('Informe o motivo do cancelamento do ensaio desta semana:');
+  if (reason === null) return;
+
+  const trimmedReason = reason.trim();
+  if (!trimmedReason) {
+    showToast('Informe o motivo do cancelamento para continuar.');
+    return;
+  }
+  if (!confirm(`Confirmar cancelamento do ensaio com o motivo abaixo?\n\n${trimmedReason}`)) return;
+
+  showToast('Registrando cancelamento...');
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Cancelar Ensaio',
+      detail: `Motivo: ${trimmedReason}`,
+      reason: trimmedReason,
+      category: 'setlist',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    showToast('Cancelamento registrado e envio acionado.');
+  } catch (e) {
+    console.error('Cancel rehearsal error:', e);
+    showToast('Erro ao cancelar ensaio. Veja o console.');
+  }
+};
+
+const QUALITY_HINTS = {
+  30: 'Compressão máxima — arquivos bem pequenos, qualidade visivelmente reduzida.',
+  40: 'Compressão alta — boa para economizar storage, perda perceptível em detalhes.',
+  50: 'Baixa qualidade — arquivos compactos, aceitável para fotos de bastidores.',
+  55: 'Qualidade baixa-média.',
+  60: 'Qualidade moderada — bom equilíbrio para a maioria dos usos.',
+  65: 'Qualidade moderada-boa.',
+  70: 'Qualidade média — boa relação tamanho/visual.',
+  75: 'Qualidade boa — compressão suave, perda mínima.',
+  80: 'Qualidade alta — arquivos maiores, detalhes bem preservados.',
+  85: 'Alta qualidade — recomendado para fotos de shows e apresentações.',
+  90: 'Qualidade muito alta — pouca compressão, arquivos grandes.',
+  95: 'Qualidade máxima — quase sem perda, arquivos bem pesados.',
+  100: 'Sem compressão JPEG — arquivos muito grandes, não recomendado.'
+};
+
+async function loadGalleryConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
+    const data = snap.exists() ? snap.data() : {};
+    applyConfigToUI(data.quality || 70, data.maxPx || 1920, data.carouselDelaySeconds || 5);
+  } catch (e) {
+    applyConfigToUI(70, 1920, 5);
+  }
+}
+
+function applyConfigToUI(quality, maxPx, carouselDelaySeconds = 5) {
+  const slider = document.getElementById('qualitySlider');
+  const label = document.getElementById('qualityLabel');
+  const hint = document.getElementById('qualityHint');
+  const sel = document.getElementById('maxPxSelect');
+  const carouselDelayInput = document.getElementById('carouselDelaySecondsInput');
+  if (slider) slider.value = quality;
+  if (label) label.textContent = `${quality}%`;
+  if (hint) hint.textContent = QUALITY_HINTS[quality] || '';
+  if (sel) sel.value = String(maxPx);
+  if (carouselDelayInput) carouselDelayInput.value = String(Math.min(30, Math.max(2, parseInt(carouselDelaySeconds, 10) || 5)));
+  updatePresetHighlight(quality);
+}
+
+function updatePresetHighlight(quality) {
+  document.querySelectorAll('#qualityPresets .btn-ghost').forEach(btn => {
+    const val = parseInt(btn.getAttribute('onclick')?.match(/\d+/)?.[0] || '0', 10);
+    btn.classList.toggle('active', val === quality);
+  });
+}
+
+window.onQualitySlide = val => {
+  const q = parseInt(val, 10);
+  const label = document.getElementById('qualityLabel');
+  const hint = document.getElementById('qualityHint');
+  if (label) label.textContent = `${q}%`;
+  if (hint) hint.textContent = QUALITY_HINTS[q] || '';
+  updatePresetHighlight(q);
+};
+
+window.setQualityPreset = val => {
+  const slider = document.getElementById('qualitySlider');
+  if (slider) {
+    slider.value = val;
+    window.onQualitySlide(val);
+  }
+};
+
+window.onMaxPxChange = () => {};
+
+window.saveGalleryConfig = async () => {
+  const slider = document.getElementById('qualitySlider');
+  const sel = document.getElementById('maxPxSelect');
+  const status = document.getElementById('configSaveStatus');
+  const carouselDelayInput = document.getElementById('carouselDelaySecondsInput');
+  const quality = parseInt(slider?.value || 70, 10);
+  const maxPx = parseInt(sel?.value || 1920, 10);
+  const carouselDelaySeconds = Math.min(30, Math.max(2, parseInt(carouselDelayInput?.value || 5, 10) || 5));
+  try {
+    await setDoc(doc(db, 'config', 'galleryCompression'), { quality, maxPx, carouselDelaySeconds, updatedAt: new Date().toISOString() }, { merge: true });
+    if (status) {
+      status.textContent = 'Salvo. Próximos uploads já usam a nova configuração.';
+      status.style.color = 'var(--gold)';
+    }
+    showToast(`Configuração salva: qualidade ${quality}%, max ${maxPx}px.`);
+    setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+  } catch(e) {
+    if (status) {
+      status.textContent = 'Erro ao salvar.';
+      status.style.color = '#fca5a5';
+    }
+    showToast('Erro ao salvar configuração.');
+  }
+};
+
+window.saveCarouselTimingConfig = async () => {
+  const input = document.getElementById('carouselDelaySecondsInput');
+  const status = document.getElementById('carouselTimingSaveStatus');
+  const carouselDelaySeconds = Math.min(30, Math.max(2, parseInt(input?.value || 5, 10) || 5));
+  if (input) input.value = String(carouselDelaySeconds);
+  try {
+    await setDoc(doc(db, 'config', 'galleryCompression'), { carouselDelaySeconds, updatedAt: new Date().toISOString() }, { merge: true });
+    if (status) {
+      status.textContent = 'Tempo salvo.';
+      status.style.color = 'var(--gold)';
+    }
+    showToast(`Carrossel ajustado para ${carouselDelaySeconds}s por imagem.`);
+    setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+  } catch (e) {
+    if (status) {
+      status.textContent = 'Erro ao salvar.';
+      status.style.color = '#fca5a5';
+    }
+    showToast('Erro ao salvar tempo do carrossel.');
+  }
+};
+
+window.doLogin = async () => {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    document.getElementById('deniedMsg').textContent = err?.code === 'auth/popup-closed-by-user' ? '' : 'Erro ao autenticar.';
+  }
+};
+
+onAuthStateChanged(auth, async user => {
+  const email = (user?.email || '').toLowerCase();
+  if (!user) {
+    document.getElementById('loginWall').classList.remove('hidden');
+    document.getElementById('auditContent').classList.add('hidden');
+    document.body.classList.add('auth-resolved');
+    return;
+  }
+  if (email !== AUDIT_EMAIL) {
+    await signOut(auth);
+    document.getElementById('deniedMsg').textContent = `${email} não tem acesso à auditoria.`;
+    document.body.classList.add('auth-resolved');
+    return;
+  }
+  const approved = await getDoc(doc(db, 'approved_emails', email));
+  if (!approved.exists()) {
+    await signOut(auth);
+    document.getElementById('deniedMsg').textContent = `${email} não está aprovado como membro.`;
+    document.body.classList.add('auth-resolved');
+    return;
+  }
+  document.getElementById('loginWall').classList.add('hidden');
+  document.getElementById('auditContent').classList.remove('hidden');
+  document.body.classList.add('auth-resolved');
+  loadGalleryConfig();
+  loadPromotionPauseState();
+  startStreams();
+});
+</script>
+</body>
+</html>
