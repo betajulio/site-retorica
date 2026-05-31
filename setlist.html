@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0804">
+<link rel="manifest" href="manifest.json">
+<link class="favicon" rel="shortcut icon" href="imagens/Toca_do_Mineiro_logo_final.png" type="image/x-icon">
+<link rel="apple-touch-icon" href="imagens/Toca_do_Mineiro_logo_final.png">
+<title>Setlist de Ensaio — Retórica</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-title">Retórica</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Retórica</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Portal</a></li>
+    <li><a href="sugestoes.html">Sugestões & Enquetes <span class="badge-new" id="promoCountdownNav" style="display:none"></span></a></li>
+    <li><a href="setlist.html" style="color:var(--gold)">Setlist de Ensaio</a></li>
+    <li><a href="repertorio.html">Repertório</a></li>
+  </ul>
+  <div class="nav-auth">
+    <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
+    <button class="btn-ghost btn-sm" id="loginBtn" onclick="openLogin()">Entrar</button>
+    <button class="btn-ghost btn-sm" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
+  </div>
+  <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="nav-mobile-menu" id="navMobileMenu">
+  <a href="index.html">Portal</a>
+  <a href="sugestoes.html">Sugestões & Enquetes <span class="badge-mobile-inline" id="promoCountdownNavMobile" style="display:none"></span></a>
+  <a href="setlist.html" style="color:var(--gold)">Setlist de Ensaio</a>
+  <a href="repertorio.html">Repertório</a>
+  <div style="border-top:1px solid rgba(200,130,10,.1);margin-top:.5rem;padding:1rem 2rem;display:flex;flex-direction:column;gap:.8rem">
+    <span class="nav-user" id="navUserMobile" style="display:none;text-align:center">🎸 Membro</span>
+    <button class="btn-ghost" id="loginBtnMobile" onclick="openLoginMobile()">Entrar</button>
+    <button class="btn-ghost" id="logoutBtnMobile" onclick="doLogout()" style="display:none">Sair</button>
+  </div>
+</div>
+
+<main style="padding-top: 80px; max-width: 1100px; margin: 0 auto;">
+  
+  <!-- 04 SETLIST -->
+  <section id="setlist" style="padding: 4rem 1.5rem 2rem;">
+    <div class="section-header" style="position: static; margin-bottom: 2rem;">
+      <div class="section-number">01</div>
+      <div class="section-title-wrap"><h2>Setlist do Próximo Ensaio</h2><p>Arraste para reordenar e gerencie links de apoio</p></div>
+      <div class="section-line"></div>
+    </div>
+    <div id="setlistContainer"></div>
+  </section>
+
+  <hr class="full-divider">
+
+  <!-- 05 FÓRUM -->
+  <section id="forum" style="padding: 4rem 1.5rem;">
+    <div class="section-header" style="position: static; margin-bottom: 2rem;">
+      <div class="section-number">02</div>
+      <div class="section-title-wrap"><h2>Fórum dos Ensaios</h2><p>Discussão pós-ensaio</p></div>
+      <div class="section-line"></div>
+    </div>
+    
+    <div class="member-only-flex" style="margin-bottom:1.5rem;gap:1rem;align-items:flex-end">
+      <div class="form-group" style="flex:1">
+        <label>Novo Tópico</label>
+        <input type="text" id="newThreadTitle" placeholder="Ex: Ensaio 14/06 – Estúdio Centro">
+      </div>
+      <button class="btn" onclick="addForumThread()">Criar Tópico</button>
+    </div>
+
+    <div class="forum-sessions" id="forumContainer"></div>
+    
+    <div id="forumHistoryWrap" style="margin-top:1.5rem">
+      <button class="btn-ghost btn-sm" id="forumHistoryBtn" onclick="toggleForumHistory()" style="display:none">
+        🗂 Histórico do fórum (<span id="forumClosedCount">0</span>)
+      </button>
+      <div id="forumHistoryContainer" style="display:none;margin-top:1rem"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeLogin()">✕</button>
+    <div class="modal-title">Entrar no Retórica</div>
+    <div class="modal-subtitle">Acesso restrito para banda e interações</div>
+    <div id="loginStep1">
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.569 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z"/></svg>
+        Entrar com Google
+      </button>
+    </div>
+    <div class="modal-error" id="loginError">Erro ao autenticar. Tente novamente.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- CONFIRM HELPER -->
+<script>
+window.confirmAction = (msg) => confirm(msg);
+</script>
+
+<!-- FIREBASE & CORE SCRIPT -->
+<script type="module">
+import {
+  db, auth, provider,
+  collection, doc, onSnapshot, addDoc, deleteDoc, updateDoc, setDoc, getDoc, getDocs, orderBy, query, serverTimestamp, runTransaction, Timestamp, increment,
+  signInWithPopup, signOut, onAuthStateChanged
+} from "./firebase-init.js";
+
+// --- STATE ---
+let isLoggedIn = false;
+let isMember = false;
+let setlistLoaded = false;
+let forumSubscribed = false;
+let forumHistoryOpen = false;
+
+let setlistData = {tab0:[],tab1:[]};
+const NEXT_SETLIST_KEY = 'tab0';
+const LEGACY_SETLIST_KEY = 'tab1';
+let setlistExpanded = false;
+let dragSrc = null;
+
+let forumCache = [];
+const forumPostsCache = {};
+const forumPostSubscriptions = {};
+
+let readAuditCache = { checkedAt: 0, data: null };
+const READ_AUDIT_CONFIG_ID = 'readAudit';
+
+// Settings & endpoints
+const FUNCTIONS_BASE_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net';
+const promotionStateRef = doc(db, 'promotion_state', 'current');
+
+// --- TOAST UTILS ---
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  if (toast) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3200);
+  }
+}
+
+// --- LOGGING ---
+async function writeLog(action, detail, category) {
+  const user = auth.currentUser;
+  try {
+    await addDoc(collection(db,'logs'), {
+      action,
+      detail,
+      category,
+      who: user?.displayName || user?.email || 'Membro',
+      whoEmail: user?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+  } catch (e) {
+    console.warn('Write log error:', e);
+  }
+}
+
+// --- READ AUDIT LOGGING ---
+function auditDateKey(date = new Date()) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:00`;
+}
+
+function auditTimestampMs(value) {
+  if (!value) return 0;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (typeof value.toDate === 'function') return value.toDate().getTime();
+  return new Date(value).getTime() || 0;
+}
+
+async function getReadAuditConfig(force = false) {
+  const now = Date.now();
+  if (!force && readAuditCache.checkedAt && now - readAuditCache.checkedAt < 60000) return readAuditCache.data;
+  const snap = await getDoc(doc(db, 'config', READ_AUDIT_CONFIG_ID));
+  const data = snap.exists() ? snap.data() : null;
+  readAuditCache = { checkedAt: now, data };
+  return data;
+}
+
+function readAuditSeverity(estimatedReads) {
+  if (estimatedReads >= 200) return 'critical';
+  if (estimatedReads >= 50) return 'warning';
+  return 'info';
+}
+
+async function auditReadEvent({ page = 'setlist', action, collectionName, estimatedReads = 0, meta = {} }) {
+  if (!isLoggedIn || !isMember || !auth.currentUser || !action || !collectionName) return;
+  const config = await getReadAuditConfig().catch(() => null);
+  const expiresAt = auditTimestampMs(config?.expiresAt);
+  if (!config?.enabled || !config?.activeRunId || !expiresAt || expiresAt <= Date.now()) return;
+  const reads = Number(estimatedReads || 0);
+  try {
+    await addDoc(collection(db, 'read_audit_events'), {
+      auditId: config.activeRunId,
+      at: serverTimestamp(),
+      atLocal: new Date().toLocaleString('pt-BR'),
+      hourKey: auditDateKey(),
+      userEmail: auth.currentUser.email || '',
+      userName: auth.currentUser.displayName || auth.currentUser.email || 'Membro',
+      page,
+      action,
+      collection: collectionName,
+      estimatedReads: reads,
+      severity: readAuditSeverity(reads),
+      path: location.pathname,
+      userAgent: navigator.userAgent.slice(0, 180),
+      meta
+    });
+  } catch (err) {
+    console.warn('Read audit event error:', err);
+  }
+}
+
+// --- UTILITIES ---
+function formatTs(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  if (isNaN(d)) return '';
+  const day = String(d.getDate()).padStart(2,'0');
+  const mon = String(d.getMonth()+1).padStart(2,'0');
+  const h   = String(d.getHours()).padStart(2,'0');
+  const m   = String(d.getMinutes()).padStart(2,'0');
+  return `${day}/${mon} ${h}:${m}`;
+}
+
+function nowLabel() {
+  const n = new Date();
+  return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+
+function getMemberName() {
+  return auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ')
+    || auth.currentUser?.email?.split('@')[0] || 'Membro';
+}
+
+function getYtId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function ytBtn(url) {
+  if (!url) return '';
+  const id = getYtId(url);
+  if (id) {
+    return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" title="Abrir no YouTube" style="display:inline-block;flex-shrink:0;text-decoration:none">
+      <div style="position:relative;width:80px;height:45px;border-radius:2px;overflow:hidden;border:1px solid rgba(200,130,10,.3);transition:border-color .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.3)'">
+        <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" alt="YouTube" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);transition:background .2s" onmouseover="this.style.background='rgba(0,0,0,.15)'" onmouseout="this.style.background='rgba(0,0,0,.3)'">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="rgba(255,0,0,.85)"/><polygon points="9.5,7 18,12 9.5,17" fill="white"/></svg>
+        </div>
+      </div>
+    </a>`;
+  }
+  return `<a href="${url}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">▶ YouTube</a>`;
+}
+
+function cifraBtn(url) {
+  if (!url) return '';
+  return `<a href="${url}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">♫ Cifra</a>`;
+}
+
+function buildMusicSearchTerm(song, artist='') {
+  return encodeURIComponent(`${song || ''} ${artist || ''}`.trim());
+}
+
+function ytSearchBtn(song, artist='') {
+  const term = buildMusicSearchTerm(song, artist);
+  return `<a href="https://www.youtube.com/results?search_query=${term}" target="_blank" class="btn-icon" onclick="event.stopPropagation()">🔎 Buscar video</a>`;
+}
+
+async function fetchFunctionJson(path, params={}) {
+  const url = new URL(`${FUNCTIONS_BASE_URL}/${path}`);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && `${value}`.trim() !== '') url.searchParams.set(key, value);
+  });
+  const resp = await fetch(url.toString());
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || data.ok === false) throw new Error(data.error || 'Não foi possível concluir a busca automática.');
+  return data;
+}
+
+// --- ROLE AUTH ---
+async function isEmailApproved(email) {
+  const snap = await getDoc(doc(db, 'approved_emails', email.toLowerCase()));
+  return snap.exists();
+}
+
+// --- LOGINS ---
+window.openLogin = () => {
+  document.getElementById('loginModal').classList.add('show');
+};
+window.closeLogin = () => {
+  document.getElementById('loginModal').classList.remove('show');
+};
+window.openLoginMobile = () => {
+  closeMobileMenu();
+  openLogin();
+};
+
+window.doGoogleLogin = async () => {
+  try {
+    await signInWithPopup(auth, provider);
+    closeLogin();
+  } catch (e) {
+    if (e.code !== 'auth/popup-closed-by-user') {
+      document.getElementById('loginError').classList.add('show');
+    }
+  }
+};
+
+window.doLogout = async () => {
+  await signOut(auth);
+  showToast('Até logo!');
+};
+
+// --- AUTH LISTENER ---
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    const approved = await isEmailApproved(user.email);
+    isMember = approved;
+    isLoggedIn = true;
+    const firstName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'Visitante';
+    document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
+    document.getElementById('navUserMobile').textContent = `🎸 ${firstName}`;
+  } else {
+    isLoggedIn = false;
+    isMember   = false;
+  }
+  applyAuth();
+  loadSetlistSnapshot(true);
+  ensureForumSubscription(true);
+  updatePromotionCountdowns();
+});
+
+function applyAuth() {
+  document.body.classList.toggle('logged-in', isLoggedIn);
+  document.body.classList.toggle('is-member', isMember);
+  
+  document.getElementById('loginBtn').style.display  = isLoggedIn ? 'none' : '';
+  document.getElementById('logoutBtn').style.display = isLoggedIn ? '' : 'none';
+  document.getElementById('navUser').style.display   = isLoggedIn ? '' : 'none';
+  
+  document.getElementById('loginBtnMobile').style.display  = isLoggedIn ? 'none' : '';
+  document.getElementById('logoutBtnMobile').style.display = isLoggedIn ? '' : 'none';
+  document.getElementById('navUserMobile').style.display   = isLoggedIn ? '' : 'none';
+  
+  // Expose member elements
+  document.querySelectorAll('.member-only').forEach(el => {
+    el.style.display = isMember ? 'block' : 'none';
+  });
+  document.querySelectorAll('.member-only-flex').forEach(el => {
+    el.style.display = isMember ? 'flex' : 'none';
+  });
+}
+
+// --- SETLIST LOGIC ---
+async function loadSetlistSnapshot(force = false) {
+  if (setlistLoaded && !force) return renderSetlist();
+  await loadSetlist(force);
+  renderSetlist();
+}
+
+async function loadSetlist(force = false) {
+  if (setlistLoaded && !force) return;
+  const ref  = doc(db,'setlists','data');
+  const baseSnap = await getDoc(ref);
+  if (!baseSnap.exists()) {
+    await setDoc(ref,{tab0:[],tab1:[]});
+    setlistData = {tab0:[],tab1:[]};
+    setlistLoaded = true;
+    return;
+  }
+
+  const data = baseSnap.data() || {};
+  const primarySongs = Array.isArray(data[NEXT_SETLIST_KEY]) ? data[NEXT_SETLIST_KEY] : [];
+  const legacySongs = Array.isArray(data[LEGACY_SETLIST_KEY]) ? data[LEGACY_SETLIST_KEY] : [];
+
+  if (!primarySongs.length && legacySongs.length) {
+    await updateDoc(ref, {[NEXT_SETLIST_KEY]: legacySongs});
+    setlistData = { ...data, [NEXT_SETLIST_KEY]: legacySongs };
+  } else {
+    setlistData = data;
+  }
+  setlistLoaded = true;
+}
+
+function getActiveSetlistSongs() {
+  const nextSongs = Array.isArray(setlistData[NEXT_SETLIST_KEY]) ? setlistData[NEXT_SETLIST_KEY] : [];
+  const legacySongs = Array.isArray(setlistData[LEGACY_SETLIST_KEY]) ? setlistData[LEGACY_SETLIST_KEY] : [];
+  return nextSongs.length ? nextSongs : legacySongs;
+}
+
+function getSetlistVoteCounts(song) {
+  const votes = Object.values(song?.voterMap || {});
+  const likes = votes.length ? votes.filter(v => v === 'like').length : (song?.likes || 0);
+  const dislikes = votes.length ? votes.filter(v => v === 'dislike').length : (song?.dislikes || 0);
+  return { likes, dislikes, score: likes - dislikes };
+}
+
+function sortSetlistByRanking(songs) {
+  return songs
+    .map((song, index) => ({ song, index, votes: getSetlistVoteCounts(song) }))
+    .sort((a, b) => {
+      if (b.votes.score !== a.votes.score) return b.votes.score - a.votes.score;
+      if (b.votes.likes !== a.votes.likes) return b.votes.likes - a.votes.likes;
+      return a.index - b.index;
+    })
+    .map(item => item.song);
+}
+
+function renderSetlist() {
+  const c = document.getElementById('setlistContainer');
+  if (!c) return;
+  const songs = getActiveSetlistSongs();
+  const totalSongs = songs.length;
+  const displaySongs = setlistExpanded ? songs : songs.slice(0, 5);
+  
+  const items = displaySongs.map((s,i)=>{
+    const votes = getSetlistVoteCounts(s);
+    const myVote = auth.currentUser?.uid && s.voterMap ? s.voterMap[auth.currentUser.uid] : null;
+    const rankControls = isMember ? `
+        <button class="vote-btn${myVote==='like'?' liked':''}" onclick="voteSetSong(${i},'like');event.stopPropagation()" title="Gostei">
+          👍 <span class="score-num">${votes.likes}</span>
+        </button>
+        <button class="vote-btn${myVote==='dislike'?' disliked':''}" onclick="voteSetSong(${i},'dislike');event.stopPropagation()" title="Não curti">
+          👎 <span class="score-num">${votes.dislikes}</span>
+        </button>
+        <span class="poll-my-vote" title="Ranking">Rank ${votes.score > 0 ? '+' : ''}${votes.score}</span>` : '';
+    return `
+    <li class="setlist-item${isMember?' editable':''}" ${isMember?`draggable="true" data-idx="${i}" ondragstart="dStart(event)" ondragover="dOver(event)" ondrop="dDrop(event)" ondragend="dEnd(event)"`:''}">
+      <span class="setlist-num">${i+1}</span>
+      <div class="setlist-song">${s.song}<div class="setlist-artist">${s.artist}</div></div>
+      <div class="setlist-actions">
+        ${rankControls}
+        ${s.youtube ? ytBtn(s.youtube) : `<button class="btn-icon" onclick="findSetlistYoutube(${i});event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(s.song, s.artist)}`}
+        ${s.cifra ? cifraBtn(s.cifra) : `<button class="btn-icon" onclick="chooseSetlistCifra(${i});event.stopPropagation()">♫ Auto cifra</button>`}
+        ${isMember ? `<button class="btn-icon" onclick="editSetSongLinks(${i});event.stopPropagation()">✎ Links</button>` : ''}
+        ${isMember ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
+      </div>
+    </li>`;
+  }).join('');
+  
+  const toggleBtn = totalSongs > 5 ? `
+    <div style="text-align:center;padding:1rem;border-top:1px solid rgba(200,130,10,.1)">
+      <button class="btn-ghost btn-sm" onclick="toggleSetlistExpand()">
+        ${setlistExpanded ? '▲ Ver menos' : `▼ Ver mais (${totalSongs - 5} ${totalSongs - 5 === 1 ? 'música' : 'músicas'})`}
+      </button>
+    </div>` : '';
+  
+  const addRow = isMember ? `
+    <div class="setlist-add-row">
+      <input class="setlist-input" id="setSong" placeholder="Música">
+      <input class="setlist-input" id="setArtist" placeholder="Artista">
+      <input class="setlist-input" id="setYt" placeholder="YouTube (opcional)" style="flex:.8">
+      <input class="setlist-input" id="setCifra" placeholder="Link de cifra (opcional)" style="flex:.8">
+      <button class="setlist-add-btn" onclick="addSetSong()">+</button>
+    </div>` : '';
+  c.innerHTML = `<div class="setlist-panel">
+    <div class="setlist-panel-header">
+      <span class="setlist-panel-title">Músicas</span>
+      <span style="font-size:.75rem;color:var(--smoke)">${totalSongs} ${totalSongs === 1 ? 'música' : 'músicas'}</span>
+    </div>
+    <ul class="setlist-list">${items}</ul>${toggleBtn}${addRow}</div>`;
+}
+
+window.toggleSetlistExpand = () => {
+  setlistExpanded = !setlistExpanded;
+  renderSetlist();
+};
+
+window.addSetSong = async () => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const song = document.getElementById('setSong').value.trim();
+  const artist = document.getElementById('setArtist').value.trim();
+  const youtube = document.getElementById('setYt').value.trim();
+  const cifra = document.getElementById('setCifra').value.trim();
+  if (!song) { showToast('⚠ Digite o nome da música'); return; }
+  const arr = sortSetlistByRanking([...(setlistData[NEXT_SETLIST_KEY]||[]),{song,artist:artist||'—',youtube,cifra}]);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  renderSetlist();
+  await writeLog('Música adicionada ao setlist', `${song} — ${artist||'—'} (Próximo Ensaio)`, 'setlist');
+  ['setSong','setArtist','setYt','setCifra'].forEach(id => document.getElementById(id).value = '');
+  showToast(`✓ "${song}" adicionada!`);
+};
+
+window.voteSetSong = async (idx, type) => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const uid = auth.currentUser?.uid;
+  if (!uid) { showToast('⚠ Faça login para votar'); return; }
+  const arr = [...getActiveSetlistSongs()].map(song => ({
+    ...song,
+    voterMap: { ...(song.voterMap || {}) }
+  }));
+  const current = arr[idx];
+  if (!current) return;
+
+  const voterMap = { ...(current.voterMap || {}) };
+  if (voterMap[uid] === type) delete voterMap[uid];
+  else voterMap[uid] = type;
+
+  const nextSong = { ...current, voterMap };
+  const counts = getSetlistVoteCounts(nextSong);
+  arr[idx] = {
+    ...nextSong,
+    likes: counts.likes,
+    dislikes: counts.dislikes
+  };
+
+  const ranked = sortSetlistByRanking(arr);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: ranked };
+  await updateDoc(doc(db,'setlists','data'), { [NEXT_SETLIST_KEY]: ranked });
+  renderSetlist();
+};
+
+async function updateSetlistSongLinks(index, updates) {
+  const songs = [...getActiveSetlistSongs()];
+  if (!songs[index]) throw new Error('Música do setlist não encontrada.');
+  songs[index] = { ...songs[index], ...updates };
+  await updateDoc(doc(db, 'setlists', 'data'), { [NEXT_SETLIST_KEY]: songs });
+  return songs[index];
+}
+
+window.editSetSongLinks = async idx => {
+  if (!isMember) return;
+  const arr = [...getActiveSetlistSongs()];
+  const current = arr[idx];
+  if (!current) return;
+  const youtube = prompt(`Link do YouTube para "${current.song}"`, current.youtube || '');
+  if (youtube === null) return;
+  const cifra = prompt(`Link de cifra para "${current.song}"`, current.cifra || '');
+  if (cifra === null) return;
+  arr[idx] = {...current, youtube: youtube.trim(), cifra: cifra.trim()};
+  const ranked = sortSetlistByRanking(arr);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: ranked };
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:ranked});
+  renderSetlist();
+  await writeLog('Links do setlist updated', `${current.song} · YouTube: ${youtube.trim() ? 'sim' : 'nao'} · Cifra: ${cifra.trim() ? 'sim' : 'nao'}`, 'setlist');
+  showToast('Links atualizados.');
+};
+
+window.removeSetSong = async idx => {
+  if (!confirmAction('Deseja realmente remover esta música do setlist?')) return;
+  const arr = [...getActiveSetlistSongs()];
+  const removed = arr[idx];
+  arr.splice(idx,1);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
+  await writeLog('Música removida do setlist', `${removed?.song||'?'} (Próximo Ensaio)`, 'setlist');
+  renderSetlist();
+};
+
+// Draggables
+window.dStart = e=>{ dragSrc=e.currentTarget; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; };
+window.dOver  = e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; };
+window.dDrop  = async e=>{
+  e.preventDefault(); const t=e.currentTarget;
+  if(!dragSrc||dragSrc===t) return;
+  const fi=parseInt(dragSrc.dataset.idx), ti=parseInt(t.dataset.idx);
+  const arr=[...getActiveSetlistSongs()];
+  const [item]=arr.splice(fi,1); arr.splice(ti,0,item);
+  const ranked = sortSetlistByRanking(arr);
+  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: ranked };
+  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:ranked});
+  await writeLog('Setlist reordenado', `${item?.song||'?'}: posição ${fi+1} → ${ti+1} (Próximo Ensaio)`, 'setlist');
+  renderSetlist();
+};
+window.dEnd = e=>{ e.currentTarget.classList.remove('dragging'); dragSrc=null; };
+
+// Auto support links lookup
+window.findSetlistYoutube = async index => {
+  try {
+    const songs = getActiveSetlistSongs();
+    const item = songs[index];
+    if (!item) return;
+    if (item.youtube) {
+      showToast('Esta música já possui vídeo.');
+      return;
+    }
+    showToast('⏳ Buscando vídeo automaticamente...');
+    const data = await fetchFunctionJson('lookup_youtube_link', { song: item.song || '', artist: item.artist || '' });
+    await updateSetlistSongLinks(index, { youtube: data.url });
+    await writeLog('Link de vídeo localizado', `${item.song} — ${item.artist} (Setlist)`, 'setlist');
+    await loadSetlistSnapshot(true);
+    showToast('✓ Vídeo encontrado e salvo no setlist!');
+  } catch (err) {
+    console.error('Setlist youtube error:', err);
+    showToast(`⚠ ${err.message || 'Não foi possível localizar o vídeo.'}`);
+  }
+};
+
+window.chooseSetlistCifra = async index => {
+  try {
+    const songs = getActiveSetlistSongs();
+    const item = songs[index];
+    if (!item) return;
+    if (item.cifra) {
+      showToast('Esta música já possui cifra.');
+      return;
+    }
+    showToast('⏳ Buscando cifra automaticamente...');
+    const data = await fetchFunctionJson('lookup_cifra_candidates', { song: item.song || '', artist: item.artist || '' });
+    const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+    if (!candidates.length) {
+      showToast('⚠ Nenhuma opção de cifra encontrada.');
+      return;
+    }
+    await updateSetlistSongLinks(index, { cifra: candidates[0].url });
+    await writeLog('Link de cifra localizado', `${item.song} — ${item.artist} (Setlist)`, 'setlist');
+    await loadSetlistSnapshot(true);
+    showToast('✓ Primeira cifra encontrada foi salva no setlist!');
+  } catch (err) {
+    console.error('Setlist cifra error:', err);
+    showToast(`⚠ ${err.message || 'Não foi possível buscar a cifra.'}`);
+  }
+};
+
+// --- FORUM LOGIC ---
+async function ensureForumSubscription(force = false) {
+  if (forumSubscribed && !force) return;
+  const snap = await getDocs(query(collection(db,'forum'), orderBy('createdAt','desc')));
+  auditReadEvent({ action: 'forum-load', collectionName: 'forum', estimatedReads: snap.size });
+  forumCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  forumSubscribed = true;
+  renderForum();
+}
+
+async function ensureForumPostsSubscription(threadId, force = false) {
+  if (forumPostSubscriptions[threadId] && !force) return;
+  const snap = await getDocs(query(collection(db,'forum',threadId,'posts'), orderBy('createdAt','asc')));
+  auditReadEvent({ action: 'forum-posts-load', collectionName: `forum/${threadId}/posts`, estimatedReads: snap.size, meta: { threadId } });
+  forumPostsCache[threadId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+  forumPostSubscriptions[threadId] = true;
+  renderForum();
+}
+
+function getForumPostsForRender(threadId, threadData) {
+  const legacyPosts = (threadData.posts || []).map((post, index) => ({
+    ...post,
+    __legacy: true,
+    __postKey: `legacy-${index}`,
+    __legacyIndex: index
+  }));
+  const modernPosts = (forumPostsCache[threadId] || []).map(({id, data}) => ({
+    ...data,
+    __legacy: false,
+    __postKey: id
+  }));
+  return [...legacyPosts, ...modernPosts];
+}
+
+async function getForumThreadSnap(threadId) {
+  const snap = await getDoc(doc(db,'forum',threadId));
+  if (!snap.exists()) return null;
+  if (snap.data().closed) {
+    showToast('⚠ Este fórum já foi encerrado');
+    return null;
+  }
+  return snap;
+}
+
+async function updateForumLegacyPost(threadId, legacyIndex, updater) {
+  const snap = await getForumThreadSnap(threadId);
+  if (!snap) return;
+  const thread = snap.data();
+  const posts = [...(thread.posts || [])];
+  const current = posts[legacyIndex];
+  if (!current) return;
+  posts[legacyIndex] = updater({ ...current });
+  await updateDoc(doc(db,'forum',threadId), { posts });
+}
+
+async function updateForumModernPost(threadId, postId, updater) {
+  const threadSnap = await getForumThreadSnap(threadId);
+  if (!threadSnap) return;
+  const postRef = doc(db,'forum',threadId,'posts',postId);
+  const postSnap = await getDoc(postRef);
+  if (!postSnap.exists()) return;
+  const next = updater({ ...postSnap.data() });
+  await updateDoc(postRef, next);
+}
+
+window.votePost = async (threadId, postIdx, type) => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const uid  = auth.currentUser?.uid;
+  const thread = forumCache.find(t => t.id === threadId);
+  const post = getForumPostsForRender(threadId, thread?.data || {}).find(p => p.__postKey === postIdx);
+  if (!post) return;
+  const mutatePost = current => {
+    const reactions = {...(current.reactions||{})};
+    if (reactions[uid] === type) delete reactions[uid];
+    else reactions[uid] = type;
+    return { ...current, reactions };
+  };
+  if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
+  else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
+};
+
+window.toggleThread = async (id, el) => {
+  const body = document.getElementById(`fb_${id}`); if(!body) return;
+  const open = body.classList.toggle('open');
+  el.querySelector('.forum-chevron').classList.toggle('open',open);
+  await updateDoc(doc(db,'forum',id),{open});
+  const thread = forumCache.find(t => t.id === id);
+  if (thread) thread.data = { ...thread.data, open };
+  if (open) await ensureForumPostsSubscription(id, true);
+  renderForum();
+};
+
+window.addPost = async id => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const text = document.getElementById(`fMsg_${id}`)?.value.trim();
+  if (!text) { showToast('⚠ Escreva algo'); return; }
+  const snap = await getForumThreadSnap(id);
+  if (!snap) return;
+  await addDoc(collection(db,'forum',id,'posts'), {
+    author: getMemberName(),
+    text,
+    date: nowLabel(),
+    reactions:{},
+    replies:[],
+    authorUid: auth.currentUser?.uid,
+    createdAt: serverTimestamp()
+  });
+  await ensureForumPostsSubscription(id, true);
+  const input = document.getElementById(`fMsg_${id}`);
+  if (input) input.value = '';
+  showToast('✓ Comentário enviado!');
+};
+
+window.addForumThread = async () => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const title=document.getElementById('newThreadTitle').value.trim();
+  if (!title) { showToast('⚠ Digite o título'); return; }
+  await addDoc(collection(db,'forum'),{title,date:new Date().toLocaleDateString('pt-BR'),open:true,closed:false,closedAt:null,createdAt:serverTimestamp()});
+  await ensureForumSubscription(true);
+  await writeLog('Tópico de fórum criado', title, 'forum');
+  document.getElementById('newThreadTitle').value='';
+  showToast('✓ Tópico criado!');
+};
+
+window.deleteThread = async id => {
+  if (!confirmAction('Tem certeza que deseja excluir este tópico do fórum?')) return;
+  const snap = await getDoc(doc(db,'forum',id));
+  const title = snap.exists() ? snap.data().title : id;
+  const postsSnap = await getDocs(collection(db,'forum',id,'posts'));
+  for (const postDoc of postsSnap.docs) {
+    await deleteDoc(postDoc.ref);
+  }
+  await deleteDoc(doc(db,'forum',id));
+  delete forumPostsCache[id];
+  delete forumPostSubscriptions[id];
+  await ensureForumSubscription(true);
+  await writeLog('Tópico excluído', title, 'forum');
+  showToast('Tópico excluído.');
+};
+
+function renderForum() {
+  const c = document.getElementById('forumContainer');
+  const hc = document.getElementById('forumHistoryContainer');
+  const hBtn = document.getElementById('forumHistoryBtn');
+  if (!c) return;
+  if (!forumCache.length) {
+    c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhum ensaio registrado ainda.</p>';
+    if (hc) hc.innerHTML = '';
+    if (hBtn) hBtn.style.display = 'none';
+    return;
+  }
+  const uid = auth.currentUser?.uid || null;
+  const openThreads = forumCache.filter(({data:t}) => t.closed !== true);
+  const closedThreads = forumCache.filter(({data:t}) => t.closed === true);
+
+  const buildThread = ({id, data: t}) => {
+    const threadClosed = t.closed === true;
+    const needsPostLoad = t.open && !forumPostsCache[id] && !forumPostSubscriptions[id];
+    if (needsPostLoad) {
+      forumPostSubscriptions[id] = 'loading';
+      setTimeout(() => ensureForumPostsSubscription(id, true), 0);
+    }
+    const threadPosts = getForumPostsForRender(id, t);
+    const posts = threadPosts.map((p, pi) => {
+      const reactions = p.reactions || {};
+      const likes     = Object.values(reactions).filter(v=>v==='like').length;
+      const dislikes  = Object.values(reactions).filter(v=>v==='dislike').length;
+      const myReact   = uid ? reactions[uid] : null;
+
+      // Replies
+      const replies = p.replies || [];
+      const repliesHtml = replies.length ? `<div class="forum-replies">${replies.map((rp, rpi) => {
+        const rr = rp.reactions || {};
+        const rLikes = Object.values(rr).filter(v=>v==='like').length;
+        const rDislikes = Object.values(rr).filter(v=>v==='dislike').length;
+        const rMy = uid ? rr[uid] : null;
+        const rpForm = isMember && !threadClosed
+          ? `<div class="frp-rform" style="display:none" id="frpForm_${id}_${p.__postKey}_${rpi}">
+              <input placeholder="Responder..." id="frpInput_${id}_${p.__postKey}_${rpi}" onkeydown="if(event.key==='Enter')submitFrpReply('${id}','${p.__postKey}',${rpi})">
+              <button onclick="submitFrpReply('${id}','${p.__postKey}',${rpi})">Enviar</button>
+            </div>` : '';
+        return `<div class="frp">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
+            <div class="post-avatar" style="width:24px;height:24px;font-size:.6rem">${rp.author.charAt(0)}</div>
+            <span class="post-author">${rp.author}</span><span class="post-date">${rp.date}</span>
+            ${isMember?`<button class="lb-cdel" onclick="delFrp('${id}','${p.__postKey}',${rpi})">✕</button>`:''}
+          </div>
+          <div class="post-text" style="font-size:.82rem">${rp.text}</div>
+          <div class="frp-act">
+            <button class="fr-rbtn${rMy==='like'?' fl':''}" onclick="frpReact('${id}','${p.__postKey}',${rpi},'like')" ${(!isMember||threadClosed)?'disabled':''}>👍 ${rLikes||''}</button>
+            <button class="fr-rbtn${rMy==='dislike'?' fd':''}" onclick="frpReact('${id}','${p.__postKey}',${rpi},'dislike')" ${(!isMember||threadClosed)?'disabled':''}>👎 ${rDislikes||''}</button>
+            ${isMember&&!threadClosed?`<button class="frp-rp" onclick="toggleFrpForm('${id}','${p.__postKey}',${rpi})">Responder</button>`:''}
+          </div>
+          ${rpForm}
+        </div>`;
+      }).join('')}</div>` : '';
+
+      const replyForm = isMember && !threadClosed
+        ? `<div class="frp-rform" id="frForm_${id}_${p.__postKey}">
+            <input placeholder="Responder a ${p.author}..." id="frInput_${id}_${p.__postKey}" onkeydown="if(event.key==='Enter')submitFrpReply('${id}','${p.__postKey}',-1)">
+            <button onclick="submitFrpReply('${id}','${p.__postKey}',-1)">Responder</button>
+          </div>` : '';
+
+      const likeBtn = `<button class="react-btn${myReact==='like'?' liked':''}"
+        ${(!isMember||threadClosed)?'disabled':''}
+        onclick="votePost('${id}','${p.__postKey}','like')"
+        title="${myReact==='like'?'Remover like':'Curtir'}">
+        👍 ${likes||''}
+      </button>`;
+      const dislikeBtn = `<button class="react-btn${myReact==='dislike'?' disliked':''}"
+        ${(!isMember||threadClosed)?'disabled':''}
+        onclick="votePost('${id}','${p.__postKey}','dislike')"
+        title="${myReact==='dislike'?'Remover dislike':'Não curtir'}">
+        👎 ${dislikes||''}
+      </button>`;
+
+      return `
+      <div class="forum-post">
+        <div class="post-avatar">${p.author.charAt(0)}</div>
+        <div class="post-content">
+          <div class="post-meta"><span class="post-author">${p.author}</span><span class="post-date">${p.date}</span></div>
+          <div class="post-text">${p.text}</div>
+          <div class="post-reactions">${likeBtn}${dislikeBtn}
+            ${isMember&&!threadClosed?`<button class="reply-btn" onclick="toggleFrForm('${id}','${p.__postKey}')">Responder</button>`:''}
+          </div>
+          ${repliesHtml}
+          ${replyForm}
+        </div>
+      </div>`;
+    }).join('');
+    
+    const emptyPostsHtml = needsPostLoad
+      ? '<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Carregando comentários…</p>'
+      : '<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Nenhum comentário ainda.</p>';
+    
+    const mainReplyForm = isMember && !threadClosed ? `
+      <div class="forum-reply-form" style="margin-top:1rem">
+        <div class="form-group" style="flex:1"><input type="text" id="fMsg_${id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${id}')"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${id}')">Enviar</button></div>
+      </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-top:.5rem">${threadClosed?'Este fórum foi encerrado e está disponível apenas para consulta.':'Apenas membros podem comentar.'}</p>`;
+    
+    const delBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
+    const statusHtml = threadClosed ? '<div class="poll-status-closed">🔒 Fórum encerrado</div>' : '<div class="poll-status-open">🟢 Fórum aberto</div>';
+    const closeMeta = threadClosed && t.closedAt ? ` · encerrado em ${formatTs(t.closedAt)}` : '';
+    
+    return `<div class="forum-thread">
+      <div class="forum-thread-header" onclick="toggleThread('${id}',this)">
+        <div>
+          <div class="forum-thread-title">${t.title}</div>
+          <div class="forum-thread-meta">${threadPosts.length} comentário${threadPosts.length!==1?'s':''} · ${t.date}${t.createdAt ? ` às ${formatTs(t.createdAt).split(' ')[1]}` : ''}${closeMeta}</div>
+          <div style="margin-top:.35rem">${statusHtml}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">${delBtn}<span class="forum-chevron${t.open?' open':''}">▼</span></div>
+      </div>
+      <div class="forum-body${t.open?' open':''}" id="fb_${id}">
+        <div class="forum-posts">${posts||emptyPostsHtml}</div>
+        ${mainReplyForm}
+      </div>
+    </div>`;
+  };
+
+  c.innerHTML = openThreads.length
+    ? openThreads.map(buildThread).join('')
+    : '<p style="color:var(--smoke);font-style:italic">Nenhum fórum aberto no momento.</p>';
+
+  if (hBtn) {
+    hBtn.style.display = closedThreads.length ? 'inline-flex' : 'none';
+    hBtn.innerHTML = forumHistoryOpen
+      ? `📂 Ocultar histórico do fórum (<span id="forumClosedCount">${closedThreads.length}</span>)`
+      : `🗂 Histórico do fórum (<span id="forumClosedCount">${closedThreads.length}</span>)`;
+  }
+  if (hc) {
+    hc.style.display = forumHistoryOpen && closedThreads.length ? 'block' : 'none';
+    hc.innerHTML = forumHistoryOpen && closedThreads.length
+      ? closedThreads.map(buildThread).join('')
+      : '';
+  }
+}
+
+window.toggleForumHistory = () => {
+  forumHistoryOpen = !forumHistoryOpen;
+  renderForum();
+};
+
+window.submitFrpReply = async (threadId, postKey, replyIdx) => {
+  if (!isMember) return;
+  const inputId = replyIdx >= 0
+    ? `frpInput_${threadId}_${postKey}_${replyIdx}`
+    : `frInput_${threadId}_${postKey}`;
+  const input = document.getElementById(inputId);
+  const text = input?.value.trim();
+  if (!text) return;
+
+  const thread = forumCache.find(t => t.id === threadId);
+  const post = getForumPostsForRender(threadId, thread?.data || {}).find(p => p.__postKey === postKey);
+  if (!post) return;
+  const mutatePost = current => {
+    const replies = [...(current.replies || [])];
+    replies.push({author: getMemberName(), text, date: nowLabel(), reactions: {}, authorUid: auth.currentUser?.uid});
+    return { ...current, replies };
+  };
+  if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
+  else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
+  if (input) input.value = '';
+  showToast('✓ Resposta adicionada!');
+};
+
+window.toggleFrpForm = (threadId, postKey, replyIdx) => {
+  const id = replyIdx >= 0 ? `frpForm_${threadId}_${postKey}_${replyIdx}` : `frForm_${threadId}_${postKey}`;
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.toggleFrForm = (threadId, postKey) => {
+  const el = document.getElementById(`frForm_${threadId}_${postKey}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.frpReact = async (threadId, postKey, replyIdx, type) => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const uid = auth.currentUser?.uid;
+  const thread = forumCache.find(t => t.id === threadId);
+  const post = getForumPostsForRender(threadId, thread?.data || {}).find(p => p.__postKey === postKey);
+  if (!post) return;
+  const mutatePost = current => {
+    const replies = [...(current.replies || [])];
+    const reply = {...replies[replyIdx]};
+    if (!reply) return current;
+    const r = {...(reply.reactions||{})};
+    if (r[uid] === type) delete r[uid];
+    else r[uid] = type;
+    reply.reactions = r;
+    replies[replyIdx] = reply;
+    return { ...current, replies };
+  };
+  if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
+  else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
+};
+
+window.delFrp = async (threadId, postKey, replyIdx) => {
+  if (!confirmAction('Excluir esta resposta?')) return;
+  if (!isMember) return;
+  const thread = forumCache.find(t => t.id === threadId);
+  const post = getForumPostsForRender(threadId, thread?.data || {}).find(p => p.__postKey === postKey);
+  if (!post) return;
+  const mutatePost = current => {
+    const replies = [...(current.replies || [])];
+    replies.splice(replyIdx, 1);
+    return { ...current, replies };
+  };
+  if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
+  else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
+  showToast('Resposta excluída.');
+};
+
+// --- PROMOTION COUNTDOWNS ---
+async function updatePromotionCountdowns() {
+  try {
+    const now = Date.now();
+    let state = {};
+    try {
+      const stateSnap = await getDoc(promotionStateRef);
+      state = stateSnap.exists() ? (stateSnap.data() || {}) : {};
+    } catch (stateErr) {
+      console.warn('[COUNTDOWN] Não foi possível ler promotion_state, usando fallback local.', stateErr);
+    }
+    if (state.promotionPaused === true) {
+      renderPromotionNav(0, true);
+      return;
+    }
+    const stateNextPromo = toDateOrNull(state.nextPromotionDate);
+    const nextPromoDate = stateNextPromo || getNextFriday(new Date(now + 60000));
+    const nextPromo = nextPromoDate.getTime();
+    const timeUntil = nextPromo - now;
+    
+    renderPromotionNav(timeUntil);
+  } catch (e) {
+    console.error('[COUNTDOWN] Erro ao atualizar:', e);
+  }
+}
+
+function getNextFriday(fromDate = new Date()) {
+  const date = new Date(fromDate);
+  date.setSeconds(0, 0);
+  const dayOfWeek = date.getDay();
+  let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+  const isFridayAfterCutoff = dayOfWeek === 5 && (
+    date.getHours() > 23 ||
+    (date.getHours() === 23 && date.getMinutes() >= 59)
+  );
+  if (daysUntilFriday === 0 && isFridayAfterCutoff) {
+    daysUntilFriday = 7;
+  }
+  date.setDate(date.getDate() + daysUntilFriday);
+  date.setHours(23, 59, 0, 0);
+  return date;
+}
+
+function toDateOrNull(value) {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') return value.toDate();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function renderPromotionNav(timeUntil, paused = false) {
+  const navBadge = document.getElementById('promoCountdownNav');
+  const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
+  const timeLabel = formatTimeRemaining(timeUntil);
+  const shouldShowNav = !paused && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+
+  if (navBadge) {
+    navBadge.textContent = timeLabel;
+    navBadge.style.display = shouldShowNav ? 'inline-block' : 'none';
+  }
+  if (navBadgeMobile) {
+    navBadgeMobile.textContent = timeLabel;
+    navBadgeMobile.style.display = shouldShowNav ? 'inline-block' : 'none';
+  }
+}
+
+function formatTimeRemaining(ms) {
+  if (ms <= 0) return 'Encerrando...';
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+// --- NAVIGATION MOBILE ---
+window.toggleMobileMenu = () => {
+  const menu = document.getElementById('navMobileMenu');
+  const btn  = document.getElementById('navHamburger');
+  menu.classList.toggle('open');
+  btn.classList.toggle('open');
+};
+
+window.closeMobileMenu = () => {
+  document.getElementById('navMobileMenu').classList.remove('open');
+  document.getElementById('navHamburger').classList.remove('open');
+};
+
+// --- FOCUS LISTENER ---
+window.addEventListener('focus', () => {
+  loadSetlistSnapshot(true);
+  ensureForumSubscription(true);
+});
+
+// --- WAKEUP ON LOAD ---
+window.addEventListener('load', () => {
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 500);
+  }
+});
+</script>
+</body>
+</html>

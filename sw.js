@@ -1,5 +1,15 @@
-const CACHE_NAME = 'retorica-v6';
-const ASSETS = ['./index.html', './logs.html', './noticias.html', './manifest.json'];
+const CACHE_NAME = 'retorica-v7';
+const ASSETS = [
+  './index.html',
+  './logs.html',
+  './noticias.html',
+  './sugestoes.html',
+  './setlist.html',
+  './repertorio.html',
+  './style.css',
+  './firebase-init.js',
+  './manifest.json'
+];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
