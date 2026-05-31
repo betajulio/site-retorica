@@ -143,7 +143,6 @@
     <button class="btn-ghost btn-sm" id="logoutBtnMobile" onclick="doLogout();closeMobileMenu()" style="display:none">Sair</button>
   </div>
 </div>
-</div>
 
 <!-- NEWS POPUP -->
 <a class="news-popup" id="newsPopup" href="noticias.html" onclick="dismissNewsPopup()">
@@ -196,6 +195,10 @@
 <section id="galeria">
   <div class="section-header">
     <div class="section-number">02</div>
+<!-- 07 GALERIA -->
+<section id="galeria">
+  <div class="section-header">
+    <div class="section-number">07</div>
     <div class="section-title-wrap">
       <h2>Galeria</h2>
       <p>Memórias da Toca do Mineiro</p>
@@ -424,7 +427,7 @@ import {
   collection, doc, onSnapshot, addDoc, deleteDoc, updateDoc, setDoc, getDoc, getDocs, orderBy, query, serverTimestamp, runTransaction, Timestamp, increment,
   signInWithPopup, signOut, onAuthStateChanged,
   storageRef, uploadBytesResumable, getDownloadURL, deleteObject
-} from "./firebase-init.js";
+} from ./firebase-init.js;
 
 // ─── STATE ─────────────────────────────────────────────────────────
 let isLoggedIn    = false; // true = qualquer Google user logado
@@ -1208,9 +1211,19 @@ onAuthStateChanged(auth, async user => {
   if (isMember) {
     ensureUpcomingRehearsalForum().catch(err => console.warn('Upcoming forum ensure error:', err));
   }
-    if (currentSection === 'membros') loadMembersSnapshot();
+  if (currentSection === 'membros') loadMembersSnapshot();
+  if (currentSection === 'setlist') loadSetlistSnapshot();
+  if (currentSection === 'repertorio') loadRepertorioSnapshot();
+  if (currentSection === 'sugestoes') loadSuggestionsSnapshot();
+  if (currentSection === 'enquetes') loadPollsSnapshot(true);
+  if (currentSection === 'forum') ensureForumSubscription();
   if (currentSection === 'galeria') ensureGallerySubscription();
   renderMembersFromCache();
+  renderSuggestions();
+  renderPolls();
+  renderForum();
+  renderSetlist();
+  renderRepFromCache();
 });
 
 function applyAuth() {
@@ -1587,4 +1600,3150 @@ window.findSuggestionYoutube = async id => {
   }
 };
 
-// â”€â”€â”€ MEMBERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+// ─── MEMBERS ───────────────────────────────────────────────────────
+const INSTRUMENTS = ['Vocal','Guitarra','Guitarra Base','Baixo','Bateria','Teclado','Violão','Outro'];
+
+function renderMembersFromCache() {
+  const grid = document.getElementById('membersGrid');
+  if (!membersCache.length) {
+    grid.innerHTML = '<p style="color:var(--smoke);font-style:italic;grid-column:1/-1">Nenhum membro cadastrado ainda.</p>';
+    return;
+  }
+  grid.innerHTML = membersCache.map(({id, data: m}) => {
+    const instruments = Array.isArray(m.instruments) ? m.instruments : (m.role ? [m.role] : []);
+    const tags    = instruments.map(i => `<span class="instrument-tag">${i}</span>`).join('');
+    const recommendationsHtml = renderMemberRecommendations(m.recommendations, m.recommendationMeta, m.recommendationsList);
+    const avatar  = m.photo
+      ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
+      : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
+    const editCb  = isMember ? `onclick="openEditMember('${id}')"` : '';
+    const hint    = isMember ? `<div class="member-edit-hint">✏ Editar</div>` : '';
+    const rmBtn   = isMember ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${id}')">✕</button>` : '';
+    return `<div class="member-card${isMember?' editable':''}" ${editCb}>
+      ${rmBtn}${avatar}
+      <div class="member-name">${m.name}</div>
+      <div class="member-instruments">${tags}</div>
+      ${m.since ? `<div class="member-since">${sinceLabel(m.since)}</div>` : ''}
+      ${recommendationsHtml}
+      ${hint}
+    </div>`;
+  }).join('');
+}
+
+async function loadMembersSnapshot(force = false) {
+  if (membersLoaded && !force) return;
+  const snap = await getDocs(query(collection(db,'members'), orderBy('createdAt','asc')));
+  membersCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  membersLoaded = true;
+  renderMembersFromCache();
+}
+
+// Comprime imagem para max 800px e qualidade 0.75 — evita estourar o limite de 1MB do Firestore
+function compressImage(file, maxPx = 800, quality = 0.75) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onerror = () => rej(new Error('Falha ao ler o arquivo. Tente novamente.'));
+    reader.onload = ev => {
+      const img = new Image();
+      img.onerror = () => rej(new Error('Arquivo inválido. Use JPG, PNG ou WebP.'));
+      img.onload = () => {
+        // Calcula proporção
+        let { width, height } = img;
+        if (width > maxPx || height > maxPx) {
+          if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+          else { width = Math.round(width * maxPx / height); height = maxPx; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const b64 = canvas.toDataURL('image/jpeg', quality);
+        // Checa tamanho final (~750KB em base64 = ~562KB real — seguro para Firestore)
+        const kb = Math.round(b64.length * 0.75 / 1024);
+        if (kb > 750) {
+          // Tenta qualidade menor
+          const b64low = canvas.toDataURL('image/jpeg', 0.5);
+          const kblow  = Math.round(b64low.length * 0.75 / 1024);
+          if (kblow > 750) { rej(new Error(`Imagem ainda grande após compressão (${kblow}KB). Use uma foto menor ou cole uma URL.`)); return; }
+          res(b64low);
+        } else {
+          res(b64);
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Mantém fileToBase64 para compatibilidade (galeria usa Storage, não precisa comprimir)
+function fileToBase64(file) {
+  return new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+}
+
+function readImageFile(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onerror = () => rej(new Error('Falha ao ler o arquivo.'));
+    reader.onload = ev => res(ev.target.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onerror = () => rej(new Error('Arquivo inválido. Use JPG, PNG ou WebP.'));
+    img.onload = () => res(img);
+    img.src = src;
+  });
+}
+
+function exportMemberCrop(state, size = 800) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const ratio = size / state.viewSize;
+  ctx.fillStyle = '#050403';
+  ctx.fillRect(0, 0, size, size);
+  ctx.drawImage(
+    state.img,
+    (state.x - state.drawW / 2) * ratio,
+    (state.y - state.drawH / 2) * ratio,
+    state.drawW * ratio,
+    state.drawH * ratio
+  );
+
+  for (const quality of [0.82, 0.68, 0.52]) {
+    const b64 = canvas.toDataURL('image/jpeg', quality);
+    const kb = Math.round(b64.length * 0.75 / 1024);
+    if (kb <= 750) return { b64, kb };
+  }
+  throw new Error('Recorte ainda ficou grande demais. Use uma foto menor.');
+}
+
+function drawMemberCrop(state) {
+  const { canvas, ctx, img, viewSize } = state;
+  const baseScale = Math.max(viewSize / img.width, viewSize / img.height);
+  const scale = baseScale * state.zoom;
+  state.drawW = img.width * scale;
+  state.drawH = img.height * scale;
+  const minX = viewSize - state.drawW / 2;
+  const maxX = state.drawW / 2;
+  const minY = viewSize - state.drawH / 2;
+  const maxY = state.drawH / 2;
+  state.x = state.drawW > viewSize ? Math.min(maxX, Math.max(minX, state.x)) : viewSize / 2;
+  state.y = state.drawH > viewSize ? Math.min(maxY, Math.max(minY, state.y)) : viewSize / 2;
+  ctx.clearRect(0, 0, viewSize, viewSize);
+  ctx.fillStyle = '#050403';
+  ctx.fillRect(0, 0, viewSize, viewSize);
+  ctx.drawImage(img, state.x - state.drawW / 2, state.y - state.drawH / 2, state.drawW, state.drawH);
+}
+
+async function openMemberPhotoCropper(file) {
+  const dataUrl = await readImageFile(file);
+  const img = await loadImage(dataUrl);
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'photo-crop-overlay';
+    overlay.innerHTML = `
+      <div class="photo-crop-box">
+        <div class="photo-crop-title">Ajustar foto do perfil</div>
+        <div class="photo-crop-stage"><canvas width="320" height="320"></canvas></div>
+        <input class="photo-crop-zoom" type="range" min="1" max="3" step="0.01" value="1">
+        <div style="font-size:.72rem;color:var(--smoke);text-align:center">Arraste a imagem e ajuste o zoom</div>
+        <div class="photo-crop-actions">
+          <button class="btn-ghost btn-sm" type="button" data-cancel>Cancelar</button>
+          <button class="btn btn-sm" type="button" data-apply>Usar recorte</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const canvas = overlay.querySelector('canvas');
+    const stage = overlay.querySelector('.photo-crop-stage');
+    const zoom = overlay.querySelector('.photo-crop-zoom');
+    const state = {
+      img,
+      canvas,
+      ctx: canvas.getContext('2d'),
+      viewSize: 320,
+      zoom: 1,
+      x: 160,
+      y: 160,
+      drawW: 0,
+      drawH: 0,
+      dragging: false,
+      lastX: 0,
+      lastY: 0
+    };
+    drawMemberCrop(state);
+
+    zoom.addEventListener('input', () => {
+      state.zoom = Number(zoom.value) || 1;
+      drawMemberCrop(state);
+    });
+    const startDrag = ev => {
+      ev.preventDefault();
+      state.dragging = true;
+      stage.setPointerCapture?.(ev.pointerId);
+      state.lastX = ev.clientX;
+      state.lastY = ev.clientY;
+    };
+    const moveDrag = ev => {
+      if (!state.dragging) return;
+      state.x += ev.clientX - state.lastX;
+      state.y += ev.clientY - state.lastY;
+      state.lastX = ev.clientX;
+      state.lastY = ev.clientY;
+      drawMemberCrop(state);
+    };
+    const endDrag = () => { state.dragging = false; };
+    stage.addEventListener('pointerdown', startDrag);
+    stage.addEventListener('pointermove', moveDrag);
+    stage.addEventListener('pointerup', endDrag);
+    stage.addEventListener('pointercancel', endDrag);
+
+    overlay.querySelector('[data-cancel]').onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+    overlay.querySelector('[data-apply]').onclick = () => {
+      try {
+        const result = exportMemberCrop(state);
+        overlay.remove();
+        resolve(result);
+      } catch (err) {
+        showToast(`⚠ ${err.message}`);
+      }
+    };
+  });
+}
+
+window.previewPhoto = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const errEl = document.getElementById('photoError');
+  errEl.style.display = 'none';
+  // Valida tipo
+  if (!f.type.startsWith('image/')) {
+    errEl.textContent = '⚠ Arquivo não é uma imagem. Use JPG, PNG ou WebP.';
+    errEl.style.display = 'block';
+    e.target.value = '';
+    return;
+  }
+  // Valida tamanho bruto (máx 10MB antes de comprimir)
+  if (f.size > 10 * 1024 * 1024) {
+    errEl.textContent = '⚠ Arquivo muito grande (máx 10MB). Escolha uma foto menor.';
+    errEl.style.display = 'block';
+    e.target.value = '';
+    return;
+  }
+  try {
+    const cropped = await openMemberPhotoCropper(f);
+    if (!cropped) {
+      e.target.value = '';
+      return;
+    }
+    memberPhotoCroppedDataUrl = cropped.b64;
+    const p = document.getElementById('editPhotoPreview');
+    p.src = memberPhotoCroppedDataUrl; p.style.display = 'block';
+    document.getElementById('editPhotoUrl').value = '';
+    errEl.textContent = `✓ Recorte salvo (${cropped.kb}KB)`;
+    errEl.style.display = 'block';
+    errEl.style.color = '#6ee7b7';
+  } catch(err) {
+    errEl.textContent = `⚠ ${err.message}`;
+    errEl.style.display = 'block';
+    errEl.style.color = '#fca5a5';
+    e.target.value = '';
+  }
+};
+
+window.previewUrl = url => {
+  const p = document.getElementById('editPhotoPreview');
+  if (url) { p.src=url; p.style.display='block'; } else p.style.display='none';
+  document.getElementById('editPhotoFile').value = '';
+  memberPhotoCroppedDataUrl = '';
+};
+
+function resetEditModal() {
+  ['editMemberId','editMemberName','editMemberSince','editMemberContact','editPhotoUrl'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('editPhotoFile').value='';
+  const p = document.getElementById('editPhotoPreview'); p.src=''; p.style.display='none';
+  const e = document.getElementById('photoError'); e.style.display='none'; e.textContent='';
+  memberPhotoCroppedDataUrl = '';
+  recommendationThumbUploads = {};
+  editingMemberRecommendationMeta = {};
+  editingMemberRecommendationItems = [];
+  renderMemberRecommendationEditor();
+  INSTRUMENTS.forEach(i => { const cb=document.querySelector(`#editInstrumentsCheck input[value="${i}"]`); if(cb) cb.checked=false; });
+}
+
+window.openAddMember = () => {
+  resetEditModal();
+  document.getElementById('editModalTitle').textContent = 'Novo Membro';
+  document.getElementById('editModalSub').textContent   = 'Preencha os dados do novo integrante';
+  document.getElementById('editMemberModal').classList.add('show');
+};
+
+window.openEditMember = async id => {
+  if (!isMember) return;
+  resetEditModal();
+  const snap = await getDoc(doc(db,'members',id));
+  if (!snap.exists()) return;
+  const m = snap.data();
+  document.getElementById('editMemberId').value      = id;
+  document.getElementById('editMemberName').value    = m.name||'';
+  document.getElementById('editMemberSince').value   = m.since||'';
+  document.getElementById('editMemberContact').value = m.contact||'';
+  editingMemberRecommendationMeta = normalizeRecommendationMeta(m.recommendationMeta);
+  renderMemberRecommendationEditor(normalizeMemberRecommendationItems(m.recommendations, m.recommendationMeta, m.recommendationsList));
+  if (m.photo) { const p=document.getElementById('editPhotoPreview'); p.src=m.photo; p.style.display='block'; if(m.photo.startsWith('http')) document.getElementById('editPhotoUrl').value=m.photo; }
+  (Array.isArray(m.instruments)?m.instruments:(m.role?[m.role]:[])).forEach(i=>{ const cb=document.querySelector(`#editInstrumentsCheck input[value="${i}"]`); if(cb) cb.checked=true; });
+  document.getElementById('editModalTitle').textContent = 'Editar Membro';
+  document.getElementById('editModalSub').textContent   = m.name;
+  document.getElementById('editMemberModal').classList.add('show');
+};
+
+window.closeEditMember = () => document.getElementById('editMemberModal').classList.remove('show');
+
+window.saveMember = async () => {
+  const name    = document.getElementById('editMemberName').value.trim();
+  const since   = document.getElementById('editMemberSince').value;
+  const contact = document.getElementById('editMemberContact').value.trim();
+  const instruments = Array.from(document.querySelectorAll('#editInstrumentsCheck input:checked')).map(cb=>cb.value);
+  if (!name) { showToast('⚠ Digite o nome'); return; }
+  if (!instruments.length) { showToast('⚠ Selecione ao menos um instrumento'); return; }
+
+  const errEl = document.getElementById('photoError');
+  errEl.style.display = 'none';
+
+  let photo = '';
+  const fi = document.getElementById('editPhotoFile');
+  const ui = document.getElementById('editPhotoUrl').value.trim();
+
+  if (memberPhotoCroppedDataUrl) {
+    photo = memberPhotoCroppedDataUrl;
+  } else if (fi.files[0]) {
+    showToast('⚠ Ajuste o recorte da foto antes de salvar');
+    return;
+  } else if (ui) {
+    photo = ui;
+  } else {
+    const eid = document.getElementById('editMemberId').value;
+    if (eid) { const s=await getDoc(doc(db,'members',eid)); if(s.exists()) photo=s.data().photo||''; }
+  }
+
+  const eid  = document.getElementById('editMemberId').value;
+  const recommendationItems = getMemberRecommendationItemsFromInputs();
+  const recommendationsList = recommendationItems.length
+    ? await enrichMemberRecommendationItems(recommendationItems)
+    : [];
+  const { recommendations, recommendationMeta } = recommendationItemsToLegacyMap(recommendationsList);
+
+  const data = {name, since, contact, instruments, photo, recommendations, recommendationMeta, recommendationsList};
+
+  try {
+    if (eid) {
+      await updateDoc(doc(db,'members',eid), data);
+      await loadMembersSnapshot(true);
+      await writeLog('Membro editado', `${name} (${instruments.join(', ')})`, 'membros');
+      showToast(`✓ ${name} atualizado!`);
+    } else {
+      await addDoc(collection(db,'members'), {...data, createdAt:serverTimestamp()});
+      await loadMembersSnapshot(true);
+      await writeLog('Membro adicionado', `${name} (${instruments.join(', ')})`, 'membros');
+      showToast(`✓ ${name} adicionado(a)!`);
+    }
+    closeEditMember();
+  } catch(err) {
+    console.error('Save member error:', err);
+    let msg = 'Erro ao salvar. ';
+    if (err.code === 'resource-exhausted') msg += 'Documento muito grande — use uma foto menor ou uma URL.';
+    else if (err.code === 'permission-denied') msg += 'Sem permissão. Verifique as regras do Firestore.';
+    else msg += err.message || 'Tente novamente.';
+    errEl.textContent = `⚠ ${msg}`;
+    errEl.style.color = '#fca5a5';
+    errEl.style.display = 'block';
+    showToast(`⚠ ${msg}`);
+  }
+};
+
+window.removeMember = async id => {
+  if (!confirmAction('Tem certeza que deseja remover este membro?')) return;
+  const snap = await getDoc(doc(db,'members',id));
+  const name = snap.exists() ? snap.data().name : id;
+  await deleteDoc(doc(db,'members',id));
+  await loadMembersSnapshot(true);
+  await writeLog('Membro removido', name, 'membros');
+  showToast('Membro removido.');
+};
+
+// ─── GALERIA ───────────────────────────────────────────────────────
+let galleryCache    = [];
+let carouselIndex   = 0;
+let galleryFilesBuf = [];
+let gallerySubscribed = false;
+let galleryTags         = ['Ensaio', 'Show', 'Bastidores', 'Outros'];  // default tags
+let activeTagFilter     = 'Todas';
+let activeMediaTypeFilter = 'Todos';
+let selectedUploadTag   = '';
+let selectedYoutubeUploadTag = '';
+let galleryCompQuality  = 0.7;   // lido do Firestore config/galleryCompression
+let galleryCompMaxPx    = 1920;
+let galleryCarouselDelayMs = 5000;
+let galleryCarouselTimer = null;
+let galleryLastGridIds  = '';    // ids da última grade renderizada, evita re-render desnecessário
+let carouselTouchStartX = 0;
+let carouselTouchStartY = 0;
+let carouselTouchDragging = false;
+let carouselTouchSuppressClick = false;
+let carouselFramePhase = 0;
+let bulkTagOriginalIds  = [];
+let galleryTagsLoaded   = false;
+let galleryCompressionLoaded = false;
+
+function getGalleryCommentCount(photoData) {
+  if (typeof photoData?.commentCount === 'number') return photoData.commentCount;
+  return (photoData?.comments || []).length;
+}
+
+function getGalleryReplyCount(photoData) {
+  if (typeof photoData?.replyCount === 'number') return photoData.replyCount;
+  return (photoData?.comments || []).reduce((sum, comment) => sum + ((comment.replies || []).length), 0);
+}
+
+function getGalleryMediaType(itemData) {
+  return itemData?.mediaType || 'image';
+}
+
+function matchesMediaType(itemData) {
+  if (activeMediaTypeFilter === 'Todos') return true;
+  return getGalleryMediaType(itemData) === activeMediaTypeFilter;
+}
+
+function getGalleryThumbUrl(itemData) {
+  return itemData?.thumbUrl || itemData?.url || '';
+}
+
+function getYoutubeEmbedUrl(videoId) {
+  const origin = typeof window !== 'undefined' && window.location?.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : '';
+  return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1${origin}`;
+}
+
+function getFirstName(name) {
+  return String(name || '').trim().split(/\s+/)[0] || '';
+}
+
+function extractYoutubeVideoId(url) {
+  if (!url) return null;
+  const match = String(url).match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return match ? match[1] : null;
+}
+
+function buildYoutubeMediaData(rawUrl) {
+  const videoId = extractYoutubeVideoId(rawUrl);
+  if (!videoId) return null;
+  return {
+    videoId,
+    url: `https://www.youtube.com/watch?v=${videoId}`,
+    thumbUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+    embedUrl: getYoutubeEmbedUrl(videoId)
+  };
+}
+
+const youtubeTitleCache = new Map();
+
+async function fetchYoutubeOriginalTitle(url, videoId = '') {
+  const canonicalUrl = url || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : '');
+  if (!canonicalUrl) return '';
+  const cacheKey = videoId || canonicalUrl;
+  if (youtubeTitleCache.has(cacheKey)) return youtubeTitleCache.get(cacheKey);
+  try {
+    const endpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(canonicalUrl)}&format=json`;
+    const res = await fetch(endpoint);
+    if (!res.ok) throw new Error('oembed');
+    const data = await res.json();
+    const title = String(data?.title || '').trim();
+    youtubeTitleCache.set(cacheKey, title);
+    return title;
+  } catch (e) {
+    youtubeTitleCache.set(cacheKey, '');
+    return '';
+  }
+}
+
+async function ensureGallerySubscription(force = false) {
+  await Promise.all([
+    loadGalleryTags(force),
+    loadGalleryCompression(force),
+    loadGallerySnapshot(force)
+  ]);
+}
+
+function restartGalleryAutoplay() {
+  if (galleryCarouselTimer) clearInterval(galleryCarouselTimer);
+  galleryCarouselTimer = setInterval(() => {
+    if (galleryCache.length > 1) {
+      carouselIndex = (carouselIndex + 1) % galleryCache.length;
+      carouselFramePhase = (carouselFramePhase + 1) % VIDEO_FRAME_ASSETS.length;
+      renderGallery();
+    }
+  }, galleryCarouselDelayMs);
+}
+
+async function loadGallerySnapshot(force = false) {
+  if (gallerySubscribed && !force) return;
+  const snap = await getDocs(query(collection(db,'gallery'), orderBy('createdAt','desc')));
+  auditReadEvent({ action: 'gallery-load', collectionName: 'gallery', estimatedReads: snap.size });
+  galleryCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  gallerySubscribed = true;
+  renderGallery();
+  loadBulkPhotoGrid();
+  if (currentLbId) {
+    const found = galleryCache.find(item => item.id === currentLbId);
+    if (found) {
+      renderLightboxReactions(currentLbId, found.data);
+      renderLightboxComments(currentLbId, found.data);
+    }
+  }
+}
+
+function renderGallery() {
+  const track = document.getElementById('carouselTrack');
+  const dots  = document.getElementById('carouselDots');
+  const grid  = document.getElementById('galleryGrid');
+
+  const filtered = galleryCache.filter(({data:p}) => {
+    const tagMatch = activeTagFilter === 'Todas' || (p.tags||['Todas']).includes(activeTagFilter);
+    return tagMatch && matchesMediaType(p);
+  });
+
+  renderMediaTypeBar();
+  renderTagBar();
+
+  if (!filtered.length) {
+    track.innerHTML = `<div class="carousel-empty" style="min-width:100%">${galleryCache.length ? '📂 Nenhuma mídia com esse filtro.' : 'Nenhuma mídia ainda. Seja o primeiro a postar! 📷'}</div>`;
+    dots.innerHTML  = '';
+    grid.innerHTML  = '';
+    document.querySelector('.carousel-prev').style.display = 'none';
+    document.querySelector('.carousel-next').style.display = 'none';
+    return;
+  }
+
+  document.querySelector('.carousel-prev').style.display = '';
+  document.querySelector('.carousel-next').style.display = '';
+
+  if (carouselIndex >= filtered.length) carouselIndex = 0;
+  if (carouselIndex < 0) carouselIndex = filtered.length - 1;
+
+  track.innerHTML = filtered.map(({id, data: p}) => {
+    const mediaType = getGalleryMediaType(p);
+    const thumbUrl = getGalleryThumbUrl(p);
+    const r = p.reactions || {};
+    const likes    = Object.values(r).filter(v=>v==='like').length;
+    const dislikes = Object.values(r).filter(v=>v==='dislike').length;
+    const comments = getGalleryCommentCount(p);
+    const editBtn = isMember
+      ? `<button onclick="event.stopPropagation();editCaption('${id}')" style="background:rgba(200,130,10,.2);border:1px solid rgba(200,130,10,.4);color:var(--amber);padding:.2rem .5rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-right:.4rem">✏ Descrição</button>`
+      : '';
+    const del = isMember
+      ? `<button onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
+      : '';
+    const frameAsset = mediaType === 'youtube' ? VIDEO_FRAME_ASSETS[(carouselFramePhase + carouselIndex) % VIDEO_FRAME_ASSETS.length] : '';
+    const frameClass = frameAsset ? ` frame-${frameAsset.replace('.png','')}` : '';
+    const videoFrame = mediaType === 'youtube'
+      ? `<div class="video-portrait-frame carousel-video-frame${frameClass}" aria-hidden="true" style="background-image:url('imagens/${frameAsset}')"></div>`
+      : '';
+    const contentTags = (p.tags || []).filter(tag => tag && tag !== 'Todas');
+    const panelTags = [];
+    if (mediaType === 'youtube' && p.addedBy) panelTags.push(`<span class="carousel-panel-tag credit">Pedrada sugerida por <strong>${p.addedBy}</strong></span>`);
+    if (mediaType === 'youtube') {
+      panelTags.push('<span class="carousel-panel-tag">YouTube</span>');
+      panelTags.push('<span class="carousel-panel-tag video">▶ Vídeo</span>');
+    } else {
+      panelTags.push('<span class="carousel-panel-tag">Foto</span>');
+    }
+    contentTags.forEach(tag => panelTags.push(`<span class="carousel-panel-tag">${tag}</span>`));
+    const statsHtml = `<div class="carousel-stats-row">
+      <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
+      <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0}</span>
+      <span class="stat-badge"><span class="stat-icon">👎</span> ${dislikes||0}</span>
+    </div>`;
+    const mediaHtml = mediaType === 'youtube'
+      ? `<div class="carousel-media-screen"><img class="carousel-media carousel-media-video" src="${thumbUrl}" alt="${p.caption||''}" loading="lazy"></div>`
+      : `<img class="carousel-media" src="${thumbUrl}" alt="${p.caption||''}" loading="lazy">`;
+    return `<div class="carousel-slide" onclick="openLightbox('${id}')" style="cursor:pointer">
+      <div class="carousel-media-stage${mediaType === 'youtube' ? ' carousel-media-stage-video' : ''}">
+        ${mediaHtml}
+        ${videoFrame}
+      </div>
+      <div class="carousel-info-panel">
+        <div class="carousel-info-main">
+          <div class="carousel-badges-row">${panelTags.join('')}</div>
+          <div class="carousel-caption-text">${mediaType === 'youtube' && p.youtubeTitle ? `<strong style="display:block;font-family:'Cinzel',serif;font-size:.88rem;color:var(--gold);font-style:normal;margin-bottom:.3rem;letter-spacing:.02em;line-height:1.3">${p.youtubeTitle}</strong>` : ''}<span class="media-caption-copy">${p.caption||''}</span></div>
+        </div>
+        <div class="carousel-caption-meta">${editBtn}${p.addedBy||''}<br>${p.date||''}<br style="margin-bottom:.3rem">${del}${statsHtml}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  dots.innerHTML = filtered.map((_,i) =>
+    `<button class="carousel-dot${i===carouselIndex?' active':''}" onclick="carouselGo(${i})"></button>`
+  ).join('');
+
+  track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+  const activeCarouselId = filtered[carouselIndex]?.id || '';
+  const gridSorted = [...filtered].sort((a, b) => {
+    const likesA = Object.values(a.data?.reactions || {}).filter(v => v === 'like').length;
+    const likesB = Object.values(b.data?.reactions || {}).filter(v => v === 'like').length;
+    if (likesB !== likesA) return likesB - likesA;
+    const commentsA = getGalleryCommentCount(a.data);
+    const commentsB = getGalleryCommentCount(b.data);
+    if (commentsB !== commentsA) return commentsB - commentsA;
+    const tsA = a.data?.createdAt?.seconds || 0;
+    const tsB = b.data?.createdAt?.seconds || 0;
+    return tsB - tsA;
+  });
+
+  // Só re-renderiza a grade se o conjunto de fotos mudou
+  const newGridIds = `${isMember ? 'member' : 'visitor'}:${gridSorted.map(x => x.id).join(',')}`;
+  const gridNeedsUpdate = newGridIds !== galleryLastGridIds;
+  galleryLastGridIds = newGridIds;
+
+  if (gridNeedsUpdate) {
+    grid.innerHTML = gridSorted.map(({id, data: p}, rankIndex) => {
+      const mediaType = getGalleryMediaType(p);
+      const thumbUrl = getGalleryThumbUrl(p);
+      const r = p.reactions || {};
+      const likes    = Object.values(r).filter(v=>v==='like').length;
+      const dislikes = Object.values(r).filter(v=>v==='dislike').length;
+      const comments = getGalleryCommentCount(p);
+      const del = isMember
+        ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
+        : '';
+      const mediaBadge = mediaType === 'youtube'
+        ? `<div class="thumb-media-stack">${p.addedBy ? `<div class="thumb-video-credit"><strong>${getFirstName(p.addedBy)}</strong></div>` : ''}<div class="thumb-media-tag">YouTube</div><div class="thumb-media-tag video">Vídeo</div></div>`
+        : `<div class="media-pill">Foto</div>`;
+      const videoFrame = mediaType === 'youtube'
+        ? `<div class="video-portrait-frame thumb-video-frame" aria-hidden="true" style="background-image:url('imagens/portrait_video.png')"></div>`
+        : '';
+      const medalHtml = rankIndex === 0
+        ? '<div class="gallery-rank-medal gold" title="1º lugar">🥇</div>'
+        : rankIndex === 1
+          ? '<div class="gallery-rank-medal silver" title="2º lugar">🥈</div>'
+          : rankIndex === 2
+            ? '<div class="gallery-rank-medal bronze" title="3º lugar">🥉</div>'
+            : '';
+      const statsHtml = `<div class="img-stats">
+        <span class="stat-badge"><span class="stat-icon">💬</span> ${comments}</span>
+        <span class="stat-badge"><span class="stat-icon">👍</span> ${likes||0} <span class="stat-icon" style="margin-left:.2rem">👎</span> ${dislikes||0}</span>
+      </div>`;
+      return `<div class="gallery-thumb${id===activeCarouselId?' gallery-thumb-active':''}" onclick="openLightbox('${id}')">
+        <img class="gallery-thumb-media${mediaType === 'youtube' ? ' gallery-thumb-media-video' : ''}" src="${thumbUrl}" alt="${p.caption||''}" loading="lazy">
+        ${videoFrame}
+        ${mediaBadge}
+        ${medalHtml}
+        ${statsHtml}
+        ${del}
+      </div>`;
+    }).join('');
+  }
+}
+
+window.carouselGo = idx => { carouselIndex = idx; renderGallery(); };
+window.carouselMove = dir => {
+  carouselIndex = (carouselIndex + dir + Math.max(galleryCache.length,1)) % Math.max(galleryCache.length,1);
+  carouselFramePhase = (carouselFramePhase + 1) % VIDEO_FRAME_ASSETS.length;
+  renderGallery();
+};
+
+function initCarouselTouch() {
+  const wrap = document.getElementById('carouselWrap');
+  if (!wrap) return;
+
+  wrap.addEventListener('touchstart', (event) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    carouselTouchStartX = touch.clientX;
+    carouselTouchStartY = touch.clientY;
+    carouselTouchDragging = false;
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', (event) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    const dx = touch.clientX - carouselTouchStartX;
+    const dy = touch.clientY - carouselTouchStartY;
+    if (Math.abs(dx) > 18 && Math.abs(dx) > Math.abs(dy)) {
+      carouselTouchDragging = true;
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('touchend', (event) => {
+    const touch = event.changedTouches?.[0];
+    if (!touch) return;
+    const dx = touch.clientX - carouselTouchStartX;
+    const dy = touch.clientY - carouselTouchStartY;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)) {
+      carouselTouchSuppressClick = true;
+      carouselMove(dx < 0 ? 1 : -1);
+      setTimeout(() => { carouselTouchSuppressClick = false; }, 350);
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('click', (event) => {
+    if (!carouselTouchSuppressClick) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+}
+
+restartGalleryAutoplay();
+
+// Preview files before upload
+function renderGalleryPreview() {
+  const wrap = document.getElementById('galleryPreviewWrap');
+  const list = document.getElementById('galleryPreviewList');
+  if (!wrap || !list) return;
+  if (!galleryFilesBuf.length) {
+    wrap.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+  wrap.style.display = 'block';
+  list.innerHTML = '';
+  galleryFilesBuf.forEach((f, idx) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const card = document.createElement('div');
+      card.className = 'gallery-preview-card';
+      card.innerHTML = `<img src="${ev.target.result}" alt="${f.name}"><button type="button" class="gallery-preview-del" title="Remover" onclick="removeGalleryPreview(${idx})">✕</button>`;
+      list.appendChild(card);
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+window.handleGalleryFiles = e => {
+  galleryFilesBuf = Array.from(e.target.files || []).filter(f => (f.type || '').startsWith('image/'));
+  renderGalleryPreview();
+};
+
+window.removeGalleryPreview = idx => {
+  galleryFilesBuf = galleryFilesBuf.filter((_, i) => i !== idx);
+  const input = document.getElementById('galleryFileInput');
+  if (input && !galleryFilesBuf.length) input.value = '';
+  renderGalleryPreview();
+};
+
+// Upload to Firebase Storage with progress toast + compression
+function dataURLtoBlob(dataurl) {
+  const parts = dataurl.split(',');
+  const mime = parts[0].match(/:(.*?);/)[1];
+  const bstr = atob(parts[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) u8arr[n] = bstr.charCodeAt(n);
+  return new Blob([u8arr], {type: mime});
+}
+
+function formatPhotoDate(date) {
+  return date.toLocaleDateString('pt-BR');
+}
+
+function parseExifDateString(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  const match = raw.trim().match(/^(\d{4}):(\d{2}):(\d{2})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/);
+  if (!match) return null;
+  const [, year, month, day, hour = '0', minute = '0', second = '0'] = match;
+  const parsed = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second)
+  );
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function readExifAscii(view, offset, length) {
+  let out = '';
+  for (let i = 0; i < length; i++) {
+    const byte = view.getUint8(offset + i);
+    if (byte === 0) break;
+    out += String.fromCharCode(byte);
+  }
+  return out;
+}
+
+function extractExifDate(file) {
+  return new Promise(resolve => {
+    const fileHint = `${file?.type || ''} ${file?.name || ''}`;
+    if (!/jpe?g/i.test(fileHint)) {
+      resolve(null);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => resolve(null);
+    reader.onload = () => {
+      try {
+        const view = new DataView(reader.result);
+        if (view.byteLength < 4 || view.getUint16(0, false) !== 0xFFD8) {
+          resolve(null);
+          return;
+        }
+        let offset = 2;
+        while (offset + 4 < view.byteLength) {
+          const marker = view.getUint16(offset, false);
+          offset += 2;
+          if (marker === 0xFFE1) {
+            const app1Length = view.getUint16(offset, false);
+            offset += 2;
+            if (readExifAscii(view, offset, 4) !== 'Exif') {
+              offset += app1Length - 2;
+              continue;
+            }
+            const tiffOffset = offset + 6;
+            const littleEndian = view.getUint16(tiffOffset, false) === 0x4949;
+            const firstIFDOffset = view.getUint32(tiffOffset + 4, littleEndian);
+            let exifIfdOffset = null;
+
+            const readIfd = ifdOffset => {
+              if (!ifdOffset || tiffOffset + ifdOffset + 2 > view.byteLength) return null;
+              const entries = view.getUint16(tiffOffset + ifdOffset, littleEndian);
+              for (let i = 0; i < entries; i++) {
+                const entryOffset = tiffOffset + ifdOffset + 2 + (i * 12);
+                if (entryOffset + 12 > view.byteLength) continue;
+                const tag = view.getUint16(entryOffset, littleEndian);
+                const type = view.getUint16(entryOffset + 2, littleEndian);
+                const count = view.getUint32(entryOffset + 4, littleEndian);
+                const valueOffset = view.getUint32(entryOffset + 8, littleEndian);
+                if (tag === 0x8769) exifIfdOffset = valueOffset;
+                if ((tag === 0x9003 || tag === 0x0132) && type === 2 && count > 0) {
+                  const absoluteOffset = count <= 4 ? entryOffset + 8 : tiffOffset + valueOffset;
+                  if (absoluteOffset + count <= view.byteLength) {
+                    const parsed = parseExifDateString(readExifAscii(view, absoluteOffset, count));
+                    if (parsed) return parsed;
+                  }
+                }
+              }
+              return null;
+            };
+
+            const primaryDate = readIfd(firstIFDOffset);
+            if (primaryDate) {
+              resolve(primaryDate);
+              return;
+            }
+            if (exifIfdOffset) {
+              resolve(readIfd(exifIfdOffset));
+              return;
+            }
+            resolve(null);
+            return;
+          }
+          if ((marker & 0xFF00) !== 0xFF00) break;
+          const size = view.getUint16(offset, false);
+          offset += size;
+        }
+      } catch {
+        resolve(null);
+        return;
+      }
+      resolve(null);
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function extractPhotoTakenDate(file) {
+  let exifDate = null;
+  try {
+    exifDate = await extractExifDate(file);
+  } catch {
+    exifDate = null;
+  }
+  const fallbackDate = file?.lastModified ? new Date(file.lastModified) : new Date();
+  const safeFallback = Number.isNaN(fallbackDate.getTime()) ? new Date() : fallbackDate;
+  const chosenDate = exifDate && !Number.isNaN(exifDate.getTime()) ? exifDate : safeFallback;
+  return {
+    date: chosenDate,
+    label: formatPhotoDate(chosenDate),
+    iso: chosenDate.toISOString(),
+    source: exifDate ? 'exif' : 'file'
+  };
+}
+
+window.uploadGalleryPhotos = async () => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (!galleryFilesBuf.length) { showToast('⚠ Selecione ao menos uma foto'); return; }
+  if (!selectedUploadTag) { showToast('⚠ Selecione uma tag antes de publicar'); return; }
+  const caption  = document.getElementById('galleryCaption').value.trim();
+  const userName = auth.currentUser?.displayName?.split(' ')[0] || 'Membro';
+  const total    = galleryFilesBuf.length;
+  let totalOrigKB = 0, totalCompKB = 0;
+  const photoTags = ['Todas', selectedUploadTag];
+  let uploadedCount = 0;
+  let failedCount = 0;
+
+  for (let i = 0; i < galleryFilesBuf.length; i++) {
+    const file = galleryFilesBuf[i];
+    const origSize = file.size;
+    totalOrigKB += Math.round(origSize / 1024);
+    showToast(`⏳ Preparando ${i+1}/${total}: ${file.name}`, { persist: true });
+    const sourceDate = await extractPhotoTakenDate(file);
+
+    let blob, compSize;
+    try {
+      const b64 = await compressImage(file, galleryCompMaxPx, galleryCompQuality);
+      blob = dataURLtoBlob(b64);
+      compSize = blob.size;
+      totalCompKB += Math.round(compSize / 1024);
+    } catch(err) {
+      failedCount += 1;
+      showToast(`⚠ ${err.message} (${i+1}/${total})`);
+      continue;
+    }
+
+    showToast(`⏳ Enviando ${i+1}/${total}: ${file.name}`, { persist: true });
+
+    const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+    const name = file.name.replace(/\.[^.]+$/, '');
+    const path = `gallery/${Date.now()}_${name.replace(/\s/g,'_')}.${ext}`;
+    const ref  = storageRef(storage, path);
+
+    await new Promise((resolve, reject) => {
+      const task = uploadBytesResumable(ref, blob);
+      task.on('state_changed',
+        snap => {
+          const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+          showToast(`⏳ Enviando ${i+1}/${total}: ${file.name} (${pct}%)`, { persist: true });
+        },
+        reject,
+        async () => {
+          const uploadedRef = task.snapshot.ref;
+          const url = await getDownloadURL(uploadedRef);
+          try {
+            await addDoc(collection(db,'gallery'), {
+              mediaType: 'image',
+              sourceType: 'storage',
+              url,
+              thumbUrl: url,
+              storagePath: path,
+              caption,
+              addedBy: userName,
+              date: sourceDate.label,
+              sourceDateIso: sourceDate.iso,
+              sourceDateSource: sourceDate.source,
+              createdAt: serverTimestamp(),
+              origSize: Math.round(origSize / 1024),
+              compSize: Math.round(compSize / 1024),
+              tags: photoTags,
+              commentCount: 0,
+              replyCount: 0
+            });
+          } catch (err) {
+            try { await deleteObject(uploadedRef); } catch {}
+            reject(err);
+            return;
+          }
+          uploadedCount += 1;
+          resolve();
+        }
+      );
+    }).catch(err => {
+      failedCount += 1;
+      console.error('Gallery upload error:', err);
+      const detail = err?.code || err?.message || 'erro desconhecido';
+      showToast(`⚠ Falha ao enviar ${file.name}: ${detail}`);
+    });
+  }
+
+  const n = uploadedCount;
+  await loadGallerySnapshot(true);
+  await writeLog('Foto(s) adicionada(s) à galeria', `${n} foto${n!==1?'s':''} — "${caption||'sem descrição'}" [${selectedUploadTag}] (${totalCompKB}KB comprimido, ${totalOrigKB}KB original)${failedCount ? ` · ${failedCount} falha${failedCount!==1?'s':''}` : ''}`, 'galeria');
+  galleryFilesBuf = [];
+  selectedUploadTag = '';
+  document.getElementById('galleryCaption').value = '';
+  document.getElementById('galleryFileInput').value = '';
+  renderGalleryPreview();
+  renderUploadTagSelect();
+  if (n) {
+    showToast(`✓ ${n} foto${n!==1?'s':''} publicada${n!==1?'s':''}!${failedCount ? ` ${failedCount} falha${failedCount!==1?'s':''}.` : ''} (${totalCompKB}KB)`);
+  } else {
+    showToast('⚠ Nenhuma foto foi publicada.');
+  }
+};
+
+window.addYoutubeGalleryMedia = async () => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const rawUrl = document.getElementById('galleryYoutubeUrl')?.value.trim() || '';
+  const caption = document.getElementById('galleryYoutubeCaption')?.value.trim() || '';
+  if (!rawUrl) { showToast('⚠ Cole o link do YouTube'); return; }
+  if (!selectedYoutubeUploadTag) { showToast('⚠ Selecione uma tag para o vídeo'); return; }
+  const youtube = buildYoutubeMediaData(rawUrl);
+  if (!youtube) { showToast('⚠ Link do YouTube inválido'); return; }
+
+  const userName = auth.currentUser?.displayName?.split(' ')[0] || 'Membro';
+  const youtubeTitle = await fetchYoutubeOriginalTitle(youtube.url, youtube.videoId);
+  await addDoc(collection(db,'gallery'), {
+    mediaType: 'youtube',
+    sourceType: 'youtube',
+    url: youtube.url,
+    thumbUrl: youtube.thumbUrl,
+    videoId: youtube.videoId,
+    youtubeTitle,
+    caption,
+    addedBy: userName,
+    date: new Date().toLocaleDateString('pt-BR'),
+    createdAt: serverTimestamp(),
+    tags: ['Todas', selectedYoutubeUploadTag],
+    commentCount: 0,
+    replyCount: 0
+  });
+  await loadGallerySnapshot(true);
+  await writeLog('Vídeo do YouTube adicionado à galeria', `"${caption || youtube.videoId}" [${selectedYoutubeUploadTag}]`, 'galeria');
+  document.getElementById('galleryYoutubeUrl').value = '';
+  document.getElementById('galleryYoutubeCaption').value = '';
+  selectedYoutubeUploadTag = '';
+  renderUploadTagSelect();
+  showToast('✓ Vídeo do YouTube publicado!');
+};
+
+// Delete from Storage + Firestore
+window.editCaption = async id => {
+  if (!isMember) return;
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const current = snap.data().caption || '';
+  const newCaption = prompt('Nova descrição da foto:', current);
+  if (newCaption === null) return; // cancelou
+  await updateDoc(doc(db,'gallery',id), {caption: newCaption});
+  await loadGallerySnapshot(true);
+  showToast('✓ Descrição atualizada!');
+};
+
+window.deleteGalleryPhoto = async (id, path) => {
+  if (!isMember) return;
+  if (!confirmAction('Tem certeza que deseja excluir esta foto da galeria?')) return;
+  const snap = await getDoc(doc(db,'gallery',id));
+  const caption = snap.exists() ? (snap.data().caption || 'sem descrição') : id;
+  const commentsSnap = await getDocs(collection(db,'gallery',id,'comments'));
+  if (!commentsSnap.empty) {
+    await Promise.all(commentsSnap.docs.map(commentDoc => deleteDoc(commentDoc.ref)));
+  }
+  await deleteDoc(doc(db,'gallery',id));
+  if (path) { try { await deleteObject(storageRef(storage, path)); } catch {} }
+  await loadGallerySnapshot(true);
+  await writeLog('Foto excluída da galeria', `"${caption}"`, 'galeria');
+  if (carouselIndex >= galleryCache.length - 1) carouselIndex = Math.max(0, galleryCache.length - 2);
+  showToast('Foto excluída.');
+  // se lightbox tiver aberto nessa foto, fecha
+  const lb = document.getElementById('lightbox');
+  if (lb && lb.classList.contains('open') && lb.dataset.id === id) lb.classList.remove('open');
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// LIGHTBOX
+// ═══════════════════════════════════════════════════════════════════
+let currentLbId = null;
+const galleryCommentsCache = {};
+
+async function syncGalleryCounts(photoId, updater) {
+  const photoRef = doc(db,'gallery',photoId);
+  await runTransaction(db, async tx => {
+    const snap = await tx.get(photoRef);
+    if (!snap.exists()) return;
+    const photo = snap.data();
+    const next = updater({
+      commentCount: getGalleryCommentCount(photo),
+      replyCount: getGalleryReplyCount(photo)
+    });
+    tx.update(photoRef, next);
+  });
+}
+
+async function loadGalleryCommentsSnapshot(photoId, force = false) {
+  if (galleryCommentsCache[photoId] && !force) return;
+  const snap = await getDocs(query(collection(db,'gallery',photoId,'comments'), orderBy('createdAt','asc')));
+  auditReadEvent({ action: 'gallery-comments-load', collectionName: `gallery/${photoId}/comments`, estimatedReads: snap.size, meta: { photoId } });
+  galleryCommentsCache[photoId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+}
+
+async function refreshGalleryPhotoCache(photoId) {
+  const snap = await getDoc(doc(db,'gallery',photoId));
+  if (!snap.exists()) return null;
+  const updated = { id: photoId, data: snap.data() };
+  const idx = galleryCache.findIndex(item => item.id === photoId);
+  if (idx >= 0) galleryCache[idx] = updated;
+  else galleryCache.unshift(updated);
+  return updated.data;
+}
+
+function getGalleryCommentsForRender(photoId, photoData) {
+  const legacyComments = (photoData.comments || []).map((comment, index) => ({
+    ...comment,
+    __legacy: true,
+    __commentKey: `legacy-${index}`,
+    __legacyIndex: index
+  }));
+  const modernComments = (galleryCommentsCache[photoId] || []).map(({id, data}) => ({
+    ...data,
+    __legacy: false,
+    __commentKey: id
+  }));
+  return [...legacyComments, ...modernComments];
+}
+
+async function updateLegacyGalleryComment(photoId, legacyIndex, updater) {
+  const snap = await getDoc(doc(db,'gallery',photoId));
+  if (!snap.exists()) return;
+  const photo = snap.data();
+  const comments = [...(photo.comments || [])];
+  const current = comments[legacyIndex];
+  if (!current) return;
+  comments[legacyIndex] = updater({ ...current });
+  await updateDoc(doc(db,'gallery',photoId), { comments });
+}
+
+async function updateModernGalleryComment(photoId, commentId, updater) {
+  const commentRef = doc(db,'gallery',photoId,'comments',commentId);
+  const commentSnap = await getDoc(commentRef);
+  if (!commentSnap.exists()) return;
+  const next = updater({ ...commentSnap.data() });
+  await updateDoc(commentRef, next);
+}
+
+window.openLightbox = async id => {
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  currentLbId = id;
+  await loadGalleryCommentsSnapshot(id, true);
+  const mediaType = getGalleryMediaType(p);
+  const imgEl = document.getElementById('lbImg');
+  const videoWrap = document.getElementById('lbVideoWrap');
+  const videoFrame = document.getElementById('lbVideoFrame');
+  const captionBlock = document.getElementById('lbCaptionBlock');
+  const videoHeadEl = document.getElementById('lbVideoHead');
+  if (mediaType === 'youtube' && p.videoId) {
+    imgEl.style.display = 'none';
+    imgEl.src = '';
+    videoWrap.style.display = 'block';
+      videoFrame.src = getYoutubeEmbedUrl(p.videoId);
+    captionBlock.classList.add('video-mode');
+  } else {
+    videoWrap.style.display = 'none';
+    videoFrame.src = '';
+    imgEl.style.display = 'block';
+    imgEl.src = p.url;
+    imgEl.alt = p.caption || '';
+    captionBlock.classList.remove('video-mode');
+  }
+
+  // Caption + edit button
+  const captionEl = document.getElementById('lbCaption');
+  const editHtml = isMember
+    ? `<button onclick="editCaption('${id}')" style="background:none;border:1px solid rgba(200,130,10,.25);color:var(--amber);padding:.15rem .45rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-left:.5rem;vertical-align:middle;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.25)'">✏</button>`
+    : '';
+  const youtubeTitle = mediaType === 'youtube'
+    ? (p.youtubeTitle || await fetchYoutubeOriginalTitle(p.url, p.videoId))
+    : '';
+  if (mediaType === 'youtube' && youtubeTitle && !p.youtubeTitle) {
+    updateDoc(doc(db,'gallery',id), { youtubeTitle }).catch(() => {});
+  }
+  const videoCredit = mediaType === 'youtube' && p.addedBy
+    ? `<div class="lb-video-credit">Pedrada sugerida por <strong>${p.addedBy}</strong></div>`
+    : '';
+  const videoShareBtn = mediaType === 'youtube' && p.url
+    ? `<button class="lb-video-share-btn" type="button" onclick="copyGalleryVideoLink('${String(p.url).replace(/'/g, "\\'")}');event.stopPropagation()">Compartilhar</button>`
+    : '';
+  videoHeadEl.innerHTML = mediaType === 'youtube' ? `${videoCredit}${videoShareBtn}` : '';
+  const videoTitleHtml = mediaType === 'youtube' && youtubeTitle ? `<strong class="lb-video-title">${escapeHtml(youtubeTitle)}</strong>` : '';
+  const captionBody = p.caption ? escapeHtml(p.caption) : '';
+  captionEl.innerHTML = mediaType === 'youtube'
+    ? `${videoTitleHtml}${captionBody}${editHtml}`
+    : `${p.caption || ''}${editHtml}`;
+
+  document.getElementById('lbMeta').textContent = `${p.addedBy||''} · ${p.date||''}`;
+
+  // Show photo tags in lightbox
+  const photoTagsEl = document.getElementById('lbPhotoTags');
+  const photoTags = (p.tags||['Todas']).filter(t => t !== 'Todas');
+  const editTagsHtml = isMember
+    ? `<button onclick="editPhotoTags('${id}')" style="background:none;border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.15rem .45rem;cursor:pointer;border-radius:999px;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;margin-left:.3rem;transition:all .2s" title="Editar tags">✏ tags</button>`
+    : '';
+  photoTagsEl.innerHTML = photoTags.map(t => `<span class="lb-photo-tag">${t}</span>`).join('') + editTagsHtml;
+
+  renderLightboxReactions(id, p);
+  renderLightboxComments(id, p);
+
+  // Show/hide nav buttons
+  const idx = galleryCache.findIndex(item => item.id === id);
+  document.getElementById('lbPrev').style.display = idx > 0 ? 'flex' : 'none';
+  document.getElementById('lbNext').style.display = idx < galleryCache.length - 1 ? 'flex' : 'none';
+
+  const lb = document.getElementById('lightbox');
+  lb.dataset.id = id;
+  lb.classList.add('open');
+  document.body.classList.add('lb-no-scroll');
+};
+
+window.copyGalleryVideoLink = async (url) => {
+  if (!url) return;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('✓ Link do vídeo copiado');
+  } catch (e) {
+    const input = document.createElement('input');
+    input.value = url;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    input.remove();
+    showToast('✓ Link do vídeo copiado');
+  }
+};
+
+window.closeLightbox = () => {
+  document.body.classList.remove('lb-no-scroll');
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lbPrev').style.display = 'none';
+  document.getElementById('lbNext').style.display = 'none';
+  document.getElementById('lbVideoWrap').style.display = 'none';
+  document.getElementById('lbVideoFrame').src = '';
+  currentLbId = null;
+};
+
+window.changeLightboxPhoto = dir => {
+  const filtered = galleryCache.filter(({data:p}) => {
+    const tagMatch = activeTagFilter === 'Todas' || (p.tags||['Todas']).includes(activeTagFilter);
+    return tagMatch && matchesMediaType(p);
+  });
+  const idx = filtered.findIndex(item => item.id === currentLbId);
+  const nextIdx = idx + dir;
+  if (nextIdx >= 0 && nextIdx < filtered.length) {
+    openLightbox(filtered[nextIdx].id);
+  }
+};
+
+// close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLightbox();
+});
+
+// Prevent page scroll when lightbox is open (only comments panel scrolls)
+document.addEventListener('wheel', e => {
+  if (document.body.classList.contains('lb-no-scroll') && !e.target.closest('.lb-comments-wrap')) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+function renderLightboxReactions(id, p) {
+  const el = document.getElementById('lbReactions');
+  const uid = auth.currentUser?.uid || null;
+  const r = p.reactions || {};
+  const likes = Object.values(r).filter(v=>v==='like').length;
+  const dislikes = Object.values(r).filter(v=>v==='dislike').length;
+  const my = uid ? r[uid] : null;
+
+  el.innerHTML = `
+    <button class="lb-rbtn${my==='like'?' lkd':''}" onclick="lbReact('${id}','like')" ${!isLoggedIn?'disabled':''} title="Curtir">
+      👍 ${likes||''}
+    </button>
+    <button class="lb-rbtn${my==='dislike'?' di':''}" onclick="lbReact('${id}','dislike')" ${!isLoggedIn?'disabled':''} title="Não curtir">
+      👎 ${dislikes||''}
+    </button>`;
+}
+
+window.lbReact = async (id, type) => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
+  const uid = auth.currentUser?.uid;
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  const r = {...(p.reactions||{})};
+  if (r[uid] === type) delete r[uid];
+  else r[uid] = type;
+  await updateDoc(doc(db,'gallery',id), {reactions: r});
+  await loadGallerySnapshot(true);
+  if (currentLbId === id) openLightbox(id);
+};
+
+function getMemberName() {
+  return auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ')
+    || auth.currentUser?.email?.split('@')[0] || 'Membro';
+}
+
+function renderLightboxComments(id, p) {
+  const el = document.getElementById('lbComments');
+  const uid = auth.currentUser?.uid || null;
+  const comments = getGalleryCommentsForRender(id, p);
+  const name = getMemberName();
+
+  let html = `<div class="lb-ctitle">Comentários (${comments.length})</div>`;
+
+  comments.forEach((c, ci) => {
+    const cr = c.reactions || {};
+    const cLikes = Object.values(cr).filter(v=>v==='like').length;
+    const cDislikes = Object.values(cr).filter(v=>v==='dislike').length;
+    const cMy = uid ? cr[uid] : null;
+    const canDel = isMember; // só membros podem deletar
+    const replies = c.replies || [];
+
+    let repliesHtml = '';
+    if (replies.length) {
+      const replies_html_parts = replies.map((rp, rpi) => {
+        const rr = rp.reactions || {};
+        const rLikes = Object.values(rr).filter(v=>v==='like').length;
+        const rDislikes = Object.values(rr).filter(v=>v==='dislike').length;
+        const rMy = uid ? rr[uid] : null;
+        return `<div class="lb-rep" style="display:flex;align-items:flex-start;gap:.5rem;padding:.35rem 0;border-bottom:1px solid rgba(200,130,10,.06)">
+          <div class="lb-cmt-av">${rp.author.charAt(0)}</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:.4rem">
+              <span class="lb-cmt-au">${rp.author}</span>
+              <span class="lb-cmt-dt">${rp.date}</span>
+            </div>
+            <div class="lb-cmt-txt">${rp.text}</div>
+            <div class="lb-cmt-act">
+              <button class="lb-cr${rMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}','${c.__commentKey}','reply',${rpi},'like')" ${!isLoggedIn?'disabled':''}>👍 ${rLikes||''}</button>
+              <button class="lb-cr${rMy==='dislike'?' dkd':''}" onclick="lbCmtReact('${id}','${c.__commentKey}','reply',${rpi},'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${rDislikes||''}</button>
+              ${canDel?`<button class="lb-cdel" onclick="delLbReply('${id}','${c.__commentKey}',${rpi})">✕</button>`:''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      repliesHtml = `<div style="margin-left:1.8rem;margin-top:.4rem;border-left:2px solid rgba(200,130,10,.1);padding-left:.5rem">${replies_html_parts}</div>`;
+    }
+
+    const replyForm = isLoggedIn
+      ? `<div class="lb-rpform" style="display:none" id="lbRpForm_${c.__commentKey}">
+          <input placeholder="Sua resposta..." id="lbRpInput_${c.__commentKey}" onkeydown="if(event.key==='Enter')submitLbReply('${id}','${c.__commentKey}')">
+          <button onclick="submitLbReply('${id}','${c.__commentKey}')">Responder</button>
+        </div>`
+      : `<div class="lb-login-hint"><button class="lb-login-btn" onclick="openLogin()">Entrar para responder</button></div>`;
+
+    html += `<div class="lb-cmt">
+      <div class="lb-cmt-l1">
+        <div class="lb-cmt-av">${c.author.charAt(0)}</div>
+        <span class="lb-cmt-au">${c.author}</span>
+        <span class="lb-cmt-dt">${c.date}</span>
+        ${canDel?`<button class="lb-cdel" onclick="delLbComment('${id}','${c.__commentKey}')">✕</button>`:''}
+      </div>
+      <div class="lb-cmt-txt">${c.text}</div>
+      <div class="lb-cmt-act">
+        <button class="lb-cr${cMy==='like'?' lkd':''}" onclick="lbCmtReact('${id}','${c.__commentKey}','comment',-1,'like')" ${!isLoggedIn?'disabled':''}>👍 ${cLikes||''}</button>
+        <button class="lb-cr${cMy==='dislike'?' dkd':''}" onclick="lbCmtReact('${id}','${c.__commentKey}','comment',-1,'dislike')" ${!isLoggedIn?'disabled':''}>👎 ${cDislikes||''}</button>
+        <button class="lb-rpbtn" onclick="toggleLbReplyForm('${c.__commentKey}')"${!isLoggedIn?' disabled style="opacity:.35;cursor:default"':''}>Responder</button>
+      </div>
+      ${replyForm}
+      ${repliesHtml}
+    </div>`;
+  });
+
+  if (isLoggedIn) {
+    html += `<div class="lb-rpform" style="margin-top:.6rem">
+      <input placeholder="Escreva um comentário..." id="lbNewCmtInput" onkeydown="if(event.key==='Enter')addLbComment('${id}')">
+      <button onclick="addLbComment('${id}')">Enviar</button>
+    </div>`;
+  } else {
+    html += `<div class="lb-login-hint">
+      <button class="lb-login-btn" onclick="openLogin()">Entrar para comentar</button>
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+window.toggleLbReplyForm = commentKey => {
+  const el = document.getElementById(`lbRpForm_${commentKey}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.addLbComment = async id => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para comentar'); return; }
+  const input = document.getElementById('lbNewCmtInput');
+  const text = input?.value.trim();
+  if (!text) return;
+  await addDoc(collection(db,'gallery',id,'comments'), {
+    author: getMemberName(),
+    text,
+    date: nowLabel(),
+    reactions: {},
+    replies: [],
+    authorUid: auth.currentUser?.uid,
+    createdAt: serverTimestamp()
+  });
+  await syncGalleryCounts(id, counts => ({
+    commentCount: counts.commentCount + 1
+  }));
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
+  input.value = '';
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
+  showToast('✓ Comentário adicionado!');
+};
+
+window.submitLbReply = async (id, commentKey) => {
+  if (!isLoggedIn) return;
+  const input = document.getElementById(`lbRpInput_${commentKey}`);
+  const text = input?.value.trim();
+  if (!text) return;
+  const photo = galleryCache.find(item => item.id === id)?.data || {};
+  const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
+  if (!comment) return;
+  const mutateComment = current => {
+    const replies = [...(current.replies || [])];
+    replies.push({author: getMemberName(), text, date: nowLabel(), reactions: {}, authorUid: auth.currentUser?.uid});
+    return { ...current, replies };
+  };
+  if (comment.__legacy) await updateLegacyGalleryComment(id, comment.__legacyIndex, mutateComment);
+  else await updateModernGalleryComment(id, comment.__commentKey, mutateComment);
+  await syncGalleryCounts(id, counts => ({
+    replyCount: counts.replyCount + 1
+  }));
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
+  if (input) input.value = '';
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
+  showToast('✓ Resposta adicionada!');
+};
+
+window.lbCmtReact = async (id, commentKey, type, rIdx, reaction) => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para reagir'); return; }
+  const uid = auth.currentUser?.uid;
+  const photo = galleryCache.find(item => item.id === id)?.data || {};
+  const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
+  if (!comment) return;
+  const mutateComment = current => {
+    if (type === 'comment') {
+      const r = {...(current.reactions||{})};
+      if (r[uid] === reaction) delete r[uid];
+      else r[uid] = reaction;
+      return { ...current, reactions: r };
+    }
+    const replies = [...(current.replies || [])];
+    const reply = {...replies[rIdx]};
+    if (!reply) return current;
+    const rr = {...(reply.reactions||{})};
+    if (rr[uid] === reaction) delete rr[uid];
+    else rr[uid] = reaction;
+    reply.reactions = rr;
+    replies[rIdx] = reply;
+    return { ...current, replies };
+  };
+  if (comment.__legacy) await updateLegacyGalleryComment(id, comment.__legacyIndex, mutateComment);
+  else await updateModernGalleryComment(id, comment.__commentKey, mutateComment);
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
+};
+
+window.delLbComment = async (id, commentKey) => {
+  if (!confirmAction('Excluir este comentário?')) return;
+  if (!isMember) return;
+  const photo = galleryCache.find(item => item.id === id)?.data || {};
+  const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
+  if (!comment) return;
+  const removedReplies = (comment.replies || []).length;
+  if (comment.__legacy) {
+    const snap = await getDoc(doc(db,'gallery',id));
+    if (!snap.exists()) return;
+    const p = snap.data();
+    const comments = [...(p.comments||[])];
+    comments.splice(comment.__legacyIndex, 1);
+    await updateDoc(doc(db,'gallery',id), {comments});
+  } else {
+    await deleteDoc(doc(db,'gallery',id,'comments',comment.__commentKey));
+  }
+  await syncGalleryCounts(id, counts => ({
+    commentCount: Math.max(0, counts.commentCount - 1),
+    replyCount: Math.max(0, counts.replyCount - removedReplies)
+  }));
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
+  showToast('Comentário excluído.');
+};
+
+window.delLbReply = async (id, commentKey, rIdx) => {
+  if (!confirmAction('Excluir esta resposta?')) return;
+  if (!isMember) return;
+  const photo = galleryCache.find(item => item.id === id)?.data || {};
+  const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
+  if (!comment) return;
+  const mutateComment = current => {
+    const replies = [...(current.replies || [])];
+    replies.splice(rIdx, 1);
+    return { ...current, replies };
+  };
+  if (comment.__legacy) await updateLegacyGalleryComment(id, comment.__legacyIndex, mutateComment);
+  else await updateModernGalleryComment(id, comment.__commentKey, mutateComment);
+  await syncGalleryCounts(id, counts => ({
+    replyCount: Math.max(0, counts.replyCount - 1)
+  }));
+  const updatedPhoto = await refreshGalleryPhotoCache(id);
+  await loadGalleryCommentsSnapshot(id, true);
+  if (updatedPhoto) renderLightboxComments(id, updatedPhoto);
+  showToast('Resposta excluída.');
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// GALLERY TAGS SYSTEM
+// ═══════════════════════════════════════════════════════════════════
+
+// Load tags from Firestore (config doc) — fallback to defaults
+async function loadGalleryTags(force = false) {
+  if (galleryTagsLoaded && !force) return;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'galleryTags'));
+    if (snap.exists() && Array.isArray(snap.data().tags)) {
+      galleryTags = snap.data().tags;
+    }
+  } catch(e) { /* use defaults */ }
+  galleryTagsLoaded = true;
+  renderTagBar();
+  renderTagManagerChips();
+  renderUploadTagSelect();
+  loadBulkPhotoGrid();
+  if (activeTagFilter !== 'Todas' && !galleryTags.includes(activeTagFilter)) {
+    activeTagFilter = 'Todas';
+    renderGallery();
+  }
+}
+
+async function loadGalleryCompression(force = false) {
+  if (galleryCompressionLoaded && !force) return;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'galleryCompression'));
+    if (snap.exists()) {
+      galleryCompQuality = (snap.data().quality || 70) / 100;
+      galleryCompMaxPx   = snap.data().maxPx   || 1920;
+      galleryCarouselDelayMs = Math.min(30000, Math.max(2000, (parseInt(snap.data().carouselDelaySeconds, 10) || 5) * 1000));
+    }
+  } catch(e) { /* use defaults */ }
+  galleryCompressionLoaded = true;
+  restartGalleryAutoplay();
+}
+
+function renderTagBar() {
+  const bar = document.getElementById('galleryTagBar');
+  if (!bar) return;
+  const allTags = ['Todas', ...galleryTags];
+  let html = allTags.map(t => {
+    const isActive = activeTagFilter === t;
+    const style = isActive
+      ? 'background:rgba(200,130,10,.28);border-color:var(--amber);color:var(--gold);cursor:pointer'
+      : 'cursor:pointer';
+    return `<span class="toca-chip" style="${style};user-select:none;transition:all .2s" onclick="setTagFilter('${t}')">${t}</span>`;
+  }).join('');
+  if (isMember) {
+    const isOpen = document.getElementById('tagManagerWrap')?.style.display !== 'none';
+    html += `<span class="toca-chip" id="editTagsToggleChip" onclick="toggleTagManager()" style="cursor:pointer;border-style:dashed;opacity:.7;user-select:none;transition:all .2s${isOpen ? ';background:rgba(200,130,10,.18);opacity:1' : ''}">${isOpen ? '✕ Fechar' : '✎ Editar Tags'}</span>`;
+  }
+  bar.innerHTML = html;
+}
+
+function renderMediaTypeBar() {
+  const bar = document.getElementById('galleryMediaTypeBar');
+  if (!bar) return;
+  const items = [
+    { id: 'Todos', label: 'Tudo' },
+    { id: 'image', label: 'Fotos' },
+    { id: 'youtube', label: 'Vídeos' }
+  ];
+  bar.innerHTML = items.map(item => {
+    const isActive = activeMediaTypeFilter === item.id;
+    const style = isActive
+      ? 'background:rgba(200,130,10,.28);border-color:var(--amber);color:var(--gold);cursor:pointer'
+      : 'cursor:pointer';
+    return `<span class="toca-chip" style="${style};user-select:none;transition:all .2s" onclick="setMediaTypeFilter('${item.id}')">${item.label}</span>`;
+  }).join('');
+}
+
+window.toggleTagManager = () => {
+  const wrap = document.getElementById('tagManagerWrap');
+  if (!wrap) return;
+  const opening = wrap.style.display === 'none';
+  wrap.style.display = opening ? 'block' : 'none';
+  renderTagBar(); // re-render to flip button label
+};
+
+window.setTagFilter = tag => {
+  activeTagFilter = tag;
+  carouselIndex = 0;
+  galleryLastGridIds = ''; // força re-render da grade ao trocar tag
+  renderGallery();
+};
+
+window.setMediaTypeFilter = type => {
+  activeMediaTypeFilter = type;
+  carouselIndex = 0;
+  galleryLastGridIds = '';
+  renderGallery();
+};
+
+function renderTagManagerChips() {
+  const el = document.getElementById('tagManagerChips');
+  if (!el) return;
+  el.innerHTML = galleryTags.map((t, i) =>
+    `<span class="tag-manager-chip">${t
+    }<button onclick="moveGalleryTag(${i},-1)" title="Mover para a esquerda" style="color:var(--paper);margin-left:.1rem">←</button
+    ><button onclick="moveGalleryTag(${i},1)" title="Mover para a direita" style="color:var(--paper)">→</button
+    ><button onclick="renameGalleryTag(${i})" title="Renomear tag" style="color:var(--amber)">✎</button
+    ><button onclick="removeGalleryTag(${i})" title="Excluir tag">✕</button></span>`
+  ).join('');
+  // Populate bulk editor selects
+  const srcSel  = document.getElementById('bulkSourceTag');
+  const destSel = document.getElementById('bulkDestTag');
+  if (srcSel) {
+    const srcVal = srcSel.value;
+    srcSel.innerHTML = '<option value="Todas">Todas</option><option value="ComTag">Já estão na tag</option><option value="SemTag">Ainda não estão na tag</option>';
+    if (['Todas','ComTag','SemTag'].includes(srcVal)) srcSel.value = srcVal;
+  }
+  if (destSel) {
+    const destVal = destSel.value;
+    destSel.innerHTML = '<option value="">Selecione a tag</option>' + galleryTags.map(t=>`<option value="${t}">${t}</option>`).join('');
+    if (galleryTags.includes(destVal)) destSel.value = destVal;
+  }
+}
+
+window.moveGalleryTag = async (idx, dir) => {
+  if (!isMember) return;
+  const target = idx + dir;
+  if (target < 0 || target >= galleryTags.length) return;
+  const next = [...galleryTags];
+  [next[idx], next[target]] = [next[target], next[idx]];
+  galleryTags = next;
+  await saveGalleryTags();
+  showToast('✓ Ordem das tags atualizada!');
+};
+
+function renderUploadTagSelect() {
+  const photoEl = document.getElementById('uploadTagSelect');
+  if (photoEl) {
+    photoEl.innerHTML = galleryTags.map(t =>
+      `<button class="gallery-tag-btn${selectedUploadTag===t?' active':''}" onclick="selectUploadTag('${t}')">${t}</button>`
+    ).join('');
+  }
+  const youtubeEl = document.getElementById('uploadYoutubeTagSelect');
+  if (youtubeEl) {
+    youtubeEl.innerHTML = galleryTags.map(t =>
+      `<button class="gallery-tag-btn${selectedYoutubeUploadTag===t?' active':''}" onclick="selectYoutubeUploadTag('${t}')">${t}</button>`
+    ).join('');
+  }
+}
+
+window.selectUploadTag = tag => {
+  selectedUploadTag = tag;
+  renderUploadTagSelect();
+};
+
+window.selectYoutubeUploadTag = tag => {
+  selectedYoutubeUploadTag = tag;
+  renderUploadTagSelect();
+};
+
+window.addGalleryTag = async () => {
+  if (!isMember) return;
+  const input = document.getElementById('newTagInput');
+  const tag = input.value.trim();
+  if (!tag) { showToast('⚠ Digite o nome da tag'); return; }
+  if (galleryTags.includes(tag)) { showToast('⚠ Tag já existe'); return; }
+  galleryTags = [...galleryTags, tag];
+  await saveGalleryTags();
+  input.value = '';
+  showToast(`✓ Tag "${tag}" criada!`);
+};
+
+window.removeGalleryTag = async idx => {
+  if (!isMember) return;
+  const tag = galleryTags[idx];
+
+  // Check if any photos have this tag
+  const affectedPhotos = galleryCache.filter(({data:p}) => (p.tags||[]).includes(tag));
+
+  if (affectedPhotos.length > 0) {
+    const otherTags = galleryTags.filter((_,i) => i !== idx);
+    if (!otherTags.length) {
+      showToast('⚠ Crie outra tag antes de excluir esta — há fotos vinculadas.');
+      return;
+    }
+
+    // Build migration modal
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:1rem';
+    overlay.innerHTML = `
+      <div style="background:linear-gradient(160deg,#1a1207,#0f0b04);border:1px solid rgba(200,130,10,.3);border-radius:2px;padding:1.6rem;max-width:400px;width:100%">
+        <p style="font-family:'Cinzel',serif;color:var(--gold);font-size:.9rem;margin-bottom:.6rem;letter-spacing:.08em">EXCLUIR TAG "${tag.toUpperCase()}"</p>
+        <p style="font-size:.8rem;color:var(--paper);margin-bottom:1.1rem">
+          <strong>${affectedPhotos.length} foto${affectedPhotos.length!==1?'s':''}</strong> ${affectedPhotos.length!==1?'estão vinculadas':'está vinculada'} a esta tag.<br>
+          Selecione para qual tag migrar essas fotos:
+        </p>
+        <div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:1.2rem" id="migrateTagPicker">
+          ${otherTags.map(t => `<button class="gallery-tag-btn" onclick="this.parentElement.querySelectorAll('.gallery-tag-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')" data-tag="${t}">${t}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:.7rem;justify-content:flex-end">
+          <button class="btn-ghost btn-sm" onclick="this.closest('[style*=fixed]').remove()">Cancelar</button>
+          <button class="btn btn-sm" style="background:linear-gradient(135deg,var(--rust),#a04010)" onclick="confirmRemoveTag(${idx},'${tag}',this)">Excluir e migrar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    return;
+  }
+
+  // No photos — just delete
+  if (!confirmAction(`Excluir a tag "${tag}"?`)) return;
+  galleryTags = galleryTags.filter((_,i) => i !== idx);
+  if (activeTagFilter === tag) activeTagFilter = 'Todas';
+  if (selectedUploadTag === tag) selectedUploadTag = '';
+  if (selectedYoutubeUploadTag === tag) selectedYoutubeUploadTag = '';
+  await saveGalleryTags();
+  showToast(`Tag "${tag}" excluída.`);
+};
+
+window.confirmRemoveTag = async (idx, tag, btn) => {
+  const overlay = btn.closest('[style*=fixed]');
+  const targetBtn = overlay.querySelector('#migrateTagPicker .gallery-tag-btn.active');
+  if (!targetBtn) { showToast('⚠ Selecione uma tag de destino'); return; }
+  const targetTag = targetBtn.dataset.tag;
+
+  showToast('⏳ Migrando fotos…');
+  const affectedPhotos = galleryCache.filter(({data:p}) => (p.tags||[]).includes(tag));
+  for (const {id, data:p} of affectedPhotos) {
+    const newTags = [...new Set((p.tags||[]).map(t => t === tag ? targetTag : t).filter(t => t !== tag))];
+    if (!newTags.includes('Todas')) newTags.unshift('Todas');
+    await updateDoc(doc(db,'gallery',id), { tags: newTags });
+  }
+
+  galleryTags = galleryTags.filter((_,i) => i !== idx);
+  if (activeTagFilter === tag) activeTagFilter = targetTag;
+  if (selectedUploadTag === tag) selectedUploadTag = targetTag;
+  if (selectedYoutubeUploadTag === tag) selectedYoutubeUploadTag = targetTag;
+  await saveGalleryTags();
+  overlay.remove();
+  showToast(`✓ ${affectedPhotos.length} foto${affectedPhotos.length!==1?'s':''} migrada${affectedPhotos.length!==1?'s':''} para "${targetTag}". Tag "${tag}" excluída.`);
+};
+
+window.renameGalleryTag = async idx => {
+  if (!isMember) return;
+  const oldName = galleryTags[idx];
+  const newName = prompt(`Renomear tag "${oldName}" para:`, oldName);
+  if (!newName || !newName.trim()) return;
+  const trimmed = newName.trim();
+  if (trimmed === oldName) return;
+  if (galleryTags.includes(trimmed)) { showToast('⚠ Já existe uma tag com esse nome'); return; }
+
+  // Update tag list
+  galleryTags = galleryTags.map((t, i) => i === idx ? trimmed : t);
+
+  // Update activeTagFilter and upload selectors if they pointed to old name
+  if (activeTagFilter === oldName) activeTagFilter = trimmed;
+  if (selectedUploadTag === oldName) selectedUploadTag = trimmed;
+  if (selectedYoutubeUploadTag === oldName) selectedYoutubeUploadTag = trimmed;
+
+  // Batch-update all gallery photos that have the old tag
+  showToast('⏳ Renomeando tag nas fotos…');
+  const q = query(collection(db,'gallery'));
+  const snap = await getDocs(q);
+  const toUpdate = snap.docs.filter(d => (d.data().tags||[]).includes(oldName));
+  for (const d of toUpdate) {
+    const tags = (d.data().tags||[]).map(t => t === oldName ? trimmed : t);
+    await updateDoc(doc(db,'gallery',d.id), { tags });
+  }
+
+  await saveGalleryTags();
+  showToast(`✓ Tag renomeada para "${trimmed}" (${toUpdate.length} foto${toUpdate.length!==1?'s':''} atualizadas)`);
+};
+
+async function saveGalleryTags() {
+  await setDoc(doc(db, 'config', 'galleryTags'), { tags: galleryTags });
+  renderTagBar();
+  renderTagManagerChips();
+  renderUploadTagSelect();
+  renderGallery();
+}
+
+// Edit tags of an existing photo
+window.editPhotoTags = async id => {
+  if (!isMember) return;
+  const snap = await getDoc(doc(db,'gallery',id));
+  if (!snap.exists()) return;
+  const p = snap.data();
+  const currentTags = (p.tags||['Todas']).filter(t => t !== 'Todas');
+
+  // Build modal for tag editing
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:1rem';
+  overlay.innerHTML = `
+    <div style="background:linear-gradient(160deg,#1a1207,#0f0b04);border:1px solid rgba(200,130,10,.3);border-radius:2px;padding:1.6rem;max-width:400px;width:100%">
+      <p style="font-family:'Cinzel',serif;color:var(--gold);font-size:.9rem;margin-bottom:1rem;letter-spacing:.08em">EDITAR TAGS DA MÍDIA</p>
+      <p style="font-size:.75rem;color:var(--smoke);margin-bottom:.9rem">Selecione uma ou mais tags:</p>
+      <div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:1.2rem" id="editTagPicker">
+        ${galleryTags.map(t => `<button class="gallery-tag-btn${currentTags.includes(t)?' active':''}" onclick="this.classList.toggle('active')" data-tag="${t}">${t}</button>`).join('')}
+      </div>
+      <div style="display:flex;gap:.7rem;justify-content:flex-end">
+        <button class="btn-ghost btn-sm" onclick="this.closest('[style*=fixed]').remove()">Cancelar</button>
+        <button class="btn btn-sm" onclick="savePhotoTags('${id}',this)">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+};
+
+window.savePhotoTags = async (id, btn) => {
+  const overlay = btn.closest('[style*=fixed]');
+  const selected = [...overlay.querySelectorAll('#editTagPicker .gallery-tag-btn.active')].map(b => b.dataset.tag);
+  if (!selected.length) { showToast('⚠ Selecione ao menos uma tag'); return; }
+  const tags = ['Todas', ...selected];
+  await updateDoc(doc(db,'gallery',id), { tags });
+  overlay.remove();
+  showToast('✓ Tags atualizadas!');
+  // refresh lightbox if open
+  if (currentLbId === id) openLightbox(id);
+};
+
+
+window.loadBulkPhotoGrid = () => {
+  const mode    = document.getElementById('bulkSourceTag')?.value || 'Todas';
+  const editTag = document.getElementById('bulkDestTag')?.value || '';
+  const grid    = document.getElementById('bulkPhotoGrid');
+  if (!grid) return;
+  if (!editTag) {
+    bulkTagOriginalIds = [];
+    grid.innerHTML = '<p style="grid-column:1/-1;color:var(--smoke);font-size:.75rem;font-style:italic;padding:.5rem">Selecione uma tag acima para editar as fotos vinculadas.</p>';
+    updateBulkSelCount();
+    return;
+  }
+
+  const taggedPhotos = galleryCache.filter(({data:p}) => (p.tags||[]).includes(editTag));
+  bulkTagOriginalIds = taggedPhotos.map(p => p.id);
+
+  const photos = galleryCache.filter(({data:p}) => {
+    const tags = p.tags || ['Todas'];
+    const hasTag = tags.includes(editTag);
+    const noRealTag = !tags.some(t => t !== 'Todas');
+    if (mode === 'ComTag') return hasTag;
+    if (mode === 'SemTag') return noRealTag || !hasTag;
+    return true;
+  });
+
+  if (!photos.length) {
+    grid.innerHTML = '<p style="grid-column:1/-1;color:var(--smoke);font-size:.75rem;font-style:italic;padding:.5rem">Nenhuma foto encontrada nesse filtro.</p>';
+    updateBulkSelCount();
+    return;
+  }
+
+  grid.innerHTML = photos.map(({id, data:p}) => {
+    const hasTag = (p.tags||[]).includes(editTag);
+    const noRealTag = !(p.tags||[]).some(t => t !== 'Todas');
+    const label = hasTag ? 'Nesta tag' : (noRealTag ? 'Sem tag' : 'Fora da tag');
+    return `<div class="bulk-photo-thumb" data-id="${id}" data-selected="${hasTag}" onclick="toggleBulkSelect(this)"
+      style="position:relative;aspect-ratio:1;overflow:hidden;border:2px solid ${hasTag ? 'var(--amber)' : 'rgba(200,130,10,.15)'};border-radius:1px;cursor:pointer;transition:border-color .2s">
+      <img src="${getGalleryThumbUrl(p)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover">
+      <div class="bulk-check" style="position:absolute;top:.2rem;right:.2rem;width:18px;height:18px;border-radius:50%;border:2px solid ${hasTag ? 'var(--amber)' : 'rgba(200,130,10,.5)'};background:${hasTag ? 'var(--amber)' : 'rgba(0,0,0,.5)'};display:flex;align-items:center;justify-content:center;font-size:.6rem;color:${hasTag ? '#000' : 'transparent'};transition:all .2s">✓</div>
+      <div style="position:absolute;left:.2rem;bottom:.2rem;background:rgba(0,0,0,.7);color:${hasTag ? 'var(--gold)' : 'var(--paper)'};font-size:.58rem;padding:.12rem .32rem;border-radius:999px;letter-spacing:.06em;text-transform:uppercase">${label}</div>
+    </div>`;
+  }).join('');
+  updateBulkSelCount();
+};
+
+window.toggleBulkSelect = el => {
+  const isSelected = el.dataset.selected === 'true';
+  el.dataset.selected = !isSelected;
+  el.style.borderColor = !isSelected ? 'var(--amber)' : 'rgba(200,130,10,.15)';
+  const check = el.querySelector('.bulk-check');
+  if (check) {
+    check.style.background = !isSelected ? 'var(--amber)' : 'rgba(0,0,0,.5)';
+    check.style.color      = !isSelected ? '#000' : 'transparent';
+    check.style.borderColor= !isSelected ? 'var(--amber)' : 'rgba(200,130,10,.5)';
+  }
+  updateBulkSelCount();
+};
+
+window.bulkSelectAll = () => {
+  const grid  = document.getElementById('bulkPhotoGrid');
+  if (!grid) return;
+  const thumbs = grid.querySelectorAll('.bulk-photo-thumb');
+  const allSel = [...thumbs].every(t => t.dataset.selected === 'true');
+  thumbs.forEach(t => {
+    t.dataset.selected = !allSel;
+    t.style.borderColor = !allSel ? 'var(--amber)' : 'rgba(200,130,10,.15)';
+    const check = t.querySelector('.bulk-check');
+    if (check) {
+      check.style.background  = !allSel ? 'var(--amber)' : 'rgba(0,0,0,.5)';
+      check.style.color       = !allSel ? '#000' : 'transparent';
+      check.style.borderColor = !allSel ? 'var(--amber)' : 'rgba(200,130,10,.5)';
+    }
+  });
+  updateBulkSelCount();
+};
+
+function updateBulkSelCount() {
+  const grid  = document.getElementById('bulkPhotoGrid');
+  const count = document.getElementById('bulkSelCount');
+  if (!grid || !count) return;
+  const n = grid.querySelectorAll('.bulk-photo-thumb[data-selected="true"]').length;
+  const changed = [...grid.querySelectorAll('.bulk-photo-thumb')].filter(el => {
+    const selected = el.dataset.selected === 'true';
+    const wasSelected = bulkTagOriginalIds.includes(el.dataset.id);
+    return selected !== wasSelected;
+  }).length;
+  count.textContent = n > 0 ? `${n} foto${n!==1?'s':''} marcada${n!==1?'s':''} para a tag · ${changed} alteração${changed!==1?'ões':''} pendente${changed!==1?'s':''}` : '';
+}
+
+window.bulkMigratePhotos = async () => {
+  const grid    = document.getElementById('bulkPhotoGrid');
+  const editTag = document.getElementById('bulkDestTag')?.value;
+  if (!editTag) { showToast('⚠ Selecione a tag que deseja editar'); return; }
+  const thumbs = grid ? [...grid.querySelectorAll('.bulk-photo-thumb')] : [];
+  if (!thumbs.length) { showToast('⚠ Nenhuma foto disponível nesse filtro'); return; }
+  const changed = thumbs.filter(el => {
+    const selected = el.dataset.selected === 'true';
+    const wasSelected = bulkTagOriginalIds.includes(el.dataset.id);
+    return selected !== wasSelected;
+  });
+  if (!changed.length) { showToast('⚠ Nenhuma alteração para salvar'); return; }
+  showToast(`⏳ Salvando ${changed.length} alteração${changed.length!==1?'ões':''}…`);
+  for (const el of changed) {
+    const id   = el.dataset.id;
+    const item = galleryCache.find(x => x.id === id);
+    if (!item) continue;
+    const existing = (item.data.tags || ['Todas']).filter(t => t !== 'Todas');
+    const selected = el.dataset.selected === 'true';
+    let tags = selected
+      ? [...new Set([...existing, editTag])]
+      : existing.filter(t => t !== editTag);
+    tags = ['Todas', ...tags];
+    await updateDoc(doc(db,'gallery',id), { tags });
+  }
+  bulkTagOriginalIds = thumbs.filter(el => el.dataset.selected === 'true').map(el => el.dataset.id);
+  showToast(`✓ Tag "${editTag}" atualizada em ${changed.length} foto${changed.length!==1?'s':''}!`);
+  updateBulkSelCount();
+  loadBulkPhotoGrid();
+};
+
+// Load tags on init
+loadGalleryTags();
+
+// ═══════════════════════════════════════════════════════════════════
+// FORUM REPLIES WITH LIKE/DISLIKE
+// ═══════════════════════════════════════════════════════════════════
+
+function renderForum() {
+  const c = document.getElementById('forumContainer');
+  const hc = document.getElementById('forumHistoryContainer');
+  const hBtn = document.getElementById('forumHistoryBtn');
+  if (!forumCache.length) {
+    c.innerHTML='<p style="color:var(--smoke);font-style:italic">Nenhum ensaio registrado ainda.</p>';
+    if (hc) hc.innerHTML = '';
+    if (hBtn) hBtn.style.display = 'none';
+    return;
+  }
+  const uid = auth.currentUser?.uid || null;
+  const openThreads = forumCache.filter(({data:t}) => t.closed !== true);
+  const closedThreads = forumCache.filter(({data:t}) => t.closed === true);
+
+  const buildThread = ({id, data: t}) => {
+    const threadClosed = t.closed === true;
+    const needsPostLoad = t.open && !forumPostsCache[id] && !forumPostSubscriptions[id];
+    if (needsPostLoad) {
+      forumPostSubscriptions[id] = 'loading';
+      setTimeout(() => ensureForumPostsSubscription(id, true), 0);
+    }
+    const threadPosts = getForumPostsForRender(id, t);
+    const posts = threadPosts.map((p, pi) => {
+      const reactions = p.reactions || {};
+      const likes     = Object.values(reactions).filter(v=>v==='like').length;
+      const dislikes  = Object.values(reactions).filter(v=>v==='dislike').length;
+      const myReact   = uid ? reactions[uid] : null;
+
+      // Replies
+      const replies = p.replies || [];
+      const repliesHtml = replies.length ? `<div class="forum-replies">${replies.map((rp, rpi) => {
+        const rr = rp.reactions || {};
+        const rLikes = Object.values(rr).filter(v=>v==='like').length;
+        const rDislikes = Object.values(rr).filter(v=>v==='dislike').length;
+        const rMy = uid ? rr[uid] : null;
+        const rpForm = isMember && !threadClosed
+          ? `<div class="frp-rform" style="display:none" id="frpForm_${id}_${p.__postKey}_${rpi}">
+              <input placeholder="Responder..." id="frpInput_${id}_${p.__postKey}_${rpi}" onkeydown="if(event.key==='Enter')submitFrpReply('${id}','${p.__postKey}',${rpi})">
+              <button onclick="submitFrpReply('${id}','${p.__postKey}',${rpi})">Enviar</button>
+            </div>` : '';
+        return `<div class="frp">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
+            <div class="post-avatar" style="width:24px;height:24px;font-size:.6rem">${rp.author.charAt(0)}</div>
+            <span class="post-author">${rp.author}</span><span class="post-date">${rp.date}</span>
+            ${isMember?`<button class="lb-cdel" onclick="delFrp('${id}','${p.__postKey}',${rpi})">✕</button>`:''}
+          </div>
+          <div class="post-text" style="font-size:.82rem">${rp.text}</div>
+          <div class="frp-act">
+            <button class="fr-rbtn${rMy==='like'?' fl':''}" onclick="frpReact('${id}','${p.__postKey}',${rpi},'like')" ${(!isMember||threadClosed)?'disabled':''}>👍 ${rLikes||''}</button>
+            <button class="fr-rbtn${rMy==='dislike'?' fd':''}" onclick="frpReact('${id}','${p.__postKey}',${rpi},'dislike')" ${(!isMember||threadClosed)?'disabled':''}>👎 ${rDislikes||''}</button>
+            ${isMember&&!threadClosed?`<button class="frp-rp" onclick="toggleFrpForm('${id}','${p.__postKey}',${rpi})">Responder</button>`:''}
+          </div>
+          ${rpForm}
+        </div>`;
+      }).join('')}</div>` : '';
+
+      const replyForm = isMember && !threadClosed
+        ? `<div class="frp-rform" id="frForm_${id}_${p.__postKey}">
+            <input placeholder="Responder a ${p.author}..." id="frInput_${id}_${p.__postKey}" onkeydown="if(event.key==='Enter')submitFrpReply('${id}','${p.__postKey}',-1)">
+            <button onclick="submitFrpReply('${id}','${p.__postKey}',-1)">Responder</button>
+          </div>` : '';
+
+      const likeBtn = `<button class="react-btn${myReact==='like'?' liked':''}"
+        ${(!isMember||threadClosed)?'disabled':''}
+        onclick="votePost('${id}','${p.__postKey}','like')"
+        title="${myReact==='like'?'Remover like':'Curtir'}">
+        👍 ${likes||''}
+      </button>`;
+      const dislikeBtn = `<button class="react-btn${myReact==='dislike'?' disliked':''}"
+        ${(!isMember||threadClosed)?'disabled':''}
+        onclick="votePost('${id}','${p.__postKey}','dislike')"
+        title="${myReact==='dislike'?'Remover dislike':'Não curtir'}">
+        👎 ${dislikes||''}
+      </button>`;
+
+      return `
+      <div class="forum-post">
+        <div class="post-avatar">${p.author.charAt(0)}</div>
+        <div class="post-content">
+          <div class="post-meta"><span class="post-author">${p.author}</span><span class="post-date">${p.date}</span></div>
+          <div class="post-text">${p.text}</div>
+          <div class="post-reactions">${likeBtn}${dislikeBtn}
+            ${isMember&&!threadClosed?`<button class="reply-btn" onclick="toggleFrForm('${id}','${p.__postKey}')">Responder</button>`:''}
+          </div>
+          ${repliesHtml}
+          ${replyForm}
+        </div>
+      </div>`;
+    }).join('');
+    const emptyPostsHtml = needsPostLoad
+      ? '<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Carregando comentários…</p>'
+      : '<p style="color:var(--smoke);font-style:italic;font-size:.85rem">Nenhum comentário ainda.</p>';
+    const mainReplyForm = isMember && !threadClosed ? `
+      <div class="forum-reply-form" style="margin-top:1rem">
+        <div class="form-group" style="flex:1"><input type="text" id="fMsg_${id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${id}')"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${id}')">Enviar</button></div>
+      </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-top:.5rem">${threadClosed?'Este fórum foi encerrado e está disponível apenas para consulta.':'Apenas membros podem comentar.'}</p>`;
+    const delBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
+    const statusHtml = threadClosed ? '<div class="poll-status-closed">🔒 Fórum encerrado</div>' : '<div class="poll-status-open">🟢 Fórum aberto</div>';
+    const closeMeta = threadClosed && t.closedAt ? ` · encerrado em ${formatTs(t.closedAt)}` : '';
+    return `<div class="forum-thread">
+      <div class="forum-thread-header" onclick="toggleThread('${id}',this)">
+        <div>
+          <div class="forum-thread-title">${t.title}</div>
+          <div class="forum-thread-meta">${threadPosts.length} comentário${threadPosts.length!==1?'s':''} · ${t.date}${t.createdAt ? ` às ${formatTs(t.createdAt).split(' ')[1]}` : ''}${closeMeta}</div>
+          <div style="margin-top:.35rem">${statusHtml}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">${delBtn}<span class="forum-chevron${t.open?' open':''}">▼</span></div>
+      </div>
+      <div class="forum-body${t.open?' open':''}" id="fb_${id}">
+        <div class="forum-posts">${posts||emptyPostsHtml}</div>
+        ${mainReplyForm}
+      </div>
+    </div>`;
+  };
+
+  c.innerHTML = openThreads.length
+    ? openThreads.map(buildThread).join('')
+    : '<p style="color:var(--smoke);font-style:italic">Nenhum fórum aberto no momento.</p>';
+
+  if (hBtn) {
+    hBtn.style.display = closedThreads.length ? 'inline-flex' : 'none';
+    hBtn.innerHTML = forumHistoryOpen
+      ? `📂 Ocultar histórico do fórum (<span id="forumClosedCount">${closedThreads.length}</span>)`
+      : `🗂 Histórico do fórum (<span id="forumClosedCount">${closedThreads.length}</span>)`;
+  }
+  if (hc) {
+    hc.style.display = forumHistoryOpen && closedThreads.length ? 'block' : 'none';
+    hc.innerHTML = forumHistoryOpen && closedThreads.length
+      ? closedThreads.map(buildThread).join('')
+      : '';
+  }
+}
+
+window.toggleForumHistory = () => {
+  forumHistoryOpen = !forumHistoryOpen;
+  renderForum();
+};
+
+window.submitFrpReply = async (threadId, postKey, replyIdx) => {
+  if (!isMember) return;
+  const inputId = replyIdx >= 0
+    ? `frpInput_${threadId}_${postKey}_${replyIdx}`
+    : `frInput_${threadId}_${postKey}`;
+  const input = document.getElementById(inputId);
+  const text = input?.value.trim();
+  if (!text) return;
+
+  const thread = forumCache.find(t => t.id === threadId);
+  const post = getForumPostsForRender(threadId, thread?.data || {}).find(p => p.__postKey === postKey);
+  if (!post) return;
+  const mutatePost = current => {
+    const replies = [...(current.replies || [])];
+    replies.push({author: getMemberName(), text, date: nowLabel(), reactions: {}, authorUid: auth.currentUser?.uid});
+    return { ...current, replies };
+  };
+  if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
+  else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
+  if (input) input.value = '';
+  showToast('✓ Resposta adicionada!');
+};
+
+window.toggleFrpForm = (threadId, postKey, replyIdx) => {
+  const id = replyIdx >= 0 ? `frpForm_${threadId}_${postKey}_${replyIdx}` : `frForm_${threadId}_${postKey}`;
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.toggleFrForm = (threadId, postKey) => {
+  const el = document.getElementById(`frForm_${threadId}_${postKey}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.frpReact = async (threadId, postKey, replyIdx, type) => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const uid = auth.currentUser?.uid;
+  const thread = forumCache.find(t => t.id === threadId);
+  const post = getForumPostsForRender(threadId, thread?.data || {}).find(p => p.__postKey === postKey);
+  if (!post) return;
+  const mutatePost = current => {
+    const replies = [...(current.replies || [])];
+    const reply = {...replies[replyIdx]};
+    if (!reply) return current;
+    const r = {...(reply.reactions||{})};
+    if (r[uid] === type) delete r[uid];
+    else r[uid] = type;
+    reply.reactions = r;
+    replies[replyIdx] = reply;
+    return { ...current, replies };
+  };
+  if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
+  else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
+};
+
+window.delFrp = async (threadId, postKey, replyIdx) => {
+  if (!confirmAction('Excluir esta resposta?')) return;
+  if (!isMember) return;
+  const thread = forumCache.find(t => t.id === threadId);
+  const post = getForumPostsForRender(threadId, thread?.data || {}).find(p => p.__postKey === postKey);
+  if (!post) return;
+  const mutatePost = current => {
+    const replies = [...(current.replies || [])];
+    replies.splice(replyIdx, 1);
+    return { ...current, replies };
+  };
+  if (post.__legacy) await updateForumLegacyPost(threadId, post.__legacyIndex, mutatePost);
+  else await updateForumModernPost(threadId, post.__postKey, mutatePost);
+  await ensureForumPostsSubscription(threadId, true);
+  showToast('Resposta excluída.');
+};
+
+function initLazySectionSubscriptions() {
+  const targets = [
+    { id: 'membros', load: loadMembersSnapshot },
+    { id: 'galeria', load: ensureGallerySubscription }
+  ];
+
+  if (!('IntersectionObserver' in window)) {
+    targets.forEach(target => target.load());
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const target = targets.find(item => item.id === entry.target.id);
+      if (!target) return;
+      target.load();
+      observer.unobserve(entry.target);
+    });
+  }, { rootMargin: '200px 0px' });
+
+  targets.forEach(target => {
+    const el = document.getElementById(target.id);
+    if (el) observer.observe(el);
+  });
+}
+
+// --- PIPELINE DE PROMOÃ‡ÃƒO AUTOMÃTICA ---
+async function updatePromotionCountdowns() {
+  try {
+    const now = Date.now();
+    let state = {};
+    try {
+      const stateSnap = await getDoc(doc(db, 'promotion_state', 'current'));
+      state = stateSnap.exists() ? (stateSnap.data() || {}) : {};
+    } catch (stateErr) {
+      console.warn('[COUNTDOWN] NÃ£o foi possÃ­vel ler promotion_state, usando fallback local.', stateErr);
+    }
+    if (state.promotionPaused === true) {
+      renderPromotionNav(0, true);
+      return;
+    }
+    const stateNextPromo = toDateOrNull(state.nextPromotionDate);
+    const nextPromoDate = stateNextPromo || getNextFriday(new Date(now + 60000));
+    const nextPromo = nextPromoDate.getTime();
+    $timeUntil = nextPromo - now;
+    
+    renderPromotionNav($timeUntil);
+  } catch (e) {
+    console.error('[COUNTDOWN] Erro ao atualizar:', e);
+  }
+}
+
+function getNextFriday(fromDate = new Date()) {
+  const date = new Date(fromDate);
+  date.setSeconds(0, 0);
+  const dayOfWeek = date.getDay();
+  let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+  const isFridayAfterCutoff = dayOfWeek === 5 && (
+    date.getHours() > 23 ||
+    (date.getHours() === 23 && date.getMinutes() >= 59)
+  );
+  if (daysUntilFriday === 0 && isFridayAfterCutoff) {
+    daysUntilFriday = 7;
+  }
+  date.setDate(date.getDate() + daysUntilFriday);
+  date.setHours(23, 59, 0, 0);
+  return date;
+}
+
+function toDateOrNull(value) {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') return value.toDate();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function renderPromotionNav(timeUntil, paused = false) {
+  const navBadge = document.getElementById('promoCountdownNav');
+  const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
+  const timeLabel = formatTimeRemaining(timeUntil);
+  const shouldShowNav = !paused && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+
+  if (navBadge) {
+    navBadge.textContent = timeLabel;
+    navBadge.style.display = shouldShowNav ? 'inline-block' : 'none';
+  }
+  if (navBadgeMobile) {
+    navBadgeMobile.textContent = timeLabel;
+    navBadgeMobile.style.display = shouldShowNav ? 'inline-block' : 'none';
+  }
+}
+
+function formatTimeRemaining(ms) {
+  if (ms <= 0) return 'Encerrando...';
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+// INIT
+applySeasonalHeroTheme();
+initLazySectionSubscriptions();
+  updatePromotionCountdowns();
+initCarouselTouch();
+window.addEventListener('focus', () => {
+  if (currentSection === 'galeria') ensureGallerySubscription(true);
+  updatePromotionCountdowns();
+});
+setTimeout(()=>{
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  setTimeout(()=>document.getElementById('loadingOverlay').remove(),600);
+},1800);
+
+// ─── PWA INSTALL ──────────────────────────────────────────────────
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+      .catch(err => console.error('[PWA] Erro ao registrar SW:', err));
+  });
+}
+
+let deferredPrompt = null;
+const banner  = document.getElementById('installBanner');
+const btn     = document.getElementById('installBtn');
+const dismiss = document.getElementById('dismissBanner');
+const dismissSecondary = document.getElementById('dismissInstallBtn');
+const bannerNote = document.getElementById('installBannerNote');
+
+const INSTALL_PROMPT_INTERVAL_DAYS = 7;
+const INSTALL_PROMPT_DELAY_MS = 5000;
+const INSTALL_PROMPT_KEY = 'retorica_install_next_prompt_at';
+
+function hideBanner() {
+  if (banner) banner.classList.remove('show');
+}
+
+function scheduleNextInstallPrompt(days = INSTALL_PROMPT_INTERVAL_DAYS) {
+  const nextAt = Date.now() + (days * 24 * 60 * 60 * 1000);
+  localStorage.setItem(INSTALL_PROMPT_KEY, String(nextAt));
+}
+
+function canShowInstallPrompt() {
+  if (window.matchMedia('(display-mode: standalone)').matches) return false;
+  const nextAt = Number(localStorage.getItem(INSTALL_PROMPT_KEY) || '0');
+  return !nextAt || Date.now() >= nextAt;
+}
+
+function showBannerAuto(noteText = 'Sugestão exibida novamente em 7 dias se você fechar agora') {
+  if (!canShowInstallPrompt()) return;
+  if (bannerNote) bannerNote.textContent = noteText;
+  banner.classList.add('show');
+}
+
+async function handleInstallButtonClick() {
+  if (!deferredPrompt) {
+    showToast('Para instalar: use o menu do navegador e escolha "Instalar app" ou "Adicionar à tela inicial".');
+    scheduleNextInstallPrompt();
+    hideBanner();
+    return;
+  }
+
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  if (result.outcome === 'accepted') {
+    showToast('App instalado com sucesso!');
+  } else {
+    showToast('Instalação cancelada.');
+    scheduleNextInstallPrompt();
+  }
+  deferredPrompt = null;
+  hideBanner();
+}
+
+if (banner && btn && dismiss && dismissSecondary) {
+  btn.onclick = handleInstallButtonClick;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btn.innerHTML = 'Instalar app';
+    showBannerAuto();
+  });
+
+  const dismissInstallPrompt = () => {
+    hideBanner();
+    scheduleNextInstallPrompt();
+  };
+
+  dismiss.addEventListener('click', dismissInstallPrompt);
+  dismissSecondary.addEventListener('click', dismissInstallPrompt);
+  banner.addEventListener('click', (e) => {
+    if (e.target === banner) dismissInstallPrompt();
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  if (banner) banner.classList.remove('show');
+  showToast('App já está instalado!');
+  deferredPrompt = null;
+  localStorage.removeItem(INSTALL_PROMPT_KEY);
+});
+
+// Fallback desktop: if beforeinstallprompt never fires, show instructions
+if (banner && btn && dismiss && dismissSecondary && !window.matchMedia('(display-mode: standalone)').matches) {
+  setTimeout(() => {
+    if (!deferredPrompt && canShowInstallPrompt()) {
+      btn.innerHTML = 'Como instalar';
+      showBannerAuto('Se fechar agora, este lembrete reaparece em 7 dias');
+    }
+  }, INSTALL_PROMPT_DELAY_MS);
+}
+
+// ─── NEWS POPUP ───
+const NEWS_POPUP_DISMISS_KEY = 'retorica_news_dismissed_date';
+
+(function showNewsPopup() {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const dismissedToday = localStorage.getItem(NEWS_POPUP_DISMISS_KEY) === today;
+  const dayNumber = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86400000);
+  const isPopupDay = dayNumber % 2 === 0;
+  if (!isPopupDay || dismissedToday) return;
+
+  setTimeout(() => {
+    const el = document.getElementById('newsPopup');
+    if (el) el.classList.add('show');
+  }, 3000);
+})();
+
+window.dismissNewsPopup = function() {
+  const el = document.getElementById('newsPopup');
+  if (el) { el.classList.remove('show'); el.classList.add('dismissed'); }
+  localStorage.setItem(NEWS_POPUP_DISMISS_KEY, new Date().toISOString().slice(0, 10));
+};
+
+// ─── SISTEMA DE PROMOÇÃO AUTOMÁTICA ──────────────────────────────────
+const promotionStateRef = doc(db, 'promotion_state', 'current');
+const PROMOTION_LOCK_MS = 2 * 60 * 1000;
+
+// Inicializar estado de promoção
+async function initPromotionState() {
+  try {
+    const snap = await getDoc(promotionStateRef);
+    if (!snap.exists()) {
+      const nextFriday = getNextFriday();
+      await setDoc(promotionStateRef, {
+        nextPromotionDate: Timestamp.fromDate(nextFriday),
+        activeTiebreakerPoll: null,
+        activeRepertoryPoll: null,
+        completionLockToken: null,
+        completionLockUntil: null,
+        completionLockPollId: null,
+        promotionPaused: false
+      });
+    }
+  } catch (e) {
+    console.warn('[PROMOÇÃO] Não foi possível inicializar promotion_state, usando fallback local.', e);
+  }
+}
+
+// Calcular próxima sexta-feira às 23:59
+function getNextFriday(fromDate = new Date()) {
+  const date = new Date(fromDate);
+  date.setSeconds(0, 0);
+  const dayOfWeek = date.getDay();
+  let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+  const isFridayAfterCutoff = dayOfWeek === 5 && (
+    date.getHours() > 23 ||
+    (date.getHours() === 23 && date.getMinutes() >= 59)
+  );
+  if (daysUntilFriday === 0 && isFridayAfterCutoff) {
+    daysUntilFriday = 7;
+  }
+  date.setDate(date.getDate() + daysUntilFriday);
+  date.setHours(23, 59, 0, 0);
+  return date;
+}
+
+function createPromotionLockToken() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `promo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function toDateOrNull(value) {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') return value.toDate();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+async function claimPromotionExecution() {
+  const lockToken = createPromotionLockToken();
+
+  return runTransaction(db, async transaction => {
+    const stateSnap = await transaction.get(promotionStateRef);
+    if (!stateSnap.exists()) return { action: 'noop' };
+
+    const state = stateSnap.data();
+    const now = new Date();
+    const nextPromo = toDateOrNull(state.nextPromotionDate);
+    if (state.promotionPaused === true) return { action: 'noop' };
+    if (!nextPromo || now < nextPromo) return { action: 'noop' };
+
+    if (state.activeTiebreakerPoll || state.activeRepertoryPoll) {
+      return { action: 'noop' };
+    }
+
+    const lockUntil = toDateOrNull(state.promotionLockUntil);
+    if (state.promotionLockToken && lockUntil && lockUntil > now) {
+      return { action: 'noop' };
+    }
+
+    if (!suggestionsCache.length) {
+      transaction.update(promotionStateRef, {
+        nextPromotionDate: Timestamp.fromDate(getNextFriday(now)),
+        promotionLockToken: null,
+        promotionLockUntil: null
+      });
+      return { action: 'rescheduled' };
+    }
+
+    const sorted = [...suggestionsCache].sort((a, b) => {
+      const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
+      if (sb !== sa) return sb - sa;
+      return (b.data.likes || 0) - (a.data.likes || 0);
+    });
+
+    const topScore = getSuggestionScore(sorted[0].data);
+    const topSuggestions = sorted.filter(s => getSuggestionScore(s.data) === topScore);
+    const lockUntilDate = new Date(now.getTime() + PROMOTION_LOCK_MS);
+
+    transaction.update(promotionStateRef, {
+      promotionLockToken: lockToken,
+      promotionLockUntil: Timestamp.fromDate(lockUntilDate)
+    });
+
+    if (topSuggestions.length >= 2) {
+      return {
+        action: 'tiebreaker',
+        lockToken,
+        candidates: topSuggestions.slice(0, Math.min(3, topSuggestions.length))
+      };
+    }
+
+    return {
+      action: 'repertory',
+      lockToken,
+      suggestion: topSuggestions[0]
+    };
+  });
+}
+
+async function releasePromotionLock(lockToken) {
+  if (!lockToken) return;
+
+  await runTransaction(db, async transaction => {
+    const stateSnap = await transaction.get(promotionStateRef);
+    if (!stateSnap.exists()) return;
+
+    const state = stateSnap.data();
+    if (state.promotionLockToken !== lockToken) return;
+
+    transaction.update(promotionStateRef, {
+      promotionLockToken: null,
+      promotionLockUntil: null
+    });
+  });
+}
+
+function createCompletionLockToken() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `complete-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+async function claimPollCompletion(activeField, pollId) {
+  const lockToken = createCompletionLockToken();
+  return runTransaction(db, async transaction => {
+    const stateSnap = await transaction.get(promotionStateRef);
+    if (!stateSnap.exists()) return null;
+
+    const state = stateSnap.data();
+    if (state[activeField] !== pollId) return null;
+
+    const now = new Date();
+    const lockUntil = toDateOrNull(state.completionLockUntil);
+    if (state.completionLockToken && state.completionLockPollId === pollId && lockUntil && lockUntil > now) {
+      return null;
+    }
+
+    transaction.update(promotionStateRef, {
+      completionLockToken: lockToken,
+      completionLockPollId: pollId,
+      completionLockUntil: Timestamp.fromDate(new Date(now.getTime() + PROMOTION_LOCK_MS))
+    });
+    return lockToken;
+  });
+}
+
+async function releaseCompletionLock(lockToken, updates = {}) {
+  if (!lockToken) return;
+  await runTransaction(db, async transaction => {
+    const stateSnap = await transaction.get(promotionStateRef);
+    if (!stateSnap.exists()) return;
+
+    const state = stateSnap.data();
+    if (state.completionLockToken !== lockToken) return;
+
+    transaction.update(promotionStateRef, {
+      completionLockToken: null,
+      completionLockUntil: null,
+      completionLockPollId: null,
+      ...updates
+    });
+  });
+}
+
+// Formatar tempo restante
+function formatTimeRemaining(ms) {
+  if (ms <= 0) return 'Encerrando...';
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function renderPromotionBanner(timeUntil, paused = false) {
+  const navBadge = document.getElementById('promoCountdownNav');
+  const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
+  const bannerHost = document.getElementById('promotionCountdownBanner');
+  const timeLabel = formatTimeRemaining(timeUntil);
+  const shouldShowNav = !paused && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+  const shouldShowSection = paused || timeUntil > 0;
+
+  if (navBadge) {
+    navBadge.textContent = timeLabel;
+    navBadge.style.display = shouldShowNav ? 'inline-block' : 'none';
+  }
+  if (navBadgeMobile) {
+    navBadgeMobile.textContent = timeLabel;
+    navBadgeMobile.style.display = shouldShowNav ? 'inline-block' : 'none';
+  }
+  if (!bannerHost) return;
+
+  if (!shouldShowSection) {
+    bannerHost.innerHTML = '';
+    return;
+  }
+
+  if (paused) {
+    bannerHost.innerHTML = `
+      <div class="countdown-badge-big">
+        <div style="font-size:2rem;margin-bottom:.3rem">⏸</div>
+        <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;letter-spacing:.08em;margin-bottom:.4rem">Inclusão de novas músicas no repertório pausada</div>
+      </div>
+    `;
+    return;
+  }
+
+  bannerHost.innerHTML = `
+    <div class="countdown-badge-big ${timeUntil < 48 * 60 * 60 * 1000 ? 'urgent' : ''}">
+      <div style="font-size:2rem;margin-bottom:.3rem">🏆</div>
+      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;letter-spacing:.08em;margin-bottom:.4rem">VENCEDOR IRÁ PARA ENQUETE EM</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:.15em;color:var(--gold)">${timeLabel}</div>
+    </div>
+  `;
+}
+
+// Atualizar contadores na UI
+async function updatePromotionCountdowns() {
+  try {
+    const now = Date.now();
+    let state = {};
+    try {
+      const stateSnap = await getDoc(promotionStateRef);
+      state = stateSnap.exists() ? (stateSnap.data() || {}) : {};
+    } catch (stateErr) {
+      console.warn('[COUNTDOWN] Não foi possível ler promotion_state, usando fallback local.', stateErr);
+    }
+    if (state.promotionPaused === true) {
+      renderPromotionBanner(0, true);
+      return;
+    }
+    const stateNextPromo = toDateOrNull(state.nextPromotionDate);
+    const nextPromoDate = stateNextPromo || getNextFriday(new Date(now + 60000));
+    const nextPromo = nextPromoDate.getTime();
+    const timeUntil = nextPromo - now;
+    
+    console.log('[COUNTDOWN] Tempo até próxima promoção:', formatTimeRemaining(timeUntil));
+    renderPromotionBanner(timeUntil);
+  } catch (e) {
+    console.error('[COUNTDOWN] Erro ao atualizar:', e);
+    const fallbackTimeUntil = getNextFriday(new Date(Date.now() + 60000)).getTime() - Date.now();
+    renderPromotionBanner(fallbackTimeUntil);
+  }
+}
+
+// Verificar e executar promoção automática
+async function checkAndPromote() {
+  const promotion = await claimPromotionExecution();
+  if (!promotion || promotion.action === 'noop' || promotion.action === 'rescheduled') {
+    return;
+  }
+
+  try {
+    if (promotion.action === 'tiebreaker') {
+      await createTiebreakerPoll(promotion.candidates, promotion.lockToken);
+    } else if (promotion.action === 'repertory') {
+      await createRepertoryPoll(promotion.suggestion, promotion.lockToken);
+    }
+  } catch (e) {
+    await releasePromotionLock(promotion.lockToken);
+    throw e;
+  }
+}
+
+// Criar enquete de desempate (48h) - aceita 2 ou 3 músicas
+async function createTiebreakerPoll(topCandidates, lockToken = null) {
+  const endDate = new Date();
+  endDate.setHours(endDate.getHours() + 48);
+  
+  const count = topCandidates.length;
+  const titleText = count === 2 
+    ? '⚔️ Desempate: Qual música deve ir para a enquete de repertório?' 
+    : '🏆 Desempate: Qual música deve ir para a enquete de repertório?';
+  
+  const pollData = {
+    question: titleText,
+    options: topCandidates.map(s => ({ label: `${s.data.song} - ${s.data.artist}`, votes: 0 })),
+    createdAt: serverTimestamp(),
+    deadline: endDate.toISOString(),
+    closed: false,
+    voters: [],
+    voterMap: {},
+    suggestionIds: topCandidates.map(s => s.id), // vincular às sugestões
+    type: 'tiebreaker'
+  };
+  
+  const pollRef = await addDoc(collection(db, 'polls'), pollData);
+  await refreshPollsIfNeeded();
+  
+  await updateDoc(promotionStateRef, {
+    activeTiebreakerPoll: pollRef.id,
+    promotionLockToken: null,
+    promotionLockUntil: null
+  });
+  
+  const musicNames = topCandidates.map(s => s.data.song).join(', ');
+  showToast(`⚔️ Enquete de desempate criada para ${count} músicas! Vote agora.`);
+  if (typeof logAdminAction === 'function') {
+    logAdminAction(`Enquete de desempate criada (${count} músicas): ${musicNames}`);
+  }
+}
+
+// Criar enquete de repertório (7 dias)
+async function createRepertoryPoll(suggestion, lockToken = null) {
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 7);
+  
+  const pollData = {
+    question: `🎸 ${suggestion.data.song} - ${suggestion.data.artist} deve entrar no repertório?`,
+    options: [
+      { label: '✅ Sim, adicionar ao repertório', votes: 0 },
+      { label: '❌ Não, manter em sugestões', votes: 0 }
+    ],
+    createdAt: serverTimestamp(),
+    deadline: endDate.toISOString(),
+    closed: false,
+    voters: [],
+    voterMap: {},
+    suggestionId: suggestion.id,
+    type: 'repertory'
+  };
+  
+  const pollRef = await addDoc(collection(db, 'polls'), pollData);
+  await refreshPollsIfNeeded();
+  
+  // Remover da lista de sugestões
+  await deleteDoc(doc(db, 'suggestions', suggestion.id));
+  await refreshSuggestionsIfNeeded();
+  
+  await updateDoc(promotionStateRef, {
+    activeRepertoryPoll: pollRef.id,
+    promotionLockToken: null,
+    promotionLockUntil: null
+  });
+  
+  showToast(`🎵 "${suggestion.data.song}" agora está em votação para o repertório!`);
+  if (typeof logAdminAction === 'function') {
+    logAdminAction(`Música promovida para enquete de repertório: ${suggestion.data.song} - ${suggestion.data.artist}`);
+  }
+}
+
+// Verificar término de enquetes automáticas
+async function checkPollsCompletion() {
+  const stateSnap = await getDoc(promotionStateRef);
+  if (!stateSnap.exists()) return;
+  
+  const state = stateSnap.data();
+  const now = new Date();
+  
+  // Verificar enquete de desempate
+  if (state.activeTiebreakerPoll) {
+    const pollSnap = await getDoc(doc(db, 'polls', state.activeTiebreakerPoll));
+    if (pollSnap.exists()) {
+      const poll = pollSnap.data();
+      const endDate = new Date(poll.deadline);
+      
+      if (now >= endDate && !poll.closed) {
+        await completeTiebreakerPoll(state.activeTiebreakerPoll, poll);
+      }
+    }
+  }
+  
+  // Verificar enquete de repertório
+  if (state.activeRepertoryPoll) {
+    const pollSnap = await getDoc(doc(db, 'polls', state.activeRepertoryPoll));
+    if (pollSnap.exists()) {
+      const poll = pollSnap.data();
+      const endDate = new Date(poll.deadline);
+      
+      if (now >= endDate && !poll.closed) {
+        await completeRepertoryPoll(state.activeRepertoryPoll, poll);
+      }
+    }
+  }
+}
+
+// Finalizar enquete de desempate
+async function completeTiebreakerPoll(pollId, pollData) {
+  const completionLock = await claimPollCompletion('activeTiebreakerPoll', pollId);
+  if (!completionLock) return;
+  const options = pollData.options || [];
+  const maxVotes = Math.max(...options.map(o => o.votes || 0));
+  const winnerIdx = options.findIndex(o => (o.votes || 0) === maxVotes);
+  
+  if (winnerIdx === -1) {
+    await releaseCompletionLock(completionLock);
+    return;
+  }
+  
+  const suggestionIds = pollData.suggestionIds || [];
+  const winnerId = suggestionIds[winnerIdx];
+  
+  // Buscar dados da sugestão vencedora
+  const sugSnap = await getDoc(doc(db, 'suggestions', winnerId));
+  if (!sugSnap.exists()) {
+    await releaseCompletionLock(completionLock);
+    return;
+  }
+  
+  const winner = { id: winnerId, data: sugSnap.data() };
+  
+  // Marcar enquete como encerrada
+  await updateDoc(doc(db, 'polls', pollId), { closed: true });
+  await refreshPollsIfNeeded();
+  
+  // Criar enquete de repertório com a vencedora
+  await createRepertoryPoll(winner);
+  
+  // Limpar estado
+  await releaseCompletionLock(completionLock, {
+    activeTiebreakerPoll: null
+  });
+  
+  showToast(`🏆 Desempate concluído! "${winner.data.song}" vai para votação de repertório.`);
+}
+
+// Finalizar enquete de repertório
+async function completeRepertoryPoll(pollId, pollData) {
+  const completionLock = await claimPollCompletion('activeRepertoryPoll', pollId);
+  if (!completionLock) return;
+  const options = pollData.options || [];
+  const yesVotes = options[0]?.votes || 0;
+  const noVotes = options[1]?.votes || 0;
+  
+  // Marcar enquete como encerrada
+  await updateDoc(doc(db, 'polls', pollId), { closed: true });
+  await refreshPollsIfNeeded();
+  
+  if (yesVotes > noVotes) {
+    // APROVADA: adicionar ao repertório
+    const title = pollData.question.match(/🎸 (.+) deve entrar/)?.[1] || 'Música';
+    const [songTitle, artist] = title.split(' - ');
+    
+    await addDoc(collection(db, 'repertorio'), {
+      song: songTitle?.trim() || '',
+      artist: artist?.trim() || '',
+      addedAt: serverTimestamp(),
+      by: 'Sistema Automático'
+    });
+    
+    showToast(`✅ Música aprovada e adicionada ao repertório!`);
+    if (typeof logAdminAction === 'function') {
+      logAdminAction(`Música adicionada ao repertório via votação: ${title}`);
+    }
+  } else {
+    // REPROVADA: recriar como sugestão
+    const title = pollData.question.match(/🎸 (.+) deve entrar/)?.[1] || '';
+    const [songTitle, artist] = title.split(' - ');
+    
+    await addDoc(collection(db, 'suggestions'), {
+      song: songTitle?.trim() || '',
+      artist: artist?.trim() || '',
+      by: 'Sistema',
+      createdAt: serverTimestamp(),
+      likes: 0,
+      dislikes: 0,
+      likedBy: [],
+      dislikedBy: [],
+      voterMap: {}
+    });
+    await refreshSuggestionsIfNeeded();
+    
+    showToast('📋 Música retornou às sugestões para nova oportunidade.');
+  }
+  
+  // Agendar próxima promoção
+  const nextFriday = getNextFriday();
+  await releaseCompletionLock(completionLock, {
+    activeRepertoryPoll: null,
+    nextPromotionDate: Timestamp.fromDate(nextFriday)
+  });
+}
+
+// Drag and drop do upload da galeria
+(function initGalleryDropzone() {
+  const uploadArea = document.getElementById('uploadArea');
+  const input = document.getElementById('galleryFileInput');
+  if (!uploadArea || !input) return;
+
+  const syncFiles = files => {
+    const validFiles = Array.from(files || []).filter(f => (f.type || '').startsWith('image/'));
+    if (!validFiles.length) {
+      showToast('⚠ Arraste apenas arquivos de imagem');
+      return;
+    }
+    galleryFilesBuf = validFiles;
+    renderGalleryPreview();
+  };
+
+  const dragTargets = [uploadArea, input];
+
+  ['dragenter', 'dragover'].forEach(evt => {
+    dragTargets.forEach(target => target.addEventListener(evt, e => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadArea.classList.add('dragover');
+    }));
+  });
+
+  ['dragleave', 'dragend'].forEach(evt => {
+    dragTargets.forEach(target => target.addEventListener(evt, e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!uploadArea.contains(e.relatedTarget)) uploadArea.classList.remove('dragover');
+    }));
+  });
+
+  dragTargets.forEach(target => target.addEventListener('drop', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadArea.classList.remove('dragover');
+    syncFiles(e.dataTransfer?.files);
+  }));
+
+  input.addEventListener('change', e => syncFiles(e.target.files));
+})();
+
+// Iniciar sistema de promoção
+(async function startPromotionSystem() {
+  await initPromotionState();
+  await updatePromotionCountdowns();
+  
+  // Verificar a cada minuto
+  setInterval(async () => {
+    try {
+      await checkAndPromote();
+      await checkPollsCompletion();
+      await updatePromotionCountdowns();
+    } catch (e) {
+      console.error('[PROMOÇÃO] Erro:', e);
+    }
+  }, 60000); // 1 minuto
+  
+  // Verificação inicial
+  setTimeout(async () => {
+    try {
+      await checkAndPromote();
+      await checkPollsCompletion();
+      await updatePromotionCountdowns();
+    } catch (e) {
+      console.error('[PROMOÇÃO] Erro inicial:', e);
+    }
+  }, 3000);
+})();
+
+const VIDEO_FRAME_DEBUG_KEY = 'retorica_video_frame_debug_values';
+const VIDEO_FRAME_DEBUG_DEFAULTS = {
+  vc_top: '9.1%',
+  vc_right: '27%',
+  vc_bottom: '24.3%',
+  vc_left: '19.3%',
+  vc_pos_x: '24%',
+  vc_pos_y: '28.8%',
+  vt_top: '-3.2%',
+  vt_right: '37.9%',
+  vt_bottom: '12.9%',
+  vt_left: '-9.4%',
+  vt_pos_x: '-1.6%',
+  vt_pos_y: '27.6%',
+  vt_scale: '0.64',
+  vt_frame_w: '93%',
+  vt_frame_h: '75.5%',
+  cf_tvglacial_size: '0.88',
+  cf_tvglacial_w: '119%',
+  cf_tvglacial_h: '109.5%',
+  cf_tvglacial_x: '39.9%',
+  cf_tvglacial_y: '50%',
+    cf_tvcorote_size: '0.98',
+    cf_tvcorote_w: '100%',
+    cf_tvcorote_h: '100%',
+    cf_tvcorote_x: '47.2%',
+    cf_tvcorote_y: '50%',
+    cf_donabenta_size: '0.94',
+    cf_donabenta_w: '151.5%',
+    cf_donabenta_h: '100%',
+    cf_donabenta_x: '41.1%',
+    cf_donabenta_y: '50%'
+  };
+
+function loadVideoFrameDebugValues() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(VIDEO_FRAME_DEBUG_KEY) || '{}');
+    return { ...VIDEO_FRAME_DEBUG_DEFAULTS, ...raw };
+  } catch {
+    return { ...VIDEO_FRAME_DEBUG_DEFAULTS };
+  }
+}
+
+function applyVideoFrameDebugValues(values) {
+  const root = document.documentElement;
+  Object.entries(values).forEach(([key, value]) => {
+    root.style.setProperty(`--${key.replace(/_/g, '-')}`, value);
+  });
+}
+
+function persistVideoFrameDebugValues() {
+  const values = {};
+  Object.keys(VIDEO_FRAME_DEBUG_DEFAULTS).forEach(key => {
+    values[key] = getComputedStyle(document.documentElement)
+      .getPropertyValue(`--${key.replace(/_/g, '-')}`).trim();
+  });
+  localStorage.setItem(VIDEO_FRAME_DEBUG_KEY, JSON.stringify(values));
+  return values;
+}
+
+function buildVideoFrameDebugGroup(hostId, title, prefix) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  let controls = [];
+  if (prefix === 'vc') {
+    controls = [
+      { key: 'vc_top', label: 'Topo' },
+      { key: 'vc_right', label: 'Dir' },
+      { key: 'vc_bottom', label: 'Base' },
+      { key: 'vc_left', label: 'Esq' },
+      { key: 'vc_pos_x', label: 'Pos X' },
+      { key: 'vc_pos_y', label: 'Pos Y' }
+    ];
+  } else if (prefix === 'vt') {
+    controls = [
+      { key: 'vt_top', label: 'Topo', min: -20, max: 40, step: 0.1 },
+      { key: 'vt_right', label: 'Dir', min: -20, max: 40, step: 0.1 },
+      { key: 'vt_bottom', label: 'Base', min: -20, max: 40, step: 0.1 },
+      { key: 'vt_left', label: 'Esq', min: -20, max: 40, step: 0.1 },
+      { key: 'vt_pos_x', label: 'Pos X', min: -20, max: 120, step: 0.1 },
+      { key: 'vt_pos_y', label: 'Pos Y', min: -20, max: 120, step: 0.1 },
+      { key: 'vt_scale', label: 'Escala', min: 0.6, max: 1.6, step: 0.01, unit: '' }
+    ];
+  } else if (prefix === 'vp') {
+    controls = [
+      { key: 'vt_frame_w', label: 'Largura', min: 70, max: 130, step: 0.5, unit: '%' },
+      { key: 'vt_frame_h', label: 'Altura', min: 70, max: 130, step: 0.5, unit: '%' }
+    ];
+  }
+  host.innerHTML = `<h4>${title}</h4>` + controls.map(control => `
+    <div class="video-frame-debug-row">
+      <label for="${control.key}">${control.label}</label>
+      <input id="${control.key}" type="range" min="${control.min ?? 0}" max="${control.max ?? 40}" step="${control.step ?? 0.1}">
+      <output id="${control.key}_out"></output>
+    </div>
+  `).join('');
+
+  controls.forEach(control => {
+    const input = document.getElementById(control.key);
+    const output = document.getElementById(`${control.key}_out`);
+    const current = getComputedStyle(document.documentElement)
+      .getPropertyValue(`--${control.key.replace(/_/g, '-')}`).trim()
+      .replace('%','');
+    input.value = Number.parseFloat(current) || 0;
+    output.textContent = `${input.value}${control.unit ?? '%'}`;
+    input.addEventListener('input', () => {
+      const next = `${input.value}${control.unit ?? '%'}`;
+      document.documentElement.style.setProperty(`--${control.key.replace(/_/g, '-')}`, next);
+      output.textContent = next;
+      persistVideoFrameDebugValues();
+    });
+  });
+}
+
+function buildVideoFrameAssetDebugGroup(hostId, title, assetKey) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  const controls = [
+    { key: `cf_${assetKey}_size`, label: 'Tam', min: 0.4, max: 1.8, step: 0.01, unit: '' },
+    { key: `cf_${assetKey}_w`, label: 'Larg', min: 40, max: 160, step: 0.5, unit: '%' },
+    { key: `cf_${assetKey}_h`, label: 'Alt', min: 40, max: 160, step: 0.5, unit: '%' },
+    { key: `cf_${assetKey}_x`, label: 'Pos X', min: 0, max: 100, step: 0.1, unit: '%' },
+    { key: `cf_${assetKey}_y`, label: 'Pos Y', min: 0, max: 100, step: 0.1, unit: '%' }
+  ];
+  host.innerHTML = `<h4>${title}</h4>` + controls.map(control => `
+    <div class="video-frame-debug-row">
+      <label for="${control.key}">${control.label}</label>
+      <input id="${control.key}" type="range" min="${control.min}" max="${control.max}" step="${control.step}">
+      <output id="${control.key}_out"></output>
+    </div>
+  `).join('');
+
+  controls.forEach(control => {
+    const input = document.getElementById(control.key);
+    const output = document.getElementById(`${control.key}_out`);
+    const current = getComputedStyle(document.documentElement)
+      .getPropertyValue(`--${control.key.replace(/_/g, '-')}`).trim()
+      .replace('%', '');
+    input.value = Number.parseFloat(current) || 0;
+    output.textContent = `${input.value}${control.unit ?? '%'}`;
+    input.addEventListener('input', () => {
+      const next = `${input.value}${control.unit ?? '%'}`;
+      document.documentElement.style.setProperty(`--${control.key.replace(/_/g, '-')}`, next);
+      output.textContent = next;
+      persistVideoFrameDebugValues();
+    });
+  });
+}
+
+window.toggleVideoFrameDebug = (force) => {
+  const panel = document.getElementById('videoFrameDebug');
+  if (!panel) return;
+  const shouldShow = typeof force === 'boolean' ? force : !panel.classList.contains('show');
+  panel.classList.toggle('show', shouldShow);
+};
+
+window.copyVideoFrameDebugValues = async () => {
+  const values = persistVideoFrameDebugValues();
+  const text = Object.entries(values).map(([key, value]) => `${key}: ${value}`).join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('✓ Valores copiados');
+  } catch {
+    showToast('⚠ Não consegui copiar, mas os valores ficaram salvos');
+  }
+};
+
+window.resetVideoFrameDebugValues = () => {
+  localStorage.setItem(VIDEO_FRAME_DEBUG_KEY, JSON.stringify(VIDEO_FRAME_DEBUG_DEFAULTS));
+  applyVideoFrameDebugValues(VIDEO_FRAME_DEBUG_DEFAULTS);
+  buildVideoFrameDebugGroup('videoFrameDebugCarousel', 'Carrossel', 'vc');
+  buildVideoFrameDebugGroup('videoFrameDebugThumb', 'Miniatura', 'vt');
+  buildVideoFrameDebugGroup('videoFrameDebugPortrait', 'Portrait', 'vp');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameGlacial', 'Moldura tvglacial', 'tvglacial');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameCorote', 'Moldura tvcorote', 'tvcorote');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameDonaBenta', 'Moldura donabenta', 'donabenta');
+  showToast('Ajustes temporários resetados');
+};
+
+(function initVideoFrameDebug() {
+  const values = loadVideoFrameDebugValues();
+  applyVideoFrameDebugValues(values);
+  buildVideoFrameDebugGroup('videoFrameDebugCarousel', 'Carrossel', 'vc');
+  buildVideoFrameDebugGroup('videoFrameDebugThumb', 'Miniatura', 'vt');
+  buildVideoFrameDebugGroup('videoFrameDebugPortrait', 'Portrait', 'vp');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameGlacial', 'Moldura tvglacial', 'tvglacial');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameCorote', 'Moldura tvcorote', 'tvcorote');
+  buildVideoFrameAssetDebugGroup('videoFrameDebugFrameDonaBenta', 'Moldura donabenta', 'donabenta');
+  if (new URLSearchParams(location.search).get('videoFrameDebug') === '1') {
+    toggleVideoFrameDebug(true);
+  }
+})();
+
+</script>
+</body>
+</html>
