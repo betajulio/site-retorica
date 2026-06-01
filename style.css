@@ -107,9 +107,7 @@
   .section-title-wrap p{color:var(--smoke);font-size:.85rem;letter-spacing:.1em;margin-top:.3rem;text-transform:uppercase}
   .section-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(200,130,10,.4),transparent)}
   .full-divider{border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(200,130,10,.2),transparent);max-width:1100px;margin:0 auto}
-  @media(max-width:768px){
-    .section-number{display:none}
-  }
+
 
   /* MEMBERS */
   .members-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.5rem}
