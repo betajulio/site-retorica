@@ -944,6 +944,7 @@
   </ul>
   <div class="nav-auth">
     <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
+    <a href="index.html" class="coin-balance" id="coinBalance" style="display:none;text-decoration:none"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></a>
     <span class="coin-balance" id="coinBalance" style="display:none" role="button" tabindex="0" aria-label="Abrir detalhes das Retorica Coins" onclick="openCoinGuide()" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();openCoinGuide();}"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></span>
     <button class="btn-ghost btn-sm" id="loginBtn" onclick="openLogin()">Entrar</button>
     <button class="btn-ghost btn-sm member-only" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
@@ -6749,3 +6750,4 @@ window.resetVideoFrameDebugValues = () => {
 </script>
 </body>
 </html>
+

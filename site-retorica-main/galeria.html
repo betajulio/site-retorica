@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0a0804">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="imagens/Toca_do_Mineiro_logo_final.png">
-<title>Retórica — Classic Rock</title>
+<title>Galeria — Retórica</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
   :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:9.1%;--vc-right:27%;--vc-bottom:24.3%;--vc-left:19.3%;--vc-pos-x:24%;--vc-pos-y:28.8%;--vt-top:-3.2%;--vt-right:37.9%;--vt-bottom:12.9%;--vt-left:-9.4%;--vt-pos-x:-1.6%;--vt-pos-y:27.6%;--vt-scale:0.64;--vt-frame-w:93%;--vt-frame-h:75.5%;--cf-tvglacial-size:0.88;--cf-tvglacial-w:119%;--cf-tvglacial-h:109.5%;--cf-tvglacial-x:39.9%;--cf-tvglacial-y:50%;--cf-tvcorote-size:0.98;--cf-tvcorote-w:100%;--cf-tvcorote-h:100%;--cf-tvcorote-x:47.2%;--cf-tvcorote-y:50%;--cf-donabenta-size:0.94;--cf-donabenta-w:151.5%;--cf-donabenta-h:100%;--cf-donabenta-x:41.1%;--cf-donabenta-y:50%}
@@ -18,7 +18,7 @@
   body.home-page #videoFrameDebug,
   body.home-page #galleryMediaTypeBar,
   body.home-page #galleryTagBar{display:none!important}
-  body.home-page #galeria .toca-badge{display:none!important}
+  body.home-page #galeria .toca-badge{margin-bottom:1.3rem}
   .gallery-full-link{display:flex;justify-content:center;margin:1.4rem 0 0}
   body.gallery-page .gallery-full-link{display:none!important}
   body.gallery-page #hero,
@@ -837,7 +837,7 @@
   }
 </style>
 </head>
-<body class="home-page">
+<body class="gallery-page">
 
 <!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay">
@@ -934,7 +934,7 @@
   <a href="index.html" class="nav-logo">Retórica</a>
   <ul class="nav-links">
     <li><a onclick="goTo('membros')" style="cursor:pointer">Membros</a></li>
-    <li><a href="galeria.html">Galeria</a></li>
+    <li><a href="galeria.html" style="color:var(--gold)">Galeria</a></li>
     <li style="position:relative"><a href="sugestoes.html">Sugestões &amp; Enquetes <span id="promoCountdownNav" class="badge-new" style="display:none"></span></a></li>
     <li><a href="setlist.html">Setlist de Ensaio</a></li>
     <li><a href="repertorio.html">Repertório</a></li>
@@ -956,7 +956,7 @@
 <!-- MOBILE MENU -->
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a onclick="mobileGoTo('membros')" style="cursor:pointer">Membros</a>
-  <a href="galeria.html">Galeria</a>
+  <a href="galeria.html" style="color:var(--gold)">Galeria</a>
   <a href="sugestoes.html">Sugestões &amp; Enquetes <span id="promoCountdownNavMobile" class="badge-mobile-inline" style="display:none"></span></a>
   <a href="setlist.html">Setlist de Ensaio</a>
   <a href="repertorio.html">Repertório</a>
@@ -1018,10 +1018,35 @@
 
 <hr class="full-divider">
 
+<!-- Acesso rápido às seções separadas -->
+<section id="links-rapidos" style="padding: 3rem 1.5rem; text-align: center;">
+  <div class="section-header" style="position:static; margin-bottom: 2rem;">
+    <div class="section-number">02</div>
+    <div class="section-title-wrap"><h2>Ferramentas da Banda</h2><p>Acesse as seções de gerenciamento</p></div>
+    <div class="section-line"></div>
+  </div>
+  <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; max-width: 800px; margin: 0 auto;">
+    <a href="sugestoes.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
+      💡 Sugestões &amp; Enquetes
+    </a>
+    <a href="setlist.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
+      🎵 Setlist de Ensaio
+    </a>
+    <a href="repertorio.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
+      📋 Repertório
+    </a>
+    <a href="galeria.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
+      📷 Galeria completa
+    </a>
+  </div>
+</section>
+
+<hr class="full-divider">
+
 <!-- 03 GALERIA -->
 <section id="galeria">
   <div class="section-header">
-    <div class="section-number">02</div>
+    <div class="section-number">03</div>
     <div class="section-title-wrap">
       <h2>Galeria</h2>
       <p>Memórias da Toca do Mineiro</p>

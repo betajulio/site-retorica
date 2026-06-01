@@ -45,7 +45,7 @@
 <nav>
   <a href="index.html" class="nav-logo">Retórica</a>
   <ul class="nav-links">
-    <li><a href="index.html">Portal</a></li>
+    <li><a href="index.html">Home</a></li>
     <li><a href="sugestoes.html">Sugestões & Enquetes <span class="badge-new" id="promoCountdownNav" style="display:none"></span></a></li>
     <li><a href="setlist.html" style="color:var(--gold)">Setlist de Ensaio</a></li>
     <li><a href="repertorio.html">Repertório</a></li>
@@ -53,6 +53,7 @@
   </ul>
   <div class="nav-auth">
     <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
+    <a href="index.html" class="coin-balance" id="coinBalance" style="display:none;text-decoration:none"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></a>
     <button class="btn-ghost btn-sm" id="loginBtn" onclick="openLogin()">Entrar</button>
     <button class="btn-ghost btn-sm" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
   </div>
@@ -62,13 +63,14 @@
 </nav>
 
 <div class="nav-mobile-menu" id="navMobileMenu">
-  <a href="index.html">Portal</a>
+  <a href="index.html">Home</a>
   <a href="sugestoes.html">Sugestões & Enquetes <span class="badge-mobile-inline" id="promoCountdownNavMobile" style="display:none"></span></a>
   <a href="setlist.html" style="color:var(--gold)">Setlist de Ensaio</a>
   <a href="repertorio.html">Repertório</a>
   <a href="galeria.html">Galeria</a>
   <div style="border-top:1px solid rgba(200,130,10,.1);margin-top:.5rem;padding:1rem 2rem;display:flex;flex-direction:column;gap:.8rem">
     <span class="nav-user" id="navUserMobile" style="display:none;text-align:center">🎸 Membro</span>
+    <a href="index.html" class="coin-balance" id="coinBalanceMobile" style="display:none;text-decoration:none;margin:0 auto"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValueMobile">0</strong></a>
     <button class="btn-ghost" id="loginBtnMobile" onclick="openLoginMobile()">Entrar</button>
     <button class="btn-ghost" id="logoutBtnMobile" onclick="doLogout()" style="display:none">Sair</button>
   </div>
@@ -384,6 +386,7 @@ function applyAuth() {
   document.getElementById('loginBtn').style.display  = isLoggedIn ? 'none' : '';
   document.getElementById('logoutBtn').style.display = isLoggedIn ? '' : 'none';
   document.getElementById('navUser').style.display   = isLoggedIn ? '' : 'none';
+  if (isLoggedIn && isMember && auth.currentUser) { getDoc(doc(db, 'member_stats', auth.currentUser.email.toLowerCase())).then(s => { const c = s.exists() ? (s.data().coins||0) : 0; const d = document.getElementById('coinBalance'); const m = document.getElementById('coinBalanceMobile'); if(d){d.style.display='flex';document.getElementById('coinBalanceValue').textContent=c;} if(m){m.style.display='flex';document.getElementById('coinBalanceValueMobile').textContent=c;} }).catch(()=>{}); } else { const d = document.getElementById('coinBalance'); const m = document.getElementById('coinBalanceMobile'); if(d)d.style.display='none'; if(m)m.style.display='none'; }
   
   document.getElementById('loginBtnMobile').style.display  = isLoggedIn ? 'none' : '';
   document.getElementById('logoutBtnMobile').style.display = isLoggedIn ? '' : 'none';
@@ -1126,3 +1129,4 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
+

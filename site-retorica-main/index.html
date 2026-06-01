@@ -12,6 +12,21 @@
   :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050;--vc-top:9.1%;--vc-right:27%;--vc-bottom:24.3%;--vc-left:19.3%;--vc-pos-x:24%;--vc-pos-y:28.8%;--vt-top:-3.2%;--vt-right:37.9%;--vt-bottom:12.9%;--vt-left:-9.4%;--vt-pos-x:-1.6%;--vt-pos-y:27.6%;--vt-scale:0.64;--vt-frame-w:93%;--vt-frame-h:75.5%;--cf-tvglacial-size:0.88;--cf-tvglacial-w:119%;--cf-tvglacial-h:109.5%;--cf-tvglacial-x:39.9%;--cf-tvglacial-y:50%;--cf-tvcorote-size:0.98;--cf-tvcorote-w:100%;--cf-tvcorote-h:100%;--cf-tvcorote-x:47.2%;--cf-tvcorote-y:50%;--cf-donabenta-size:0.94;--cf-donabenta-w:151.5%;--cf-donabenta-h:100%;--cf-donabenta-x:41.1%;--cf-donabenta-y:50%}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
+  body.home-page #galeria .gallery-grid,
+  body.home-page #galeria .member-only,
+  body.home-page #tagManagerWrap,
+  body.home-page #videoFrameDebug,
+  body.home-page #galleryMediaTypeBar,
+  body.home-page #galleryTagBar{display:none!important}
+  body.home-page #galeria .toca-badge{margin-bottom:1.3rem}
+  .gallery-full-link{display:flex;justify-content:center;margin:1.4rem 0 0}
+  body.gallery-page .gallery-full-link{display:none!important}
+  body.gallery-page #hero,
+  body.gallery-page #membros,
+  body.gallery-page #links-rapidos,
+  body.gallery-page #links-rapidos + .full-divider,
+  body.gallery-page #membros + .full-divider{display:none!important}
+  body.gallery-page #galeria{padding-top:96px}
   section,.modal,.form-card,.member-card,.poll-card,.setlist-panel,.rep-item,.forum-thread,.suggestion-item,.carousel-info-panel,.lb-caption-block,.lb-comments-wrap,.coin-guide-panel,.coin-guide-card{min-width:0}
   .section-title-wrap,.news-popup-copy,.nav-auth,.form-group,.member-instruments,.member-recommendations,.member-rec-item,.poll-option-label,.poll-bar-item,.poll-bar-right,.poll-footer,.setlist-item,.setlist-song,.rep-info,.forum-thread-header,.forum-thread-header>div,.post-content,.post-meta,.suggestion-main,.suggestion-actions,.carousel-info-main,.carousel-badges-row,.carousel-caption-meta,.media-caption-copy,.lb-video-head,.lb-cmt-l1,.lb-rpform,.frp-rform,.tag-manager-row,.upload-tag-select,.coin-guide-stat,.coin-guide-cat{min-width:0;max-width:100%}
   .safe-text,.section-title-wrap h2,.section-title-wrap p,.news-popup-text,.news-popup-sub,.nav-user,.member-name,.member-since,.member-rec-title,.member-rec-label,.member-rec-value,.instrument-tag,.form-group label,input,select,textarea,.btn,.btn-ghost,.btn-icon,.poll-question,.poll-option-label,.poll-bar-label,.poll-bar-pct,.poll-winner,.poll-total,.poll-my-vote,.setlist-song,.setlist-artist,.rep-song,.rep-artist,.forum-thread-title,.forum-thread-meta,.post-author,.post-date,.post-text,.suggestion-song,.suggestion-artist,.suggestion-note,.suggestion-by,.countdown-badge,.tab-btn,.toast,.coin-reward-title,.coin-reward-copy,.coin-reward-pill,.coin-guide-title,.coin-guide-sub,.coin-guide-stat-label,.coin-guide-stat-value,.coin-guide-card h3,.coin-guide-copy,.coin-guide-note,.coin-guide-cat,.coin-guide-scoreline,.modal-title,.modal-subtitle,.toca-badge-name,.toca-badge-sub,.toca-chip,.carousel-media-tag,.carousel-panel-tag,.carousel-caption-text,.media-recommended-by,.thumb-media-tag,.thumb-video-credit,.lb-video-credit,.lb-video-title,.lb-video-desc,.lb-meta,.lb-ctitle,.lb-cmt-au,.lb-cmt-dt,.lb-cmt-tx,.lb-rp,.frp,.gallery-tag-btn,.lb-photo-tag,.tag-manager-chip,.upload-hint,.img-upload-hint,.loading-title,.nav-mobile-menu a,.install-banner-text strong,.install-banner-text span,.install-banner-note,.install-banner-btn{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
@@ -822,7 +837,7 @@
   }
 </style>
 </head>
-<body>
+<body class="home-page">
 
 <!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay">
@@ -919,7 +934,7 @@
   <a href="index.html" class="nav-logo">Retórica</a>
   <ul class="nav-links">
     <li><a onclick="goTo('membros')" style="cursor:pointer">Membros</a></li>
-    <li><a onclick="goTo('galeria')" style="cursor:pointer">Galeria</a></li>
+    <li><a href="galeria.html">Galeria</a></li>
     <li style="position:relative"><a href="sugestoes.html">Sugestões &amp; Enquetes <span id="promoCountdownNav" class="badge-new" style="display:none"></span></a></li>
     <li><a href="setlist.html">Setlist de Ensaio</a></li>
     <li><a href="repertorio.html">Repertório</a></li>
@@ -941,7 +956,7 @@
 <!-- MOBILE MENU -->
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a onclick="mobileGoTo('membros')" style="cursor:pointer">Membros</a>
-  <a onclick="mobileGoTo('galeria')" style="cursor:pointer">Galeria</a>
+  <a href="galeria.html">Galeria</a>
   <a href="sugestoes.html">Sugestões &amp; Enquetes <span id="promoCountdownNavMobile" class="badge-mobile-inline" style="display:none"></span></a>
   <a href="setlist.html">Setlist de Ensaio</a>
   <a href="repertorio.html">Repertório</a>
@@ -1020,6 +1035,9 @@
     <a href="repertorio.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
       📋 Repertório
     </a>
+    <a href="galeria.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
+      📷 Galeria completa
+    </a>
   </div>
 </section>
 
@@ -1090,6 +1108,9 @@
     <button class="carousel-btn carousel-prev" onclick="carouselMove(-1)">‹</button>
     <button class="carousel-btn carousel-next" onclick="carouselMove(1)">›</button>
     <div class="carousel-dots" id="carouselDots"></div>
+  </div>
+  <div class="gallery-full-link">
+    <a class="btn-ghost" href="galeria.html" style="text-decoration:none">Abrir galeria completa</a>
   </div>
 
   <!-- Miniaturas -->
