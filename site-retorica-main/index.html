@@ -18,7 +18,7 @@
   body.home-page #videoFrameDebug,
   body.home-page #galleryMediaTypeBar,
   body.home-page #galleryTagBar{display:none!important}
-  body.home-page #galeria .toca-badge{margin-bottom:1.3rem}
+  body.home-page #galeria .toca-badge{display:none!important}
   .gallery-full-link{display:flex;justify-content:center;margin:1.4rem 0 0}
   body.gallery-page .gallery-full-link{display:none!important}
   body.gallery-page #hero,
@@ -933,7 +933,8 @@
 <nav>
   <a href="index.html" class="nav-logo">Retórica</a>
   <ul class="nav-links">
-    <li><a onclick="goTo('membros')" style="cursor:pointer">Membros</a></li>
+    <li><a href="#" style="color:var(--gold)">Home</a></li>
+    <li><a href="#membros">Membros</a></li>
     <li><a href="galeria.html">Galeria</a></li>
     <li style="position:relative"><a href="sugestoes.html">Sugestões &amp; Enquetes <span id="promoCountdownNav" class="badge-new" style="display:none"></span></a></li>
     <li><a href="setlist.html">Setlist de Ensaio</a></li>
@@ -955,7 +956,8 @@
 
 <!-- MOBILE MENU -->
 <div class="nav-mobile-menu" id="navMobileMenu">
-  <a onclick="mobileGoTo('membros')" style="cursor:pointer">Membros</a>
+  <a href="#" style="color:var(--gold)">Home</a>
+  <a href="#membros" onclick="closeMobileMenu()">Membros</a>
   <a href="galeria.html">Galeria</a>
   <a href="sugestoes.html">Sugestões &amp; Enquetes <span id="promoCountdownNavMobile" class="badge-mobile-inline" style="display:none"></span></a>
   <a href="setlist.html">Setlist de Ensaio</a>
@@ -1046,7 +1048,7 @@
 <!-- 03 GALERIA -->
 <section id="galeria">
   <div class="section-header">
-    <div class="section-number">03</div>
+    <div class="section-number">02</div>
     <div class="section-title-wrap">
       <h2>Galeria</h2>
       <p>Memórias da Toca do Mineiro</p>
@@ -6749,3 +6751,4 @@ window.resetVideoFrameDebugValues = () => {
 </script>
 </body>
 </html>
+
