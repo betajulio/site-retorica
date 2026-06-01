@@ -294,7 +294,8 @@ function applyAuth() {
   document.getElementById('logoutBtnMobile').style.display = isLoggedIn ? '' : 'none';
   document.getElementById('navUserMobile').style.display   = isLoggedIn ? '' : 'none';
   
-  document.getElementById('suggestionsNotice').style.display = isLoggedIn ? 'none' : '';
+  const sugNotice = document.getElementById('suggestionsNotice');
+  if (sugNotice) sugNotice.style.display = isLoggedIn ? 'none' : '';
 
   // Expose member elements
   document.querySelectorAll('.member-only').forEach(el => {
