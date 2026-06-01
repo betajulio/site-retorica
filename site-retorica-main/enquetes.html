@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0a0804">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="imagens/Toca_do_Mineiro_logo_final.png">
-<title>Sugestões & Enquetes — Retórica</title>
+<title>Enquetes — Retórica</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -23,8 +23,8 @@
   <a href="index.html" class="nav-logo">Retórica</a>
   <ul class="nav-links">
     <li><a href="index.html">Home</a></li>
-    <li><a href="sugestoes.html" style="color:var(--gold)">Sugestões</a></li>
-    <li style="position:relative"><a href="enquetes.html">Enquetes <span id="promoCountdownNav" class="badge-new" style="display:none"></span></a></li>
+    <li><a href="sugestoes.html">Sugestões</a></li>
+    <li style="position:relative"><a href="enquetes.html" style="color:var(--gold)">Enquetes <span id="promoCountdownNav" class="badge-new" style="display:none"></span></a></li>
     <li><a href="setlist.html">Setlist de Ensaio</a></li>
     <li><a href="repertorio.html">Repertório</a></li>
     <li><a href="galeria.html">Galeria</a></li>
@@ -42,8 +42,8 @@
 
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a href="index.html">Home</a>
-  <a href="sugestoes.html" style="color:var(--gold)">Sugestões</a>
-  <a href="enquetes.html">Enquetes <span class="badge-mobile-inline" id="promoCountdownNavMobile" style="display:none"></span></a>
+  <a href="sugestoes.html">Sugestões</a>
+  <a href="enquetes.html" style="color:var(--gold)">Enquetes <span class="badge-mobile-inline" id="promoCountdownNavMobile" style="display:none"></span></a>
   <a href="setlist.html">Setlist de Ensaio</a>
   <a href="repertorio.html">Repertório</a>
   <a href="galeria.html">Galeria</a>
@@ -57,35 +57,48 @@
 
 <main style="padding-top: 80px; max-width: 1100px; margin: 0 auto;">
   
-  <!-- 02 SUGESÕES -->
-  <section id="sugestoes" style="padding: 4rem 1.5rem 2rem;">
+  <div id="promotionCountdownBanner"></div>
+
+  <!-- 01 ENQUETES -->
+  <section id="enquetes" style="padding: 4rem 1.5rem;">
     <div class="section-header" style="position: static; margin-bottom: 2rem;">
       <div class="section-number">01</div>
-      <div class="section-title-wrap"><h2>Sugestões de Músicas</h2><p>Proponha músicas para os próximos ensaios</p></div>
+      <div class="section-title-wrap"><h2>Enquetes</h2><p>Vote nas músicas do próximo ensaio</p></div>
       <div class="section-line"></div>
     </div>
+    <div id="pollsContainer"></div>
+    <div id="pollsHistoryWrap" style="margin-top:1.5rem">
+      <button class="btn-ghost btn-sm" id="pollsHistoryBtn" onclick="togglePollsHistory()" style="display:none">
+        🗂 Histórico de enquetes encerradas (<span id="pollsClosedCount">0</span>)
+      </button>
+      <div id="pollsHistoryContainer" style="display:none;margin-top:1rem"></div>
+    </div>
     
-    <div class="member-only">
+    <div class="member-only" style="margin-top:2rem">
       <div class="form-card">
+        <p style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold);margin-bottom:1rem">Criar Nova Enquete</p>
+        <div class="form-row full"><div class="form-group"><label>Pergunta</label><input type="text" id="pollQuestion" placeholder="Ex: Qual bloco de músicas pro próximo ensaio?"></div></div>
         <div class="form-row">
-          <div class="form-group"><label>Música</label><input type="text" id="sugSong" placeholder="Nome da música"></div>
-          <div class="form-group"><label>Artista / Banda</label><input type="text" id="sugArtist" placeholder="Ex: Led Zeppelin"></div>
+          <div class="form-group"><label>Opção 1</label><input type="text" class="poll-opt-input" placeholder="Ex: Abertura clássica"></div>
+          <div class="form-group"><label>Opção 2</label><input type="text" class="poll-opt-input" placeholder="Ex: Set pesado"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Quem sugere</label><input type="text" id="sugBy" readonly style="background:rgba(200,130,10,0.05);color:var(--smoke);cursor:not-allowed"></div>
-          <div class="form-group"><label>Link YouTube (opcional)</label><input type="url" id="sugYt" placeholder="https://youtube.com/..."></div>
+          <div class="form-group"><label>Opção 3 (opcional)</label><input type="text" class="poll-opt-input"></div>
+          <div class="form-group"><label>Opção 4 (opcional)</label><input type="text" class="poll-opt-input"></div>
         </div>
-        <div class="form-row full">
-          <div class="form-group"><label>Observação (opcional)</label><input type="text" id="sugNote" placeholder="Ex: pra fechar o set"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Data e hora de encerramento (opcional)</label>
+            <input type="datetime-local" id="pollDeadline">
+          </div>
+          <div class="form-group" style="justify-content:flex-end;padding-top:1.4rem">
+            <p style="font-size:.72rem;color:var(--smoke);font-style:italic">Sem data = encerramento manual</p>
+          </div>
         </div>
-        <button class="btn" onclick="addSuggestion()">Enviar Sugestão</button>
+        <button class="btn" onclick="createPoll()">Criar Enquete</button>
       </div>
     </div>
-    <div id="promotionCountdownBanner"></div>
-    <p id="suggestionsNotice" style="display:none;color:var(--smoke);font-style:italic;font-size:.88rem;margin-top:1rem">Faça login para sugerir músicas.</p>
-    <div class="suggestions-list" id="suggestionsList"></div>
   </section>
-
 
 </main>
 
