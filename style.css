@@ -216,10 +216,10 @@
   .setlist-panel{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;overflow:hidden}
   .setlist-panel-header{background:rgba(200,130,10,.08);padding:1rem 1.2rem;border-bottom:1px solid rgba(200,130,10,.15);display:flex;justify-content:space-between;align-items:center}
   .setlist-panel-title{font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold)}
-  .setlist-list{list-style:none;padding:.8rem 0;min-height:200px}
-  .setlist-item{display:flex;align-items:center;gap:.8rem;padding:.6rem 1.2rem;transition:background .2s;font-size:.88rem}
+  .setlist-list{list-style:none;padding:.8rem 1.2rem;min-height:200px;display:flex;flex-direction:column;gap:.6rem}
+  .setlist-item{background:rgba(42,26,8,.5);border:1px solid rgba(200,130,10,.15);border-radius:1px;display:flex;align-items:center;gap:.8rem;padding:.6rem 1.2rem;transition:border-color .2s, background .2s;font-size:.88rem}
   .setlist-item.editable{cursor:grab}
-  .setlist-item:hover{background:rgba(200,130,10,.05)}
+  .setlist-item:hover{border-color:rgba(200,130,10,.35);background:rgba(200,130,10,.05)}
   .setlist-item.dragging{opacity:.5;cursor:grabbing}
   .setlist-num{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:rgba(200,130,10,.4);min-width:24px}
   .setlist-song{flex:1;color:var(--cream)}
