@@ -228,6 +228,20 @@
   .rep-level.ok{background:rgba(30,100,30,.3);border:1px solid rgba(60,150,60,.3);color:#7ec87e}
   .rep-level.wip{background:rgba(100,80,10,.3);border:1px solid rgba(180,140,20,.3);color:#d4b84a}
   .rep-actions{display:flex;gap:.3rem}
+  @media(max-width:768px){
+    .repertorio-grid{grid-template-columns:1fr}
+    .rep-item{align-items:flex-start;padding:.85rem .9rem;gap:.65rem}
+    .rep-num{min-width:22px;padding-top:.05rem}
+    .rep-info{min-width:0}
+    .rep-song{display:flex;flex-wrap:wrap;align-items:center;gap:.32rem;line-height:1.35}
+    .rep-setlist-tag{margin-left:0}
+    .rep-actions{flex-wrap:wrap;justify-content:flex-end;max-width:42%;row-gap:.35rem}
+  }
+  @media(max-width:480px){
+    .rep-item{display:grid;grid-template-columns:auto 1fr;align-items:start}
+    .rep-actions{grid-column:1/-1;justify-content:flex-start;max-width:100%;padding-left:calc(22px + .65rem)}
+    .rep-actions .btn-icon{width:34px;height:34px}
+  }
 
   /* FORUM */
   .forum-sessions{display:flex;flex-direction:column;gap:1.2rem}
