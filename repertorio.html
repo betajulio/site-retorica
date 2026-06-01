@@ -13,18 +13,14 @@
 <style>
 @media(max-width:768px){
   main[style]{padding-top:68px!important;padding-left:0!important;padding-right:0!important}
+  .repertorio-grid{grid-template-columns:1fr!important}
   .form-row{grid-template-columns:1fr!important}
   .form-card{padding:1rem}
-  .rep-actions{flex-wrap:wrap;gap:.35rem;row-gap:.35rem;max-width:100%!important;width:100%;justify-content:flex-start!important}
-  .rep-actions .btn-icon{font-size:.65rem;padding:.28rem .5rem}
-  .rep-item{flex-wrap:wrap}
-  .rep-info{flex:1 1 160px;min-width:0}
-}
-@media(max-width:480px){
-  .rep-item{display:flex!important;flex-wrap:wrap}
+  .rep-item{display:flex!important;flex-wrap:wrap;align-items:flex-start;gap:.65rem;padding:.85rem .9rem}
   .rep-num{flex:0 0 auto;min-width:22px}
-  .rep-actions{width:100%;padding-left:calc(22px + .65rem)}
-  .rep-actions .btn-icon{min-height:34px}
+  .rep-info{flex:1 1 0;min-width:0}
+  .rep-actions{flex-wrap:wrap;gap:.35rem;row-gap:.35rem;width:100%;justify-content:flex-start!important;max-width:100%!important;padding-left:calc(22px + .65rem)}
+  .rep-actions .btn-icon{font-size:.65rem;padding:.28rem .5rem}
 }
 </style>
 </head>
