@@ -123,7 +123,7 @@
   .member-card:hover::before{opacity:1}
   .member-card.editable{cursor:pointer}
   .member-edit-hint{position:absolute;bottom:0;left:0;right:0;background:rgba(200,130,10,.12);color:var(--amber);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.35rem;opacity:0;transition:opacity .2s;font-family:'Cinzel',serif}
-  .member-card.editable:hover .member-edit-hint{opacity:1}
+  .member-card.editable .member-edit-hint{opacity:1}
   .member-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--brown),var(--rust));margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.6rem;color:var(--gold);border:2px solid rgba(200,130,10,.3);overflow:hidden}
   .member-avatar img{width:100%;height:100%;object-fit:cover}
   .member-name{font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--cream);margin-bottom:.5rem}
@@ -403,8 +403,8 @@
 
   /* AUTH */
   .member-only{display:none}
-  body.logged-in .member-only{display:block}
-  body.logged-in .member-only-flex{display:flex}
+  body.is-member .member-only{display:block}
+  body.is-member .member-only-flex{display:flex}
   .member-only-flex{display:none}
   .member-admin-only{display:none}
   body.is-member .member-admin-only{display:block}
@@ -948,7 +948,7 @@
     <a href="index.html" class="coin-balance" id="coinBalance" style="display:none;text-decoration:none"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></a>
     <span class="coin-balance" id="coinBalance" style="display:none" role="button" tabindex="0" aria-label="Abrir detalhes das Retorica Coins" onclick="openCoinGuide()" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();openCoinGuide();}"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></span>
     <button class="btn-ghost btn-sm" id="loginBtn" onclick="openLogin()">Entrar</button>
-    <button class="btn-ghost btn-sm member-only" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
+    <button class="btn-ghost btn-sm" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
   </div>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -2597,10 +2597,11 @@ function renderMembersFromCache() {
     const avatar  = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
-    const editCb  = isMember ? `onclick="openEditMember('${id}')"` : '';
-    const hint    = isMember ? `<div class="member-edit-hint">✏ Editar</div>` : '';
+    const canEditMembers = isMember;
+    const editCb  = canEditMembers ? `onclick="openEditMember('${id}')"` : '';
+    const hint    = canEditMembers ? `<div class="member-edit-hint">✏ Editar</div>` : '';
     const rmBtn   = isMember ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${id}')">✕</button>` : '';
-    return `<div class="member-card${isMember?' editable':''}" ${editCb}>
+    return `<div class="member-card${canEditMembers?' editable':''}" ${editCb}>
       ${rmBtn}${avatar}
       <div class="member-name">${m.name}</div>
       <div class="member-instruments">${tags}</div>
@@ -2860,6 +2861,7 @@ function resetEditModal() {
 }
 
 window.openAddMember = () => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros aprovados'); return; }
   resetEditModal();
   document.getElementById('editModalTitle').textContent = 'Novo Membro';
   document.getElementById('editModalSub').textContent   = 'Preencha os dados do novo integrante';
@@ -2867,7 +2869,7 @@ window.openAddMember = () => {
 };
 
 window.openEditMember = async id => {
-  if (!isMember) return;
+  if (!isMember) { showToast('⚠ Acesso restrito a administradores'); return; }
   resetEditModal();
   const snap = await getDoc(doc(db,'members',id));
   if (!snap.exists()) return;
@@ -2888,6 +2890,7 @@ window.openEditMember = async id => {
 window.closeEditMember = () => document.getElementById('editMemberModal').classList.remove('show');
 
 window.saveMember = async () => {
+  if (!isMember) { showToast('⚠ Acesso restrito a administradores'); return; }
   const name    = document.getElementById('editMemberName').value.trim();
   const since   = document.getElementById('editMemberSince').value;
   const contact = document.getElementById('editMemberContact').value.trim();
@@ -2950,6 +2953,7 @@ window.saveMember = async () => {
 };
 
 window.removeMember = async id => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros aprovados'); return; }
   if (!confirmAction('Tem certeza que deseja remover este membro?')) return;
   const snap = await getDoc(doc(db,'members',id));
   const name = snap.exists() ? snap.data().name : id;
