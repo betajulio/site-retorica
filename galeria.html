@@ -2597,10 +2597,11 @@ function renderMembersFromCache() {
     const avatar  = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
-    const editCb  = isMember ? `onclick="openEditMember('${id}')"` : '';
-    const hint    = isMember ? `<div class="member-edit-hint">✏ Editar</div>` : '';
+    const canEditMembers = isLoggedIn;
+    const editCb  = canEditMembers ? `onclick="openEditMember('${id}')"` : '';
+    const hint    = canEditMembers ? `<div class="member-edit-hint">✏ Editar</div>` : '';
     const rmBtn   = isMember ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${id}')">✕</button>` : '';
-    return `<div class="member-card${isMember?' editable':''}" ${editCb}>
+    return `<div class="member-card${canEditMembers?' editable':''}" ${editCb}>
       ${rmBtn}${avatar}
       <div class="member-name">${m.name}</div>
       <div class="member-instruments">${tags}</div>
@@ -2868,7 +2869,7 @@ window.openAddMember = () => {
 };
 
 window.openEditMember = async id => {
-  if (!isMember) return;
+  if (!isLoggedIn) { showToast('⚠ Faça login para editar membros'); return; }
   resetEditModal();
   const snap = await getDoc(doc(db,'members',id));
   if (!snap.exists()) return;
