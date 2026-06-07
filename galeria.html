@@ -2597,7 +2597,7 @@ function renderMembersFromCache() {
     const avatar  = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
-    const canEditMembers = isLoggedIn;
+    const canEditMembers = true;
     const editCb  = canEditMembers ? `onclick="openEditMember('${id}')"` : '';
     const hint    = canEditMembers ? `<div class="member-edit-hint">✏ Editar</div>` : '';
     const rmBtn   = isMember ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${id}')">✕</button>` : '';
@@ -2869,7 +2869,7 @@ window.openAddMember = () => {
 };
 
 window.openEditMember = async id => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para editar membros'); return; }
+  if (!isLoggedIn) { showToast('⚠ Faça login para editar membros'); openLogin(); return; }
   resetEditModal();
   const snap = await getDoc(doc(db,'members',id));
   if (!snap.exists()) return;
@@ -2890,7 +2890,7 @@ window.openEditMember = async id => {
 window.closeEditMember = () => document.getElementById('editMemberModal').classList.remove('show');
 
 window.saveMember = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros aprovados'); return; }
+  if (!isLoggedIn) { showToast('⚠ Faça login para editar membros'); openLogin(); return; }
   const name    = document.getElementById('editMemberName').value.trim();
   const since   = document.getElementById('editMemberSince').value;
   const contact = document.getElementById('editMemberContact').value.trim();
