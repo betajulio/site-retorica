@@ -2057,6 +2057,8 @@ onAuthStateChanged(auth, async user => {
       await syncMemberCoinBalance(user, typeof reward?.totalCoins === 'number' ? reward.totalCoins : null);
       if (reward?.awarded) showCoinReward(reward);
       await writeLog('Login membro', `${user.displayName || ''} (${user.email})`, 'acesso');
+      // Vincula automaticamente o ownerEmail do perfil (silencioso, em background)
+      autoLinkMemberOwnerEmail(user).catch(err => console.warn('autoLink error:', err));
     } else {
       memberCoinBalance = 0;
       updateCoinBalanceUI();
@@ -2597,6 +2599,38 @@ function canEditMember(memberData = {}) {
   return false;
 }
 
+/**
+ * Vincula automaticamente o ownerEmail do membro ao seu perfil no Firestore
+ * no momento do login, usando o MEMBER_EMAIL_MAP como referência.
+ * Só grava se o perfil ainda não tiver ownerEmail definido.
+ * Opera silenciosamente em background — não bloqueia o fluxo de auth.
+ */
+async function autoLinkMemberOwnerEmail(user) {
+  const email = (user?.email || '').toLowerCase();
+  if (!email || email === ADMIN_GENERAL_EMAIL) return; // admin não precisa de auto-link
+  const alias = MEMBER_EMAIL_MAP[email];
+  if (!alias) return; // email não está no mapa
+  try {
+    const snap = await getDocs(collection(db, 'members'));
+    for (const d of snap.docs) {
+      const data = d.data();
+      // Pula se já tiver ownerEmail definido (imutável)
+      if (data.ownerEmail) continue;
+      const memberName = normalizeName(data.name || '');
+      if (memberName.startsWith(alias)) {
+        await updateDoc(doc(db, 'members', d.id), { ownerEmail: email });
+        console.log(`[autoLink] ownerEmail vinculado: ${email} → ${data.name} (${d.id})`);
+        // Atualiza o cache local se já estiver carregado
+        const cached = membersCache.find(c => c.id === d.id);
+        if (cached) cached.data.ownerEmail = email;
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn('[autoLink] Erro ao vincular ownerEmail:', err);
+  }
+}
+
 function renderMembersFromCache() {
   const grid = document.getElementById('membersGrid');
   if (!membersCache.length) {
@@ -2956,17 +2990,15 @@ window.saveMember = async () => {
     : [];
   const { recommendations, recommendationMeta } = recommendationItemsToLegacyMap(recommendationsList);
 
-  // Determina ownerEmail: admin pode sobrescrever; membro sempre é o próprio
-  let ownerEmail;
-  if (isAdmin) {
-    // Preserva ownerEmail existente se já houver, senão deixa vazio (admin pode vincular depois)
-    if (eid) {
-      const prev = await getDoc(doc(db,'members',eid));
-      ownerEmail = prev.exists() ? (prev.data().ownerEmail || '') : '';
-    } else {
-      ownerEmail = '';
-    }
-  } else {
+  // ownerEmail é imutável: preserva sempre o valor já gravado no Firestore.
+  // Se não houver valor gravado e o usuário não for admin, usa o próprio email.
+  let ownerEmail = '';
+  if (eid) {
+    const prev = await getDoc(doc(db, 'members', eid));
+    ownerEmail = prev.exists() ? (prev.data().ownerEmail || '') : '';
+  }
+  // Só preenche se ainda estiver vazio E o usuário não for o admin
+  if (!ownerEmail && !isAdmin) {
     ownerEmail = myEmail;
   }
 
