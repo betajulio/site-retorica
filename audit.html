@@ -255,13 +255,12 @@ const AUDIT_EMAIL = 'juliocereser@gmail.com';
 const FORCE_TIEBREAKER_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_force_tiebreaker_top3?token=retorica-force-top3-20260418';
 const INSPECT_PROMOTION_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_inspect_promotion?token=retorica-force-top3-20260418';
 const SET_PROMOTION_PAUSE_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_set_promotion_pause?token=retorica-force-top3-20260418';
-const INSPECT_POLL_REMINDER_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_inspect_poll_reminder_pause?token=retorica-force-top3-20260418';
-const SET_POLL_REMINDER_PAUSE_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_set_poll_reminder_pause?token=retorica-force-top3-20260418';
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const auditRef = doc(db, 'config', 'readAudit');
+const promotionStateRef = doc(db, 'promotion_state', 'current');
 
 let currentConfig = null;
 let visibleEvents = [];
@@ -566,10 +565,9 @@ function updatePollReminderPauseUi(paused) {
 
 async function loadPollReminderPauseState() {
   try {
-    const resp = await fetch(INSPECT_POLL_REMINDER_URL);
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok || data.ok === false) return;
-    updatePollReminderPauseUi(data?.pollReminderPaused === true);
+    const snap = await getDoc(promotionStateRef);
+    if (!snap.exists()) return;
+    updatePollReminderPauseUi(snap.data()?.pollReminderPaused === true);
   } catch (err) {
     console.error('Poll reminder pause state error:', err);
   }
@@ -581,13 +579,11 @@ window.togglePollReminderPause = async () => {
   if (!confirm(`Deseja ${action} os lembretes de enquete via WhatsApp?\n\nIsto afeta: lembrete diário das 14h10, aviso de 24h antes do encerramento e aviso de 1h antes do encerramento.`)) return;
   showToast(nextPaused ? 'Pausando lembretes de enquete...' : 'Retomando lembretes de enquete...');
   try {
-    const resp = await fetch(`${SET_POLL_REMINDER_PAUSE_URL}&paused=${nextPaused ? 'true' : 'false'}`, { method: 'POST' });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok || data.ok === false) {
-      showToast(data?.error || `Não foi possível ${action} os lembretes.`);
-      return;
-    }
-    updatePollReminderPauseUi(data?.pollReminderPaused === true);
+    const update = { pollReminderPaused: nextPaused };
+    if (nextPaused) update.pollReminderPausedAt = serverTimestamp();
+    else update.pollReminderResumedAt = serverTimestamp();
+    await setDoc(promotionStateRef, update, { merge: true });
+    updatePollReminderPauseUi(nextPaused);
     showToast(nextPaused ? 'Lembretes de enquete pausados.' : 'Lembretes de enquete retomados.');
   } catch (err) {
     console.error('Poll reminder pause toggle error:', err);
