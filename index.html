@@ -121,7 +121,7 @@
   .member-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:0;transition:opacity .3s}
   .member-card:hover{border-color:rgba(200,130,10,.5);transform:translateY(-3px)}
   .member-card:hover::before{opacity:1}
-  .editable-member{cursor:pointer}
+  body.is-member .member-card{cursor:pointer}
   .member-edit-hint{position:absolute;bottom:0;left:0;right:0;background:rgba(200,130,10,.12);color:var(--amber);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.35rem;display:none;font-family:'Cinzel',serif}
   .editable-member .member-edit-hint{display:block}
   .member-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--brown),var(--rust));margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.6rem;color:var(--gold);border:2px solid rgba(200,130,10,.3);overflow:hidden}
@@ -2644,10 +2644,11 @@ function renderMembersFromCache() {
     const avatar  = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
+    // canEditMember drive CSS visual only; onclick always bound so auth-timing doesn't break clicks
+    // Real permission check happens inside openEditMember, where auth is guaranteed resolved
     const canEdit = canEditMember(m);
-    const editCb  = canEdit ? `onclick="openEditMember('${id}')"` : '';
-    const hint    = canEdit ? `<div class="member-edit-hint">&#9999;&#65039; Editar</div>` : '';
-    return `<div class="member-card${canEdit ? ' editable-member' : ''}" ${editCb}>
+    const hint = canEdit ? `<div class="member-edit-hint">&#9999;&#65039; Editar</div>` : '';
+    return `<div class="member-card${canEdit ? ' editable-member' : ''}" onclick="openEditMember('${id}')">
       ${avatar}
       <div class="member-name">${m.name}</div>
       <div class="member-instruments">${tags}</div>
