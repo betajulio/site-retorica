@@ -149,6 +149,9 @@ def ensure_promotion_state(db):
         "promotionPaused": False,
         "promotionPausedAt": None,
         "promotionResumedAt": None,
+        "pollReminderPaused": False,
+        "pollReminderPausedAt": None,
+        "pollReminderResumedAt": None,
     })
     return ref.get()
 
@@ -232,6 +235,26 @@ def set_promotion_pause(db, paused):
         updates["promotionResumedAt"] = firestore.SERVER_TIMESTAMP
     state_ref.set(updates, merge=True)
     return inspect_promotion_state(db)
+
+def get_poll_reminder_paused(db):
+    """Retorna True se os lembretes de enquete via WhatsApp estiverem pausados."""
+    snap = promotion_state_ref(db).get()
+    if not snap.exists:
+        return False
+    return snap.to_dict().get("pollReminderPaused", False) is True
+
+def set_poll_reminder_pause(db, paused):
+    """Pausa ou retoma os lembretes de enquete via WhatsApp."""
+    updates = {"pollReminderPaused": bool(paused)}
+    if paused:
+        updates["pollReminderPausedAt"] = firestore.SERVER_TIMESTAMP
+    else:
+        updates["pollReminderResumedAt"] = firestore.SERVER_TIMESTAMP
+    promotion_state_ref(db).set(updates, merge=True)
+    state_snap = promotion_state_ref(db).get()
+    state = state_snap.to_dict() if state_snap.exists else {}
+    return {"ok": True, "pollReminderPaused": bool(paused), "state": state}
+
 
 def get_suggestion_score(data):
     return int((data or {}).get("likes", 0) or 0) - int((data or {}).get("dislikes", 0) or 0)
@@ -1103,6 +1126,47 @@ def admin_set_promotion_pause(req: https_fn.Request) -> https_fn.Response:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 
 @https_fn.on_request()
+def admin_set_poll_reminder_pause(req: https_fn.Request) -> https_fn.Response:
+    """Pausa ou retoma os lembretes de enquete via WhatsApp (diário e monitor de enquetes)."""
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    raw_paused = (req.args.get("paused") or "").strip().lower()
+    if raw_paused not in ("true", "false", "1", "0", "yes", "no"):
+        return json_response({"ok": False, "error": "Parâmetro paused deve ser true ou false."}, 400)
+
+    db = firestore.client()
+    try:
+        result = set_poll_reminder_pause(db, raw_paused in ("true", "1", "yes"))
+        return json_response(result, 200)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
+def admin_inspect_poll_reminder_pause(req: https_fn.Request) -> https_fn.Response:
+    """Retorna o estado atual da flag de pausa de lembretes de enquete."""
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        snap = promotion_state_ref(db).get()
+        state = snap.to_dict() if snap.exists else {}
+        return json_response({
+            "ok": True,
+            "pollReminderPaused": state.get("pollReminderPaused", False),
+            "state": state
+        }, 200)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
 def admin_refresh_active_tiebreaker(req: https_fn.Request) -> https_fn.Response:
     if req.method == "OPTIONS":
         return json_response({}, 204)
@@ -1329,6 +1393,10 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
 # 5. AGENDAMENTO: LEMBRETE DIÁRIO (14:10)
 @scheduler_fn.on_schedule(schedule="10 14 * * *", timezone="America/Sao_Paulo")
 def daily_reminder(event: scheduler_fn.ScheduledEvent) -> None:
+    db = firestore.client()
+    if get_poll_reminder_paused(db):
+        print("Lembrete diário de enquete ignorado: lembretes pausados pelo admin.")
+        return
     send_wa_message(f"📢 *Lembrete:* Não esqueça de votar nas enquetes de hoje!{LINKS_FOOTER}")
 
 # 6. AGENDAMENTO: REPERTÓRIO (TERÇA ÀS 14:00)
@@ -1400,15 +1468,19 @@ def poll_monitor(event: scheduler_fn.ScheduledEvent) -> None:
             send_wa_message(build_tiebreaker_result_message(db, p))
 
     # B. Notificar Faltando 24 Horas
-    expiring_24h = db.collection("polls").where("deadline", ">", (now + timedelta(hours=23)).isoformat()).where("deadline", "<=", (now + timedelta(hours=24)).isoformat()).stream()
-    for doc in expiring_24h:
-        p = doc.to_dict()
-        q = p.get("question", "Enquete")
-        send_wa_message(f"⏳ *FALTAM 24 HORAS!*\n\nA enquete *\"{q}\"* encerra amanhã. Já deixou seu voto?{LINKS_FOOTER}")
+    reminder_paused = get_poll_reminder_paused(db)
+    if reminder_paused:
+        print("Lembretes de enquete (24h/1h) ignorados: pausados pelo admin.")
+    else:
+        expiring_24h = db.collection("polls").where("deadline", ">", (now + timedelta(hours=23)).isoformat()).where("deadline", "<=", (now + timedelta(hours=24)).isoformat()).stream()
+        for doc in expiring_24h:
+            p = doc.to_dict()
+            q = p.get("question", "Enquete")
+            send_wa_message(f"⏳ *FALTAM 24 HORAS!*\n\nA enquete *\"{q}\"* encerra amanhã. Já deixou seu voto?{LINKS_FOOTER}")
 
-    # C. Notificar Faltando 1 Hora
-    expiring_1h = db.collection("polls").where("deadline", ">", now.isoformat()).where("deadline", "<=", (now + timedelta(hours=1)).isoformat()).stream()
-    for doc in expiring_1h:
-        p = doc.to_dict()
-        q = p.get("question", "Enquete")
-        send_wa_message(f"⚠️ *ÚLTIMA CHAMADA (1 HORA)!*\n\nA enquete *\"{q}\"* encerra em breve. Corre lá para votar!{LINKS_FOOTER}")
+        # C. Notificar Faltando 1 Hora
+        expiring_1h = db.collection("polls").where("deadline", ">", now.isoformat()).where("deadline", "<=", (now + timedelta(hours=1)).isoformat()).stream()
+        for doc in expiring_1h:
+            p = doc.to_dict()
+            q = p.get("question", "Enquete")
+            send_wa_message(f"⚠️ *ÚLTIMA CHAMADA (1 HORA)!*\n\nA enquete *\"{q}\"* encerra em breve. Corre lá para votar!{LINKS_FOOTER}")

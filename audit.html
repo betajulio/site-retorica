@@ -127,6 +127,7 @@
         <button id="promotionPauseBtn" class="btn-ghost" style="border-color:#fbbf24;color:#fde68a" onclick="togglePromotionPause()">⏸ Pausar ciclo de sugestões</button>
         <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9" href="index.html?videoFrameDebug=1#galeria">🎛 Ajustar vídeos da galeria</a>
         <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
+        <button id="pollReminderPauseBtn" class="btn-ghost" style="border-color:#818cf8;color:#c7d2fe" onclick="togglePollReminderPause()">⏸ Pausar lembretes de enquete</button>
         <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
       </div>
       <div class="admin-tools-grid" style="margin-top:.8rem">
@@ -254,6 +255,8 @@ const AUDIT_EMAIL = 'juliocereser@gmail.com';
 const FORCE_TIEBREAKER_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_force_tiebreaker_top3?token=retorica-force-top3-20260418';
 const INSPECT_PROMOTION_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_inspect_promotion?token=retorica-force-top3-20260418';
 const SET_PROMOTION_PAUSE_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_set_promotion_pause?token=retorica-force-top3-20260418';
+const INSPECT_POLL_REMINDER_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_inspect_poll_reminder_pause?token=retorica-force-top3-20260418';
+const SET_POLL_REMINDER_PAUSE_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_set_poll_reminder_pause?token=retorica-force-top3-20260418';
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -265,6 +268,7 @@ let visibleEvents = [];
 let unsubConfig = null;
 let unsubEvents = null;
 let promotionPaused = false;
+let pollReminderPaused = false;
 
 function showToast(msg) {
   const toast = document.getElementById('toast');
@@ -548,6 +552,49 @@ window.togglePromotionPause = async () => {
   }
 };
 
+function updatePollReminderPauseUi(paused) {
+  pollReminderPaused = !!paused;
+  const btn = document.getElementById('pollReminderPauseBtn');
+  if (!btn) return;
+  btn.textContent = pollReminderPaused ? '▶ Retomar lembretes de enquete' : '⏸ Pausar lembretes de enquete';
+  btn.style.borderColor = pollReminderPaused ? '#34d399' : '#818cf8';
+  btn.style.color = pollReminderPaused ? '#a7f3d0' : '#c7d2fe';
+  btn.title = pollReminderPaused
+    ? 'Os lembretes de enquete via WhatsApp estão pausados; clique para retomá-los.'
+    : 'Pausa o envio de lembretes de enquete via WhatsApp (lembrete diário das 14h10 e avisos de 24h/1h antes do encerramento).';
+}
+
+async function loadPollReminderPauseState() {
+  try {
+    const resp = await fetch(INSPECT_POLL_REMINDER_URL);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.ok === false) return;
+    updatePollReminderPauseUi(data?.pollReminderPaused === true);
+  } catch (err) {
+    console.error('Poll reminder pause state error:', err);
+  }
+}
+
+window.togglePollReminderPause = async () => {
+  const nextPaused = !pollReminderPaused;
+  const action = nextPaused ? 'pausar' : 'retomar';
+  if (!confirm(`Deseja ${action} os lembretes de enquete via WhatsApp?\n\nIsto afeta: lembrete diário das 14h10, aviso de 24h antes do encerramento e aviso de 1h antes do encerramento.`)) return;
+  showToast(nextPaused ? 'Pausando lembretes de enquete...' : 'Retomando lembretes de enquete...');
+  try {
+    const resp = await fetch(`${SET_POLL_REMINDER_PAUSE_URL}&paused=${nextPaused ? 'true' : 'false'}`, { method: 'POST' });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || data.ok === false) {
+      showToast(data?.error || `Não foi possível ${action} os lembretes.`);
+      return;
+    }
+    updatePollReminderPauseUi(data?.pollReminderPaused === true);
+    showToast(nextPaused ? 'Lembretes de enquete pausados.' : 'Lembretes de enquete retomados.');
+  } catch (err) {
+    console.error('Poll reminder pause toggle error:', err);
+    showToast(`Erro ao ${action} os lembretes.`);
+  }
+};
+
 window.confirmClearLogs = () => {
   if (!confirm('Tem certeza? Isso vai apagar TODOS os logs permanentemente. Esta ação não pode ser desfeita.')) return;
   clearAllLogs();
@@ -823,6 +870,7 @@ onAuthStateChanged(auth, async user => {
   document.body.classList.add('auth-resolved');
   loadGalleryConfig();
   loadPromotionPauseState();
+  loadPollReminderPauseState();
   startStreams();
 });
 </script>
