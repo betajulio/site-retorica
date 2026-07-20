@@ -873,6 +873,8 @@ function getNextFriday(fromDate = new Date()) {
   if (daysUntilFriday === 0 && isFridayAfterCutoff) {
     daysUntilFriday = 7;
   }
+  // Ciclo de 2 semanas: pula para a sexta-feira seguinte (+ 7 dias extras)
+  daysUntilFriday += 7;
   date.setDate(date.getDate() + daysUntilFriday);
   date.setHours(23, 59, 0, 0);
   return date;
@@ -890,7 +892,7 @@ function renderPromotionBanner(timeUntil, paused = false) {
   const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
   const bannerHost = document.getElementById('promotionCountdownBanner');
   const timeLabel = formatTimeRemaining(timeUntil);
-  const shouldShowNav = !paused && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+  const shouldShowNav = !paused && timeUntil > 0 && timeUntil < 14 * 24 * 60 * 60 * 1000;
   const shouldShowSection = paused || timeUntil > 0;
 
   if (navBadge) {

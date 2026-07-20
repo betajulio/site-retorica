@@ -108,7 +108,7 @@
     <li class="member-admin-only"><a href="logs.html" style="color:var(--amber)">⚡ Admin</a></li>
     <li class="audit-admin-only"><a href="audit.html" style="color:var(--gold)">Auditoria</a></li>
   </ul>
-  <a href="index.html" class="nav-back">&larr; Voltar � Home</a>
+  <a href="index.html" class="nav-back">&larr; Voltar à Home</a>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()">
     <span></span><span></span><span></span>
   </button>
@@ -117,7 +117,7 @@
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a href="index.html">Home</a>
   <a href="noticias.html">Notícias <span class="badge-mobile-inline">NEW</span></a>
-  <a href="index.html" style="border:none; color:var(--amber)">Voltar � Home</a>
+  <a href="index.html" style="border:none; color:var(--amber)">Voltar à Home</a>
 </div>
 
 <div id="hero">
@@ -208,16 +208,16 @@ async function loadChartColumn(colId, label, url) {
     const data = await fetchAppleChart(url);
     const feed = data.feed;
     const entries = feed.entry ? feed.entry.slice(0, 5) : [];
-    
+
     if (!entries.length) throw new Error();
-    
+
     let html = `<div class="col-label">${label}</div>`;
     entries.forEach((entry, i) => {
       const song = entry['im:name'].label;
       const artist = entry['im:artist'].label;
       const thumb = entry['im:image'][2].label;
       const link = Array.isArray(entry.link) ? entry.link[0].attributes.href : entry.link.attributes.href;
-      
+
       html += `<div class="historia-card music-card">
         <span class="music-rank">${i+1}</span>
         <img src="${thumb}" class="music-item-thumb" alt="Capa" onerror="this.src='imagens/inst.png'">
@@ -253,37 +253,61 @@ async function loadHistoria() {
     const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fucsfm.com.br%2Ffeed%2F');
     const data = await res.json();
     const almanaque = data.items.find(it => it.title.toLowerCase().includes('almanaque'));
+
     if (almanaque) {
-      const slugMatch = almanaque.link.match(/ucsfm\.com\.br\/([^/]+)\//);
-      if (slugMatch) {
-        const wpRes = await fetch('https://ucsfm.com.br/wp-json/wp/v2/posts?search=' + encodeURIComponent(slugMatch[1].replace(/-/g,' ')) + '&per_page=1');
+      // Extrai o slug diretamente da URL do post
+      const slugMatch = almanaque.link.match(/ucsfm\.com\.br\/([^/?#]+)\/?$/);
+      const slug = slugMatch ? slugMatch[1] : null;
+
+      if (slug) {
+        const wpRes = await fetch(`https://ucsfm.com.br/wp-json/wp/v2/posts?slug=${encodeURIComponent(slug)}&per_page=1`);
         const posts = await wpRes.json();
-        if (posts.length) {
+
+        if (Array.isArray(posts) && posts.length) {
           const content = posts[0].content.rendered;
-          const parts = content.split(/<hr\s*\/?>/i).map(s => s.trim()).filter(s => s.length > 50);
-          
-          let h = '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.2rem">';
-          const subLabels = ['FATOS', 'OUTROS FATOS'];
-          
-          for (let i=1; i < Math.min(parts.length, 3); i++) {
-            const li = parts[i].match(/<li[^>]*>([\s\S]*?)<\/li>/g);
-            const items = li ? li.map(l => l.replace(/<[^>]*>/g,'').trim()) : [parts[i].replace(/<[^>]*>/g,'').trim()];
-            h += `<div class="historia-card" style="padding:1.2rem; text-align:left">
-              <div class="fatos-header">
-                <span class="fatos-date">${dateStr}</span>
-                <span class="fatos-label">${subLabels[i-1]}</span>
-              </div>
-              ${items.map(txt => `<div style="font-size:.85rem; color:var(--paper); line-height:1.6; margin-bottom:.6rem">${txt}</div>`).join('')}
-            </div>`;
+
+          // Extrai todos os parágrafos e itens de lista com texto relevante
+          const rawItems = [...content.matchAll(/<(?:p|li)[^>]*>([\s\S]*?)<\/(?:p|li)>/gi)]
+            .map(m => m[1].replace(/<[^>]*>/g, '').trim())
+            .filter(t => t.length > 10);
+
+          if (rawItems.length) {
+            // Divide em dois grupos para exibir em colunas
+            const mid = Math.ceil(rawItems.length / 2);
+            const groups = [rawItems.slice(0, mid), rawItems.slice(mid)].filter(g => g.length > 0);
+            const subLabels = ['FATOS', 'OUTROS FATOS'];
+
+            let h = '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.2rem">';
+            groups.forEach((group, i) => {
+              h += `<div class="historia-card" style="padding:1.2rem; text-align:left">
+                <div class="fatos-header">
+                  <span class="fatos-date">${dateStr}</span>
+                  <span class="fatos-label">${subLabels[i]}</span>
+                </div>
+                ${group.map(txt => `<div style="font-size:.85rem; color:var(--paper); line-height:1.6; margin-bottom:.6rem">${txt}</div>`).join('')}
+              </div>`;
+            });
+            document.getElementById('historiaContent').innerHTML = h + '</div>';
+            return;
           }
-          document.getElementById('historiaContent').innerHTML = h + '</div>';
-          return;
         }
       }
+
+      // Fallback final: exibe descrição do RSS com link direto
+      document.getElementById('historiaContent').innerHTML = `
+        <div class="historia-card" style="padding:1.2rem; text-align:left">
+          <div class="fatos-header"><span class="fatos-date">${dateStr}</span><span class="fatos-label">ALMANAQUE</span></div>
+          <div style="font-size:.85rem; color:var(--paper); line-height:1.6; margin-bottom:.6rem">${almanaque.description || 'Confira as curiosidades musicais do dia.'}</div>
+          <a href="${almanaque.link}" target="_blank" class="news-card-link">Ver almanaque completo →</a>
+        </div>`;
+      return;
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn('[HISTORIA] Erro ao carregar curiosidades:', e);
+  }
   document.getElementById('historiaContent').innerHTML = '<p style="color:var(--smoke); text-align:center">Indisponível no momento.</p>';
 }
+
 
 // ─── NEWS (WHIPLASH E AFINS) ───
 const RSS_SOURCES = [
@@ -343,7 +367,3 @@ loadHistoria(); loadTopRock(); loadNews();
 </script>
 </body>
 </html>
-
-
-
-
