@@ -689,6 +689,23 @@ window.triggerManualRehearsalZap = async () => {
   }
 };
 
+window.testCuriosidades = async () => {
+  if (!confirm('Deseja testar o envio das curiosidades do dia agora?')) return;
+  showToast('Testando curiosidades...');
+  try {
+    const res = await fetch('https://us-central1-retorica-b05b3.cloudfunctions.net/admin_send_curiosidades?token=retorica-force-top3-20260418', { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      showToast(`Sucesso! Foram enviados ${data.facts_count} fatos.`);
+    } else {
+      showToast('Erro: ' + data.error);
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('Falha na requisição ao Firebase.');
+  }
+};
+
 window.cancelThisWeeksRehearsal = async () => {
   const reason = prompt('Informe o motivo do cancelamento do ensaio desta semana:');
   if (reason === null) return;
