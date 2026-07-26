@@ -182,8 +182,18 @@
           <button class="btn-ghost" onclick="saveGalleryConfig()" style="border-color:var(--amber);color:var(--gold)">Salvar compressão</button>
           <span id="configSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
         </div>
+      </div><!-- /admin-inline-config compressão -->
+
+      <!-- Painel: Vínculo Membro ↔ E-mail -->
+      <div class="admin-inline-config" style="flex-direction:column;gap:.9rem">
+        <div class="admin-inline-config-copy">
+          <div class="admin-inline-config-title">🔗 Vínculo Membro ↔ E-mail</div>
+          <div class="admin-inline-config-sub">Associe o e-mail de login de cada membro ao seu perfil. Ao fazer login com esse e-mail, o membro só poderá editar o próprio perfil. Campos em branco indicam nenhum vínculo ativo.</div>
+        </div>
+        <div id="memberLinksGrid" style="display:grid;gap:.65rem"></div>
       </div>
-    </div>
+    </div><!-- /admin-tools -->
+
 
     <div class="toolbar">
       <span class="status-pill off" id="auditStatus">Auditoria desligada</span>
@@ -237,7 +247,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getFirestore, collection, doc, addDoc, getDoc, setDoc, getDocs, deleteDoc,
+  getFirestore, collection, doc, addDoc, getDoc, setDoc, getDocs, deleteDoc, updateDoc,
   onSnapshot, orderBy, query, limit, serverTimestamp, Timestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -885,8 +895,85 @@ onAuthStateChanged(auth, async user => {
   loadGalleryConfig();
   loadPromotionPauseState();
   loadPollReminderPauseState();
+  loadMembersForLinking();
   startStreams();
 });
+
+// ── Vínculo Membro ↔ E-mail ─────────────────────────────────────────────────
+
+let memberLinksData = []; // { id, name, ownerEmail }
+
+async function loadMembersForLinking() {
+  const grid = document.getElementById('memberLinksGrid');
+  if (!grid) return;
+  grid.innerHTML = '<div class="muted">Carregando membros…</div>';
+  try {
+    const snap = await getDocs(query(collection(db, 'members'), orderBy('createdAt', 'asc')));
+    memberLinksData = snap.docs.map(d => ({ id: d.id, name: d.data().name || '(sem nome)', ownerEmail: d.data().ownerEmail || '' }));
+    renderMemberLinks();
+  } catch (err) {
+    console.error('loadMembersForLinking error:', err);
+    grid.innerHTML = '<div class="muted">Erro ao carregar membros.</div>';
+  }
+}
+
+function renderMemberLinks() {
+  const grid = document.getElementById('memberLinksGrid');
+  if (!grid) return;
+  if (!memberLinksData.length) {
+    grid.innerHTML = '<div class="muted">Nenhum membro cadastrado.</div>';
+    return;
+  }
+  grid.innerHTML = memberLinksData.map(m => `
+    <div id="mlrow-${m.id}" style="display:grid;grid-template-columns:1fr 2fr auto auto;gap:.6rem;align-items:center;border:1px solid rgba(200,130,10,.14);background:rgba(10,8,4,.45);padding:.7rem .9rem">
+      <div>
+        <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--cream);letter-spacing:.04em">${esc(m.name)}</div>
+        <div id="mlstatus-${m.id}" style="font-size:.68rem;color:${m.ownerEmail ? 'var(--gold)' : 'var(--smoke)'};margin-top:.18rem">${m.ownerEmail ? '✓ ' + esc(m.ownerEmail) : 'Sem vínculo'}</div>
+      </div>
+      <input id="mlinput-${m.id}" type="email" placeholder="e-mail do membro" value="${esc(m.ownerEmail)}"
+        style="background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.28);color:var(--cream);padding:.6rem .75rem;font-size:.8rem;width:100%">
+      <button class="btn-ghost" style="white-space:nowrap" onclick="saveMemberLink('${m.id}')">🔗 Vincular</button>
+      <button class="btn-ghost" style="white-space:nowrap;border-color:rgba(239,68,68,.38);color:#fca5a5" onclick="clearMemberLink('${m.id}')">✕ Remover</button>
+    </div>
+  `).join('');
+}
+
+window.saveMemberLink = async (memberId) => {
+  const input = document.getElementById(`mlinput-${memberId}`);
+  const statusEl = document.getElementById(`mlstatus-${memberId}`);
+  const email = (input?.value || '').trim().toLowerCase();
+  if (!email) { showToast('⚠ Digite um e-mail antes de vincular.'); return; }
+  if (!email.includes('@')) { showToast('⚠ E-mail inválido.'); return; }
+  try {
+    await updateDoc(doc(db, 'members', memberId), { ownerEmail: email });
+    const member = memberLinksData.find(m => m.id === memberId);
+    if (member) member.ownerEmail = email;
+    if (statusEl) { statusEl.textContent = '✓ ' + email; statusEl.style.color = 'var(--gold)'; }
+    showToast(`✓ Vínculo salvo para ${email}`);
+  } catch (err) {
+    console.error('saveMemberLink error:', err);
+    showToast('⚠ Erro ao vincular. ' + (err.message || ''));
+  }
+};
+
+window.clearMemberLink = async (memberId) => {
+  const statusEl = document.getElementById(`mlstatus-${memberId}`);
+  const input = document.getElementById(`mlinput-${memberId}`);
+  const member = memberLinksData.find(m => m.id === memberId);
+  if (!member?.ownerEmail) { showToast('Este membro já não possui vínculo.'); return; }
+  if (!confirm(`Remover o vínculo de e-mail "${member.ownerEmail}" do membro "${member.name}"?`)) return;
+  try {
+    await updateDoc(doc(db, 'members', memberId), { ownerEmail: '' });
+    member.ownerEmail = '';
+    if (input) input.value = '';
+    if (statusEl) { statusEl.textContent = 'Sem vínculo'; statusEl.style.color = 'var(--smoke)'; }
+    showToast('✓ Vínculo removido.');
+  } catch (err) {
+    console.error('clearMemberLink error:', err);
+    showToast('⚠ Erro ao remover vínculo. ' + (err.message || ''));
+  }
+};
+
 </script>
 </body>
 </html>

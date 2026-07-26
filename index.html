@@ -2057,8 +2057,10 @@ onAuthStateChanged(auth, async user => {
       await syncMemberCoinBalance(user, typeof reward?.totalCoins === 'number' ? reward.totalCoins : null);
       if (reward?.awarded) showCoinReward(reward);
       await writeLog('Login membro', `${user.displayName || ''} (${user.email})`, 'acesso');
-      // Vincula automaticamente o ownerEmail do perfil (silencioso, em background)
-      autoLinkMemberOwnerEmail(user).catch(err => console.warn('autoLink error:', err));
+      // Vincula automaticamente o ownerEmail do perfil e aguarda antes de carregar membros
+      await autoLinkMemberOwnerEmail(user).catch(err => console.warn('autoLink error:', err));
+      // Força reload do cache de membros após o link, para que canEditMember funcione corretamente
+      if (membersLoaded) { membersLoaded = false; }
     } else {
       memberCoinBalance = 0;
       updateCoinBalanceUI();
@@ -2922,7 +2924,14 @@ window.openEditMember = async id => {
   resetEditModal();
   const snap = await getDoc(doc(db,'members',id));
   if (!snap.exists()) return;
-  const m = snap.data();
+  let m = snap.data();
+  // Se ownerEmail ainda não foi gravado (race condition do autoLink no login),
+  // executa o link agora e relê o documento antes de checar permissão
+  if (!canEditMember(m) && !m.ownerEmail) {
+    await autoLinkMemberOwnerEmail(auth.currentUser).catch(() => {});
+    const snapRetry = await getDoc(doc(db,'members',id));
+    if (snapRetry.exists()) m = snapRetry.data();
+  }
   if (!canEditMember(m)) { showToast('🔒 Você só pode editar o seu próprio perfil'); return; }
   const myEmail = (auth.currentUser?.email || '').toLowerCase();
   const isAdmin = myEmail === ADMIN_GENERAL_EMAIL;
@@ -2950,9 +2959,24 @@ window.saveMember = async () => {
   const eidCheck = document.getElementById('editMemberId').value;
   if (eidCheck) {
     const snapCheck = await getDoc(doc(db,'members',eidCheck));
-    if (snapCheck.exists() && !canEditMember(snapCheck.data())) {
-      showToast('🔒 Você só pode editar o seu próprio perfil');
-      return;
+    if (snapCheck.exists()) {
+      const snapData = snapCheck.data();
+      // canEditMember usa ownerEmail do Firestore + fallback do MEMBER_EMAIL_MAP
+      // Se ownerEmail ainda não foi gravado (race condition do autoLink), tenta gravar agora e reavaliar
+      if (!canEditMember(snapData)) {
+        if (!snapData.ownerEmail) {
+          // Tenta executar o autoLink de forma síncrona e reavalia
+          await autoLinkMemberOwnerEmail(auth.currentUser).catch(() => {});
+          const snapRetry = await getDoc(doc(db,'members',eidCheck));
+          if (!canEditMember(snapRetry.data ? snapRetry.data() : snapData)) {
+            showToast('🔒 Você só pode editar o seu próprio perfil');
+            return;
+          }
+        } else {
+          showToast('🔒 Você só pode editar o seu próprio perfil');
+          return;
+        }
+      }
     }
   } else if (!isAdmin) {
     showToast('🔒 Apenas o admin geral pode adicionar membros');
