@@ -83,6 +83,7 @@
   .hero-inst-wrap{display:flex;justify-content:center;align-items:center;margin:.5rem 0 .75rem;animation:fadeUp 1.2s .1s ease both}
   .hero-inst-img{width:214px;max-width:63.75vw;height:auto;object-fit:contain;filter:drop-shadow(0 0 24px rgba(200,130,10,0.25))}
   @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
   .hero-tag{font-family:'IM Fell English SC',serif;font-size:.85rem;letter-spacing:.4em;color:var(--amber);text-transform:uppercase;margin-bottom:1.5rem}
   .hero-title{font-family:'Cinzel',serif;font-size:clamp(5rem,14vw,12rem);font-weight:900;color:var(--cream);line-height:.85;text-shadow:0 0 80px rgba(200,130,10,.3),3px 3px 0 rgba(139,58,10,.4);animation:fadeUp 1.2s .2s ease both}
 

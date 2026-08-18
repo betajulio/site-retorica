@@ -18,11 +18,29 @@ API_TOKEN = "e3623df93ba448cc8c707e74f105a4170b0cee5a923f4a5697"
 CHAT_ID = "120363404256286081@g.us"   
 SITE_URL = "https://betajulio.github.io/site-retorica/"
 NEWS_URL = "https://betajulio.github.io/site-retorica/noticias.html"
+POLLS_URL = "https://betajulio.github.io/site-retorica/enquetes.html"
+SUGGESTIONS_URL = "https://betajulio.github.io/site-retorica/sugestoes.html"
+SETLIST_URL = "https://betajulio.github.io/site-retorica/setlist.html"
+GALLERY_URL = "https://betajulio.github.io/site-retorica/galeria.html"
 PROMOTION_ADMIN_TOKEN = "retorica-force-top3-20260418"
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "326b84f0200191f182535dfc0286811c").strip()
 TMDB_KEY_CACHE = {"value": None, "loaded_at": None}
 
-LINKS_FOOTER = f"\n\n🌐 *Site:* {SITE_URL}\n🤘📰 *Notícias do Rock:* {NEWS_URL}"
+# Footers com links exclusivos por contexto
+POLL_FOOTER = f"\n\n🗳️ *Vote na enquete:* {POLLS_URL}"
+POLL_RESULT_FOOTER = f"\n\n🗳️ *Ver enquetes:* {POLLS_URL}"
+SUGGESTIONS_FOOTER = f"\n\n💡 *Veja e vote nas sugestões:* {SUGGESTIONS_URL}"
+GALLERY_FOOTER = f"\n\n🖼️ *Ver na galeria:* {GALLERY_URL}"
+SETLIST_FOOTER = f"\n\n🎸 *Ver setlist do ensaio:* {SETLIST_URL}"
+NEWS_FOOTER = f"\n\n🤘📰 *Notícias do Rock:* {NEWS_URL}"
+
+def safe_int(value, default=0):
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
 try:
     SP_TZ = ZoneInfo("America/Sao_Paulo")
 except ZoneInfoNotFoundError:
@@ -111,11 +129,26 @@ def to_datetime(value):
         return value
     if hasattr(value, "to_datetime"):
         return value.to_datetime()
-    if isinstance(value, str):
+    if isinstance(value, (int, float)):
         try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
+            ts = value / 1000.0 if value > 1e11 else float(value)
+            return datetime.fromtimestamp(ts, tz=SP_TZ)
+        except Exception:
             return None
+    if isinstance(value, str):
+        v = value.strip()
+        if not v:
+            return None
+        try:
+            return datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except ValueError:
+            pass
+        for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%d/%m/%Y %H:%M", "%d/%m/%Y", "%Y-%m-%d"):
+            try:
+                dt = datetime.strptime(v, fmt)
+                return dt.replace(tzinfo=SP_TZ)
+            except ValueError:
+                continue
     return None
 
 def get_next_promotion_datetime(reference=None):
@@ -256,8 +289,126 @@ def set_poll_reminder_pause(db, paused):
     return {"ok": True, "pollReminderPaused": bool(paused), "state": state}
 
 
+def get_active_polls(db):
+    """Retorna uma lista de tuplas (poll_id, poll_data) de todas as enquetes verdadeiramente ativas (não encerradas e dentro do prazo)."""
+    now = now_sp()
+    active = []
+    for doc in db.collection("polls").stream():
+        p = doc.to_dict() or {}
+        # 1. Já marcada como encerrada
+        if p.get("closed") is True:
+            continue
+        if str(p.get("status", "")).lower() in ["closed", "finished", "encerrada"]:
+            continue
+
+        deadline_raw = p.get("deadline")
+        deadline = to_datetime(deadline_raw)
+
+        if deadline:
+            dl_sp = deadline.astimezone(SP_TZ) if deadline.tzinfo else deadline.replace(tzinfo=SP_TZ)
+            if now >= dl_sp:
+                # Prazo expirou: marca explicitamente como fechada no Firestore
+                try:
+                    doc.reference.set({"closed": True}, merge=True)
+                except Exception:
+                    pass
+                continue
+        else:
+            # Enquetes sem prazo: verifica data de criação
+            created_at_raw = p.get("createdAt")
+            created_at = to_datetime(created_at_raw)
+            if created_at:
+                created_sp = created_at.astimezone(SP_TZ) if created_at.tzinfo else created_at.replace(tzinfo=SP_TZ)
+                # Se não tem prazo e foi criada há mais de 48 horas, considera encerrada
+                if (now - created_sp).total_seconds() > 48 * 3600:
+                    try:
+                        doc.reference.set({"closed": True}, merge=True)
+                    except Exception:
+                        pass
+                    continue
+            else:
+                # Sem prazo e sem createdAt válido -> enquete antiga/inválida, fecha e ignora
+                try:
+                    doc.reference.set({"closed": True}, merge=True)
+                except Exception:
+                    pass
+                continue
+
+        active.append((doc.id, p))
+    return active
+
+
+def format_time_remaining(deadline_val):
+    if not deadline_val:
+        return "Sem prazo definido"
+    dl_dt = to_datetime(deadline_val)
+    if not dl_dt:
+        return "Sem prazo definido"
+    
+    if dl_dt.tzinfo is None:
+        dl_sp = dl_dt.replace(tzinfo=SP_TZ)
+    else:
+        dl_sp = dl_dt.astimezone(SP_TZ)
+        
+    now = now_sp()
+    delta = dl_sp - now
+    total_seconds = int(delta.total_seconds())
+    
+    if total_seconds <= 0:
+        return "Encerrando agora"
+    
+    days = total_seconds // 86400
+    hours = (total_seconds % 86400) // 3600
+    minutes = (total_seconds % 3600) // 60
+    
+    parts = []
+    if days > 0:
+        parts.append(f"{days} {'dia' if days == 1 else 'dias'}")
+    if hours > 0:
+        parts.append(f"{hours} {'hora' if hours == 1 else 'horas'}")
+    if days == 0 and minutes > 0:
+        parts.append(f"{minutes} min")
+        
+    return " e ".join(parts) if parts else "menos de 1 minuto"
+
+
+def build_poll_reminder_message(p, header_title="📢 *LEMBRETE DE ENQUETE ATIVA!*"):
+    q = p.get("question", "Enquete")
+    d = str(p.get("description") or "").strip()
+    opts = p.get("options", []) or []
+    
+    deadline = p.get("deadline")
+    time_str = format_time_remaining(deadline)
+    
+    total_votes = sum(int((opt or {}).get("votes", 0) or 0) for opt in opts)
+    voters_count = len(p.get("voters", []) or [])
+    if voters_count > total_votes:
+        total_votes = voters_count
+
+    opts_lines = []
+    for opt in opts:
+        label = (opt or {}).get("label") or (opt or {}).get("text") or "Opção"
+        votes = int((opt or {}).get("votes", 0) or 0)
+        v_str = f"{votes} {'voto' if votes == 1 else 'votos'}"
+        opts_lines.append(f"🔹 *{label}:* {v_str}")
+    
+    opts_txt = "\n".join(opts_lines) if opts_lines else "Nenhuma opção cadastrada."
+    desc_txt = f"\n📝 _{d}_" if d else ""
+    v_total_str = f"{total_votes} {'voto' if total_votes == 1 else 'votos'}"
+    
+    msg = (
+        f"{header_title}\n\n"
+        f"❓ *{q}*{desc_txt}\n\n"
+        f"⏳ *Tempo restante:* {time_str}\n"
+        f"📊 *Total de votos:* {v_total_str}\n\n"
+        f"📋 *Opções:*\n{opts_txt}"
+        f"{POLL_FOOTER}"
+    )
+    return msg
+
+
 def get_suggestion_score(data):
-    return int((data or {}).get("likes", 0) or 0) - int((data or {}).get("dislikes", 0) or 0)
+    return safe_int((data or {}).get("likes", 0)) - safe_int((data or {}).get("dislikes", 0))
 
 def get_sorted_suggestions(db):
     def suggestion_sort_key(doc):
@@ -266,7 +417,7 @@ def get_sorted_suggestions(db):
         created_ts = created_at.timestamp() if isinstance(created_at, datetime) else 0
         return (
             get_suggestion_score(data),
-            int(data.get("likes", 0) or 0),
+            safe_int(data.get("likes", 0)),
             created_ts
         )
 
@@ -280,6 +431,66 @@ def get_top_tied_suggestions(db, limit=3):
     top_score = get_suggestion_score(sorted_suggestions[0].to_dict() or {})
     top_candidates = [doc for doc in sorted_suggestions if get_suggestion_score(doc.to_dict() or {}) == top_score]
     return top_candidates[: min(limit, len(top_candidates))]
+
+
+def build_top_suggestions_message(db):
+    try:
+        sorted_suggs = get_sorted_suggestions(db)
+        if not sorted_suggs:
+            return None
+
+        top3 = sorted_suggs[:3]
+        if not top3:
+            return None
+
+        state_snap = promotion_state_ref(db).get()
+        state = state_snap.to_dict() if state_snap.exists else {}
+        is_paused = state.get("promotionPaused", False) is True
+
+        if is_paused:
+            promo_time_str = "Ciclo pausado pelo admin"
+        else:
+            next_promo_raw = state.get("nextPromotionDate")
+            next_promo_dt = to_datetime(next_promo_raw) or get_next_promotion_datetime()
+            promo_time_str = format_time_remaining(next_promo_dt)
+
+        rank_emojis = ["🥇", "🥈", "🥉"]
+        lines = [
+            "🏆 *TOP 3 SUGESTÕES DE MÚSICAS* 🎵",
+            f"⏳ *Enquete em:* {promo_time_str}",
+            ""
+        ]
+
+        for idx, doc in enumerate(top3):
+            data = doc.to_dict() or {}
+            song = data.get("song", "Música")
+            artist = data.get("artist", "Artista")
+            by_user = data.get("by", "Membro")
+            likes = safe_int(data.get("likes", 0))
+            dislikes = safe_int(data.get("dislikes", 0))
+            score = get_suggestion_score(data)
+
+            # Verifica se há empate com alguma outra sugestão no top 3
+            is_tie = False
+            for other_idx, other_doc in enumerate(top3):
+                if other_idx == idx:
+                    continue
+                o_data = other_doc.to_dict() or {}
+                if get_suggestion_score(o_data) == score and safe_int(o_data.get("likes", 0)) == likes:
+                    is_tie = True
+                    break
+
+            tie_tag = " ⚔️ *(Empate)*" if is_tie else ""
+            rank_icon = rank_emojis[idx] if idx < len(rank_emojis) else f"{idx+1}º"
+
+            lines.append(f"{rank_icon} *{song}* — {artist} (por {by_user}){tie_tag} · 👍 {likes} | 👎 {dislikes}")
+
+        lines.append("")
+        lines.append(f"💡 *Veja e vote nas sugestões:* {SUGGESTIONS_URL}")
+        return "\n".join(lines).strip()
+    except Exception as exc:
+        print(f"Erro ao construir mensagem do Top 3: {type(exc).__name__}: {exc}")
+        return None
 
 def create_tiebreaker_poll_backend(db, suggestion_docs):
     end_date = now_sp() + timedelta(hours=48)
@@ -357,8 +568,8 @@ def extract_repertory_poll_song(poll):
 
 def build_repertory_result_message(poll):
     options = poll.get("options", []) or []
-    yes_votes = int(options[0].get("votes", 0) or 0) if len(options) > 0 else 0
-    no_votes = int(options[1].get("votes", 0) or 0) if len(options) > 1 else 0
+    yes_votes = safe_int(options[0].get("votes", 0)) if len(options) > 0 else 0
+    no_votes = safe_int(options[1].get("votes", 0)) if len(options) > 1 else 0
     song_and_artist = extract_repertory_poll_song(poll)
     if yes_votes > no_votes:
         verdict = "✅ *APROVADA!* Entrou para o repertório."
@@ -371,7 +582,7 @@ def build_repertory_result_message(poll):
         f"🎵 *Música:* {song_and_artist}\n"
         f"{verdict}\n\n"
         f"📊 *Resultado:* ✅ {yes_votes} | ❌ {no_votes}"
-        f"{LINKS_FOOTER}"
+        f"{POLL_RESULT_FOOTER}"
     )
 
 def get_poll_option_label(option):
@@ -395,11 +606,11 @@ def build_tiebreaker_result_message(db, poll):
     options = poll.get("options", []) or []
     ranked = sorted(
         enumerate(options),
-        key=lambda item: int((item[1] or {}).get("votes", 0) or 0),
+        key=lambda item: safe_int((item[1] or {}).get("votes", 0)),
         reverse=True
     )
     if not ranked:
-        return f"🏆 *RESULTADO DO DESEMPATE*\n\nNenhuma opção encontrada.{LINKS_FOOTER}"
+        return f"🏆 *RESULTADO DO DESEMPATE*\n\nNenhuma opção encontrada.{POLL_RESULT_FOOTER}"
 
     winner_index, winner_option = ranked[0]
     winner = str(poll.get("winnerLabel") or "").strip()
@@ -413,7 +624,7 @@ def build_tiebreaker_result_message(db, poll):
     losers = []
     for option_index, option in ranked[1:]:
         label = get_poll_option_label(option) or get_tiebreaker_label_from_suggestion(db, poll, option_index) or "Música"
-        votes = int((option or {}).get("votes", 0) or 0)
+        votes = safe_int((option or {}).get("votes", 0))
         losers.append(f"{label} ({votes} votos)")
     losers_text = "\n".join(losers) if losers else "Sem perdedoras."
 
@@ -421,7 +632,7 @@ def build_tiebreaker_result_message(db, poll):
         f"🏆 *RESULTADO DO DESEMPATE*\n\n"
         f"🎵 *Música vencedora:*\n{winner}\n\n"
         f"❌ *Perderam:*\n{losers_text}"
-        f"{LINKS_FOOTER}"
+        f"{POLL_RESULT_FOOTER}"
     )
 
 def process_due_repertory_poll_doc(db, poll_doc):
@@ -789,8 +1000,8 @@ def json_response(payload, status=200):
         mimetype="application/json",
     )
     resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "GET,OPTIONS"
-    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    resp.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type, x-admin-token"
     return resp
 
 def update_log_delivery_status(db, log_id, status, detail):
@@ -1167,6 +1378,51 @@ def admin_inspect_poll_reminder_pause(req: https_fn.Request) -> https_fn.Respons
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 
 @https_fn.on_request()
+def admin_trigger_daily_reminder(req: https_fn.Request) -> https_fn.Response:
+    """Dispara os lembretes de enquete ativa manualmente (uso admin)."""
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        active_polls = get_active_polls(db)
+        if not active_polls:
+            return json_response({"ok": True, "message": "Nenhuma enquete ativa no momento.", "sentCount": 0}, 200)
+        
+        sent_count = 0
+        for poll_id, p in active_polls:
+            msg = build_poll_reminder_message(p, header_title="📢 *LEMBRETE DE ENQUETE ATIVA!*")
+            send_wa_message(msg)
+            sent_count += 1
+            
+        return json_response({"ok": True, "message": f"{sent_count} lembrete(s) enviado(s).", "sentCount": sent_count}, 200)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
+def admin_trigger_top_suggestions(req: https_fn.Request) -> https_fn.Response:
+    """Dispara o resumo do Top 3 Sugestões manualmente (uso admin)."""
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        msg = build_top_suggestions_message(db)
+        if not msg:
+            return json_response({"ok": True, "message": "Nenhuma sugestão cadastrada."}, 200)
+        
+        result = send_wa_message(msg)
+        return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
 def admin_refresh_active_tiebreaker(req: https_fn.Request) -> https_fn.Response:
     if req.method == "OPTIONS":
         return json_response({}, 204)
@@ -1211,6 +1467,53 @@ def admin_clear_current_setlist(req: https_fn.Request) -> https_fn.Response:
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 
+@https_fn.on_request()
+def admin_send_curiosidades(req: https_fn.Request) -> https_fn.Response:
+    """Envia as curiosidades do dia para o WhatsApp manualmente (uso admin)."""
+    import requests as http_requests, re
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    now_local = now_sp()
+    day   = now_local.day
+    month = now_local.month
+    month_names    = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"]
+    month_names_pt = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
+    date_str  = f"{day:02d} de {month_names_pt[month - 1]}"
+    slug_date = f"{day:02d}-de-{month_names[month - 1]}"
+    slug      = f"almanaque-da-musica-ucsfm-{slug_date}"
+
+    facts = []
+    try:
+        wp_url = f"https://ucsfm.com.br/wp-json/wp/v2/posts?slug={slug}&per_page=1"
+        resp = http_requests.get(wp_url, timeout=15)
+        posts = resp.json()
+        if isinstance(posts, list) and posts:
+            content = posts[0].get("content", {}).get("rendered", "")
+            raw = re.findall(r"<(?:p|li)[^>]*>(.*?)</(?:p|li)>", content, re.DOTALL | re.IGNORECASE)
+            for item in raw:
+                text = re.sub(r"<[^>]+>", "", item).strip()
+                if len(text) > 10 and "confira" not in text.lower():
+                    facts.append(text)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"Erro ao buscar almanaque: {exc}"}, 500)
+
+    if not facts:
+        return json_response({"ok": False, "error": f"Nenhum fato encontrado para {date_str}"}, 404)
+
+    lines = ["🎸 *BOM DIA, RETÓRICA!* 🤘", "", f"📅 *{date_str}* na história da música:", ""]
+    for fact in facts:
+        lines.append(f"🔹 {fact}")
+    lines += ["", "_Que o rock esteja com vocês hoje!_ 🎶", NEWS_FOOTER]
+    msg = "\n".join(lines)
+
+    result = send_wa_message(msg)
+    fetch_and_send_top_music()
+    return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "facts_count": len(facts)}, 200 if result.get("ok") else 500)
+
 def send_wa_message(text):
     import requests
     url = f"https://api.green-api.com/waInstance{ID_INSTANCE}/sendMessage/{API_TOKEN}"
@@ -1244,6 +1547,28 @@ def send_wa_image(file_url, caption):
     except Exception as exc:
         return {"ok": False, "detail": f"{type(exc).__name__}: {exc}"[:300]}
 
+def fetch_and_send_top_music():
+    import requests
+    try:
+        lines_rock = ["🎸 *TOP 3 ROCK NACIONAL E INTERNACIONAL* 🤘", ""]
+        r_rock = requests.get('https://itunes.apple.com/us/rss/topsongs/limit=3/genre=21/json', timeout=10).json()
+        for i, entry in enumerate(r_rock.get('feed', {}).get('entry', [])):
+            title = entry.get('title', {}).get('label', '')
+            lines_rock.append(f"#{i+1} - {title}")
+        send_wa_message("\n".join(lines_rock))
+    except Exception as e:
+        print(f"Erro top rock: {e}")
+
+    try:
+        lines_metal = ["🔥 *TOP 3 HEAVY METAL* 🤘", ""]
+        r_metal = requests.get('https://itunes.apple.com/us/rss/topsongs/limit=3/genre=1153/json', timeout=10).json()
+        for i, entry in enumerate(r_metal.get('feed', {}).get('entry', [])):
+            title = entry.get('title', {}).get('label', '')
+            lines_metal.append(f"#{i+1} - {title}")
+        send_wa_message("\n".join(lines_metal))
+    except Exception as e:
+        print(f"Erro top metal: {e}")
+
 # 1. GATILHO: NOVA ENQUETE
 @firestore_fn.on_document_created(document="polls/{pollId}")
 def on_poll_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | None]) -> None:
@@ -1254,7 +1579,7 @@ def on_poll_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | No
         opts = poll.get('options', [])
         opts_txt = "\n" + "\n".join([f"🔹 {o.get('label')}" for o in opts]) if opts else ""
         desc_txt = f"\n📝 _{d}_" if d else ""
-        send_wa_message(f"🗳️ *NOVA ENQUETE NO AR!*\n\n❓ *{q}*{desc_txt}\n{opts_txt}{LINKS_FOOTER}")
+        send_wa_message(f"🗳️ *NOVA ENQUETE NO AR!*\n\n❓ *{q}*{desc_txt}\n{opts_txt}{POLL_FOOTER}")
 
 # 2. GATILHO: NOVAS FOTOS
 @firestore_fn.on_document_created(document="gallery/{photoId}")
@@ -1275,13 +1600,13 @@ def on_photo_added(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
             video_url = p.get('url', '')
             title_txt = f"🎵 *Música:* {youtube_title}\n" if youtube_title else ""
             video_txt = f"\n🎬 *Assistir:* {video_url}" if video_url else ""
-            msg = f"{title_txt}{desc_txt}🎥 *Novo vídeo na galeria!* [#{tag_db}]\n👤 Enviado por: *{user_name}*{date_txt}{video_txt}{LINKS_FOOTER}"
+            msg = f"{title_txt}{desc_txt}🎥 *Novo vídeo na galeria!* [#{tag_db}]\n👤 Enviado por: *{user_name}*{date_txt}{video_txt}{GALLERY_FOOTER}"
             if p.get('thumbUrl'):
                 send_wa_image(p['thumbUrl'], msg)
             else:
                 send_wa_message(msg)
         else:
-            msg = f"{desc_txt}📸 *Nova foto na galeria!* [#{tag_db}]\n👤 Enviado por: *{user_name}*{date_txt}{LINKS_FOOTER}"
+            msg = f"{desc_txt}📸 *Nova foto na galeria!* [#{tag_db}]\n👤 Enviado por: *{user_name}*{date_txt}{GALLERY_FOOTER}"
             if p.get('url'):
                 send_wa_image(p['url'], msg)
             else:
@@ -1297,7 +1622,7 @@ def on_suggestion_created(event: firestore_fn.Event[firestore_fn.DocumentSnapsho
         user = s.get('by', 'Alguém')
         yt_link = s.get('youtube', '')
         yt_txt = f"\n🎥 *Vídeo:* {yt_link}" if yt_link else ""
-        msg = f"🎸 *Nova Sugestão de Música!*\n\n🎵 *Música:* {song}\n👤 *Artista:* {artist}\n✍️ *Sugerido por:* {user}{yt_txt}{LINKS_FOOTER}"
+        msg = f"🎸 *Nova Sugestão de Música!*\n\n🎵 *Música:* {song}\n👤 *Artista:* {artist}\n✍️ *Sugerido por:* {user}{yt_txt}{SUGGESTIONS_FOOTER}"
         
         # Se tiver link do YouTube, tenta pegar o thumbnail
         if yt_link:
@@ -1323,8 +1648,8 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
         song = log.get('song', 'Música')
         artist = log.get('artist', 'Artista')
         suggested_by = log.get('by', 'Membro')
-        likes = log.get('likes', 0)
-        dislikes = log.get('dislikes', 0)
+        likes = safe_int(log.get('likes', 0))
+        dislikes = safe_int(log.get('dislikes', 0))
         removed_by = log.get('removedBy', 'Sistema')
         reason = str(log.get('reason') or 'Não informado').strip()
         if removed_by == 'Sistema' and dislikes >= 3:
@@ -1339,7 +1664,7 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
             f"👤 *Removido por:* {removed_by}\n\n"
             f"✨ *Não desanime, {suggested_by}!* O rock é feito de persistência. Se sua música não entrou agora, "
             f"tente sugerir novamente em um momento mais oportuno. Continuem participando!"
-            f"{LINKS_FOOTER}"
+            f"{SUGGESTIONS_FOOTER}"
         )
         result = send_wa_message(msg)
         update_log_delivery_status(firestore.client(), log_id, "sent" if result["ok"] else "failed", result["detail"])
@@ -1353,11 +1678,11 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
             if tab0:
                 sat_date = get_next_saturday_str()
                 txt = "\n".join([f"{i+1}. {m.get('song')} ({m.get('artist')})" for i, m in enumerate(tab0)])
-                result = send_wa_message(f"🎸 *LISTA DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem, pessoal! 🤘{LINKS_FOOTER}")
+                result = send_wa_message(f"🎸 *LISTA DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem, pessoal! 🤘{SETLIST_FOOTER}")
             else:
-                result = send_wa_message(f"⚠️ *Atenção:* A lista do Ensaio Atual está vazia no momento.{LINKS_FOOTER}")
+                result = send_wa_message(f"⚠️ *Atenção:* A lista do Ensaio Atual está vazia no momento.{SETLIST_FOOTER}")
         else:
-            result = send_wa_message(f"⚠️ *Erro:* Documento de setlist não encontrado.{LINKS_FOOTER}")
+            result = send_wa_message(f"⚠️ *Erro:* Documento de setlist não encontrado.{SETLIST_FOOTER}")
         update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
 
     # C. Cancelamento de Ensaio
@@ -1381,7 +1706,7 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
                 f"Informamos que *não teremos ensaio* neste próximo sábado ({sat_date}).\n\n"
                 f"📝 *Motivo:* {reason}\n\n"
                 f"Aproveitem o descanso e continuem praticando em casa! 🎸🤘"
-                f"{LINKS_FOOTER}"
+                f"{SETLIST_FOOTER}"
             )
             result = send_wa_message(msg)
             update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
@@ -1390,14 +1715,39 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
             print(f"Erro ao processar cancelamento de ensaio: {error_detail}")
             update_log_delivery_status(db, log_id, "failed", error_detail)
 
+    # D. Disparo Manual de Top 3 Sugestões
+    elif action in ["Disparar Top 3 Sugestões", "Disparar Zap Top 3"]:
+        db = firestore.client()
+        try:
+            msg = build_top_suggestions_message(db)
+            if msg:
+                result = send_wa_message(msg)
+            else:
+                result = {"ok": False, "detail": "Nenhuma sugestão encontrada para montar o Top 3."}
+            update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
+        except Exception as exc:
+            error_detail = f"{type(exc).__name__}: {exc}"[:300]
+            print(f"Erro ao processar disparo de Top 3: {error_detail}")
+            update_log_delivery_status(db, log_id, "failed", error_detail)
+
 # 5. AGENDAMENTO: LEMBRETE DIÁRIO (14:10)
 @scheduler_fn.on_schedule(schedule="10 14 * * *", timezone="America/Sao_Paulo")
 def daily_reminder(event: scheduler_fn.ScheduledEvent) -> None:
     db = firestore.client()
-    if get_poll_reminder_paused(db):
-        print("Lembrete diário de enquete ignorado: lembretes pausados pelo admin.")
-        return
-    send_wa_message(f"📢 *Lembrete:* Não esqueça de votar nas enquetes de hoje!{LINKS_FOOTER}")
+    try:
+        if get_poll_reminder_paused(db):
+            print("Lembrete diário de enquete ignorado: lembretes pausados pelo admin.")
+            return
+        active_polls = get_active_polls(db)
+        if not active_polls:
+            print("Lembrete diário de enquete ignorado: nenhuma enquete ativa no momento.")
+            return
+        for poll_id, p in active_polls:
+            msg = build_poll_reminder_message(p, header_title="📢 *LEMBRETE DE ENQUETE ATIVA!*")
+            res = send_wa_message(msg)
+            print(f"Lembrete de enquete enviado ({poll_id}): {res}")
+    except Exception as exc:
+        print(f"Erro em daily_reminder: {type(exc).__name__}: {exc}")
 
 # 6. AGENDAMENTO: REPERTÓRIO (TERÇA ÀS 14:00)
 @scheduler_fn.on_schedule(schedule="0 14 * * 2", timezone="America/Sao_Paulo")
@@ -1416,7 +1766,7 @@ def tuesday_repertoire(event: scheduler_fn.ScheduledEvent) -> None:
         if tab0:
             sat_date = get_next_saturday_str()
             txt = "\n".join([f"{i+1}. {m.get('song')} ({m.get('artist')})" for i, m in enumerate(tab0)])
-            send_wa_message(f"🎸 *REPERTÓRIO DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem! 🤘{LINKS_FOOTER}")
+            send_wa_message(f"🎸 *REPERTÓRIO DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem! 🤘{SETLIST_FOOTER}")
 
 # 7. AGENDAMENTO: ABRIR FÓRUM DO ENSAIO (SÁBADO 00:01)
 @scheduler_fn.on_schedule(schedule="1 0 * * 6", timezone="America/Sao_Paulo")
@@ -1474,13 +1824,94 @@ def poll_monitor(event: scheduler_fn.ScheduledEvent) -> None:
     else:
         expiring_24h = db.collection("polls").where("deadline", ">", (now + timedelta(hours=23)).isoformat()).where("deadline", "<=", (now + timedelta(hours=24)).isoformat()).stream()
         for doc in expiring_24h:
-            p = doc.to_dict()
-            q = p.get("question", "Enquete")
-            send_wa_message(f"⏳ *FALTAM 24 HORAS!*\n\nA enquete *\"{q}\"* encerra amanhã. Já deixou seu voto?{LINKS_FOOTER}")
+            p = doc.to_dict() or {}
+            if p.get("closed") is True:
+                continue
+            send_wa_message(build_poll_reminder_message(p, header_title="⏳ *FALTAM 24 HORAS!*"))
 
         # C. Notificar Faltando 1 Hora
         expiring_1h = db.collection("polls").where("deadline", ">", now.isoformat()).where("deadline", "<=", (now + timedelta(hours=1)).isoformat()).stream()
         for doc in expiring_1h:
-            p = doc.to_dict()
-            q = p.get("question", "Enquete")
-            send_wa_message(f"⚠️ *ÚLTIMA CHAMADA (1 HORA)!*\n\nA enquete *\"{q}\"* encerra em breve. Corre lá para votar!{LINKS_FOOTER}")
+            p = doc.to_dict() or {}
+            if p.get("closed") is True:
+                continue
+            send_wa_message(build_poll_reminder_message(p, header_title="⚠️ *ÚLTIMA CHAMADA (1 HORA)!*"))
+
+# 10. AGENDAMENTO: CURIOSIDADES DO DIA (TODOS OS DIAS ÀS 10:00)
+@scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Sao_Paulo")
+def daily_curiosidades(event: scheduler_fn.ScheduledEvent) -> None:
+    """Busca o almanaque musical da UCSFM e envia bom dia com curiosidades para o grupo."""
+    import requests
+
+    now_local = now_sp()
+    day   = now_local.day
+    month = now_local.month
+    year  = now_local.year
+
+    month_names = [
+        "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+        "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    ]
+    month_names_pt = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ]
+    date_str   = f"{day:02d} de {month_names_pt[month - 1]}"
+    slug_date  = f"{day:02d}-de-{month_names[month - 1]}"
+    slug       = f"almanaque-da-musica-ucsfm-{slug_date}"
+
+    facts = []
+    try:
+        wp_url = f"https://ucsfm.com.br/wp-json/wp/v2/posts?slug={slug}&per_page=1"
+        resp = requests.get(wp_url, timeout=15)
+        posts = resp.json()
+
+        if isinstance(posts, list) and posts:
+            import re
+            content = posts[0].get("content", {}).get("rendered", "")
+            # Extrai texto de <p> e <li>, ignorando vazios e o parágrafo introdutório longo
+            raw = re.findall(r"<(?:p|li)[^>]*>(.*?)</(?:p|li)>", content, re.DOTALL | re.IGNORECASE)
+            for item in raw:
+                text = re.sub(r"<[^>]+>", "", item).strip()
+                # Pula o parágrafo de introdução ("Confira alguns fatos...")
+                if len(text) > 10 and "confira" not in text.lower():
+                    facts.append(text)
+    except Exception as exc:
+        print(f"[CURIOSIDADES] Erro ao buscar almanaque: {exc}")
+
+    if not facts:
+        print(f"[CURIOSIDADES] Nenhum fato encontrado para {date_str}, mensagem não enviada.")
+        return
+
+    # Monta a mensagem formatada
+    lines = [f"🎸 *BOM DIA, RETÓRICA!* 🤘"]
+    lines.append("")
+    lines.append(f"📅 *{date_str}* na história da música:")
+    lines.append("")
+    for fact in facts:
+        lines.append(f"🔹 {fact}")
+    lines.append("")
+    lines.append("_Que o rock esteja com vocês hoje!_ 🎶")
+    lines.append(NEWS_FOOTER)
+
+    msg = "\n".join(lines)
+    result = send_wa_message(msg)
+    fetch_and_send_top_music()
+    print(f"[CURIOSIDADES] Mensagem enviada: {result}")
+
+# 11. AGENDAMENTO: TOP 3 SUGESTÕES DIÁRIAS (TODOS OS DIAS ÀS 15:00)
+@scheduler_fn.on_schedule(schedule="0 15 * * *", timezone="America/Sao_Paulo")
+def daily_top_suggestions(event: scheduler_fn.ScheduledEvent) -> None:
+    """Envia diariamente às 15:00 as 3 primeiras colocadas das sugestões."""
+    db = firestore.client()
+    try:
+        msg = build_top_suggestions_message(db)
+        if not msg:
+            print("[TOP SUGESTÕES] Nenhuma sugestão encontrada no momento.")
+            return
+        result = send_wa_message(msg)
+        print(f"[TOP SUGESTÕES] Disparo enviado: {result}")
+    except Exception as exc:
+        print(f"[TOP SUGESTÕES] Erro durante disparo: {type(exc).__name__}: {exc}")
+
+

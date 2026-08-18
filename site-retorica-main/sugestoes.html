@@ -77,7 +77,16 @@
         </div>
         <div class="form-row">
           <div class="form-group"><label>Quem sugere</label><input type="text" id="sugBy" readonly style="background:rgba(200,130,10,0.05);color:var(--smoke);cursor:not-allowed"></div>
-          <div class="form-group"><label>Link YouTube (opcional)</label><input type="url" id="sugYt" placeholder="https://youtube.com/..."></div>
+          <div class="form-group">
+            <label>Link YouTube (opcional)</label>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <input type="url" id="sugYt" placeholder="https://youtube.com/..." style="flex:1;min-width:0">
+              <button type="button" id="btnFindYt" onclick="findYoutubeForForm()" title="Buscar vídeo no YouTube automaticamente" style="flex-shrink:0;display:inline-flex;align-items:center;gap:.4rem;padding:.55rem .95rem;background:rgba(255,0,0,.15);border:1px solid rgba(255,60,60,.4);color:#ff6b6b;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s" onmouseover="this.style.background='rgba(255,0,0,.25)';this.style.borderColor='rgba(255,80,80,.6)'" onmouseout="this.style.background='rgba(255,0,0,.15)';this.style.borderColor='rgba(255,60,60,.4)'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21.582 6.186a2.506 2.506 0 0 0-1.768-1.768C18.254 4 12 4 12 4s-6.254 0-7.814.418A2.506 2.506 0 0 0 2.418 6.186C2 7.746 2 12 2 12s0 4.254.418 5.814a2.506 2.506 0 0 0 1.768 1.768C5.746 20 12 20 12 20s6.254 0 7.814-.418a2.506 2.506 0 0 0 1.768 1.768C22 16.254 22 12 22 12s0-4.254-.418-5.814zM10 15.464V8.536L16 12l-6 3.464z"/></svg>
+                <span>Buscar Vídeo</span>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="form-row full">
           <div class="form-group"><label>Observação (opcional)</label><input type="text" id="sugNote" placeholder="Ex: pra fechar o set"></div>
@@ -444,105 +453,6 @@ window.voteSuggestion = async (id, type) => {
       reason: 'Atingiu o limite de 3 dislikes',
       removedBy: 'Sistema',
       category: 'sugestoes',
-      who: 'Sistema',
-      whoEmail: '',
-      ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
-    });
-    await loadSuggestionsSnapshot(true);
-    showToast('🗑 Sugestão removida (4+ dislikes)');
-    return;
-  }
-
-  await updateDoc(doc(db, 'suggestions', id), { likes, dislikes, voterMap });
-  await loadSuggestionsSnapshot(true);
-};
-
-window.removeSuggestion = async id => {
-  const snap = await getDoc(doc(db,'suggestions',id));
-  if (!snap.exists()) return;
-  const s = snap.data();
-
-  const reason = prompt(`Removendo: ${s.song}\nMotivo da remoção (opcional):`);
-  if (reason === null) return;
-
-  await deleteDoc(doc(db,'suggestions',id));
-  await addDoc(collection(db,'logs'), {
-    action: 'Sugestão Removida',
-    detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: ${reason || 'Removido pelo moderador'}`,
-    song: s.song,
-    artist: s.artist,
-    by: s.by,
-    likes: s.likes || 0,
-    dislikes: s.dislikes || 0,
-    reason: reason || 'Removido pelo moderador',
-    removedBy: auth.currentUser?.displayName?.split(' ')[0] || 'Membro',
-    category: 'sugestoes',
-    who: auth.currentUser?.displayName || auth.currentUser?.email || 'Membro',
-    whoEmail: auth.currentUser?.email || '',
-    ts: serverTimestamp(),
-    tsLocal: new Date().toLocaleString('pt-BR')
-  });
-  await loadSuggestionsSnapshot(true);
-  showToast('Sugestão removida.');
-};
-
-window.addSuggestion = async () => {
-  if (!isLoggedIn) { showToast('⚠ Faça login para sugerir músicas'); return; }
-  const song   = document.getElementById('sugSong').value.trim();
-  const artist = document.getElementById('sugArtist').value.trim();
-  const by     = document.getElementById('sugBy').value.trim();
-  const youtube= document.getElementById('sugYt').value.trim();
-  const note   = document.getElementById('sugNote').value.trim();
-
-  if (!song || !artist) { showToast('⚠ Preencha música e artista'); return; }
-
-  try {
-    await addDoc(collection(db, 'suggestions'), {
-      song, artist, by, youtube, note,
-      createdAt: serverTimestamp(),
-      likes: 0,
-      dislikes: 0,
-      voterMap: {}
-    });
-    await loadSuggestionsSnapshot(true);
-    await writeLog('Sugestão enviada', `${song} — ${artist} (por ${by})`, 'sugestoes');
-    ['sugSong','sugArtist','sugYt','sugNote'].forEach(id => document.getElementById(id).value = '');
-    showToast('✓ Sugestão enviada com sucesso!');
-  } catch (e) {
-    console.error('Add suggestion error:', e);
-    showToast('⚠ Erro ao enviar sugestão');
-  }
-};
-
-window.findSuggestionYoutube = async id => {
-  try {
-    const ref = doc(db, 'suggestions', id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return;
-    const s = snap.data();
-    if (s.youtube) {
-      showToast('Esta sugestão já possui vídeo.');
-      return;
-    }
-    showToast('⏳ Buscando vídeo automaticamente...');
-    const data = await fetchFunctionJson('lookup_youtube_link', { song: s.song || '', artist: s.artist || '' });
-    await updateDoc(ref, { youtube: data.url });
-    await writeLog('Link de vídeo localizado', `${s.song} — ${s.artist}`, 'sugestoes');
-    await loadSuggestionsSnapshot(true);
-    showToast('✓ Vídeo encontrado e salvo!');
-  } catch (err) {
-    console.error('Auto suggestion youtube error:', err);
-    showToast(`⚠ ${err.message || 'Não foi possível localizar o vídeo.'}`);
-  }
-};
-
-// --- POLLS LOGIC ---
-let pollsCache = [];
-
-async function loadPollsSnapshot(force = false) {
-  if (pollsLoaded && !force) return;
-  const snap = await getDocs(collection(db,'polls'));
   const pollSortTime = p => {
     if (p.createdAt?.toMillis) return p.createdAt.toMillis();
     if (p.createdAt?.toDate) return p.createdAt.toDate().getTime();

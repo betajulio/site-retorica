@@ -122,8 +122,10 @@
       </div>
       <div class="admin-tools-grid">
         <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
-        <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
-        <button class="btn-ghost" style="border-color:#93c5fd;color:#bfdbfe" onclick="forceTop3Tiebreaker()">⚔️ Forçar desempate Top 3</button>
+        <button id="pollReminderPauseBtn" class="btn-ghost" style="border-color:#818cf8;color:#c7d2fe" onclick="togglePollReminderPause()">⏸ Pausar lembretes de enquete</button>
+        <button class="btn-ghost" style="border-color:#a78bfa;color:#c4b5fd" onclick="triggerPollReminderZap()">📢 Disparar Lembrete de Enquetes</button>
+        <button class="btn-ghost" style="border-color:#f472b6;color:#fbcfe8" onclick="triggerTopSuggestionsZap()">🏆 Disparar Top 3 Sugestões</button>
+        <button class="btn-ghost" style="border-color:#86efac;color:#bbf7d0" onclick="testCuriosidades()">🎸 Testar Curiosidades do Dia</button>
         <button id="promotionPauseBtn" class="btn-ghost" style="border-color:#fbbf24;color:#fde68a" onclick="togglePromotionPause()">⏸ Pausar ciclo de sugestões</button>
         <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9" href="index.html?videoFrameDebug=1#galeria">🎛 Ajustar vídeos da galeria</a>
         <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
@@ -254,6 +256,72 @@ const AUDIT_EMAIL = 'juliocereser@gmail.com';
 const FORCE_TIEBREAKER_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_force_tiebreaker_top3?token=retorica-force-top3-20260418';
 const INSPECT_PROMOTION_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_inspect_promotion?token=retorica-force-top3-20260418';
 const SET_PROMOTION_PAUSE_URL = 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_set_promotion_pause?token=retorica-force-top3-20260418';
+
+window.testCuriosidades = async () => {
+  if (!confirm('Deseja testar o envio das curiosidades do dia agora?')) return;
+  showToast('Testando curiosidades...');
+  try {
+    const res = await fetch('https://us-central1-retorica-b05b3.cloudfunctions.net/admin_send_curiosidades?token=retorica-force-top3-20260418', { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      showToast(`Sucesso! Foram enviados ${data.facts_count} fatos.`);
+    } else {
+      showToast('Erro: ' + data.error);
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('Falha na requisição ao Firebase.');
+  }
+};
+
+window.triggerPollReminderZap = async () => {
+  if (!confirm('Deseja enviar o lembrete de enquetes ativas para o WhatsApp agora?')) return;
+  showToast('Disparando lembrete de enquetes...');
+  try {
+    const res = await fetch('https://us-central1-retorica-b05b3.cloudfunctions.net/admin_trigger_daily_reminder?token=retorica-force-top3-20260418', { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok !== false) {
+      showToast(data.message || 'Lembrete de enquetes enviado com sucesso!');
+    } else {
+      showToast('Erro: ' + (data.error || 'Falha ao disparar lembrete.'));
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('Falha na requisição ao Firebase.');
+  }
+};
+
+window.triggerTopSuggestionsZap = async () => {
+  if (!confirm('Deseja enviar o resumo do Top 3 Sugestões para o WhatsApp agora?')) return;
+  showToast('Disparando Top 3 Sugestões...');
+  try {
+    const res = await fetch('https://us-central1-retorica-b05b3.cloudfunctions.net/admin_trigger_top_suggestions?token=retorica-force-top3-20260418', { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok !== false) {
+      showToast(data.message || '✓ Top 3 Sugestões enviado com sucesso!');
+      return;
+    }
+  } catch(e) {
+    console.warn('Direct HTTP trigger failed, falling back to log trigger:', e);
+  }
+
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Disparar Top 3 Sugestões',
+      detail: 'Solicitação manual via página de auditoria',
+      category: 'sugestoes',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    showToast('✓ Comando enviado! O WhatsApp será disparado em instantes.');
+  } catch (err) {
+    console.error('Trigger top 3 error:', err);
+    showToast('⚠ Erro ao disparar Top 3. Veja o console.');
+  }
+};
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
