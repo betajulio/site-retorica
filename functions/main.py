@@ -1856,7 +1856,7 @@ def on_poll_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | No
         opts = poll.get('options', [])
         opts_txt = "\n" + "\n".join([f"🔹 {o.get('label')}" for o in opts]) if opts else ""
         desc_txt = f"\n📝 _{d}_" if d else ""
-        send_wa_message(f"🗳️ *NOVA ENQUETE NO AR!*\n\n❓ *{q}*{desc_txt}\n{opts_txt}{POLL_FOOTER}")
+        send_wa_notification_with_logo(f"🗳️ *NOVA ENQUETE NO AR!*\n\n❓ *{q}*{desc_txt}\n{opts_txt}{POLL_FOOTER}", firestore.client())
 
 # 2. GATILHO: NOVAS FOTOS
 @firestore_fn.on_document_created(document="gallery/{photoId}")
@@ -1881,13 +1881,13 @@ def on_photo_added(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
             if p.get('thumbUrl'):
                 send_wa_image(p['thumbUrl'], msg)
             else:
-                send_wa_message(msg)
+                send_wa_notification_with_logo(msg, firestore.client())
         else:
             msg = f"{desc_txt}📸 *Nova foto na galeria!* [#{tag_db}]\n👤 Enviado por: *{user_name}*{date_txt}{GALLERY_FOOTER}"
             if p.get('url'):
                 send_wa_image(p['url'], msg)
             else:
-                send_wa_message(msg)
+                send_wa_notification_with_logo(msg, firestore.client())
 
 # 3. GATILHO: NOVA SUGESTÃO
 @firestore_fn.on_document_created(document="suggestions/{suggestionId}")
@@ -1909,7 +1909,7 @@ def on_suggestion_created(event: firestore_fn.Event[firestore_fn.DocumentSnapsho
                 send_wa_image(thumb_url, msg)
                 return
         
-        send_wa_message(msg)
+        send_wa_notification_with_logo(msg, firestore.client())
 
 # 4. GATILHO: LOGS (REMOÇÃO OU DISPARO MANUAL)
 @firestore_fn.on_document_created(document="logs/{logId}")
@@ -1943,7 +1943,7 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
             f"tente sugerir novamente em um momento mais oportuno. Continuem participando!"
             f"{SUGGESTIONS_FOOTER}"
         )
-        result = send_wa_message(msg)
+        result = send_wa_notification_with_logo(msg, firestore.client())
         update_log_delivery_status(firestore.client(), log_id, "sent" if result["ok"] else "failed", result["detail"])
 
     # B. Disparo Manual da Lista de Ensaio
@@ -1955,11 +1955,11 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
             if tab0:
                 sat_date = get_next_saturday_str()
                 txt = "\n".join([f"{i+1}. {m.get('song')} ({m.get('artist')})" for i, m in enumerate(tab0)])
-                result = send_wa_message(f"🎸 *LISTA DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem, pessoal! 🤘{SETLIST_FOOTER}")
+                result = send_wa_notification_with_logo(f"🎸 *LISTA DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem, pessoal! 🤘{SETLIST_FOOTER}", db)
             else:
-                result = send_wa_message(f"⚠️ *Atenção:* A lista do Ensaio Atual está vazia no momento.{SETLIST_FOOTER}")
+                result = send_wa_notification_with_logo(f"⚠️ *Atenção:* A lista do Ensaio Atual está vazia no momento.{SETLIST_FOOTER}", db)
         else:
-            result = send_wa_message(f"⚠️ *Erro:* Documento de setlist não encontrado.{SETLIST_FOOTER}")
+            result = send_wa_notification_with_logo(f"⚠️ *Erro:* Documento de setlist não encontrado.{SETLIST_FOOTER}", db)
         update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
 
     # C. Cancelamento de Ensaio
@@ -1985,7 +1985,7 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
                 f"Aproveitem o descanso e continuem praticando em casa! 🎸🤘"
                 f"{SETLIST_FOOTER}"
             )
-            result = send_wa_message(msg)
+            result = send_wa_notification_with_logo(msg, db)
             update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
         except Exception as exc:
             error_detail = f"{type(exc).__name__}: {exc}"[:300]
@@ -2058,7 +2058,7 @@ def tuesday_repertoire(event: scheduler_fn.ScheduledEvent) -> None:
         if tab0:
             sat_date = get_next_saturday_str()
             txt = "\n".join([f"{i+1}. {m.get('song')} ({m.get('artist')})" for i, m in enumerate(tab0)])
-            send_wa_message(f"🎸 *REPERTÓRIO DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem! 🤘{SETLIST_FOOTER}")
+            send_wa_notification_with_logo(f"🎸 *REPERTÓRIO DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem! 🤘{SETLIST_FOOTER}", db)
 
 # 7. AGENDAMENTO: ABRIR FÓRUM DO ENSAIO (SÁBADO 00:01)
 @scheduler_fn.on_schedule(schedule="1 0 * * 6", timezone="America/Sao_Paulo")
@@ -2105,9 +2105,9 @@ def poll_monitor(event: scheduler_fn.ScheduledEvent) -> None:
         winner = res[0].get('label')
         t = p.get("type", "")
         if t in ["repertoire", "repertory"]:
-            send_wa_message(build_repertory_result_message(p))
+            send_wa_notification_with_logo(build_repertory_result_message(p), db)
         elif t in ["promotion", "tiebreaker"]:
-            send_wa_message(build_tiebreaker_result_message(db, p))
+            send_wa_notification_with_logo(build_tiebreaker_result_message(db, p), db)
 
     # B. Notificar Faltando 24 Horas
     reminder_paused = get_poll_reminder_paused(db)
@@ -2119,7 +2119,7 @@ def poll_monitor(event: scheduler_fn.ScheduledEvent) -> None:
             p = doc.to_dict() or {}
             if p.get("closed") is True:
                 continue
-            send_wa_message(build_poll_reminder_message(p, header_title="⏳ *FALTAM 24 HORAS!*"))
+            send_wa_notification_with_logo(build_poll_reminder_message(p, header_title="⏳ *FALTAM 24 HORAS!*"), db)
 
         # C. Notificar Faltando 1 Hora
         expiring_1h = db.collection("polls").where("deadline", ">", now.isoformat()).where("deadline", "<=", (now + timedelta(hours=1)).isoformat()).stream()
@@ -2127,7 +2127,7 @@ def poll_monitor(event: scheduler_fn.ScheduledEvent) -> None:
             p = doc.to_dict() or {}
             if p.get("closed") is True:
                 continue
-            send_wa_message(build_poll_reminder_message(p, header_title="⚠️ *ÚLTIMA CHAMADA (1 HORA)!*"))
+            send_wa_notification_with_logo(build_poll_reminder_message(p, header_title="⚠️ *ÚLTIMA CHAMADA (1 HORA)!*"), db)
 
 # 10. AGENDAMENTO: CURIOSIDADES DO DIA (TODOS OS DIAS ÀS 10:00)
 @scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Sao_Paulo")
