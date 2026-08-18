@@ -1753,7 +1753,7 @@ def get_current_band_logo_url(db=None):
                     "festajunina": "https://betajulio.github.io/site-retorica/imagens/festajunina.png",
                     "independencia": "https://betajulio.github.io/site-retorica/imagens/independencia.png",
                     "halloween": "https://betajulio.github.io/site-retorica/imagens/halloween.png",
-                    "default": "https://betajulio.github.io/site-retorica/imagens/inst.png"
+                    "default": "https://betajulio.github.io/site-retorica/imagens/logo_not_zap.jpg"
                 }
                 if forced in forced_map:
                     return forced_map[forced]
@@ -1808,7 +1808,7 @@ def get_current_band_logo_url(db=None):
         return "https://betajulio.github.io/site-retorica/imagens/halloween.png"
 
     # Padrão
-    return "https://betajulio.github.io/site-retorica/imagens/inst.png"
+    return "https://betajulio.github.io/site-retorica/imagens/logo_not_zap.jpg"
 
 def send_wa_notification_with_logo(text, db=None):
     """Envia a mensagem com a imagem do logo atual da banda (dinâmico)."""
