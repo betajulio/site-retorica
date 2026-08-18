@@ -866,6 +866,8 @@ window.triggerWeeklyRankingZap = async () => {
     console.error('Trigger weekly ranking error:', err);
     showToast('⚠ Erro ao solicitar disparo do ranking.');
   }
+};
+
 window.setAuditDailyTheme = (themeClass) => {
   const dayClasses = ['day-sun', 'day-mon', 'day-tue', 'day-wed', 'day-thu', 'day-fri', 'day-sat'];
   dayClasses.forEach(cls => {
