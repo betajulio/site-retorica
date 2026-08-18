@@ -907,6 +907,15 @@ window.removeSuggestion = async id => {
   showToast('Sugestão removida.');
 };
 
+function normalizeSuggestionText(str) {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+}
+
 window.addSuggestion = async () => {
   if (!isLoggedIn) { showToast('⚠ Faça login para sugerir músicas'); return; }
   const song    = document.getElementById('sugSong').value.trim();
@@ -916,6 +925,41 @@ window.addSuggestion = async () => {
   const note    = document.getElementById('sugNote').value.trim();
 
   if (!song || !artist) { showToast('⚠ Preencha música e artista'); return; }
+
+  const normSong = normalizeSuggestionText(song);
+  const normArtist = normalizeSuggestionText(artist);
+
+  // 1. Verificar se já existe na lista local de sugestões
+  const existsInCache = (suggestionsCache || []).find(item => {
+    const s = item.data || {};
+    const sameSong = normalizeSuggestionText(s.song) === normSong;
+    const sameArtist = !normArtist || !normalizeSuggestionText(s.artist) || normalizeSuggestionText(s.artist) === normArtist;
+    return sameSong && sameArtist;
+  });
+
+  if (existsInCache) {
+    const s = existsInCache.data || {};
+    showToast(`⚠ A música "${s.song || song}" já está na lista de sugestões!`);
+    return;
+  }
+
+  // 2. Verificar no banco de dados para evitar duplicidade
+  try {
+    const snap = await getDocs(collection(db, 'suggestions'));
+    const existsInDb = snap.docs.find(d => {
+      const s = d.data();
+      const sameSong = normalizeSuggestionText(s.song) === normSong;
+      const sameArtist = !normArtist || !normalizeSuggestionText(s.artist) || normalizeSuggestionText(s.artist) === normArtist;
+      return sameSong && sameArtist;
+    });
+    if (existsInDb) {
+      const s = existsInDb.data();
+      showToast(`⚠ A música "${s.song || song}" já foi sugerida anteriormente!`);
+      return;
+    }
+  } catch (err) {
+    console.warn('Verificação de duplicidade no Firestore:', err);
+  }
 
   // Se o usuário não inseriu link de vídeo, tenta buscar automaticamente antes de salvar
   if (!youtube) {

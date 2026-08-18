@@ -68,7 +68,7 @@
       <div class="section-title-wrap"><h2>Sugestões de Músicas</h2><p>Proponha músicas para os próximos ensaios</p></div>
       <div class="section-line"></div>
     </div>
-    
+
     <div class="member-only">
       <div class="form-card">
         <div class="form-row">
@@ -311,148 +311,12 @@ function applyAuth() {
   }
 }
 
-// --- SUGGESTIONS LOGIC ---
-let suggestionsCache = [];
+// --- POLLS LOGIC ---
+let pollsCache = [];
 
-function getSuggestionScore(s) {
-  return (s.likes||0) - (s.dislikes||0);
-}
-
-async function loadSuggestionsSnapshot(force = false) {
-  if (suggestionsLoaded && !force) return;
-  const snap = await getDocs(query(collection(db,'suggestions'), orderBy('createdAt','desc')));
-  suggestionsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
-  suggestionsLoaded = true;
-  renderSuggestions();
-  setTimeout(() => updatePromotionCountdowns(), 100);
-}
-
-function renderSuggestions() {
-  const list = document.getElementById('suggestionsList');
-  if (!list) return;
-  if (!suggestionsCache.length) {
-    list.classList.remove('scroll-limited');
-    list.style.maxHeight = '';
-    list.innerHTML='<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p>';
-    return;
-  }
-
-  const uid = auth.currentUser?.uid || null;
-  const sorted = [...suggestionsCache].sort((a,b) => {
-    const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
-    if (sb !== sa) return sb - sa;
-    return (b.data.likes||0) - (a.data.likes||0);
-  });
-
-  const trophies = ['🥇','🥈','🥉'];
-
-  list.innerHTML = sorted.map(({id, data: s}, i) => {
-    const score     = getSuggestionScore(s);
-    const myVote    = uid && s.voterMap ? s.voterMap[uid] : null;
-    const rankClass = i < 3 ? ` rank-${i+1}` : '';
-    const trophy    = i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
-
-    let isTie = false;
-    if (i < 3) {
-      isTie = sorted.some((other, idx) => {
-        if (idx === i) return false;
-        if (idx >= 3) return false;
-        return getSuggestionScore(other.data) === score && (other.data.likes || 0) === (s.likes || 0);
-      });
-    }
-
-    const likeBtn = `<button class="vote-btn${myVote==='like'?' liked':''}"
-      onclick="voteSuggestion('${id}','like')"
-      ${!isMember?'disabled title="Acesso restrito a membros"':''}
-      title="${myVote==='like'?'Remover like':'Curtir'}">
-      👍 <span class="score-num">${s.likes||0}</span>
-    </button>`;
-
-    const dislikeBtn = `<button class="vote-btn${myVote==='dislike'?' disliked':''}"
-      onclick="voteSuggestion('${id}','dislike')"
-      ${!isMember?'disabled title="Acesso restrito a membros"':''}
-      title="${myVote==='dislike'?'Remover dislike':'Não curtir'}">
-      👎 <span class="score-num">${s.dislikes||0}</span>
-    </button>`;
-
-    const rmBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
-
-    return `<div class="suggestion-item${rankClass}">
-      ${trophy}
-      <div class="suggestion-main">
-        <div class="suggestion-song">${s.song}${isTie ? '<span class="tie-tag">Empate</span>' : ''}</div>
-        <div class="suggestion-artist">${s.artist}</div>
-        ${s.note ? `<div class="suggestion-note">${s.note}</div>` : ''}
-      </div>
-      <div class="suggestion-by">por ${s.by}${s.createdAt ? ` · <small style="color:var(--smoke)">${formatTs(s.createdAt)}</small>` : ''}</div>
-      <div class="suggestion-actions">
-        ${s.youtube ? ytBtn(s.youtube) : `<button class="btn-icon" onclick="findSuggestionYoutube('${id}');event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(s.song, s.artist)}`}
-        <div class="suggestion-score">${likeBtn}${dislikeBtn}</div>
-        ${rmBtn}
-      </div>
-    </div>`;
-  }).join('');
-
-  applySuggestionsViewportLimit();
-}
-
-function applySuggestionsViewportLimit() {
-  const list = document.getElementById('suggestionsList');
-  if (!list) return;
-  const items = Array.from(list.querySelectorAll('.suggestion-item'));
-  if (items.length <= 20) {
-    list.classList.remove('scroll-limited');
-    list.style.maxHeight = '';
-    return;
-  }
-  const styles = getComputedStyle(list);
-  const gap = parseFloat(styles.rowGap || styles.gap || '0') || 0;
-  const visibleItems = items.slice(0, 20);
-  const totalHeight = visibleItems.reduce((sum, item) => sum + item.offsetHeight, 0) + gap * Math.max(visibleItems.length - 1, 0);
-  list.style.maxHeight = `${Math.ceil(totalHeight)}px`;
-  list.classList.add('scroll-limited');
-}
-
-window.addEventListener('resize', applySuggestionsViewportLimit);
-
-window.voteSuggestion = async (id, type) => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
-  const uid  = auth.currentUser?.uid;
-  const snap = await getDoc(doc(db,'suggestions',id));
-  if (!snap.exists()) return;
-  const s = snap.data();
-
-  const voterMap = {...(s.voterMap||{})};
-  const current  = voterMap[uid];
-  let likes    = s.likes    || 0;
-  let dislikes = s.dislikes || 0;
-
-  if (current === type) {
-    if (type === 'like')    likes--;
-    if (type === 'dislike') dislikes--;
-    delete voterMap[uid];
-  } else {
-    if (current === 'like')    likes--;
-    if (current === 'dislike') dislikes--;
-    if (type === 'like')    likes++;
-    if (type === 'dislike') dislikes++;
-    voterMap[uid] = type;
-  }
-
-  // AUTO REMOVAL LIMIT DISLIKES
-  if (dislikes >= 3) {
-    await deleteDoc(doc(db, 'suggestions', id));
-    await addDoc(collection(db,'logs'), {
-      action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 3 dislikes`,
-      song: s.song,
-      artist: s.artist,
-      by: s.by,
-      likes: likes,
-      dislikes: dislikes,
-      reason: 'Atingiu o limite de 3 dislikes',
-      removedBy: 'Sistema',
-      category: 'sugestoes',
+async function loadPollsSnapshot(force = false) {
+  if (pollsLoaded && !force) return;
+  const snap = await getDocs(collection(db,'polls'));
   const pollSortTime = p => {
     if (p.createdAt?.toMillis) return p.createdAt.toMillis();
     if (p.createdAt?.toDate) return p.createdAt.toDate().getTime();
@@ -783,6 +647,8 @@ function getNextFriday(fromDate = new Date()) {
   if (daysUntilFriday === 0 && isFridayAfterCutoff) {
     daysUntilFriday = 7;
   }
+  // Ciclo de 2 semanas: pula para a sexta-feira seguinte (+ 7 dias extras)
+  daysUntilFriday += 7;
   date.setDate(date.getDate() + daysUntilFriday);
   date.setHours(23, 59, 0, 0);
   return date;
@@ -800,7 +666,7 @@ function renderPromotionBanner(timeUntil, paused = false) {
   const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
   const bannerHost = document.getElementById('promotionCountdownBanner');
   const timeLabel = formatTimeRemaining(timeUntil);
-  const shouldShowNav = !paused && timeUntil > 0 && timeUntil < 7 * 24 * 60 * 60 * 1000;
+  const shouldShowNav = !paused && timeUntil > 0 && timeUntil < 14 * 24 * 60 * 60 * 1000;
   const shouldShowSection = paused || timeUntil > 0;
 
   if (navBadge) {
@@ -869,10 +735,310 @@ window.addEventListener('load', () => {
     setTimeout(() => overlay.remove(), 500);
   }
 });
+// --- SUGGESTIONS LOGIC ---
+let suggestionsCache = [];
+
+function getSuggestionScore(s) {
+  return (s.likes||0) - (s.dislikes||0);
+}
+
+async function loadSuggestionsSnapshot(force = false) {
+  if (suggestionsLoaded && !force) return;
+  const snap = await getDocs(query(collection(db,'suggestions'), orderBy('createdAt','desc')));
+  suggestionsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+  suggestionsLoaded = true;
+  renderSuggestions();
+  setTimeout(() => updatePromotionCountdowns(), 100);
+}
+
+function renderSuggestions() {
+  const list = document.getElementById('suggestionsList');
+  if (!list) return;
+  if (!suggestionsCache.length) {
+    list.classList.remove('scroll-limited');
+    list.style.maxHeight = '';
+    list.innerHTML='<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p>';
+    return;
+  }
+
+  const uid = auth.currentUser?.uid || null;
+  const sorted = [...suggestionsCache].sort((a,b) => {
+    const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
+    if (sb !== sa) return sb - sa;
+    return (b.data.likes||0) - (a.data.likes||0);
+  });
+
+  const trophies = ['🥇','🥈','🥉'];
+
+  list.innerHTML = sorted.map(({id, data: s}, i) => {
+    const score     = getSuggestionScore(s);
+    const myVote    = uid && s.voterMap ? s.voterMap[uid] : null;
+    const rankClass = i < 3 ? ` rank-${i+1}` : '';
+    const trophy    = i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
+
+    let isTie = false;
+    if (i < 3) {
+      isTie = sorted.some((other, idx) => {
+        if (idx === i) return false;
+        if (idx >= 3) return false;
+        return getSuggestionScore(other.data) === score && (other.data.likes || 0) === (s.likes || 0);
+      });
+    }
+
+    const likeBtn = `<button class="vote-btn${myVote==='like'?' liked':''}"
+      onclick="voteSuggestion('${id}','like')"
+      ${!isMember?'disabled title="Acesso restrito a membros"':''}
+      title="${myVote==='like'?'Remover like':'Curtir'}">
+      👍 <span class="score-num">${s.likes||0}</span>
+    </button>`;
+
+    const dislikeBtn = `<button class="vote-btn${myVote==='dislike'?' disliked':''}"
+      onclick="voteSuggestion('${id}','dislike')"
+      ${!isMember?'disabled title="Acesso restrito a membros"':''}
+      title="${myVote==='dislike'?'Remover dislike':'Não curtir'}">
+      👎 <span class="score-num">${s.dislikes||0}</span>
+    </button>`;
+
+    const rmBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
+
+    return `<div class="suggestion-item${rankClass}">
+      ${trophy}
+      <div class="suggestion-main">
+        <div class="suggestion-song">${s.song}${isTie ? '<span class="tie-tag">Empate</span>' : ''}</div>
+        <div class="suggestion-artist">${s.artist}</div>
+        ${s.note ? `<div class="suggestion-note">${s.note}</div>` : ''}
+      </div>
+      <div class="suggestion-by">por ${s.by}${s.createdAt ? ` · <small style="color:var(--smoke)">${formatTs(s.createdAt)}</small>` : ''}</div>
+      <div class="suggestion-actions">
+        ${s.youtube ? ytBtn(s.youtube) : `<button class="btn-icon" onclick="findSuggestionYoutube('${id}');event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(s.song, s.artist)}`}
+        <div class="suggestion-score">${likeBtn}${dislikeBtn}</div>
+        ${rmBtn}
+      </div>
+    </div>`;
+  }).join('');
+
+  applySuggestionsViewportLimit();
+}
+
+function applySuggestionsViewportLimit() {
+  const list = document.getElementById('suggestionsList');
+  if (!list) return;
+  const items = Array.from(list.querySelectorAll('.suggestion-item'));
+  if (items.length <= 20) {
+    list.classList.remove('scroll-limited');
+    list.style.maxHeight = '';
+    return;
+  }
+  const styles = getComputedStyle(list);
+  const gap = parseFloat(styles.rowGap || styles.gap || '0') || 0;
+  const visibleItems = items.slice(0, 20);
+  const totalHeight = visibleItems.reduce((sum, item) => sum + item.offsetHeight, 0) + gap * Math.max(visibleItems.length - 1, 0);
+  list.style.maxHeight = `${Math.ceil(totalHeight)}px`;
+  list.classList.add('scroll-limited');
+}
+
+window.addEventListener('resize', applySuggestionsViewportLimit);
+
+window.voteSuggestion = async (id, type) => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const uid  = auth.currentUser?.uid;
+  const snap = await getDoc(doc(db,'suggestions',id));
+  if (!snap.exists()) return;
+  const s = snap.data();
+
+  const voterMap = {...(s.voterMap||{})};
+  const current  = voterMap[uid];
+  let likes    = s.likes    || 0;
+  let dislikes = s.dislikes || 0;
+
+  if (current === type) {
+    if (type === 'like')    likes--;
+    if (type === 'dislike') dislikes--;
+    delete voterMap[uid];
+  } else {
+    if (current === 'like')    likes--;
+    if (current === 'dislike') dislikes--;
+    if (type === 'like')    likes++;
+    if (type === 'dislike') dislikes++;
+    voterMap[uid] = type;
+  }
+
+  if (dislikes >= 3) {
+    await deleteDoc(doc(db, 'suggestions', id));
+    await addDoc(collection(db,'logs'), {
+      action: 'Sugestão Removida',
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 3 dislikes`,
+      song: s.song, artist: s.artist, by: s.by, likes, dislikes,
+      reason: 'Atingiu o limite de 3 dislikes', removedBy: 'Sistema',
+      category: 'sugestoes', who: 'Sistema', whoEmail: '',
+      ts: serverTimestamp(), tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    await loadSuggestionsSnapshot(true);
+    showToast('🗑 Sugestão removida (4+ dislikes)');
+    return;
+  }
+
+  await updateDoc(doc(db, 'suggestions', id), { likes, dislikes, voterMap });
+  await loadSuggestionsSnapshot(true);
+};
+
+window.removeSuggestion = async id => {
+  const snap = await getDoc(doc(db,'suggestions',id));
+  if (!snap.exists()) return;
+  const s = snap.data();
+
+  const reason = prompt(`Removendo: ${s.song}\nMotivo da remoção (opcional):`);
+  if (reason === null) return;
+
+  await deleteDoc(doc(db,'suggestions',id));
+  await addDoc(collection(db,'logs'), {
+    action: 'Sugestão Removida',
+    detail: `${s.song} — ${s.artist} · ${s.likes||0}👍 ${s.dislikes||0}👎 · Motivo: ${reason||'Removido pelo moderador'}`,
+    song: s.song, artist: s.artist, by: s.by,
+    likes: s.likes||0, dislikes: s.dislikes||0,
+    reason: reason||'Removido pelo moderador',
+    removedBy: auth.currentUser?.displayName?.split(' ')[0]||'Membro',
+    category: 'sugestoes',
+    who: auth.currentUser?.displayName||auth.currentUser?.email||'Membro',
+    whoEmail: auth.currentUser?.email||'',
+    ts: serverTimestamp(), tsLocal: new Date().toLocaleString('pt-BR')
+  });
+  await loadSuggestionsSnapshot(true);
+  showToast('Sugestão removida.');
+};
+
+function normalizeSuggestionText(str) {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+}
+
+window.addSuggestion = async () => {
+  if (!isLoggedIn) { showToast('⚠ Faça login para sugerir músicas'); return; }
+  const song    = document.getElementById('sugSong').value.trim();
+  const artist  = document.getElementById('sugArtist').value.trim();
+  const by      = document.getElementById('sugBy').value.trim();
+  let youtube   = document.getElementById('sugYt').value.trim();
+  const note    = document.getElementById('sugNote').value.trim();
+
+  if (!song || !artist) { showToast('⚠ Preencha música e artista'); return; }
+
+  const normSong = normalizeSuggestionText(song);
+  const normArtist = normalizeSuggestionText(artist);
+
+  // 1. Verificar se já existe na lista local de sugestões
+  const existsInCache = (suggestionsCache || []).find(item => {
+    const s = item.data || {};
+    const sameSong = normalizeSuggestionText(s.song) === normSong;
+    const sameArtist = !normArtist || !normalizeSuggestionText(s.artist) || normalizeSuggestionText(s.artist) === normArtist;
+    return sameSong && sameArtist;
+  });
+
+  if (existsInCache) {
+    const s = existsInCache.data || {};
+    showToast(`⚠ A música "${s.song || song}" já está na lista de sugestões!`);
+    return;
+  }
+
+  // 2. Verificar no banco de dados para evitar duplicidade
+  try {
+    const snap = await getDocs(collection(db, 'suggestions'));
+    const existsInDb = snap.docs.find(d => {
+      const s = d.data();
+      const sameSong = normalizeSuggestionText(s.song) === normSong;
+      const sameArtist = !normArtist || !normalizeSuggestionText(s.artist) || normalizeSuggestionText(s.artist) === normArtist;
+      return sameSong && sameArtist;
+    });
+    if (existsInDb) {
+      const s = existsInDb.data();
+      showToast(`⚠ A música "${s.song || song}" já foi sugerida anteriormente!`);
+      return;
+    }
+  } catch (err) {
+    console.warn('Verificação de duplicidade no Firestore:', err);
+  }
+
+  // Se o usuário não inseriu link de vídeo, tenta buscar automaticamente antes de salvar
+  if (!youtube) {
+    try {
+      showToast('⏳ Localizando vídeo da música...');
+      const data = await fetchFunctionJson('lookup_youtube_link', { song, artist });
+      if (data && data.url) {
+        youtube = data.url;
+      }
+    } catch(e) {
+      console.log('Auto fetch youtube on submit skipped:', e);
+    }
+  }
+
+  try {
+    await addDoc(collection(db, 'suggestions'), {
+      song, artist, by, youtube: youtube || '', note,
+      createdAt: serverTimestamp(),
+      likes: 0, dislikes: 0, voterMap: {}
+    });
+    await loadSuggestionsSnapshot(true);
+    await writeLog('Sugestão enviada', `${song} — ${artist} (por ${by})`, 'sugestoes');
+    ['sugSong','sugArtist','sugYt','sugNote'].forEach(id => document.getElementById(id).value = '');
+    showToast('✓ Sugestão enviada com sucesso!');
+  } catch (e) {
+    console.error('Add suggestion error:', e);
+    showToast('⚠ Erro ao enviar sugestão');
+  }
+};
+
+window.findYoutubeForForm = async () => {
+  const song   = document.getElementById('sugSong').value.trim();
+  const artist = document.getElementById('sugArtist').value.trim();
+  if (!song) {
+    showToast('⚠ Preencha pelo menos o nome da Música primeiro');
+    document.getElementById('sugSong').focus();
+    return;
+  }
+  const btn = document.getElementById('btnFindYt');
+  btn.disabled = true;
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="animation:spin 1s linear infinite"><path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/></svg> <span>Buscando…</span>';
+  try {
+    const data = await fetchFunctionJson('lookup_youtube_link', { song, artist });
+    if (data && data.url) {
+      document.getElementById('sugYt').value = data.url;
+      showToast('✓ Vídeo encontrado automaticamente!');
+    } else {
+      showToast('⚠ Nenhum vídeo encontrado. Cole o link manualmente.');
+    }
+  } catch (err) {
+    console.error('findYoutubeForForm error:', err);
+    showToast(`⚠ ${err.message || 'Não foi possível buscar o vídeo.'}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+};
+
+window.findSuggestionYoutube = async id => {
+  try {
+    const ref = doc(db, 'suggestions', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const s = snap.data();
+    if (s.youtube) { showToast('Esta sugestão já possui vídeo.'); return; }
+    showToast('⏳ Buscando vídeo automaticamente...');
+    const data = await fetchFunctionJson('lookup_youtube_link', { song: s.song || '', artist: s.artist || '' });
+    await updateDoc(ref, { youtube: data.url });
+    await writeLog('Link de vídeo localizado', `${s.song} — ${s.artist}`, 'sugestoes');
+    await loadSuggestionsSnapshot(true);
+    showToast('✓ Vídeo encontrado e salvo!');
+  } catch (err) {
+    console.error('Auto suggestion youtube error:', err);
+    showToast(`⚠ ${err.message || 'Não foi possível localizar o vídeo.'}`);
+  }
+};
+
+
 </script>
 </body>
 </html>
-
-
-
-
