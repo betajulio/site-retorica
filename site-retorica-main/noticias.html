@@ -8,10 +8,32 @@
 <link rel="apple-touch-icon" href="imagens/Toca_do_Mineiro_logo_final.png">
 <title>Notícias do Rock — Retórica</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script>
+(function(){
+  try{
+    const f=new URLSearchParams(window.location.search).get('dayPreview');
+    const d=['day-sun','day-mon','day-tue','day-wed','day-thu','day-fri','day-sat'];
+    let c=d[(new Date()).getDay()];
+    if(f&&(d.includes(f)||(!isNaN(parseInt(f,10))&&d[parseInt(f,10)])))c=d.includes(f)?f:d[parseInt(f,10)];
+    document.documentElement.classList.add(c);
+    document.addEventListener('DOMContentLoaded',()=>document.body&&document.body.classList.add(c));
+  }catch(e){}
+})();
+</script>
 <style>
   :root{--black:#0a0804;--dark:#130f09;--brown:#2a1a08;--amber:#c8820a;--gold:#e8a820;--cream:#f0e4c8;--rust:#8b3a0a;--paper:#d4c4a0;--smoke:#6b6050}
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden}
+  body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden;background-attachment:fixed;transition:background-color .4s ease,background-image .4s ease}
+
+  /* TEMAS VISUAIS POR DIA DA SEMANA (FUNDO DO SITE) */
+  html.day-sun body, body.day-sun{background-color:#0c0906;background-image:radial-gradient(circle at 50% 0%,rgba(160,100,30,.14) 0%,transparent 60%),radial-gradient(circle at 10% 85%,rgba(100,50,15,.12) 0%,transparent 50%),radial-gradient(circle at 90% 40%,rgba(130,75,20,.10) 0%,transparent 55%),linear-gradient(180deg,#0d0a07 0%,#080604 100%)}
+  html.day-mon body, body.day-mon{background-color:#08090c;background-image:radial-gradient(circle at 50% -10%,rgba(60,90,130,.15) 0%,transparent 55%),radial-gradient(circle at 85% 70%,rgba(190,120,20,.08) 0%,transparent 50%),radial-gradient(circle at 15% 45%,rgba(40,60,90,.10) 0%,transparent 50%),linear-gradient(180deg,#090a0d 0%,#060709 100%)}
+  html.day-tue body, body.day-tue{background-color:#0a0804;background-image:radial-gradient(circle at 50% 0%,rgba(200,130,10,.18) 0%,transparent 65%),radial-gradient(circle at 85% 90%,rgba(139,58,10,.15) 0%,transparent 50%),radial-gradient(circle at 10% 30%,rgba(180,100,15,.12) 0%,transparent 55%),linear-gradient(180deg,#0b0905 0%,#070503 100%)}
+  html.day-wed body, body.day-wed{background-color:#0c0709;background-image:radial-gradient(circle at 50% 0%,rgba(160,30,60,.16) 0%,transparent 60%),radial-gradient(circle at 85% 40%,rgba(200,110,20,.12) 0%,transparent 50%),radial-gradient(circle at 15% 80%,rgba(130,20,50,.14) 0%,transparent 55%),linear-gradient(180deg,#0e070a 0%,#070405 100%)}
+  html.day-thu body, body.day-thu{background-color:#0d0805;background-image:radial-gradient(circle at 50% -10%,rgba(180,70,15,.18) 0%,transparent 60%),radial-gradient(circle at 90% 75%,rgba(140,60,10,.15) 0%,transparent 50%),radial-gradient(circle at 10% 40%,rgba(160,80,20,.12) 0%,transparent 50%),linear-gradient(180deg,#0e0906 0%,#070503 100%)}
+  html.day-fri body, body.day-fri{background-color:#0a0803;background-image:radial-gradient(ellipse at 50% -15%,rgba(232,168,32,.24) 0%,transparent 70%),radial-gradient(circle at 80% 60%,rgba(200,130,10,.14) 0%,transparent 50%),radial-gradient(circle at 20% 80%,rgba(232,168,32,.10) 0%,transparent 55%),linear-gradient(180deg,#0d0a04 0%,#060502 100%)}
+  html.day-sat body, body.day-sat{background-color:#0b0805;background-image:radial-gradient(circle at 25% 0%,rgba(232,168,32,.22) 0%,transparent 60%),radial-gradient(circle at 75% 0%,rgba(200,110,10,.20) 0%,transparent 60%),radial-gradient(circle at 50% 65%,rgba(139,58,10,.14) 0%,transparent 55%),linear-gradient(180deg,#0c0905 0%,#060402 100%)}
+
   body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
 
   /* NAV */
@@ -109,7 +131,7 @@
     <li class="member-admin-only"><a href="logs.html" style="color:var(--amber)">⚡ Admin</a></li>
     <li class="audit-admin-only"><a href="audit.html" style="color:var(--gold)">Auditoria</a></li>
   </ul>
-  <a href="index.html" class="nav-back">&larr; Voltar � Home</a>
+  <a href="index.html" class="nav-back">&larr; Voltar à Home</a>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()">
     <span></span><span></span><span></span>
   </button>
@@ -118,7 +140,7 @@
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a href="index.html">Home</a>
   <a href="noticias.html">Notícias <span class="badge-mobile-inline">NEW</span></a>
-  <a href="index.html" style="border:none; color:var(--amber)">Voltar � Home</a>
+  <a href="index.html" style="border:none; color:var(--amber)">Voltar à Home</a>
 </div>
 
 <div id="hero">
@@ -209,16 +231,16 @@ async function loadChartColumn(colId, label, url) {
     const data = await fetchAppleChart(url);
     const feed = data.feed;
     const entries = feed.entry ? feed.entry.slice(0, 5) : [];
-    
+
     if (!entries.length) throw new Error();
-    
+
     let html = `<div class="col-label">${label}</div>`;
     entries.forEach((entry, i) => {
       const song = entry['im:name'].label;
       const artist = entry['im:artist'].label;
       const thumb = entry['im:image'][2].label;
       const link = Array.isArray(entry.link) ? entry.link[0].attributes.href : entry.link.attributes.href;
-      
+
       html += `<div class="historia-card music-card">
         <span class="music-rank">${i+1}</span>
         <img src="${thumb}" class="music-item-thumb" alt="Capa" onerror="this.src='imagens/inst.png'">
@@ -254,37 +276,61 @@ async function loadHistoria() {
     const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fucsfm.com.br%2Ffeed%2F');
     const data = await res.json();
     const almanaque = data.items.find(it => it.title.toLowerCase().includes('almanaque'));
+
     if (almanaque) {
-      const slugMatch = almanaque.link.match(/ucsfm\.com\.br\/([^/]+)\//);
-      if (slugMatch) {
-        const wpRes = await fetch('https://ucsfm.com.br/wp-json/wp/v2/posts?search=' + encodeURIComponent(slugMatch[1].replace(/-/g,' ')) + '&per_page=1');
+      // Extrai o slug diretamente da URL do post
+      const slugMatch = almanaque.link.match(/ucsfm\.com\.br\/([^/?#]+)\/?$/);
+      const slug = slugMatch ? slugMatch[1] : null;
+
+      if (slug) {
+        const wpRes = await fetch(`https://ucsfm.com.br/wp-json/wp/v2/posts?slug=${encodeURIComponent(slug)}&per_page=1`);
         const posts = await wpRes.json();
-        if (posts.length) {
+
+        if (Array.isArray(posts) && posts.length) {
           const content = posts[0].content.rendered;
-          const parts = content.split(/<hr\s*\/?>/i).map(s => s.trim()).filter(s => s.length > 50);
-          
-          let h = '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.2rem">';
-          const subLabels = ['FATOS', 'OUTROS FATOS'];
-          
-          for (let i=1; i < Math.min(parts.length, 3); i++) {
-            const li = parts[i].match(/<li[^>]*>([\s\S]*?)<\/li>/g);
-            const items = li ? li.map(l => l.replace(/<[^>]*>/g,'').trim()) : [parts[i].replace(/<[^>]*>/g,'').trim()];
-            h += `<div class="historia-card" style="padding:1.2rem; text-align:left">
-              <div class="fatos-header">
-                <span class="fatos-date">${dateStr}</span>
-                <span class="fatos-label">${subLabels[i-1]}</span>
-              </div>
-              ${items.map(txt => `<div style="font-size:.85rem; color:var(--paper); line-height:1.6; margin-bottom:.6rem">${txt}</div>`).join('')}
-            </div>`;
+
+          // Extrai todos os parágrafos e itens de lista com texto relevante
+          const rawItems = [...content.matchAll(/<(?:p|li)[^>]*>([\s\S]*?)<\/(?:p|li)>/gi)]
+            .map(m => m[1].replace(/<[^>]*>/g, '').trim())
+            .filter(t => t.length > 10);
+
+          if (rawItems.length) {
+            // Divide em dois grupos para exibir em colunas
+            const mid = Math.ceil(rawItems.length / 2);
+            const groups = [rawItems.slice(0, mid), rawItems.slice(mid)].filter(g => g.length > 0);
+            const subLabels = ['FATOS', 'OUTROS FATOS'];
+
+            let h = '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.2rem">';
+            groups.forEach((group, i) => {
+              h += `<div class="historia-card" style="padding:1.2rem; text-align:left">
+                <div class="fatos-header">
+                  <span class="fatos-date">${dateStr}</span>
+                  <span class="fatos-label">${subLabels[i]}</span>
+                </div>
+                ${group.map(txt => `<div style="font-size:.85rem; color:var(--paper); line-height:1.6; margin-bottom:.6rem">${txt}</div>`).join('')}
+              </div>`;
+            });
+            document.getElementById('historiaContent').innerHTML = h + '</div>';
+            return;
           }
-          document.getElementById('historiaContent').innerHTML = h + '</div>';
-          return;
         }
       }
+
+      // Fallback final: exibe descrição do RSS com link direto
+      document.getElementById('historiaContent').innerHTML = `
+        <div class="historia-card" style="padding:1.2rem; text-align:left">
+          <div class="fatos-header"><span class="fatos-date">${dateStr}</span><span class="fatos-label">ALMANAQUE</span></div>
+          <div style="font-size:.85rem; color:var(--paper); line-height:1.6; margin-bottom:.6rem">${almanaque.description || 'Confira as curiosidades musicais do dia.'}</div>
+          <a href="${almanaque.link}" target="_blank" class="news-card-link">Ver almanaque completo →</a>
+        </div>`;
+      return;
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn('[HISTORIA] Erro ao carregar curiosidades:', e);
+  }
   document.getElementById('historiaContent').innerHTML = '<p style="color:var(--smoke); text-align:center">Indisponível no momento.</p>';
 }
+
 
 // ─── NEWS (WHIPLASH E AFINS) ───
 const RSS_SOURCES = [
@@ -344,7 +390,3 @@ loadHistoria(); loadTopRock(); loadNews();
 </script>
 </body>
 </html>
-
-
-
-

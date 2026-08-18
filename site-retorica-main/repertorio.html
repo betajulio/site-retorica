@@ -10,6 +10,18 @@
 <title>Repertório — Retórica</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=16">
+<script>
+(function(){
+  try{
+    const f=new URLSearchParams(window.location.search).get('dayPreview');
+    const d=['day-sun','day-mon','day-tue','day-wed','day-thu','day-fri','day-sat'];
+    let c=d[(new Date()).getDay()];
+    if(f&&(d.includes(f)||(!isNaN(parseInt(f,10))&&d[parseInt(f,10)])))c=d.includes(f)?f:d[parseInt(f,10)];
+    document.documentElement.classList.add(c);
+    document.addEventListener('DOMContentLoaded',()=>document.body&&document.body.classList.add(c));
+  }catch(e){}
+})();
+</script>
 <style>
   @media (max-width: 768px) {
     .repertorio-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
