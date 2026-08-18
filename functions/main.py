@@ -1656,6 +1656,39 @@ def admin_send_curiosidades(req: https_fn.Request) -> https_fn.Response:
     fetch_and_send_top_music()
     return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "facts_count": len(facts)}, 200 if result.get("ok") else 500)
 
+def build_tuesday_repertoire_message(db):
+    sat_iso = get_next_saturday_iso()
+    if is_rehearsal_cancelled(db, sat_iso):
+        return None, f"Ensaio de {sat_iso} está marcado como cancelado."
+    doc = db.collection("setlists").document("data").get()
+    if not doc.exists:
+        return None, "Documento de setlist não encontrado."
+    tab0 = doc.to_dict().get("tab0", [])
+    if not tab0:
+        return None, "A lista do Ensaio Atual está vazia no momento."
+    sat_date = get_next_saturday_str()
+    txt = "\n".join([f"#{i+1} — *{m.get('song')}* ({m.get('artist')})" for i, m in enumerate(tab0)])
+    msg = f"🎸 *REPERTÓRIO DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem, pessoal! 🤘{SETLIST_FOOTER}"
+    return msg, None
+
+@https_fn.on_request()
+def admin_trigger_tuesday_repertoire(req: https_fn.Request) -> https_fn.Response:
+    """Dispara a lista do repertório do próximo ensaio manualmente (uso admin)."""
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+    db = firestore.client()
+    try:
+        msg, err = build_tuesday_repertoire_message(db)
+        if not msg:
+            return json_response({"ok": False, "message": err or "Não foi possível gerar a lista."}, 400)
+        result = send_wa_notification_with_logo(msg, db)
+        return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
 def send_wa_message(text):
     import requests
     url = f"https://api.green-api.com/waInstance{ID_INSTANCE}/sendMessage/{API_TOKEN}"
@@ -2187,6 +2220,118 @@ def weekly_member_ranking(event: scheduler_fn.ScheduledEvent) -> None:
         print(f"[RANKING SEMANAL] Disparo semanal enviado: {result}")
     except Exception as exc:
         print(f"[RANKING SEMANAL] Erro durante disparo: {type(exc).__name__}: {exc}")
+
+# 13. AGENDAMENTO DINÂMICO: DISPATCHER AUTOMÁTICO (CADA 10 MINUTOS)
+@scheduler_fn.on_schedule(schedule="*/10 * * * *", timezone="America/Sao_Paulo")
+def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
+    """Verifica a cada 10 minutos se alguma tarefa configurada no Firestore (config/schedules) deve ser disparada."""
+    db = firestore.client()
+    now = now_sp()
+    day_idx = (now.weekday() + 1) % 7 # 0 = Domingo .. 6 = Sábado
+    today_str = now.strftime("%Y-%m-%d")
+    current_minutes = now.hour * 60 + now.minute
+
+    try:
+        doc = db.collection("config").document("schedules").get()
+        if not doc.exists:
+            return
+        schedules = doc.to_dict() or {}
+        
+        for key, cfg in schedules.items():
+            if not isinstance(cfg, dict) or not cfg.get("enabled", True):
+                continue
+            
+            days = cfg.get("days", [])
+            if days and day_idx not in days:
+                continue
+            
+            time_str = (cfg.get("time") or "").strip()
+            if not time_str or ":" not in time_str:
+                continue
+            
+            try:
+                h, m = [int(x) for x in time_str.split(":")[:2]]
+                sched_minutes = h * 60 + m
+            except Exception:
+                continue
+            
+            # Janela de 10 minutos
+            if 0 <= (current_minutes - sched_minutes) < 10:
+                last_run_date = cfg.get("lastRunDate")
+                if last_run_date == today_str:
+                    continue
+                
+                print(f"[DYNAMIC SCHEDULER] Disparando '{key}' programada para {time_str}.")
+                result_ok = False
+                detail = ""
+                try:
+                    if key == "top_suggestions":
+                        msg = build_top_suggestions_message(db)
+                        if msg:
+                            r = send_wa_notification_with_logo(msg, db)
+                            result_ok = r.get("ok", False)
+                            detail = r.get("detail", "")
+                    elif key == "weekly_ranking":
+                        msg = build_weekly_member_ranking_message(db)
+                        if msg:
+                            r = send_wa_notification_with_logo(msg, db)
+                            result_ok = r.get("ok", False)
+                            detail = r.get("detail", "")
+                    elif key == "daily_curiosidades":
+                        import requests as http_requests, re
+                        now_local = now_sp()
+                        day, month = now_local.day, now_local.month
+                        month_names_pt = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
+                        date_str = f"{day:02d} de {month_names_pt[month - 1]}"
+                        slug_date = f"{day:02d}-de-{['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][month-1]}"
+                        facts = []
+                        try:
+                            wp_url = f"https://ucsfm.com.br/wp-json/wp/v2/posts?slug=almanaque-da-musica-ucsfm-{slug_date}&per_page=1"
+                            posts = http_requests.get(wp_url, timeout=15).json()
+                            if isinstance(posts, list) and posts:
+                                content = posts[0].get("content", {}).get("rendered", "")
+                                raw = re.findall(r"<(?:p|li)[^>]*>(.*?)</(?:p|li)>", content, re.DOTALL | re.IGNORECASE)
+                                for item in raw:
+                                    text = re.sub(r"<[^>]+>", "", item).strip()
+                                    if len(text) > 10 and "confira" not in text.lower():
+                                        facts.append(text)
+                        except Exception as e:
+                            print(f"[DYNAMIC SCHEDULER] Erro fatos ucsfm: {e}")
+                        if facts:
+                            lines = ["🎸 *BOM DIA, RETÓRICA!* 🤘", "", f"📅 *{date_str}* na história da música:", ""]
+                            for fact in facts:
+                                lines.append(f"🔹 {fact}")
+                            lines += ["", "_Que o rock esteja com vocês hoje!_ 🎶", NEWS_FOOTER]
+                            r = send_wa_message("\n".join(lines))
+                            fetch_and_send_top_music()
+                            result_ok = r.get("ok", False)
+                            detail = r.get("detail", "")
+                    elif key == "tuesday_repertoire":
+                        msg, err = build_tuesday_repertoire_message(db)
+                        if msg:
+                            r = send_wa_notification_with_logo(msg, db)
+                            result_ok = r.get("ok", False)
+                            detail = r.get("detail", "")
+                    elif key == "daily_reminder":
+                        if not get_poll_reminder_paused(db):
+                            active_polls = get_active_polls(db)
+                            if active_polls:
+                                for poll_id, p in active_polls:
+                                    msg = build_poll_reminder_message(p, header_title="📢 *LEMBRETE DE ENQUETE ATIVA!*")
+                                    r = send_wa_notification_with_logo(msg, db)
+                                    result_ok = r.get("ok", False)
+                except Exception as exc:
+                    detail = str(exc)
+                
+                db.collection("config").document("schedules").set({
+                    key: {
+                        "lastRunDate": today_str,
+                        "lastRunAt": firestore.SERVER_TIMESTAMP,
+                        "lastRunResult": "ok" if result_ok else f"erro: {detail}"
+                    }
+                }, merge=True)
+    except Exception as exc:
+        print(f"[DYNAMIC SCHEDULER] Erro no dispatcher: {exc}")
 
 
 
