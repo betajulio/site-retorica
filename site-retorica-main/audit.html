@@ -328,7 +328,7 @@ window.triggerWeeklyRankingZap = async () => {
   if (!confirm('Deseja enviar o Painel Semanal de Coins, Interações e Assiduidade para o WhatsApp agora?')) return;
   showToast('Disparando Ranking Semanal...');
   try {
-    const res = await fetch('https://us-central1-retorica-b05b3.cloudfunctions.net/admin_trigger_weekly_ranking?token=retorica-force-top3-20260418', { method: 'POST' });
+    const res = await fetch('https://admin-trigger-weekly-ranking-nkhdfwbala-uc.a.run.app?token=retorica-force-top3-20260418', { method: 'POST' });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.ok !== false) {
       showToast(data.message || '✓ Ranking Semanal enviado com sucesso!');
