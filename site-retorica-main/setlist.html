@@ -490,10 +490,35 @@ function renderSetlist() {
   c.innerHTML = `<div class="setlist-panel">
     <div class="setlist-panel-header">
       <span class="setlist-panel-title">Músicas</span>
-      <span style="font-size:.75rem;color:var(--smoke)">${totalSongs} ${totalSongs === 1 ? 'música' : 'músicas'}</span>
+      <div style="display:flex;gap:.8rem;align-items:center">
+        <span style="font-size:.75rem;color:var(--smoke)">${totalSongs} ${totalSongs === 1 ? 'música' : 'músicas'}</span>
+        ${isMember && totalSongs > 0 ? `<button class="btn-ghost btn-sm" onclick="clearSetlistSongs()" style="border-color:rgba(239,68,68,.4);color:#fca5a5;padding:.25rem .65rem;font-size:.75rem;display:inline-flex;align-items:center;gap:.3rem;cursor:pointer" title="Limpar todas as músicas do ensaio">🗑 Limpar lista</button>` : ''}
+      </div>
     </div>
-    <ul class="setlist-list">${items}</ul>${toggleBtn}${addRow}</div>`;
+    <ul class="setlist-list">${items || '<li style="padding:1.5rem;text-align:center;color:var(--smoke);font-style:italic">Nenhuma música na lista do próximo ensaio.</li>'}</ul>${toggleBtn}${addRow}</div>`;
 }
+
+window.clearSetlistSongs = async () => {
+  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const songs = getActiveSetlistSongs();
+  if (!songs.length) { showToast('A lista já está vazia.'); return; }
+  if (!confirm(`Tem certeza que deseja limpar todas as ${songs.length} música(s) da setlist de ensaio?`)) return;
+
+  try {
+    showToast('Limpando lista de ensaio...');
+    setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: [], [LEGACY_SETLIST_KEY]: [] };
+    await updateDoc(doc(db, 'setlists', 'data'), {
+      [NEXT_SETLIST_KEY]: [],
+      [LEGACY_SETLIST_KEY]: []
+    });
+    renderSetlist();
+    await writeLog('Setlist limpo', `${songs.length} música(s) removida(s) da lista de ensaio`, 'setlist');
+    showToast('✓ Setlist de ensaio limpo com sucesso!');
+  } catch (e) {
+    console.error('Clear setlist error:', e);
+    showToast('⚠ Erro ao limpar o setlist');
+  }
+};
 
 window.toggleSetlistExpand = () => {
   setlistExpanded = !setlistExpanded;
