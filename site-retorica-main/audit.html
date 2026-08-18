@@ -162,6 +162,7 @@
       </div>
       <div class="admin-tools-grid">
         <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
+        <button class="btn-ghost" style="border-color:#f97316;color:#fdba74" onclick="runDuplicateSuggestionsCleanup()">♻️ Limpar Músicas Duplicadas</button>
         <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
         <button class="btn-ghost" style="border-color:#93c5fd;color:#bfdbfe" onclick="forceTop3Tiebreaker()">⚔️ Forçar desempate Top 3</button>
         <button id="promotionPauseBtn" class="btn-ghost" style="border-color:#fbbf24;color:#fde68a" onclick="togglePromotionPause()">⏸ Pausar ciclo de sugestões</button>
@@ -748,6 +749,121 @@ window.runSuggestionsCleanup = async () => {
   } catch (e) {
     console.error('Cleanup error:', e);
     showToast('Erro durante a varredura. Veja o console.');
+  }
+};
+
+window.runDuplicateSuggestionsCleanup = async () => {
+  showToast('🔍 Verificando sugestões duplicadas...');
+  try {
+    const snap = await getDocs(collection(db, 'suggestions'));
+    if (snap.empty) {
+      showToast('Nenhuma sugestão cadastrada.');
+      return;
+    }
+
+    function normalizeText(str) {
+      return (str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .trim();
+    }
+
+    // Agrupa por chave normalizada (música + artista)
+    const groups = new Map();
+    snap.docs.forEach(docSnap => {
+      const data = docSnap.data() || {};
+      const songNorm = normalizeText(data.song);
+      const artistNorm = normalizeText(data.artist);
+      const key = `${songNorm}___${artistNorm}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key).push({ id: docSnap.id, data });
+    });
+
+    const duplicates = [];
+    groups.forEach((items, key) => {
+      if (items.length > 1) {
+        // Ordena por pontuação líquida (likes - dislikes) desc, depois likes desc, depois mais antiga
+        items.sort((a, b) => {
+          const sa = a.data;
+          const sb = b.data;
+          const scoreA = (sa.likes || 0) - (sa.dislikes || 0);
+          const scoreB = (sb.likes || 0) - (sb.dislikes || 0);
+          if (scoreB !== scoreA) return scoreB - scoreA;
+          if ((sb.likes || 0) !== (sa.likes || 0)) return (sb.likes || 0) - (sa.likes || 0);
+          const tA = sa.createdAt?.toMillis ? sa.createdAt.toMillis() : 0;
+          const tB = sb.createdAt?.toMillis ? sb.createdAt.toMillis() : 0;
+          return tA - tB;
+        });
+
+        const winner = items[0];
+        const losers = items.slice(1);
+        duplicates.push({ winner, losers });
+      }
+    });
+
+    if (duplicates.length === 0) {
+      showToast('✓ Nenhuma música duplicada encontrada nas sugestões!');
+      return;
+    }
+
+    const totalToRemove = duplicates.reduce((acc, g) => acc + g.losers.length, 0);
+    const summaryLines = duplicates.slice(0, 6).map(g => {
+      const w = g.winner.data;
+      const wScore = (w.likes || 0) - (w.dislikes || 0);
+      const lDetails = g.losers.map(l => {
+        const ld = l.data;
+        const lScore = (ld.likes || 0) - (ld.dislikes || 0);
+        return `"${ld.song}" (${ld.by || 'Membro'}: ${lScore} pts [${ld.likes || 0}👍/${ld.dislikes || 0}👎])`;
+      }).join(', ');
+      return `• "${w.song}" — MANTER: ${w.by || 'Membro'} (${wScore} pts [${w.likes || 0}👍/${w.dislikes || 0}👎]) | REMOVER: ${lDetails}`;
+    });
+
+    const extra = duplicates.length > 6 ? `\n... e mais ${duplicates.length - 6} caso(s).` : '';
+    const confirmMsg = `Foram encontradas ${duplicates.length} música(s) com duplicidade (total de ${totalToRemove} sugestão(ões) repetida(s) para remover):\n\n${summaryLines.join('\n')}${extra}\n\nDeseja remover as duplicatas de menor voto agora?`;
+
+    if (!confirm(confirmMsg)) return;
+
+    showToast(`Removendo ${totalToRemove} duplicata(s)...`);
+    let removedCount = 0;
+
+    for (const group of duplicates) {
+      const w = group.winner.data;
+      const wScore = (w.likes || 0) - (w.dislikes || 0);
+
+      for (const loser of group.losers) {
+        const l = loser.data;
+        const lScore = (l.likes || 0) - (l.dislikes || 0);
+
+        await deleteDoc(doc(db, 'suggestions', loser.id));
+        await addDoc(collection(db, 'logs'), {
+          action: 'Sugestão Duplicada Removida',
+          detail: `"${l.song}" — ${l.artist} (Sugerido por: ${l.by || 'Membro'}, ${lScore} pts [${l.likes || 0}👍/${l.dislikes || 0}👎]) removida por duplicidade. Mantida a sugestão de ${w.by || 'Membro'} (${wScore} pts [${w.likes || 0}👍/${w.dislikes || 0}👎]).`,
+          song: l.song,
+          artist: l.artist,
+          by: l.by || 'Membro',
+          likes: l.likes || 0,
+          dislikes: l.dislikes || 0,
+          reason: `Música duplicada (mantida versão de maior voto com ${wScore} pts)`,
+          removedBy: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+          category: 'sugestoes',
+          who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+          whoEmail: auth.currentUser?.email || '',
+          ts: serverTimestamp(),
+          tsLocal: new Date().toLocaleString('pt-BR')
+        });
+        removedCount++;
+      }
+    }
+
+    showToast(`✓ Sucesso: ${removedCount} sugestão(ões) duplicada(s) removida(s)!`);
+  } catch (err) {
+    console.error('runDuplicateSuggestionsCleanup error:', err);
+    showToast('⚠ Erro ao remover duplicatas. Veja o console.');
   }
 };
 
