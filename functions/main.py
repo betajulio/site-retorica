@@ -22,6 +22,7 @@ POLLS_URL = "https://betajulio.github.io/site-retorica/enquetes.html"
 SUGGESTIONS_URL = "https://betajulio.github.io/site-retorica/sugestoes.html"
 SETLIST_URL = "https://betajulio.github.io/site-retorica/setlist.html"
 GALLERY_URL = "https://betajulio.github.io/site-retorica/galeria.html"
+HOME_URL = "https://betajulio.github.io/site-retorica/index.html"
 PROMOTION_ADMIN_TOKEN = "retorica-force-top3-20260418"
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "326b84f0200191f182535dfc0286811c").strip()
 TMDB_KEY_CACHE = {"value": None, "loaded_at": None}
@@ -494,6 +495,123 @@ def build_top_suggestions_message(db):
         return "\n".join(lines).strip()
     except Exception as exc:
         print(f"Erro ao construir mensagem do Top 3: {type(exc).__name__}: {exc}")
+        return None
+
+def build_weekly_member_ranking_message(db):
+    try:
+        approved_snap = db.collection("approved_emails").get()
+        members_snap = db.collection("members").get()
+        stats_snap = db.collection("member_stats").get()
+
+        approved_emails = set(d.id.strip().lower() for d in approved_snap if d.id.strip())
+
+        # Mapa de nomes pelo members collection
+        name_by_email = {}
+        for d in members_snap:
+            m = d.to_dict() or {}
+            m_name = (m.get("name") or "").strip()
+            m_email = (m.get("email") or "").strip().lower()
+            if m_name and m_email:
+                name_by_email[m_email] = m_name
+
+        # Mapear stats por email
+        stats_by_email = {}
+        for d in stats_snap:
+            stats_by_email[d.id.strip().lower()] = d.to_dict() or {}
+
+        participants = []
+        for email in approved_emails:
+            st = stats_by_email.get(email, {})
+            # Nome: name_by_email ou st.name ou deduzir do email
+            raw_name = name_by_email.get(email) or (st.get("name") or "").strip()
+            if not raw_name:
+                prefix = email.split("@")[0]
+                raw_name = prefix.replace(".", " ").replace("_", " ").title()
+            
+            # Usar apenas o primeiro nome ou nome curto para ficar limpo no ranking
+            short_name = raw_name.split()[0] if raw_name else "Membro"
+
+            coins = safe_int(st.get("coins", 0))
+            interactions = safe_int(st.get("totalActions", 0))
+            streak_days = safe_int(st.get("streakDays", 0))
+            total_login_days = safe_int(st.get("totalLoginDays", 0))
+
+            participants.append({
+                "email": email,
+                "name": short_name,
+                "fullName": raw_name,
+                "coins": coins,
+                "interactions": interactions,
+                "streakDays": streak_days,
+                "totalLoginDays": total_login_days
+            })
+
+        if not participants:
+            return None
+
+        # Ícones por posição (1 a 6)
+        coins_icons = ["🥇", "🥈", "🥉", "4º", "5º", "6º"]
+        coins_suffixes = [" 👑", " 🔥", " ⚡", " ⚠️", " 💤", " 🪫"]
+        interactions_suffixes = [" 🚀", " 👏", " 👍", " ⚠️", " 💤", " 📉"]
+        assiduidade_suffixes = [" 👑", " 🔥", " ⭐", " ⚠️", " 💤", " 🐢"]
+
+        # 1. Ranking de Coins
+        by_coins = sorted(participants, key=lambda x: (x["coins"], x["interactions"], x["totalLoginDays"]), reverse=True)
+        # 2. Ranking de Interações
+        by_interactions = sorted(participants, key=lambda x: (x["interactions"], x["coins"], x["totalLoginDays"]), reverse=True)
+        # 3. Ranking de Assiduidade
+        by_assiduidade = sorted(participants, key=lambda x: (x["streakDays"], x["totalLoginDays"], x["coins"]), reverse=True)
+
+        lines = [
+            "🏆 *PAINEL SEMANAL DA RETÓRICA* 🎸",
+            "📅 Sexta-feira, 13:00 | Desempenho e Engajamento da Banda",
+            "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "🪙 *TOP COINS (Saldo)*"
+        ]
+
+        for idx, p in enumerate(by_coins):
+            prefix = coins_icons[idx] if idx < len(coins_icons) else f"{idx+1}º"
+            suffix = coins_suffixes[idx] if idx < len(coins_suffixes) else (" ⚠️" if idx >= 3 else "")
+            lines.append(f"{prefix} *{p['name']}* — {p['coins']} Coins{suffix}")
+
+        lines.extend([
+            "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "⚡ *TOP INTERAÇÕES (Votos, Sugestões e Fórum)*"
+        ])
+
+        for idx, p in enumerate(by_interactions):
+            prefix = coins_icons[idx] if idx < len(coins_icons) else f"{idx+1}º"
+            suffix = interactions_suffixes[idx] if idx < len(interactions_suffixes) else (" ⚠️" if idx >= 3 else "")
+            act_str = f"{p['interactions']} {'ação' if p['interactions'] == 1 else 'ações'}"
+            lines.append(f"{prefix} *{p['name']}* — {act_str}{suffix}")
+
+        lines.extend([
+            "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "🔥 *TOP ASSIDUIDADE (Presença & Sequência Diária)*"
+        ])
+
+        for idx, p in enumerate(by_assiduidade):
+            prefix = coins_icons[idx] if idx < len(coins_icons) else f"{idx+1}º"
+            suffix = assiduidade_suffixes[idx] if idx < len(assiduidade_suffixes) else (" ⚠️" if idx >= 3 else "")
+            streak = p["streakDays"]
+            total_days = p["totalLoginDays"]
+            streak_str = f"{streak} {'dia seguido' if streak == 1 else 'dias seguidos'}"
+            total_str = f"({total_days} no total)"
+            lines.append(f"{prefix} *{p['name']}* — {streak_str} {total_str}{suffix}")
+
+        lines.extend([
+            "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "💡 *Quem está na lanterna:* Entre no site para resgatar seus coins diários, votar e subir no ranking!",
+            f"👉 {HOME_URL}"
+        ])
+
+        return "\n".join(lines).strip()
+    except Exception as exc:
+        print(f"Erro ao construir painel semanal de membros: {type(exc).__name__}: {exc}")
         return None
 
 def create_tiebreaker_poll_backend(db, suggestion_docs):
@@ -1427,6 +1545,26 @@ def admin_trigger_top_suggestions(req: https_fn.Request) -> https_fn.Response:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 
 @https_fn.on_request()
+def admin_trigger_weekly_ranking(req: https_fn.Request) -> https_fn.Response:
+    """Dispara o resumo do Ranking Semanal de Membros manualmente (uso admin)."""
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        msg = build_weekly_member_ranking_message(db)
+        if not msg:
+            return json_response({"ok": True, "message": "Nenhum membro ou estatística cadastrada."}, 200)
+        
+        result = send_wa_message(msg)
+        return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
 def admin_refresh_active_tiebreaker(req: https_fn.Request) -> https_fn.Response:
     if req.method == "OPTIONS":
         return json_response({}, 204)
@@ -1734,6 +1872,21 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
             print(f"Erro ao processar disparo de Top 3: {error_detail}")
             update_log_delivery_status(db, log_id, "failed", error_detail)
 
+    # E. Disparo Manual de Ranking Semanal de Membros
+    elif action in ["Disparar Ranking Semanal", "Disparar Zap Ranking Semanal"]:
+        db = firestore.client()
+        try:
+            msg = build_weekly_member_ranking_message(db)
+            if msg:
+                result = send_wa_message(msg)
+            else:
+                result = {"ok": False, "detail": "Nenhum membro ou estatística encontrada para montar o ranking."}
+            update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
+        except Exception as exc:
+            error_detail = f"{type(exc).__name__}: {exc}"[:300]
+            print(f"Erro ao processar disparo de Ranking Semanal: {error_detail}")
+            update_log_delivery_status(db, log_id, "failed", error_detail)
+
 # 5. AGENDAMENTO: LEMBRETE DIÁRIO (14:10)
 @scheduler_fn.on_schedule(schedule="10 14 * * *", timezone="America/Sao_Paulo")
 def daily_reminder(event: scheduler_fn.ScheduledEvent) -> None:
@@ -1917,5 +2070,21 @@ def daily_top_suggestions(event: scheduler_fn.ScheduledEvent) -> None:
         print(f"[TOP SUGESTÕES] Disparo enviado: {result}")
     except Exception as exc:
         print(f"[TOP SUGESTÕES] Erro durante disparo: {type(exc).__name__}: {exc}")
+
+# 12. AGENDAMENTO: RANKING SEMANAL DE MEMBROS (SEXTA-FEIRA ÀS 13:00)
+@scheduler_fn.on_schedule(schedule="0 13 * * 5", timezone="America/Sao_Paulo")
+def weekly_member_ranking(event: scheduler_fn.ScheduledEvent) -> None:
+    """Envia toda sexta-feira às 13:00 o ranking semanal de Coins, Interações e Assiduidade."""
+    db = firestore.client()
+    try:
+        msg = build_weekly_member_ranking_message(db)
+        if not msg:
+            print("[RANKING SEMANAL] Nenhum membro/estatística encontrada no momento.")
+            return
+        result = send_wa_message(msg)
+        print(f"[RANKING SEMANAL] Disparo semanal enviado: {result}")
+    except Exception as exc:
+        print(f"[RANKING SEMANAL] Erro durante disparo: {type(exc).__name__}: {exc}")
+
 
 
