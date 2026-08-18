@@ -6,8 +6,7 @@ from urllib.parse import quote_plus
 from firebase_functions import firestore_fn, scheduler_fn, https_fn
 from firebase_admin import initialize_app, firestore
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-import pytz
+from zoneinfo import ZoneInfo
 
 # Inicializa o Admin
 initialize_app()
@@ -44,7 +43,8 @@ def safe_int(value, default=0):
         return default
 try:
     SP_TZ = ZoneInfo("America/Sao_Paulo")
-except ZoneInfoNotFoundError:
+except Exception:
+    import pytz
     SP_TZ = pytz.timezone("America/Sao_Paulo")
 
 def now_sp():
@@ -1539,7 +1539,7 @@ def admin_trigger_top_suggestions(req: https_fn.Request) -> https_fn.Response:
         if not msg:
             return json_response({"ok": True, "message": "Nenhuma sugestão cadastrada."}, 200)
         
-        result = send_wa_message(msg)
+        result = send_wa_notification_with_logo(msg, db)
         return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
@@ -1559,7 +1559,7 @@ def admin_trigger_weekly_ranking(req: https_fn.Request) -> https_fn.Response:
         if not msg:
             return json_response({"ok": True, "message": "Nenhum membro ou estatística cadastrada."}, 200)
         
-        result = send_wa_message(msg)
+        result = send_wa_notification_with_logo(msg, db)
         return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
@@ -1679,7 +1679,7 @@ def send_wa_message(text):
 def send_wa_image(file_url, caption):
     import requests
     url = f"https://api.green-api.com/waInstance{ID_INSTANCE}/sendFileByUrl/{API_TOKEN}"
-    payload = {"chatId": CHAT_ID, "urlFile": file_url, "fileName": "foto.jpg", "caption": caption}
+    payload = {"chatId": CHAT_ID, "urlFile": file_url, "fileName": "logo.png", "caption": caption}
     try:
         resp = requests.post(url, json=payload, timeout=15)
         raw_body = (resp.text or "").strip()
@@ -1688,6 +1688,108 @@ def send_wa_image(file_url, caption):
         return {"ok": True, "detail": "Imagem aceita pelo provedor"}
     except Exception as exc:
         return {"ok": False, "detail": f"{type(exc).__name__}: {exc}"[:300]}
+
+EASTER_SUNDAYS = {
+    2025: "2025-04-20",
+    2026: "2026-04-05",
+    2027: "2027-03-28",
+    2028: "2028-04-16",
+    2029: "2029-04-01",
+    2030: "2030-04-21",
+    2031: "2031-04-13",
+    2032: "2032-03-28"
+}
+SEASON_WINDOW_DAYS = 10
+EASTER_OVERRIDE_START = "2026-04-13"
+EASTER_OVERRIDE_END = "2026-04-23"
+
+def get_current_band_logo_url(db=None):
+    """Retorna dinamicamente o logo atual da banda (respeitando datas especiais e override do admin)."""
+    if db:
+        try:
+            cfg = db.collection("config").document("seasonalTheme").get()
+            if cfg.exists:
+                data = cfg.to_dict() or {}
+                forced = data.get("theme")
+                forced_map = {
+                    "natal": "https://betajulio.github.io/site-retorica/imagens/natal.png",
+                    "ano-novo": "https://betajulio.github.io/site-retorica/imagens/anonovo.png",
+                    "anonovo": "https://betajulio.github.io/site-retorica/imagens/anonovo.png",
+                    "pascoa": "https://betajulio.github.io/site-retorica/imagens/pacoa.png",
+                    "junina": "https://betajulio.github.io/site-retorica/imagens/festajunina.png",
+                    "festajunina": "https://betajulio.github.io/site-retorica/imagens/festajunina.png",
+                    "independencia": "https://betajulio.github.io/site-retorica/imagens/independencia.png",
+                    "halloween": "https://betajulio.github.io/site-retorica/imagens/halloween.png",
+                    "default": "https://betajulio.github.io/site-retorica/imagens/inst.png"
+                }
+                if forced in forced_map:
+                    return forced_map[forced]
+        except Exception as e:
+            print(f"Erro ao consultar config seasonalTheme: {e}")
+
+    now = now_sp().date()
+    year = now.year
+
+    def in_date_range(center_date_str, days=SEASON_WINDOW_DAYS):
+        try:
+            parts = [int(x) for x in center_date_str.split("-")]
+            center = datetime(parts[0], parts[1], parts[2]).date()
+            start = center - timedelta(days=days)
+            end = center + timedelta(days=days)
+            return start <= now <= end
+        except Exception:
+            return False
+
+    # Páscoa Override
+    try:
+        easter_ov_start = datetime.strptime(EASTER_OVERRIDE_START, "%Y-%m-%d").date()
+        easter_ov_end = datetime.strptime(EASTER_OVERRIDE_END, "%Y-%m-%d").date()
+        if easter_ov_start <= now <= easter_ov_end:
+            return "https://betajulio.github.io/site-retorica/imagens/pacoa.png"
+    except Exception:
+        pass
+
+    # Natal
+    if in_date_range(f"{year}-12-25"):
+        return "https://betajulio.github.io/site-retorica/imagens/natal.png"
+
+    # Ano Novo
+    if in_date_range(f"{year}-01-01") or in_date_range(f"{year+1}-01-01"):
+        return "https://betajulio.github.io/site-retorica/imagens/anonovo.png"
+
+    # Páscoa pelo calendário
+    easter_date = EASTER_SUNDAYS.get(year)
+    if easter_date and in_date_range(easter_date):
+        return "https://betajulio.github.io/site-retorica/imagens/pacoa.png"
+
+    # Festa Junina
+    if in_date_range(f"{year}-06-24"):
+        return "https://betajulio.github.io/site-retorica/imagens/festajunina.png"
+
+    # Independência
+    if in_date_range(f"{year}-09-07"):
+        return "https://betajulio.github.io/site-retorica/imagens/independencia.png"
+
+    # Halloween
+    if in_date_range(f"{year}-10-31"):
+        return "https://betajulio.github.io/site-retorica/imagens/halloween.png"
+
+    # Padrão
+    return "https://betajulio.github.io/site-retorica/imagens/inst.png"
+
+def send_wa_notification_with_logo(text, db=None):
+    """Envia a mensagem com a imagem do logo atual da banda (dinâmico)."""
+    logo_url = get_current_band_logo_url(db)
+    if len(text) <= 1000:
+        res = send_wa_image(logo_url, text)
+        if res.get("ok"):
+            return res
+        print(f"Envio com imagem+legenda retornou {res.get('detail')}. Enviando imagem separada + texto.")
+
+    # Se a legenda for longa ou o envio com legenda falhar, envia o logo e o texto completo
+    img_res = send_wa_image(logo_url, "🎸 Retórica — Banda Oficial")
+    msg_res = send_wa_message(text)
+    return msg_res if msg_res.get("ok") else img_res
 
 def fetch_and_send_top_music():
     import requests
@@ -1863,7 +1965,7 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
         try:
             msg = build_top_suggestions_message(db)
             if msg:
-                result = send_wa_message(msg)
+                result = send_wa_notification_with_logo(msg, db)
             else:
                 result = {"ok": False, "detail": "Nenhuma sugestão encontrada para montar o Top 3."}
             update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
@@ -1878,7 +1980,7 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
         try:
             msg = build_weekly_member_ranking_message(db)
             if msg:
-                result = send_wa_message(msg)
+                result = send_wa_notification_with_logo(msg, db)
             else:
                 result = {"ok": False, "detail": "Nenhum membro ou estatística encontrada para montar o ranking."}
             update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
@@ -2059,14 +2161,14 @@ def daily_curiosidades(event: scheduler_fn.ScheduledEvent) -> None:
 # 11. AGENDAMENTO: TOP 3 SUGESTÕES DIÁRIAS (TODOS OS DIAS ÀS 15:00)
 @scheduler_fn.on_schedule(schedule="0 15 * * *", timezone="America/Sao_Paulo")
 def daily_top_suggestions(event: scheduler_fn.ScheduledEvent) -> None:
-    """Envia diariamente às 15:00 as 3 primeiras colocadas das sugestões."""
+    """Envia diariamente às 15:00 as 3 primeiras colocadas das sugestões com o logo dinâmico."""
     db = firestore.client()
     try:
         msg = build_top_suggestions_message(db)
         if not msg:
             print("[TOP SUGESTÕES] Nenhuma sugestão encontrada no momento.")
             return
-        result = send_wa_message(msg)
+        result = send_wa_notification_with_logo(msg, db)
         print(f"[TOP SUGESTÕES] Disparo enviado: {result}")
     except Exception as exc:
         print(f"[TOP SUGESTÕES] Erro durante disparo: {type(exc).__name__}: {exc}")
@@ -2074,14 +2176,14 @@ def daily_top_suggestions(event: scheduler_fn.ScheduledEvent) -> None:
 # 12. AGENDAMENTO: RANKING SEMANAL DE MEMBROS (SEXTA-FEIRA ÀS 13:00)
 @scheduler_fn.on_schedule(schedule="0 13 * * 5", timezone="America/Sao_Paulo")
 def weekly_member_ranking(event: scheduler_fn.ScheduledEvent) -> None:
-    """Envia toda sexta-feira às 13:00 o ranking semanal de Coins, Interações e Assiduidade."""
+    """Envia toda sexta-feira às 13:00 o ranking semanal com o logo dinâmico."""
     db = firestore.client()
     try:
         msg = build_weekly_member_ranking_message(db)
         if not msg:
             print("[RANKING SEMANAL] Nenhum membro/estatística encontrada no momento.")
             return
-        result = send_wa_message(msg)
+        result = send_wa_notification_with_logo(msg, db)
         print(f"[RANKING SEMANAL] Disparo semanal enviado: {result}")
     except Exception as exc:
         print(f"[RANKING SEMANAL] Erro durante disparo: {type(exc).__name__}: {exc}")
