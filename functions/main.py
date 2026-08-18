@@ -454,10 +454,14 @@ def build_top_suggestions_message(db):
             next_promo_dt = to_datetime(next_promo_raw) or get_next_promotion_datetime()
             promo_time_str = format_time_remaining(next_promo_dt)
 
+        total_suggs = len(sorted_suggs)
+        suggs_count_label = f"📋 *Total de sugestões:* {total_suggs} {'música' if total_suggs == 1 else 'músicas'}"
+
         rank_emojis = ["🥇", "🥈", "🥉"]
         lines = [
             "🏆 *TOP 3 SUGESTÕES DE MÚSICAS* 🎵",
             f"⏳ *Enquete em:* {promo_time_str}",
+            suggs_count_label,
             ""
         ]
 
