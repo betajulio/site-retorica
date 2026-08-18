@@ -411,7 +411,7 @@ function renderRepFromCache() {
   const items = displaySongs.map(({id, data: r}, i) => {
     const isInSetlist = setlistKeys.has(normalizeSongKey(r.song, r.artist));
     const setlistTag = isInSetlist ? '<span class="rep-setlist-tag">No ensaio</span>' : '';
-    const sendToSetlistBtn = isMember ? `<button class="btn-icon" onclick="addRepToSetlist('${id}');event.stopPropagation()">➕ Ensaio</button>` : '';
+    const sendToSetlistBtn = isMasterAdmin ? `<button class="btn-icon" onclick="addRepToSetlist('${id}');event.stopPropagation()">➕ Ensaio</button>` : '';
     const editBtn = isMasterAdmin ? `<button class="btn-icon" onclick="openRepEdit('${id}');event.stopPropagation()">✎ Editar</button>` : '';
     const rmBtn   = isMasterAdmin ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
     const autoYtBtn = isMasterAdmin ? `<button class="btn-icon" onclick="findRepYoutube('${id}');event.stopPropagation()">⚡ Auto vídeo</button>` : '';
@@ -463,7 +463,8 @@ window.addRepSong = async () => {
 };
 
 window.addRepToSetlist = async id => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   const item = repCache.find(entry => entry.id === id);
   if (!item) { showToast('⚠ Música não encontrada no repertório'); return; }
 
