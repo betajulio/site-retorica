@@ -68,20 +68,7 @@
       <div class="section-line"></div>
     </div>
     
-    <div class="member-only" style="margin-bottom:1.5rem">
-      <div class="form-card">
-        <div class="form-row">
-          <div class="form-group"><label>Música</label><input type="text" id="repSong" placeholder="Nome da música"></div>
-          <div class="form-group"><label>Artista</label><input type="text" id="repArtist" placeholder="Ex: Deep Purple"></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>Link YouTube (opcional)</label><input type="url" id="repYt" placeholder="https://youtube.com/..."></div>
-          <div class="form-group"><label>Link Cifra (opcional)</label><input type="url" id="repCifra" placeholder="https://cifraclub.com.br/..."></div>
-        </div>
-        <button class="btn" onclick="addRepSong()">Adicionar ao Repertório</button>
-        <button class="btn-ghost btn-sm" onclick="importSetlistToRep()" style="margin-top:.5rem">📋 Importar músicas do Setlist atual</button>
-      </div>
-    </div>
+    
 
     <div class="repertorio-grid" id="repertorioGrid"></div>
   </section>
@@ -419,13 +406,16 @@ function renderRepFromCache() {
   const totalSongs = repCache.length;
   const displaySongs = repertorioExpanded ? repCache : repCache.slice(0, 5);
   const setlistKeys = new Set(getActiveSetlistSongs().map(s => normalizeSongKey(s.song, s.artist)));
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
   
   const items = displaySongs.map(({id, data: r}, i) => {
     const isInSetlist = setlistKeys.has(normalizeSongKey(r.song, r.artist));
     const setlistTag = isInSetlist ? '<span class="rep-setlist-tag">No ensaio</span>' : '';
     const sendToSetlistBtn = isMember ? `<button class="btn-icon" onclick="addRepToSetlist('${id}');event.stopPropagation()">➕ Ensaio</button>` : '';
-    const editBtn = isMember ? `<button class="btn-icon" onclick="openRepEdit('${id}');event.stopPropagation()">✎ Editar</button>` : '';
-    const rmBtn   = isMember ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
+    const editBtn = isMasterAdmin ? `<button class="btn-icon" onclick="openRepEdit('${id}');event.stopPropagation()">✎ Editar</button>` : '';
+    const rmBtn   = isMasterAdmin ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
+    const autoYtBtn = isMasterAdmin ? `<button class="btn-icon" onclick="findRepYoutube('${id}');event.stopPropagation()">⚡ Auto vídeo</button>` : '';
+    const autoCifraBtn = isMasterAdmin ? `<button class="btn-icon" onclick="chooseRepCifra('${id}');event.stopPropagation()">♫ Auto cifra</button>` : '';
     return `<div class="rep-item${isInSetlist ? ' in-setlist' : ''}">
       <span class="rep-num">${i+1}</span>
       <div class="rep-info">
@@ -433,8 +423,8 @@ function renderRepFromCache() {
         <div class="rep-artist">${r.artist}</div>
       </div>
       <div class="rep-actions">
-        ${r.youtube ? ytBtn(r.youtube) : `<button class="btn-icon" onclick="findRepYoutube('${id}');event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(r.song, r.artist)}`}
-        ${r.cifra ? cifraBtn(r.cifra) : `<button class="btn-icon" onclick="chooseRepCifra('${id}');event.stopPropagation()">♫ Auto cifra</button>`}
+        ${r.youtube ? ytBtn(r.youtube) : `${autoYtBtn}${ytSearchBtn(r.song, r.artist)}`}
+        ${r.cifra ? cifraBtn(r.cifra) : autoCifraBtn}
         ${sendToSetlistBtn}
         ${editBtn}
         ${rmBtn}
@@ -458,16 +448,17 @@ window.toggleRepertorioExpand = () => {
 };
 
 window.addRepSong = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
-  const song   = document.getElementById('repSong').value.trim();
-  const artist = document.getElementById('repArtist').value.trim();
-  const youtube= document.getElementById('repYt').value.trim();
-  const cifra  = document.getElementById('repCifra').value.trim();
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
+  const song   = document.getElementById('repSong')?.value?.trim();
+  const artist = document.getElementById('repArtist')?.value?.trim();
+  const youtube= document.getElementById('repYt')?.value?.trim();
+  const cifra  = document.getElementById('repCifra')?.value?.trim();
   if (!song||!artist) { showToast('⚠ Preencha música e artista'); return; }
-  await addDoc(collection(db,'repertorio'),{song,artist,youtube,cifra,addedAt:serverTimestamp(),by:auth.currentUser?.displayName||'Membro'});
+  await addDoc(collection(db,'repertorio'),{song,artist,youtube,cifra,addedAt:serverTimestamp(),by:auth.currentUser?.displayName||'Admin'});
   await loadRepertorioSnapshot(true);
   await writeLog('Música adicionada ao repertório', `${song} — ${artist}`, 'repertorio');
-  ['repSong','repArtist','repYt','repCifra'].forEach(id=>document.getElementById(id).value='');
+  ['repSong','repArtist','repYt','repCifra'].forEach(id=>{ const el = document.getElementById(id); if (el) el.value=''; });
   showToast(`✓ "${song}" adicionada ao repertório!`);
 };
 
@@ -509,7 +500,8 @@ window.addRepToSetlist = async id => {
 };
 
 window.openRepEdit = async id => {
-  if (!isMember) return;
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   const snap = await getDoc(doc(db,'repertorio',id));
   if (!snap.exists()) return;
   const r = snap.data();
@@ -518,7 +510,7 @@ window.openRepEdit = async id => {
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:1rem';
   overlay.innerHTML = `
     <div style="background:linear-gradient(160deg,#1a1207,#0f0b04);border:1px solid rgba(200,130,10,.3);border-radius:2px;padding:1.6rem;max-width:480px;width:100%">
-      <p style="font-family:'Cinzel',serif;color:var(--gold);font-size:.9rem;margin-bottom:1.1rem;letter-spacing:.08em;text-transform:uppercase">Editar Música</p>
+      <p style="font-family:'Cinzel',serif;color:var(--gold);font-size:.9rem;margin-bottom:1.1rem;letter-spacing:.08em;text-transform:uppercase">Editar Música (Admin)</p>
       <div style="display:flex;flex-direction:column;gap:.7rem">
         <div><label style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:.25rem">Música</label>
           <input id="repEditSong" value="${r.song||''}" style="width:100%;padding:.4rem .6rem;background:rgba(10,8,4,.7);border:1px solid rgba(200,130,10,.25);color:var(--cream);border-radius:1px;font-family:inherit;font-size:.85rem"></div>
@@ -544,6 +536,8 @@ window.openRepEdit = async id => {
 };
 
 window.saveRepEdit = async (id, btn) => {
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   const overlay = btn.closest('[style*=fixed]');
   const song    = overlay.querySelector('#repEditSong').value.trim();
   const artist  = overlay.querySelector('#repEditArtist').value.trim();
@@ -558,6 +552,8 @@ window.saveRepEdit = async (id, btn) => {
 };
 
 window.removeRepSong = async id => {
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   if (!confirmAction('Deseja realmente remover esta música do repertório?')) return;
   const snap = await getDoc(doc(db,'repertorio',id));
   const r = snap.exists() ? snap.data() : {};
@@ -568,13 +564,14 @@ window.removeRepSong = async id => {
 };
 
 window.importSetlistToRep = async () => {
-  if (!isMember) return;
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   const songs = getActiveSetlistSongs();
   if (!songs.length) { showToast('⚠ Nenhuma música no setlist atual'); return; }
   const existing = repCache.map(({data:r}) => r.song.toLowerCase().trim());
   const toAdd    = songs.filter(s => !existing.includes(s.song.toLowerCase().trim()));
   if (!toAdd.length) { showToast('✓ Todas as músicas do setlist já estão no repertório'); return; }
-  const userName = auth.currentUser?.displayName||'Membro';
+  const userName = auth.currentUser?.displayName||'Admin';
   for (const s of toAdd) {
     await addDoc(collection(db,'repertorio'), {
       song: s.song, artist: s.artist||'—',
@@ -589,6 +586,8 @@ window.importSetlistToRep = async () => {
 
 // Auto links lookup
 window.findRepYoutube = async id => {
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   try {
     const ref = doc(db, 'repertorio', id);
     const snap = await getDoc(ref);
@@ -611,6 +610,8 @@ window.findRepYoutube = async id => {
 };
 
 window.chooseRepCifra = async id => {
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   try {
     const ref = doc(db, 'repertorio', id);
     const snap = await getDoc(ref);

@@ -64,7 +64,8 @@
   /* TOP ROCK GRID */
   .top-rock-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem}
   @media(max-width:1024px){ .top-rock-grid{grid-template-columns:repeat(2,1fr)} }
-  @media(max-width:768px){ .top-rock-grid{grid-template-columns:1fr} .nav-links{display:none} .nav-hamburger{display:flex} }
+  @media(max-width:768px){ .top-rock-grid{grid-template-columns:1fr} .nav-links{display:none} .nav-hamburger{display:flex} nav{padding:0 0.8rem} .nav-logo{font-size:.78rem!important;letter-spacing:.05em!important} }
+  @media(max-width:380px){ .nav-logo{font-size:.68rem!important;letter-spacing:.03em!important} }
 
   .col-container{display:flex;flex-direction:column;gap:.6rem}
   .col-label{font-family:'Cinzel',serif;font-size:.7rem;color:var(--amber);border-bottom:1px solid rgba(200,130,10,.2);padding-bottom:.4rem;text-transform:uppercase;letter-spacing:.1em}

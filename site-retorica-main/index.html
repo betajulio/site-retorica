@@ -655,13 +655,13 @@
     /* Nav */
     .nav-links{display:none}
     .nav-hamburger{display:flex}
-    nav{padding:0 1.2rem}
-    .nav-logo{font-size:1.15rem}
-    .nav-auth{gap:.38rem;margin-left:auto;min-width:0}
-    .nav-user{max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.68rem}
-    .nav-auth .btn-sm{padding:.32rem .46rem;font-size:.58rem;letter-spacing:.06em}
-    .coin-balance{font-size:.66rem;padding:.22rem .46rem;gap:.28rem}
-    .coin-balance img{width:16px;height:16px}
+    nav{padding:0 0.8rem;gap:.35rem}
+    .nav-logo{font-size:.78rem!important;letter-spacing:.05em!important;flex-shrink:0}
+    .nav-auth{gap:.3rem;margin-left:auto;min-width:0;flex-shrink:1}
+    .nav-user{max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.60rem}
+    .nav-auth .btn-sm{padding:.24rem .38rem;font-size:.54rem;letter-spacing:.03em}
+    .coin-balance{font-size:.60rem;padding:.18rem .34rem;gap:.2rem}
+    .coin-balance img{width:13px;height:13px}
     .coin-guide{padding:.7rem}
     .coin-guide-panel{padding:1rem .9rem;border-radius:18px;max-height:92vh}
     .coin-guide-hero{padding:1.05rem .85rem .9rem}
@@ -704,20 +704,19 @@
     input,select,textarea{font-size:1rem} /* prevent iOS zoom */
 
     /* Members */
-    .members-grid{grid-template-columns:1fr;gap:1rem}
-    .member-card{padding:1.2rem .8rem}
+    .members-grid{grid-template-columns:1fr!important;gap:1.2rem;width:100%}
+    .member-card{padding:1.2rem .9rem;width:100%;box-sizing:border-box}
     .member-avatar{width:64px;height:64px;font-size:1.3rem}
     .member-name{font-size:.85rem}
-    .member-recommendations{margin-top:.85rem;padding:.9rem .75rem .75rem}
+    .member-recommendations{margin-top:.85rem;padding:.9rem .75rem .75rem;width:100%;box-sizing:border-box}
     .member-rec-title{margin-bottom:.55rem;font-size:.64rem;letter-spacing:.1em}
-    .member-rec-grid{gap:.65rem}
+    .member-rec-grid{display:flex;flex-direction:column;gap:.65rem;width:100%}
     .member-rec-form-grid{grid-template-columns:1fr}
-    .member-rec-item{grid-template-columns:68px minmax(0,1fr);gap:.7rem;align-items:flex-start;padding:.82rem .75rem;background:linear-gradient(180deg,rgba(18,13,7,.95),rgba(10,8,4,.78));border-left-width:3px;text-align:left}
-    .member-rec-thumb{width:68px;height:68px;flex-shrink:0}
-    .member-rec-copy{padding-top:.05rem;width:100%}
-    .member-rec-label{justify-content:flex-start}
-    .member-rec-label{font-size:.55rem;line-height:1.2;margin-bottom:.3rem}
-    .member-rec-value{font-size:.8rem;line-height:1.45}
+    .member-rec-item{display:grid;grid-template-columns:56px minmax(0,1fr);gap:.7rem;align-items:flex-start;padding:.82rem .75rem;background:linear-gradient(180deg,rgba(18,13,7,.95),rgba(10,8,4,.78));border-left-width:3px;text-align:left;width:100%;box-sizing:border-box}
+    .member-rec-thumb{width:56px;height:56px;flex-shrink:0}
+    .member-rec-copy{padding-top:.05rem;width:100%;min-width:0}
+    .member-rec-label{justify-content:flex-start;font-size:.55rem;line-height:1.2;margin-bottom:.3rem}
+    .member-rec-value{font-size:.8rem;line-height:1.45;word-break:break-word;overflow-wrap:anywhere}
     .member-rec-link{margin-top:.4rem;font-size:.58rem;justify-content:flex-start}
     .member-rec-edit-thumb-row{flex-direction:column}
     .member-rec-row-head{grid-template-columns:1fr}
@@ -800,8 +799,10 @@
 
   /* ── SMALL PHONES ── */
   @media(max-width:380px){
+    .nav-logo{font-size:.68rem!important;letter-spacing:.03em!important}
+    .nav-user{max-width:52px;font-size:.54rem}
     .hero-title{font-size:clamp(2.4rem,16vw,3.2rem)!important}
-    .members-grid{grid-template-columns:1fr 1fr}
+    .members-grid{grid-template-columns:1fr!important}
     .carousel-slide img{max-height:240px}
   }
 
