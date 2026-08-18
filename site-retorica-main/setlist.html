@@ -443,6 +443,7 @@ function sortSetlistByRanking(songs) {
 function renderSetlist() {
   const c = document.getElementById('setlistContainer');
   if (!c) return;
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
   const songs = getActiveSetlistSongs();
   const totalSongs = songs.length;
   const displaySongs = setlistExpanded ? songs : songs.slice(0, 5);
@@ -464,10 +465,10 @@ function renderSetlist() {
       <div class="setlist-song">${s.song}<div class="setlist-artist">${s.artist}</div></div>
       <div class="setlist-actions">
         ${rankControls}
-        ${s.youtube ? ytBtn(s.youtube) : `<button class="btn-icon" onclick="findSetlistYoutube(${i});event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(s.song, s.artist)}`}
-        ${s.cifra ? cifraBtn(s.cifra) : `<button class="btn-icon" onclick="chooseSetlistCifra(${i});event.stopPropagation()">♫ Auto cifra</button>`}
-        ${isMember ? `<button class="btn-icon" onclick="editSetSongLinks(${i});event.stopPropagation()">✎ Links</button>` : ''}
-        ${isMember ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
+        ${s.youtube ? ytBtn(s.youtube) : (isMasterAdmin ? `<button class="btn-icon" onclick="findSetlistYoutube(${i});event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(s.song, s.artist)}` : ytSearchBtn(s.song, s.artist))}
+        ${s.cifra ? cifraBtn(s.cifra) : (isMasterAdmin ? `<button class="btn-icon" onclick="chooseSetlistCifra(${i});event.stopPropagation()">♫ Auto cifra</button>` : '')}
+        ${isMasterAdmin ? `<button class="btn-icon" onclick="editSetSongLinks(${i});event.stopPropagation()">✎ Links</button>` : ''}
+        ${isMasterAdmin ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
       </div>
     </li>`;
   }).join('');
@@ -479,27 +480,20 @@ function renderSetlist() {
       </button>
     </div>` : '';
   
-  const addRow = isMember ? `
-    <div class="setlist-add-row">
-      <input class="setlist-input" id="setSong" placeholder="Música">
-      <input class="setlist-input" id="setArtist" placeholder="Artista">
-      <input class="setlist-input" id="setYt" placeholder="YouTube (opcional)" style="flex:.8">
-      <input class="setlist-input" id="setCifra" placeholder="Link de cifra (opcional)" style="flex:.8">
-      <button class="setlist-add-btn" onclick="addSetSong()">+</button>
-    </div>` : '';
   c.innerHTML = `<div class="setlist-panel">
     <div class="setlist-panel-header">
       <span class="setlist-panel-title">Músicas</span>
       <div style="display:flex;gap:.8rem;align-items:center">
         <span style="font-size:.75rem;color:var(--smoke)">${totalSongs} ${totalSongs === 1 ? 'música' : 'músicas'}</span>
-        ${isMember && totalSongs > 0 ? `<button class="btn-ghost btn-sm" onclick="clearSetlistSongs()" style="border-color:rgba(239,68,68,.4);color:#fca5a5;padding:.25rem .65rem;font-size:.75rem;display:inline-flex;align-items:center;gap:.3rem;cursor:pointer" title="Limpar todas as músicas do ensaio">🗑 Limpar lista</button>` : ''}
+        ${isMasterAdmin && totalSongs > 0 ? `<button class="btn-ghost btn-sm" onclick="clearSetlistSongs()" style="border-color:rgba(239,68,68,.4);color:#fca5a5;padding:.25rem .65rem;font-size:.75rem;display:inline-flex;align-items:center;gap:.3rem;cursor:pointer" title="Limpar todas as músicas do ensaio">🗑 Limpar lista</button>` : ''}
       </div>
     </div>
-    <ul class="setlist-list">${items || '<li style="padding:1.5rem;text-align:center;color:var(--smoke);font-style:italic">Nenhuma música na lista do próximo ensaio.</li>'}</ul>${toggleBtn}${addRow}</div>`;
+    <ul class="setlist-list">${items || '<li style="padding:1.5rem;text-align:center;color:var(--smoke);font-style:italic">Nenhuma música na lista do próximo ensaio.</li>'}</ul>${toggleBtn}</div>`;
 }
 
 window.clearSetlistSongs = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   const songs = getActiveSetlistSongs();
   if (!songs.length) { showToast('A lista já está vazia.'); return; }
   if (!confirm(`Tem certeza que deseja limpar todas as ${songs.length} música(s) da setlist de ensaio?`)) return;
@@ -526,19 +520,7 @@ window.toggleSetlistExpand = () => {
 };
 
 window.addSetSong = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
-  const song = document.getElementById('setSong').value.trim();
-  const artist = document.getElementById('setArtist').value.trim();
-  const youtube = document.getElementById('setYt').value.trim();
-  const cifra = document.getElementById('setCifra').value.trim();
-  if (!song) { showToast('⚠ Digite o nome da música'); return; }
-  const arr = sortSetlistByRanking([...(setlistData[NEXT_SETLIST_KEY]||[]),{song,artist:artist||'—',youtube,cifra}]);
-  setlistData = { ...setlistData, [NEXT_SETLIST_KEY]: arr };
-  await updateDoc(doc(db,'setlists','data'),{[NEXT_SETLIST_KEY]:arr});
-  renderSetlist();
-  await writeLog('Música adicionada ao setlist', `${song} — ${artist||'—'} (Próximo Ensaio)`, 'setlist');
-  ['setSong','setArtist','setYt','setCifra'].forEach(id => document.getElementById(id).value = '');
-  showToast(`✓ "${song}" adicionada!`);
+  showToast('⚠ As músicas devem ser adicionadas pela tela de Repertório');
 };
 
 window.voteSetSong = async (idx, type) => {
@@ -579,7 +561,8 @@ async function updateSetlistSongLinks(index, updates) {
 }
 
 window.editSetSongLinks = async idx => {
-  if (!isMember) return;
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   const arr = [...getActiveSetlistSongs()];
   const current = arr[idx];
   if (!current) return;
@@ -597,6 +580,8 @@ window.editSetSongLinks = async idx => {
 };
 
 window.removeSetSong = async idx => {
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   if (!confirmAction('Deseja realmente remover esta música do setlist?')) return;
   const arr = [...getActiveSetlistSongs()];
   const removed = arr[idx];
@@ -626,6 +611,8 @@ window.dEnd = e=>{ e.currentTarget.classList.remove('dragging'); dragSrc=null; }
 
 // Auto support links lookup
 window.findSetlistYoutube = async index => {
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   try {
     const songs = getActiveSetlistSongs();
     const item = songs[index];
@@ -647,6 +634,8 @@ window.findSetlistYoutube = async index => {
 };
 
 window.chooseSetlistCifra = async index => {
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  if (!isMasterAdmin) { showToast('⚠ Acesso restrito ao administrador (juliocereser@gmail.com)'); return; }
   try {
     const songs = getActiveSetlistSongs();
     const item = songs[index];
