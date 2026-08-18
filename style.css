@@ -38,12 +38,50 @@
     .nav-auth .btn-sm{padding:.24rem .38rem;font-size:.54rem;letter-spacing:.03em}
     .coin-balance{font-size:.60rem;padding:.18rem .34rem;gap:.2rem}
     .coin-balance img{width:13px;height:13px}
+
+    /* Sections & Headers */
+    section{padding:3.5rem 1rem!important}
+    .section-header{top:68px;gap:.8rem;margin:-.5rem 0 1.8rem;padding:.75rem .85rem;border-radius:12px}
+    section[id]{scroll-margin-top:78px}
+    .section-number{font-size:2.2rem;min-width:32px}
+    .section-title-wrap h2{font-size:1.35rem!important;line-height:1.25!important;word-break:normal!important;overflow-wrap:normal!important;hyphens:none}
+    .section-title-wrap p{font-size:.72rem}
+    .section-line{display:none}
+
+    /* Forms */
+    .form-card{padding:1.2rem 1rem!important}
+    .form-row,.form-row.full,.form-row.three{grid-template-columns:1fr!important;gap:.85rem;margin-bottom:.85rem}
+    .form-group{width:100%!important;min-width:0}
+    input,select,textarea{font-size:1rem;width:100%!important;box-sizing:border-box}
+
+    /* Members */
+    .members-grid{grid-template-columns:1fr!important;gap:1.2rem;width:100%}
+    .member-card{padding:1.2rem .9rem;width:100%;box-sizing:border-box}
+    .member-recommendations{margin-top:.85rem;padding:.9rem .75rem .75rem;width:100%;box-sizing:border-box}
+    .member-rec-title{margin-bottom:.55rem;font-size:.64rem;letter-spacing:.1em}
+    .member-rec-grid{display:flex;flex-direction:column;gap:.65rem;width:100%}
+    .member-rec-form-grid{grid-template-columns:1fr}
+    .member-rec-item{display:grid;grid-template-columns:56px minmax(0,1fr);gap:.7rem;align-items:flex-start;padding:.82rem .75rem;width:100%;box-sizing:border-box}
+    .member-rec-thumb{width:56px;height:56px;flex-shrink:0}
+    .member-rec-copy{padding-top:.05rem;width:100%;min-width:0}
+    .member-rec-label{justify-content:flex-start;font-size:.55rem;line-height:1.2;margin-bottom:.3rem}
+    .member-rec-value{font-size:.8rem;line-height:1.45;word-break:break-word;overflow-wrap:anywhere}
+    .member-rec-link{margin-top:.4rem;font-size:.58rem;justify-content:flex-start}
+
+    /* Suggestions */
+    .suggestion-item{flex-wrap:wrap;gap:.6rem;padding:.85rem}
+    .suggestion-main{min-width:100%}
+    .suggestion-actions{width:100%;justify-content:flex-start;flex-wrap:wrap}
+
+    /* Repertorio */
+    .repertorio-grid{grid-template-columns:1fr!important}
   }
 
   @media(max-width:380px){
     .nav-logo{font-size:.68rem!important;letter-spacing:.03em!important}
     .nav-user{max-width:52px;font-size:.54rem}
     .members-grid{grid-template-columns:1fr!important}
+    .section-title-wrap h2{font-size:1.18rem!important}
   }
 
   /* NEWS POPUP */
