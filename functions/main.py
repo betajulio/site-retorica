@@ -434,6 +434,143 @@ def get_top_tied_suggestions(db, limit=3):
     return top_candidates[: min(limit, len(top_candidates))]
 
 
+def get_bottom_suggestion(db):
+    sorted_suggestions = get_sorted_suggestions(db)
+    if not sorted_suggestions:
+        return None
+    return sorted_suggestions[-1]
+
+def get_next_weekly_elimination_datetime(db, reference=None):
+    ref = reference.astimezone(SP_TZ) if isinstance(reference, datetime) else now_sp()
+    sched_day = 0 # Domingo (0 = Dom ... 6 = Sáb)
+    sched_hour = 23
+    sched_min = 59
+
+    try:
+        doc = db.collection("config").document("schedules").get()
+        if doc.exists:
+            cfg = (doc.to_dict() or {}).get("weekly_elimination", {})
+            if isinstance(cfg, dict):
+                days = cfg.get("days", [])
+                if days and isinstance(days, list) and len(days) > 0:
+                    sched_day = days[0]
+                time_str = (cfg.get("time") or "").strip()
+                if ":" in time_str:
+                    h, m = [int(x) for x in time_str.split(":")[:2]]
+                    sched_hour, sched_min = h, m
+    except Exception as e:
+        print(f"Erro ao ler schedule de eliminação: {e}")
+
+    current_day_idx = (ref.weekday() + 1) % 7
+    days_ahead = (sched_day - current_day_idx + 7) % 7
+
+    is_today_after_time = (days_ahead == 0 and (
+        ref.hour > sched_hour or (ref.hour == sched_hour and ref.minute >= sched_min)
+    ))
+    if days_ahead == 0 and is_today_after_time:
+        days_ahead = 7
+
+    target = ref + timedelta(days=days_ahead)
+    return target.replace(hour=sched_hour, minute=sched_min, second=0, microsecond=0)
+
+def format_elimination_time_remaining(target_dt):
+    if not target_dt:
+        return "Sem data definida"
+    now = now_sp()
+    if target_dt.tzinfo is None:
+        target_sp = target_dt.replace(tzinfo=SP_TZ)
+    else:
+        target_sp = target_dt.astimezone(SP_TZ)
+
+    delta = target_sp - now
+    total_seconds = int(delta.total_seconds())
+    if total_seconds <= 0:
+        return "Hoje às " + target_sp.strftime("%H:%M")
+
+    days = total_seconds // 86400
+    hours = (total_seconds % 86400) // 3600
+    minutes = (total_seconds % 3600) // 60
+
+    day_names = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
+    target_day_idx = (target_sp.weekday() + 1) % 7
+    day_name = day_names[target_day_idx]
+    time_str = target_sp.strftime("%H:%M")
+
+    if days == 0:
+        if hours > 0:
+            return f"Hoje às {time_str} (em {hours}h)"
+        return f"Hoje às {time_str} (em {minutes}m)"
+    elif days == 1:
+        return f"1 dia ({day_name} às {time_str})"
+    else:
+        return f"{days} dias ({day_name} às {time_str})"
+
+def eliminate_bottom_suggestion(db, is_manual=False, executor="Sistema"):
+    try:
+        sorted_suggs = get_sorted_suggestions(db)
+        if not sorted_suggs:
+            return {"ok": False, "message": "Nenhuma sugestão encontrada para eliminação."}
+
+        # Proteção: só elimina automaticamente se houver pelo menos 2 sugestões
+        if len(sorted_suggs) < 2 and not is_manual:
+            return {"ok": False, "message": "Quantidade insuficiente de sugestões para eliminação automática."}
+
+        target_doc = sorted_suggs[-1]
+        data = target_doc.to_dict() or {}
+        song = data.get("song", "Música")
+        artist = data.get("artist", "Artista")
+        by_user = data.get("by", "Membro")
+        likes = safe_int(data.get("likes", 0))
+        dislikes = safe_int(data.get("dislikes", 0))
+        score = get_suggestion_score(data)
+
+        # 1. Remove do Firestore
+        target_doc.reference.delete()
+
+        # 2. Grava no log de auditoria
+        log_reason = f"Eliminação Semanal ({score} pts · {likes}👍/{dislikes}👎) — Lanterna de sugestões" if not is_manual else f"Eliminação Manual via Admin ({score} pts)"
+        db.collection("logs").add({
+            "action": "Sugestão Removida",
+            "detail": f"{song} — {artist} · {likes}👍 {dislikes}👎 · Motivo: {log_reason}",
+            "song": song,
+            "artist": artist,
+            "by": by_user,
+            "likes": likes,
+            "dislikes": dislikes,
+            "score": score,
+            "reason": log_reason,
+            "removedBy": executor,
+            "category": "sugestoes",
+            "who": executor,
+            "whoEmail": "",
+            "ts": firestore.SERVER_TIMESTAMP,
+            "tsLocal": now_sp().strftime("%d/%m/%Y %H:%M:%S")
+        })
+
+        # 3. Dispara aviso no WhatsApp
+        msg = (
+            f"🗑️ *ELIMINAÇÃO SEMANAL DE SUGESTÕES*\n\n"
+            f"🎵 *Música eliminada:* {song} — {artist}\n"
+            f"👤 *Sugerida por:* {by_user}\n"
+            f"📊 *Pontuação final:* {score} pts (👍 {likes} | 👎 {dislikes})\n"
+            f"📝 *Motivo:* Lanterna da semana (menor pontuação acumulada)\n\n"
+            f"✨ O ciclo continua! Continuem sugerindo e votando para definir as próximas músicas.\n"
+            f"{SUGGESTIONS_FOOTER}"
+        )
+        send_res = send_wa_notification_with_logo(msg, db)
+
+        return {
+            "ok": True,
+            "message": f"Sugestão '{song} - {artist}' eliminada com sucesso.",
+            "song": song,
+            "artist": artist,
+            "score": score,
+            "waResult": send_res
+        }
+    except Exception as exc:
+        print(f"Erro em eliminate_bottom_suggestion: {type(exc).__name__}: {exc}")
+        return {"ok": False, "error": str(exc)}
+
 def build_top_suggestions_message(db):
     try:
         sorted_suggs = get_sorted_suggestions(db)
@@ -489,6 +626,31 @@ def build_top_suggestions_message(db):
             rank_icon = rank_emojis[idx] if idx < len(rank_emojis) else f"{idx+1}º"
 
             lines.append(f"{rank_icon} *{song}* — {artist} (por {by_user}){tie_tag} · 👍 {likes} | 👎 {dislikes}")
+
+        # Seção da Lanterna / Na mira da eliminação semanal
+        if total_suggs >= 2:
+            bottom_doc = sorted_suggs[-1]
+            b_data = bottom_doc.to_dict() or {}
+            b_song = b_data.get("song", "Música")
+            b_artist = b_data.get("artist", "Artista")
+            b_by = b_data.get("by", "Membro")
+            b_likes = safe_int(b_data.get("likes", 0))
+            b_dislikes = safe_int(b_data.get("dislikes", 0))
+            b_score = get_suggestion_score(b_data)
+
+            elim_dt = get_next_weekly_elimination_datetime(db)
+            elim_time_str = format_elimination_time_remaining(elim_dt)
+
+            lines.extend([
+                "",
+                "━━━━━━━━━━━━━━━━━━━━",
+                "🎯 *NA MIRA DA ELIMINAÇÃO SEMANAL:*",
+                f"⚠️ *{b_song}* — {b_artist} (por {b_by})",
+                f"📊 *Pontuação:* {b_score} pts (👍 {b_likes} | 👎 {b_dislikes})",
+                f"⏳ *Eliminação em:* {elim_time_str}",
+                "_Dica: Votem no site para salvar a música antes do prazo!_",
+                "━━━━━━━━━━━━━━━━━━━━"
+            ])
 
         lines.append("")
         lines.append(f"💡 *Veja e vote nas sugestões:* {SUGGESTIONS_URL}")
@@ -1545,6 +1707,22 @@ def admin_trigger_top_suggestions(req: https_fn.Request) -> https_fn.Response:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 
 @https_fn.on_request()
+def admin_trigger_suggestion_elimination(req: https_fn.Request) -> https_fn.Response:
+    """Dispara a eliminação da música com menor pontuação (lanterna) manualmente (uso admin)."""
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        result = eliminate_bottom_suggestion(db, is_manual=True, executor="Admin (Manual)")
+        return json_response(result, 200 if result.get("ok") else 400)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
 def admin_trigger_weekly_ranking(req: https_fn.Request) -> https_fn.Response:
     """Dispara o resumo do Ranking Semanal de Membros manualmente (uso admin)."""
     if req.method == "OPTIONS":
@@ -2320,6 +2498,10 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                                     msg = build_poll_reminder_message(p, header_title="📢 *LEMBRETE DE ENQUETE ATIVA!*")
                                     r = send_wa_notification_with_logo(msg, db)
                                     result_ok = r.get("ok", False)
+                    elif key == "weekly_elimination":
+                        r = eliminate_bottom_suggestion(db, is_manual=False, executor="Sistema (Automático)")
+                        result_ok = r.get("ok", False)
+                        detail = r.get("message", "") or r.get("error", "")
                 except Exception as exc:
                     detail = str(exc)
                 

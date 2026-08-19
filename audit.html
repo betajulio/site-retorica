@@ -169,6 +169,7 @@
       <div class="admin-tools-grid">
         <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
         <button class="btn-ghost" style="border-color:#f97316;color:#fdba74" onclick="runDuplicateSuggestionsCleanup()">♻️ Limpar Músicas Duplicadas</button>
+        <button class="btn-ghost" style="border-color:#f43f5e;color:#fda4af" onclick="triggerWeeklyElimination()">🎯 Executar Eliminação da Lanterna</button>
         <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
         <button class="btn-ghost" style="border-color:#93c5fd;color:#bfdbfe" onclick="forceTop3Tiebreaker()">⚔️ Forçar desempate Top 3</button>
         <button id="promotionPauseBtn" class="btn-ghost" style="border-color:#fbbf24;color:#fde68a" onclick="togglePromotionPause()">⏸ Pausar ciclo de sugestões</button>
@@ -959,6 +960,40 @@ window.triggerTopSuggestionsZap = async () => {
   }
 };
 
+window.triggerWeeklyElimination = async () => {
+  if (!confirm('Deseja realmente remover agora a música com menor pontuação (lanterna das sugestões)?\n\nEssa ação excluirá a música e enviará o aviso ao WhatsApp.')) return;
+  showToast('Executando eliminação da lanterna...');
+  try {
+    const res = await fetch('https://us-central1-retorica-b05b3.cloudfunctions.net/admin_trigger_suggestion_elimination?token=retorica-force-top3-20260418', { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      showToast(`✓ ${data.message || 'Música eliminada com sucesso!'}`);
+      return;
+    } else {
+      showToast(`⚠ ${data.message || data.error || 'Não foi possível executar a eliminação.'}`);
+      return;
+    }
+  } catch(e) {
+    console.warn('Direct HTTP trigger failed, falling back to log trigger:', e);
+  }
+
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Disparo Manual: Eliminação Semanal (Lanterna)',
+      detail: 'Solicitação manual via página de auditoria',
+      category: 'sugestoes',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    showToast('✓ Comando registrado! O backend processará a eliminação.');
+  } catch (err) {
+    console.error('Trigger weekly elimination error:', err);
+    showToast('⚠ Erro ao disparar eliminação.');
+  }
+};
+
 window.triggerWeeklyRankingZap = async () => {
   if (!confirm('Deseja enviar o Painel Semanal de Coins, Interações e Assiduidade para o WhatsApp agora?')) return;
   showToast('Disparando Ranking Semanal...');
@@ -1274,11 +1309,22 @@ const DEFAULT_SCHEDULES = {
     name: 'Top 3 Sugestões',
     icon: '🏆',
     category: 'Votações',
-    description: 'Envia as 3 músicas mais votadas com a contagem de sugestões ativas e logo dinâmico.',
+    description: 'Envia as 3 músicas mais votadas com a contagem de sugestões ativas, a música na mira da eliminação e logo dinâmico.',
     time: '15:00',
     days: [0, 1, 2, 3, 4, 5, 6],
     enabled: true,
     triggerEndpoint: 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_trigger_top_suggestions?token=retorica-force-top3-20260418'
+  },
+  weekly_elimination: {
+    id: 'weekly_elimination',
+    name: 'Eliminação Semanal (Lanterna)',
+    icon: '🎯',
+    category: 'Sugestões',
+    description: 'Remove semanalmente a música com menor pontuação acumulada (likes - dislikes) e notifica no WhatsApp.',
+    time: '23:59',
+    days: [0], // Domingo
+    enabled: true,
+    triggerEndpoint: 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_trigger_suggestion_elimination?token=retorica-force-top3-20260418'
   },
   weekly_ranking: {
     id: 'weekly_ranking',
