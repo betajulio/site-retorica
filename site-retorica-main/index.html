@@ -219,7 +219,7 @@
 
   /* POLLS */
   .poll-card{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;padding:1.5rem;margin-bottom:1.2rem}
-  .poll-question{font-family:'Cinzel',serif;font-size:1rem;color:var(--cream);margin-bottom:1rem}
+  .poll-question{font-family:'Cinzel',serif;font-size:1.05rem;font-weight:700;line-height:1.45;color:var(--cream);margin-bottom:.75rem;letter-spacing:.02em;word-break:normal;overflow-wrap:break-word}
   .poll-options{display:flex;flex-direction:column;gap:.6rem}
   .poll-option input[type="radio"]{display:none}
   .poll-option-label{flex:1;display:flex;align-items:center;gap:.8rem;cursor:pointer;padding:.6rem .8rem;border:1px solid rgba(200,130,10,.15);border-radius:1px;transition:all .2s;font-size:.88rem}
@@ -3318,17 +3318,17 @@ function renderPolls() {
     if (isClosed && total > 0) {
       const maxVotes  = Math.max(...(p.options||[]).map(o=>o.votes||0));
       const winners   = (p.options||[]).filter(o=>(o.votes||0)===maxVotes);
-      winnerHtml = `<div class="poll-winner">🏆 ${winners.length===1?'Vencedor':'Empate'}: ${winners.map(w=>w.label).join(' · ')}</div>`;
+      winnerHtml = `<div class="poll-winner">🏆 ${winners.length===1?'Vencedor':'Empate'}: <strong>${winners.map(w=>escapeHtml(w.label)).join(' · ')}</strong></div>`;
     }
 
     // Bars (always shown), without exposing who voted in each option.
     const bars = (p.options||[]).map((o,i) => {
       const pct    = total ? Math.round((o.votes||0)/total*100) : 0;
       return `<div class="poll-bar-item">
-        <div class="poll-bar-label">${o.label}</div>
+        <div class="poll-bar-label">${escapeHtml(o.label)}</div>
         <div class="poll-bar-right">
-          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
-            <div class="poll-bar-track" style="flex:1"><div class="poll-bar-fill" style="width:${pct}%"></div></div>
+          <div class="poll-bar-row">
+            <div class="poll-bar-track"><div class="poll-bar-fill" style="width:${pct}%"></div></div>
             <span class="poll-bar-pct">${pct}% (${o.votes||0})</span>
           </div>
         </div>
@@ -3338,10 +3338,10 @@ function renderPolls() {
     // Vote form (only if open + logged in + not voted) — name comes from Google account
     const voterName = auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ') || auth.currentUser?.email?.split('@')[0] || 'Membro';
     const voteForm = canVote ? `
-      <div class="poll-options" style="margin-top:1rem">
-        ${(p.options||[]).map((o,i)=>`<div class="poll-option"><input type="radio" id="p${id}o${i}" name="poll_${id}"><label class="poll-option-label" for="p${id}o${i}"><div class="poll-dot"></div>${o.label}</label></div>`).join('')}
-        <div style="margin-top:.8rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
-          <span style="font-size:.78rem;color:var(--amber);font-family:'Cinzel',serif">Voto secreto como: ${voterName}</span>
+      <div class="poll-options">
+        ${(p.options||[]).map((o,i)=>`<div class="poll-option"><input type="radio" id="p${id}o${i}" name="poll_${id}"><label class="poll-option-label" for="p${id}o${i}"><div class="poll-dot"></div><span style="flex:1;min-width:0">${escapeHtml(o.label)}</span></label></div>`).join('')}
+        <div style="margin-top:.85rem;display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap">
+          <span style="font-size:.78rem;color:var(--amber);font-family:'Cinzel',serif">Voto secreto como: <strong>${escapeHtml(voterName)}</strong></span>
           <button class="btn btn-sm" onclick="submitPollVote('${id}')">Votar</button>
         </div>
       </div>` : '';
@@ -3354,18 +3354,18 @@ function renderPolls() {
     const createdLabel = p.createdAt ? `<span style="font-size:.7rem;color:var(--smoke)">Criada em ${formatTs(p.createdAt)}</span>` : '';
 
     return `<div class="poll-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.6rem;flex-wrap:wrap;gap:.4rem">
-        <div class="poll-question" style="flex:1">${p.question}</div>
-        <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${closeBtn}${deleteBtn}</div>
+      <div class="poll-header">
+        <div class="poll-question">${escapeHtml(p.question)}</div>
+        ${(closeBtn || deleteBtn) ? `<div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${closeBtn}${deleteBtn}</div>` : ''}
       </div>
-      <div style="display:flex;gap:.8rem;align-items:center;margin-bottom:.8rem;flex-wrap:wrap">${statusBadge}${deadlineHtml}${createdLabel}</div>
+      <div class="poll-meta-row">${statusBadge}${deadlineHtml}${createdLabel}</div>
       ${countdownBadgeHtml}
       ${bars}
       ${winnerHtml}
       ${voteForm}
       <div class="poll-footer">
         <span class="poll-total">${total} voto${total!==1?'s':''}</span>
-        <div style="display:flex;gap:.5rem;align-items:center">${myVoteLabel}${changeVoteBtn}</div>
+        <div style="display:flex;gap:.55rem;align-items:center;flex-wrap:wrap">${myVoteLabel}${changeVoteBtn}</div>
       </div>
     </div>`;
   };  // end buildPollCard

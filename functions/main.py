@@ -1046,21 +1046,13 @@ def process_due_promotion(db):
     if state.get("activeTiebreakerPoll") or state.get("pendingRepertorySuggestionId"):
         return
 
-    suggestions = list(db.collection("suggestions").stream())
+    suggestions = get_sorted_suggestions(db)
     if not suggestions:
         state_ref.set({"nextPromotionDate": get_next_promotion_datetime(now_local)}, merge=True)
         return
 
-    sorted_suggestions = sorted(
-        suggestions,
-        key=lambda doc: (
-            get_suggestion_score(doc.to_dict() or {}),
-            int((doc.to_dict() or {}).get("likes", 0) or 0)
-        ),
-        reverse=True
-    )
-    top_score = get_suggestion_score(sorted_suggestions[0].to_dict() or {})
-    top_candidates = [doc for doc in sorted_suggestions if get_suggestion_score(doc.to_dict() or {}) == top_score]
+    top_score = get_suggestion_score(suggestions[0].to_dict() or {})
+    top_candidates = [doc for doc in suggestions if get_suggestion_score(doc.to_dict() or {}) == top_score]
 
     if len(top_candidates) >= 2:
         poll_id = create_tiebreaker_poll_backend(db, top_candidates[: min(3, len(top_candidates))])
@@ -1095,7 +1087,10 @@ def force_create_top3_tiebreaker(db):
 
     selected = get_top_tied_suggestions(db, 3)
     if len(selected) < 2:
-        return {"ok": False, "error": "Menos de duas sugestões disponíveis para desempate."}
+        all_sorted = get_sorted_suggestions(db)
+        selected = all_sorted[: min(3, len(all_sorted))]
+        if len(selected) < 2:
+            return {"ok": False, "error": "Menos de duas sugestões disponíveis para desempate."}
     poll_id = create_tiebreaker_poll_backend(db, selected)
     state_ref.set({"activeTiebreakerPoll": poll_id}, merge=True)
     return {

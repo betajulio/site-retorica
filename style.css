@@ -26,7 +26,7 @@
 
   section,.modal,.form-card,.member-card,.poll-card,.setlist-panel,.rep-item,.forum-thread,.suggestion-item,.carousel-info-panel,.lb-caption-block,.lb-comments-wrap,.coin-guide-panel,.coin-guide-card{min-width:0}
   .section-title-wrap,.news-popup-copy,.nav-auth,.form-group,.member-instruments,.member-recommendations,.member-rec-item,.poll-option-label,.poll-bar-item,.poll-bar-right,.poll-footer,.setlist-item,.setlist-song,.rep-info,.forum-thread-header,.forum-thread-header>div,.post-content,.post-meta,.suggestion-main,.suggestion-actions,.carousel-info-main,.carousel-badges-row,.carousel-caption-meta,.media-caption-copy,.lb-video-head,.lb-cmt-l1,.lb-rpform,.frp-rform,.tag-manager-row,.upload-tag-select,.coin-guide-stat,.coin-guide-cat{min-width:0;max-width:100%}
-  .safe-text,.section-title-wrap h2,.section-title-wrap p,.news-popup-text,.news-popup-sub,.nav-user,.member-name,.member-since,.member-rec-title,.member-rec-label,.member-rec-value,.instrument-tag,.form-group label,input,select,textarea,.btn,.btn-ghost,.btn-icon,.poll-question,.poll-option-label,.poll-bar-label,.poll-bar-pct,.poll-winner,.poll-total,.poll-my-vote,.setlist-song,.setlist-artist,.rep-song,.rep-artist,.forum-thread-title,.forum-thread-meta,.post-author,.post-date,.post-text,.suggestion-song,.suggestion-artist,.suggestion-note,.suggestion-by,.countdown-badge,.tab-btn,.toast,.coin-reward-title,.coin-reward-copy,.coin-reward-pill,.coin-guide-title,.coin-guide-sub,.coin-guide-stat-label,.coin-guide-stat-value,.coin-guide-card h3,.coin-guide-copy,.coin-guide-note,.coin-guide-cat,.coin-guide-scoreline,.modal-title,.modal-subtitle,.toca-badge-name,.toca-badge-sub,.toca-chip,.carousel-media-tag,.carousel-panel-tag,.carousel-caption-text,.media-recommended-by,.thumb-media-tag,.thumb-video-credit,.lb-video-credit,.lb-video-title,.lb-video-desc,.lb-meta,.lb-ctitle,.lb-cmt-au,.lb-cmt-dt,.lb-cmt-tx,.lb-rp,.frp,.gallery-tag-btn,.lb-photo-tag,.tag-manager-chip,.upload-hint,.img-upload-hint,.loading-title,.nav-mobile-menu a,.install-banner-text strong,.install-banner-text span,.install-banner-note,.install-banner-btn{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+  .safe-text,.section-title-wrap h2,.section-title-wrap p,.news-popup-text,.news-popup-sub,.nav-user,.member-name,.member-since,.member-rec-title,.member-rec-label,.member-rec-value,.instrument-tag,.form-group label,input,select,textarea,.btn,.btn-ghost,.btn-icon,.setlist-song,.setlist-artist,.rep-song,.rep-artist,.forum-thread-title,.forum-thread-meta,.post-author,.post-date,.post-text,.suggestion-song,.suggestion-artist,.suggestion-note,.suggestion-by,.tab-btn,.toast,.coin-reward-title,.coin-reward-copy,.coin-reward-pill,.coin-guide-title,.coin-guide-sub,.coin-guide-stat-label,.coin-guide-stat-value,.coin-guide-card h3,.coin-guide-copy,.coin-guide-note,.coin-guide-cat,.coin-guide-scoreline,.modal-title,.modal-subtitle,.toca-badge-name,.toca-badge-sub,.toca-chip,.carousel-media-tag,.carousel-panel-tag,.carousel-caption-text,.media-recommended-by,.thumb-media-tag,.thumb-video-credit,.lb-video-credit,.lb-video-title,.lb-video-desc,.lb-meta,.lb-ctitle,.lb-cmt-au,.lb-cmt-dt,.lb-cmt-tx,.lb-rp,.frp,.gallery-tag-btn,.lb-photo-tag,.tag-manager-chip,.upload-hint,.img-upload-hint,.loading-title,.nav-mobile-menu a,.install-banner-text strong,.install-banner-text span,.install-banner-note,.install-banner-btn{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
   body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
 
   /* NAV */
@@ -67,9 +67,21 @@
     .section-header{top:68px;gap:.8rem;margin:-.5rem 0 1.8rem;padding:.75rem .85rem;border-radius:12px}
     section[id]{scroll-margin-top:78px}
     .section-number{font-size:2.2rem;min-width:32px}
-    .section-title-wrap h2{font-size:1.35rem!important;line-height:1.25!important;word-break:normal!important;overflow-wrap:normal!important;hyphens:none}
+    .section-title-wrap h2{font-size:1.35rem!important;line-height:1.3!important;word-break:normal!important;overflow-wrap:normal!important;hyphens:none}
     .section-title-wrap p{font-size:.72rem}
     .section-line{display:none}
+
+    /* Polls Mobile */
+    .poll-card{padding:1.1rem .9rem!important;border-radius:4px}
+    .poll-question{font-size:.95rem!important;line-height:1.4!important;margin-bottom:.45rem!important;width:100%!important;word-break:normal!important;overflow-wrap:break-word!important;hyphens:none!important}
+    .poll-bar-item{flex-direction:column!important;gap:.35rem!important;margin-bottom:.85rem!important}
+    .poll-bar-label{width:100%!important;font-size:.84rem!important;line-height:1.35!important;word-break:normal!important;overflow-wrap:break-word!important}
+    .poll-bar-right{width:100%!important}
+    .poll-bar-row{gap:.5rem!important}
+    .poll-bar-track{height:8px!important}
+    .poll-bar-pct{font-size:.76rem!important;min-width:60px!important}
+    .poll-option-label{padding:.65rem .75rem!important;font-size:.84rem!important;gap:.65rem!important;word-break:normal!important;overflow-wrap:break-word!important}
+    .poll-footer{flex-direction:column!important;align-items:flex-start!important;gap:.5rem!important}
 
     /* Forms */
     .form-card{padding:1.2rem 1rem!important}
@@ -105,6 +117,7 @@
     .nav-user{max-width:52px;font-size:.54rem}
     .members-grid{grid-template-columns:1fr!important}
     .section-title-wrap h2{font-size:1.18rem!important}
+    .poll-question{font-size:.88rem!important;line-height:1.4!important}
   }
 
   /* NEWS POPUP */
@@ -256,31 +269,35 @@
   .btn-icon:hover{background:rgba(200,130,10,.22)}
 
   /* POLLS */
-  .poll-card{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;padding:1.5rem;margin-bottom:1.2rem}
-  .poll-question{font-family:'Cinzel',serif;font-size:1rem;color:var(--cream);margin-bottom:1rem}
-  .poll-options{display:flex;flex-direction:column;gap:.6rem}
+  .poll-card{background:linear-gradient(135deg,rgba(42,26,8,.7),rgba(19,15,9,.85));border:1px solid rgba(200,130,10,.22);border-radius:4px;padding:1.4rem;margin-bottom:1.2rem;box-sizing:border-box;width:100%}
+  .poll-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem}
+  .poll-question{font-family:'Cinzel',serif;font-size:1.05rem;font-weight:700;line-height:1.45;color:var(--cream);margin-bottom:.4rem;letter-spacing:.02em;word-break:normal!important;overflow-wrap:break-word!important;hyphens:none!important}
+  .poll-meta-row{display:flex;gap:.7rem;align-items:center;margin-bottom:.85rem;flex-wrap:wrap;font-size:.75rem}
+  .poll-status-open{font-size:.72rem;color:#6ee7b7;font-family:'Cinzel',serif;letter-spacing:.06em;font-weight:700;white-space:nowrap}
+  .poll-status-closed{font-size:.72rem;color:#fca5a5;font-family:'Cinzel',serif;letter-spacing:.06em;font-weight:700;white-space:nowrap}
+  .poll-deadline{font-size:.72rem;color:var(--smoke);font-style:italic;white-space:normal;word-break:normal!important}
+  .poll-deadline.soon{color:#fde68a;font-weight:600}
+  .poll-bar-item{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.85rem;font-size:.84rem;width:100%;box-sizing:border-box}
+  .poll-bar-label{width:100%;color:var(--paper);font-weight:600;line-height:1.35;word-break:normal!important;overflow-wrap:break-word!important}
+  .poll-bar-right{width:100%;min-width:0}
+  .poll-bar-row{display:flex;align-items:center;gap:.6rem;width:100%;box-sizing:border-box}
+  .poll-bar-track{flex:1;min-width:60px;height:8px;background:rgba(200,130,10,.15);border-radius:4px;overflow:hidden}
+  .poll-bar-fill{height:100%;background:linear-gradient(90deg,var(--rust),var(--gold));border-radius:4px;transition:width .6s ease}
+  .poll-bar-pct{flex-shrink:0;font-size:.78rem;font-weight:700;color:var(--amber);min-width:65px;text-align:right;white-space:nowrap}
+  .poll-options{display:flex;flex-direction:column;gap:.6rem;margin-top:1rem;width:100%;box-sizing:border-box}
+  .poll-option{width:100%}
   .poll-option input[type="radio"]{display:none}
-  .poll-option-label{flex:1;display:flex;align-items:center;gap:.8rem;cursor:pointer;padding:.6rem .8rem;border:1px solid rgba(200,130,10,.15);border-radius:1px;transition:all .2s;font-size:.88rem}
-  .poll-option-label:hover{border-color:rgba(200,130,10,.4);background:rgba(200,130,10,.05)}
-  .poll-dot{width:14px;height:14px;border:2px solid rgba(200,130,10,.5);border-radius:50%;flex-shrink:0;transition:all .2s}
+  .poll-option-label{display:flex;align-items:center;gap:.8rem;cursor:pointer;padding:.7rem .85rem;border:1px solid rgba(200,130,10,.18);border-radius:4px;transition:all .2s;font-size:.88rem;width:100%;box-sizing:border-box;background:rgba(10,8,4,.4);word-break:normal!important;overflow-wrap:break-word!important}
+  .poll-option-label:hover{border-color:rgba(200,130,10,.4);background:rgba(200,130,10,.08)}
+  .poll-dot{width:16px;height:16px;border:2px solid rgba(200,130,10,.5);border-radius:50%;flex-shrink:0;transition:all .2s;box-sizing:border-box}
+  .poll-option input[type="radio"]:checked+.poll-option-label{border-color:var(--amber);background:rgba(200,130,10,.12)}
   .poll-option input[type="radio"]:checked+.poll-option-label .poll-dot{background:var(--amber);border-color:var(--amber);box-shadow:0 0 8px rgba(200,130,10,.5)}
-  .poll-option input[type="radio"]:checked+.poll-option-label{border-color:var(--amber);background:rgba(200,130,10,.08)}
-  .poll-bar-item{display:flex;align-items:flex-start;gap:.8rem;margin-bottom:.8rem;font-size:.82rem}
-  .poll-bar-label{min-width:160px;color:var(--paper);padding-top:.1rem}
-  .poll-bar-right{flex:1}
-  .poll-bar-track{height:6px;background:rgba(200,130,10,.1);border-radius:3px;overflow:hidden;margin-bottom:.4rem}
-  .poll-bar-fill{height:100%;background:linear-gradient(90deg,var(--rust),var(--gold));border-radius:3px;transition:width .6s ease}
-  .poll-bar-pct{font-size:.78rem;color:var(--amber);margin-bottom:.3rem}
+  .poll-winner{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.35);border-radius:4px;padding:.6rem .85rem;margin-top:.85rem;font-size:.84rem;line-height:1.4;color:var(--gold);font-family:'Cinzel',serif;letter-spacing:.03em;word-break:normal!important;overflow-wrap:break-word!important}
+  .poll-footer{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:.8rem;border-top:1px solid rgba(200,130,10,.1);flex-wrap:wrap;gap:.6rem;width:100%;box-sizing:border-box}
+  .poll-total{font-size:.78rem;color:var(--smoke);font-style:italic;white-space:nowrap}
+  .poll-my-vote{font-size:.78rem;color:var(--amber);font-style:italic;word-break:normal!important}
   .poll-voters{display:flex;flex-wrap:wrap;gap:.3rem}
   .voter-tag{background:rgba(42,26,8,.8);border:1px solid rgba(200,130,10,.2);color:var(--paper);font-size:.68rem;padding:.15rem .45rem;border-radius:1px;font-style:italic}
-  .poll-status-open{font-size:.72rem;color:#6ee7b7;font-family:'Cinzel',serif;letter-spacing:.06em}
-  .poll-status-closed{font-size:.72rem;color:#fca5a5;font-family:'Cinzel',serif;letter-spacing:.06em}
-  .poll-deadline{font-size:.72rem;color:var(--smoke);font-style:italic}
-  .poll-deadline.soon{color:#fde68a}
-  .poll-winner{background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);border-radius:1px;padding:.5rem .8rem;margin-top:.8rem;font-size:.82rem;color:var(--gold);font-family:'Cinzel',serif;letter-spacing:.05em}
-  .poll-footer{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:.8rem;border-top:1px solid rgba(200,130,10,.1)}
-  .poll-total{font-size:.75rem;color:var(--smoke);font-style:italic}
-  .poll-my-vote{font-size:.75rem;color:var(--amber);font-style:italic}
 
   /* SETLIST */
   .setlist-panel{background:linear-gradient(135deg,rgba(42,26,8,.6),rgba(19,15,9,.8));border:1px solid rgba(200,130,10,.2);border-radius:2px;overflow:hidden}

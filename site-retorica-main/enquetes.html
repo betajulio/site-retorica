@@ -13,7 +13,7 @@
 <meta name="twitter:image" content="https://betajulio.github.io/site-retorica/imagens/logo_not_zap.jpg">
 <title>Enquetes — Retórica</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=16">
+<link rel="stylesheet" href="style.css?v=19">
 <script>
 (function(){
   try{
@@ -81,31 +81,46 @@
   <div id="promotionCountdownBanner"></div>
 
   <!-- 01 ENQUETES -->
-  <section id="enquetes" style="padding: 4rem 1.5rem;">
+  <section id="enquetes" style="padding: 2.5rem 1.5rem 4rem;">
     <div class="section-header" style="position: static; margin-bottom: 2rem;">
       <div class="section-number">01</div>
       <div class="section-title-wrap"><h2>Enquetes</h2><p>Vote nas músicas do próximo ensaio</p></div>
       <div class="section-line"></div>
     </div>
+    
+    <!-- Active Polls -->
     <div id="pollsContainer"></div>
+    
+    <!-- History / Closed Polls -->
     <div id="pollsHistoryWrap" style="margin-top:1.5rem">
       <button class="btn-ghost btn-sm" id="pollsHistoryBtn" onclick="togglePollsHistory()" style="display:none">
         🗂 Histórico de enquetes encerradas (<span id="pollsClosedCount">0</span>)
       </button>
       <div id="pollsHistoryContainer" style="display:none;margin-top:1rem"></div>
     </div>
-    
-    <div class="member-only" style="margin-top:2rem">
+
+    <!-- Criar Enquete Action Button (Below Polls) -->
+    <div class="member-only" style="margin-top:2.2rem;text-align:center">
+      <button class="btn" id="btnToggleCreatePoll" onclick="toggleCreatePollForm()" style="display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.6rem;font-size:.85rem">
+        <span>➕</span> Criar enquete
+      </button>
+    </div>
+
+    <!-- Poll Creation Form (Initially Hidden) -->
+    <div id="createPollSection" class="member-only" style="display:none;margin-top:1.5rem">
       <div class="form-card">
-        <p style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold);margin-bottom:1rem">Criar Nova Enquete</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;border-bottom:1px solid rgba(200,130,10,.2);padding-bottom:.6rem">
+          <p style="font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--gold);margin:0">Criar Nova Enquete</p>
+          <button class="btn-ghost btn-sm" type="button" onclick="toggleCreatePollForm(false)" style="padding:.25rem .55rem">✕ Fechar</button>
+        </div>
         <div class="form-row full"><div class="form-group"><label>Pergunta</label><input type="text" id="pollQuestion" placeholder="Ex: Qual bloco de músicas pro próximo ensaio?"></div></div>
         <div class="form-row">
           <div class="form-group"><label>Opção 1</label><input type="text" class="poll-opt-input" placeholder="Ex: Abertura clássica"></div>
           <div class="form-group"><label>Opção 2</label><input type="text" class="poll-opt-input" placeholder="Ex: Set pesado"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Opção 3 (opcional)</label><input type="text" class="poll-opt-input"></div>
-          <div class="form-group"><label>Opção 4 (opcional)</label><input type="text" class="poll-opt-input"></div>
+          <div class="form-group"><label>Opção 3 (opcional)</label><input type="text" class="poll-opt-input" placeholder="Ex: Acústico"></div>
+          <div class="form-group"><label>Opção 4 (opcional)</label><input type="text" class="poll-opt-input" placeholder="Ex: Bis surpresa"></div>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -113,10 +128,13 @@
             <input type="datetime-local" id="pollDeadline">
           </div>
           <div class="form-group" style="justify-content:flex-end;padding-top:1.4rem">
-            <p style="font-size:.72rem;color:var(--smoke);font-style:italic">Sem data = encerramento manual</p>
+            <p style="font-size:.72rem;color:var(--smoke);font-style:italic;margin:0">Sem data = encerramento manual</p>
           </div>
         </div>
-        <button class="btn" onclick="createPoll()">Criar Enquete</button>
+        <div style="display:flex;gap:.8rem;align-items:center;margin-top:.6rem;flex-wrap:wrap">
+          <button class="btn" onclick="createPoll()">Criar Enquete</button>
+          <button class="btn-ghost btn-sm" type="button" onclick="toggleCreatePollForm(false)">Cancelar</button>
+        </div>
       </div>
     </div>
   </section>
@@ -605,6 +623,15 @@ async function loadPollsSnapshot(force = false) {
   renderPolls();
 }
 
+function escapeHtml(value = '') {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderPolls() {
   const c = document.getElementById('pollsContainer');
   const hc = document.getElementById('pollsHistoryContainer');
@@ -657,7 +684,7 @@ function renderPolls() {
       
       const timeRemaining = formatTime(diff);
       const isUrgent = diff < 48 * 60 * 60 * 1000;
-      countdownBadgeHtml = `<div class="countdown-badge ${isUrgent ? 'urgent' : ''}" style="margin-top:.8rem;margin-bottom:.8rem">
+      countdownBadgeHtml = `<div class="countdown-badge ${isUrgent ? 'urgent' : ''}" style="margin-bottom:.85rem">
         <span class="countdown-icon">⏱</span> Tempo restante: ${timeRemaining}
       </div>`;
     }
@@ -670,16 +697,16 @@ function renderPolls() {
     if (isClosed && total > 0) {
       const maxVotes  = Math.max(...(p.options||[]).map(o=>o.votes||0));
       const winners   = (p.options||[]).filter(o=>(o.votes||0)===maxVotes);
-      winnerHtml = `<div class="poll-winner">🏆 ${winners.length===1?'Vencedor':'Empate'}: ${winners.map(w=>w.label).join(' · ')}</div>`;
+      winnerHtml = `<div class="poll-winner">🏆 ${winners.length===1?'Vencedor':'Empate'}: <strong>${winners.map(w=>escapeHtml(w.label)).join(' · ')}</strong></div>`;
     }
 
     const bars = (p.options||[]).map((o,i) => {
       const pct    = total ? Math.round((o.votes||0)/total*100) : 0;
       return `<div class="poll-bar-item">
-        <div class="poll-bar-label">${o.label}</div>
+        <div class="poll-bar-label">${escapeHtml(o.label)}</div>
         <div class="poll-bar-right">
-          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
-            <div class="poll-bar-track" style="flex:1"><div class="poll-bar-fill" style="width:${pct}%"></div></div>
+          <div class="poll-bar-row">
+            <div class="poll-bar-track"><div class="poll-bar-fill" style="width:${pct}%"></div></div>
             <span class="poll-bar-pct">${pct}% (${o.votes||0})</span>
           </div>
         </div>
@@ -688,10 +715,10 @@ function renderPolls() {
 
     const voterName = auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ') || auth.currentUser?.email?.split('@')[0] || 'Membro';
     const voteForm = canVote ? `
-      <div class="poll-options" style="margin-top:1rem">
-        ${(p.options||[]).map((o,i)=>`<div class="poll-option"><input type="radio" id="p${id}o${i}" name="poll_${id}"><label class="poll-option-label" for="p${id}o${i}"><div class="poll-dot"></div>${o.label}</label></div>`).join('')}
-        <div style="margin-top:.8rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
-          <span style="font-size:.78rem;color:var(--amber);font-family:'Cinzel',serif">Voto secreto como: ${voterName}</span>
+      <div class="poll-options">
+        ${(p.options||[]).map((o,i)=>`<div class="poll-option"><input type="radio" id="p${id}o${i}" name="poll_${id}"><label class="poll-option-label" for="p${id}o${i}"><div class="poll-dot"></div><span style="flex:1;min-width:0">${escapeHtml(o.label)}</span></label></div>`).join('')}
+        <div style="margin-top:.85rem;display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap">
+          <span style="font-size:.78rem;color:var(--amber);font-family:'Cinzel',serif">Voto secreto como: <strong>${escapeHtml(voterName)}</strong></span>
           <button class="btn btn-sm" onclick="submitPollVote('${id}')">Votar</button>
         </div>
       </div>` : '';
@@ -704,18 +731,18 @@ function renderPolls() {
     const createdLabel = p.createdAt ? `<span style="font-size:.7rem;color:var(--smoke)">Criada em ${formatTs(p.createdAt)}</span>` : '';
 
     return `<div class="poll-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.6rem;flex-wrap:wrap;gap:.4rem">
-        <div class="poll-question" style="flex:1">${p.question}</div>
-        <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${closeBtn}${deleteBtn}</div>
+      <div class="poll-header">
+        <div class="poll-question">${escapeHtml(p.question)}</div>
+        ${(closeBtn || deleteBtn) ? `<div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${closeBtn}${deleteBtn}</div>` : ''}
       </div>
-      <div style="display:flex;gap:.8rem;align-items:center;margin-bottom:.8rem;flex-wrap:wrap">${statusBadge}${deadlineHtml}${createdLabel}</div>
+      <div class="poll-meta-row">${statusBadge}${deadlineHtml}${createdLabel}</div>
       ${countdownBadgeHtml}
       ${bars}
       ${winnerHtml}
       ${voteForm}
       <div class="poll-footer">
         <span class="poll-total">${total} voto${total!==1?'s':''}</span>
-        <div style="display:flex;gap:.55rem;align-items:center">${myVoteLabel}${changeVoteBtn}</div>
+        <div style="display:flex;gap:.55rem;align-items:center;flex-wrap:wrap">${myVoteLabel}${changeVoteBtn}</div>
       </div>
     </div>`;
   };
@@ -744,6 +771,26 @@ window.togglePollsHistory = () => {
   if (hBtn) hBtn.innerHTML = opening
     ? `📂 Ocultar histórico`
     : `🗂 Histórico de enquetes encerradas (<span id="pollsClosedCount">${document.getElementById('pollsClosedCount')?.textContent||''}</span>)`;
+};
+
+window.toggleCreatePollForm = (force) => {
+  const formWrap = document.getElementById('createPollSection');
+  const btn = document.getElementById('btnToggleCreatePoll');
+  if (!formWrap) return;
+  const isCurrentlyOpen = formWrap.style.display !== 'none';
+  const nextState = (typeof force === 'boolean') ? force : !isCurrentlyOpen;
+  
+  formWrap.style.display = nextState ? 'block' : 'none';
+  if (btn) {
+    btn.style.display = nextState ? 'none' : 'inline-flex';
+  }
+  if (nextState) {
+    setTimeout(() => {
+      formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const qInput = document.getElementById('pollQuestion');
+      if (qInput) qInput.focus();
+    }, 100);
+  }
 };
 
 window.submitPollVote = async id => {
@@ -850,6 +897,7 @@ window.createPoll = async () => {
   document.getElementById('pollQuestion').value='';
   document.getElementById('pollDeadline').value='';
   document.querySelectorAll('.poll-opt-input').forEach(i=>i.value='');
+  toggleCreatePollForm(false);
   showToast('✓ Enquete criada!');
 };
 
