@@ -175,6 +175,7 @@ import {
 // --- STATE ---
 let isLoggedIn = false;
 let isMember = false;
+let isAuditAdmin = false;
 let currentSection = 'sugestoes';
 let suggestionsLoaded = false;
 let pollsLoaded = false;
@@ -315,7 +316,7 @@ onAuthStateChanged(auth, async user => {
     isLoggedIn = false;
     isMember   = false;
   }
-  const isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
   document.body.classList.toggle('is-audit-admin', isAuditAdmin);
   applyAuth();
   loadSuggestionsSnapshot(true);
@@ -414,7 +415,7 @@ function renderSuggestions() {
       👎 <span class="score-num">${s.dislikes||0}</span>
     </button>`;
 
-    const rmBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
+    const rmBtn = isAuditAdmin ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')" title="Excluir sugestão (Apenas Administrador)">✕</button>` : '';
 
     return `<div class="suggestion-item${rankClass}">
       ${trophy}
@@ -507,6 +508,10 @@ window.voteSuggestion = async (id, type) => {
 };
 
 window.removeSuggestion = async id => {
+  if (!isAuditAdmin) {
+    showToast('⚠ A exclusão de sugestões é restrita ao administrador');
+    return;
+  }
   const snap = await getDoc(doc(db,'suggestions',id));
   if (!snap.exists()) return;
   const s = snap.data();
@@ -517,22 +522,22 @@ window.removeSuggestion = async id => {
   await deleteDoc(doc(db,'suggestions',id));
   await addDoc(collection(db,'logs'), {
     action: 'Sugestão Removida',
-    detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: ${reason || 'Removido pelo moderador'}`,
+    detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: ${reason || 'Removido pelo administrador'}`,
     song: s.song,
     artist: s.artist,
     by: s.by,
     likes: s.likes || 0,
     dislikes: s.dislikes || 0,
-    reason: reason || 'Removido pelo moderador',
-    removedBy: auth.currentUser?.displayName?.split(' ')[0] || 'Membro',
+    reason: reason || 'Removido pelo administrador',
+    removedBy: auth.currentUser?.displayName?.split(' ')[0] || 'Admin',
     category: 'sugestoes',
-    who: auth.currentUser?.displayName || auth.currentUser?.email || 'Membro',
+    who: auth.currentUser?.displayName || auth.currentUser?.email || 'Administrador',
     whoEmail: auth.currentUser?.email || '',
     ts: serverTimestamp(),
     tsLocal: new Date().toLocaleString('pt-BR')
   });
   await loadSuggestionsSnapshot(true);
-  showToast('Sugestão removida.');
+  showToast('Sugestão excluída pelo administrador.');
 };
 
 window.addSuggestion = async () => {
@@ -951,6 +956,8 @@ function getNextFriday(fromDate = new Date()) {
   if (daysUntilFriday === 0 && isFridayAfterCutoff) {
     daysUntilFriday = 7;
   }
+  // Ciclo de 2 semanas: pula para a sexta-feira seguinte (+ 7 dias extras)
+  daysUntilFriday += 7;
   date.setDate(date.getDate() + daysUntilFriday);
   date.setHours(23, 59, 0, 0);
   return date;

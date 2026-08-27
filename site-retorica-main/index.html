@@ -149,7 +149,7 @@
   .member-card:hover::before{opacity:1}
   body.is-member .member-card{cursor:pointer}
   .member-edit-hint{position:absolute;bottom:0;left:0;right:0;background:rgba(200,130,10,.12);color:var(--amber);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.35rem;display:none;font-family:'Cinzel',serif}
-  body.is-member .member-card .member-edit-hint{display:block}
+  .editable-member .member-edit-hint{display:block}
   .member-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--brown),var(--rust));margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.6rem;color:var(--gold);border:2px solid rgba(200,130,10,.3);overflow:hidden}
   .member-avatar img{width:100%;height:100%;object-fit:cover}
   .member-name{font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--cream);margin-bottom:.5rem}
@@ -1331,6 +1331,16 @@ const MEMBER_STREAK_BONUS_STEP = 2;
 const MEMBER_STREAK_BONUS_CAP = 10;
 const VIDEO_FRAME_ASSETS = ['tvglacial.png', 'tvcorote.png', 'donabenta.png'];
 const AUDIT_EMAIL = 'juliocereser@gmail.com';
+const ADMIN_GENERAL_EMAIL = 'juliocereser@gmail.com';
+// Mapa de e-mail → nome canônico do membro (para vincular perfis sem ownerEmail)
+const MEMBER_EMAIL_MAP = {
+  'juliocereser@gmail.com':   'julio',
+  'mfa200023@gmail.com':      'matheus',
+  'vinitorressantos@gmail.com': 'vinicius',
+  'neibatera1@gmail.com':     'nei',
+  'rgmaia6@gmail.com':        'roni',
+  'renatoapluiz@gmail.com':   'renato'
+};
 const MEMBER_SCORE_STREAK_WEIGHT = 12;
 const MEMBER_SCORE_ACTION_WEIGHT = 6;
 const MEMBER_SCORE_CATEGORY_WEIGHT = 8;
@@ -2074,6 +2084,10 @@ onAuthStateChanged(auth, async user => {
       await syncMemberCoinBalance(user, typeof reward?.totalCoins === 'number' ? reward.totalCoins : null);
       if (reward?.awarded) showCoinReward(reward);
       await writeLog('Login membro', `${user.displayName || ''} (${user.email})`, 'acesso');
+      // Vincula automaticamente o ownerEmail do perfil e aguarda antes de carregar membros
+      await autoLinkMemberOwnerEmail(user).catch(err => console.warn('autoLink error:', err));
+      // Força reload do cache de membros após o link, para que canEditMember funcione corretamente
+      if (membersLoaded) { membersLoaded = false; }
     } else {
       memberCoinBalance = 0;
       updateCoinBalanceUI();
@@ -2591,6 +2605,61 @@ window.chooseSetlistCifra = async index => {
 // ─── MEMBERS ───────────────────────────────────────────────────────
 const INSTRUMENTS = ['Vocal','Guitarra','Guitarra Base','Baixo','Bateria','Teclado','Violão','Outro'];
 
+/**
+ * Verifica se o usuário logado pode editar um perfil de membro.
+ * Admin geral pode editar qualquer um.
+ * Outros membros só podem editar o próprio perfil,
+ * identificado pelo campo `ownerEmail` no documento ou pelo mapa de nomes.
+ */
+function canEditMember(memberData = {}) {
+  if (!isMember || !auth.currentUser) return false;
+  const myEmail = (auth.currentUser.email || '').toLowerCase();
+  // Admin geral pode editar qualquer perfil
+  if (myEmail === ADMIN_GENERAL_EMAIL) return true;
+  // Perfil tem ownerEmail salvo → compara diretamente
+  const ownerEmail = (memberData.ownerEmail || '').toLowerCase();
+  if (ownerEmail && ownerEmail === myEmail) return true;
+  // Fallback: verifica se o nome do membro bate com o apelido mapeado para o email atual
+  const myAlias = MEMBER_EMAIL_MAP[myEmail] || '';
+  if (myAlias) {
+    const memberName = normalizeName(memberData.name || '');
+    if (memberName.startsWith(myAlias)) return true;
+  }
+  return false;
+}
+
+/**
+ * Vincula automaticamente o ownerEmail do membro ao seu perfil no Firestore
+ * no momento do login, usando o MEMBER_EMAIL_MAP como referência.
+ * Só grava se o perfil ainda não tiver ownerEmail definido.
+ * Opera silenciosamente em background — não bloqueia o fluxo de auth.
+ */
+async function autoLinkMemberOwnerEmail(user) {
+  const email = (user?.email || '').toLowerCase();
+  if (!email || email === ADMIN_GENERAL_EMAIL) return; // admin não precisa de auto-link
+  const alias = MEMBER_EMAIL_MAP[email];
+  if (!alias) return; // email não está no mapa
+  try {
+    const snap = await getDocs(collection(db, 'members'));
+    for (const d of snap.docs) {
+      const data = d.data();
+      // Pula se já tiver ownerEmail definido (imutável)
+      if (data.ownerEmail) continue;
+      const memberName = normalizeName(data.name || '');
+      if (memberName.startsWith(alias)) {
+        await updateDoc(doc(db, 'members', d.id), { ownerEmail: email });
+        console.log(`[autoLink] ownerEmail vinculado: ${email} → ${data.name} (${d.id})`);
+        // Atualiza o cache local se já estiver carregado
+        const cached = membersCache.find(c => c.id === d.id);
+        if (cached) cached.data.ownerEmail = email;
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn('[autoLink] Erro ao vincular ownerEmail:', err);
+  }
+}
+
 function renderMembersFromCache() {
   const grid = document.getElementById('membersGrid');
   if (!membersCache.length) {
@@ -2604,11 +2673,11 @@ function renderMembersFromCache() {
     const avatar  = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
-    // Edit visibility controlled by CSS via body.is-member - no JS check needed at render time
-    const editCb = `onclick="openEditMember('${id}')"`;  // always bind, security check inside openEditMember
-    const hint = `<div class="member-edit-hint">&#9999;&#65039; Editar</div>`;  // CSS shows/hides
-    const rmBtn = ''; // Button moved to modal
-    return `<div class="member-card" ${editCb}>
+    // canEditMember drive CSS visual only; onclick always bound so auth-timing doesn't break clicks
+    // Real permission check happens inside openEditMember, where auth is guaranteed resolved
+    const canEdit = canEditMember(m);
+    const hint = canEdit ? `<div class="member-edit-hint">&#9999;&#65039; Editar</div>` : '';
+    return `<div class="member-card${canEdit ? ' editable-member' : ''}" onclick="openEditMember('${id}')">
       ${avatar}
       <div class="member-name">${m.name}</div>
       <div class="member-instruments">${tags}</div>
@@ -2868,7 +2937,8 @@ function resetEditModal() {
 }
 
 window.openAddMember = () => {
-  if (!isMember) { showToast('🔒 Acesso restrito a administradores (membros aprovados)'); return; }
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  if (!isMember || myEmail !== ADMIN_GENERAL_EMAIL) { showToast('🔒 Apenas o admin geral pode adicionar membros'); return; }
   resetEditModal();
   document.getElementById('editModalTitle').textContent = 'Novo Membro';
   document.getElementById('deleteMemberBtn').style.display = 'none';
@@ -2877,11 +2947,21 @@ window.openAddMember = () => {
 };
 
 window.openEditMember = async id => {
-  if (!isMember) { showToast('🔒 Acesso restrito a administradores (membros aprovados)'); return; }
+  if (!isMember) { showToast('🔒 Acesso restrito a membros aprovados'); return; }
   resetEditModal();
   const snap = await getDoc(doc(db,'members',id));
   if (!snap.exists()) return;
-  const m = snap.data();
+  let m = snap.data();
+  // Se ownerEmail ainda não foi gravado (race condition do autoLink no login),
+  // executa o link agora e relê o documento antes de checar permissão
+  if (!canEditMember(m) && !m.ownerEmail) {
+    await autoLinkMemberOwnerEmail(auth.currentUser).catch(() => {});
+    const snapRetry = await getDoc(doc(db,'members',id));
+    if (snapRetry.exists()) m = snapRetry.data();
+  }
+  if (!canEditMember(m)) { showToast('🔒 Você só pode editar o seu próprio perfil'); return; }
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  const isAdmin = myEmail === ADMIN_GENERAL_EMAIL;
   document.getElementById('editMemberId').value      = id;
   document.getElementById('editMemberName').value    = m.name||'';
   document.getElementById('editMemberSince').value   = m.since||'';
@@ -2891,7 +2971,8 @@ window.openEditMember = async id => {
   if (m.photo) { const p=document.getElementById('editPhotoPreview'); p.src=m.photo; p.style.display='block'; if(m.photo.startsWith('http')) document.getElementById('editPhotoUrl').value=m.photo; }
   (Array.isArray(m.instruments)?m.instruments:(m.role?[m.role]:[])).forEach(i=>{ const cb=document.querySelector(`#editInstrumentsCheck input[value="${i}"]`); if(cb) cb.checked=true; });
   document.getElementById('editModalTitle').textContent = 'Editar Membro';
-  document.getElementById('deleteMemberBtn').style.display = 'block';
+  // Só o admin geral pode deletar membros
+  document.getElementById('deleteMemberBtn').style.display = isAdmin ? 'block' : 'none';
   document.getElementById('editModalSub').textContent   = m.name;
   document.getElementById('editMemberModal').classList.add('show');
 };
@@ -2899,7 +2980,35 @@ window.openEditMember = async id => {
 window.closeEditMember = () => document.getElementById('editMemberModal').classList.remove('show');
 
 window.saveMember = async () => {
-  if (!isMember) { showToast('🔒 Acesso restrito a administradores (membros aprovados)'); return; }
+  if (!isMember) { showToast('🔒 Acesso restrito a membros aprovados'); return; }
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  const isAdmin = myEmail === ADMIN_GENERAL_EMAIL;
+  const eidCheck = document.getElementById('editMemberId').value;
+  if (eidCheck) {
+    const snapCheck = await getDoc(doc(db,'members',eidCheck));
+    if (snapCheck.exists()) {
+      const snapData = snapCheck.data();
+      // canEditMember usa ownerEmail do Firestore + fallback do MEMBER_EMAIL_MAP
+      // Se ownerEmail ainda não foi gravado (race condition do autoLink), tenta gravar agora e reavaliar
+      if (!canEditMember(snapData)) {
+        if (!snapData.ownerEmail) {
+          // Tenta executar o autoLink de forma síncrona e reavalia
+          await autoLinkMemberOwnerEmail(auth.currentUser).catch(() => {});
+          const snapRetry = await getDoc(doc(db,'members',eidCheck));
+          if (!canEditMember(snapRetry.data ? snapRetry.data() : snapData)) {
+            showToast('🔒 Você só pode editar o seu próprio perfil');
+            return;
+          }
+        } else {
+          showToast('🔒 Você só pode editar o seu próprio perfil');
+          return;
+        }
+      }
+    }
+  } else if (!isAdmin) {
+    showToast('🔒 Apenas o admin geral pode adicionar membros');
+    return;
+  }
   const name    = document.getElementById('editMemberName').value.trim();
   const since   = document.getElementById('editMemberSince').value;
   const contact = document.getElementById('editMemberContact').value.trim();
@@ -2933,7 +3042,19 @@ window.saveMember = async () => {
     : [];
   const { recommendations, recommendationMeta } = recommendationItemsToLegacyMap(recommendationsList);
 
-  const data = {name, since, contact, instruments, photo, recommendations, recommendationMeta, recommendationsList};
+  // ownerEmail é imutável: preserva sempre o valor já gravado no Firestore.
+  // Se não houver valor gravado e o usuário não for admin, usa o próprio email.
+  let ownerEmail = '';
+  if (eid) {
+    const prev = await getDoc(doc(db, 'members', eid));
+    ownerEmail = prev.exists() ? (prev.data().ownerEmail || '') : '';
+  }
+  // Só preenche se ainda estiver vazio E o usuário não for o admin
+  if (!ownerEmail && !isAdmin) {
+    ownerEmail = myEmail;
+  }
+
+  const data = {name, since, contact, instruments, photo, recommendations, recommendationMeta, recommendationsList, ownerEmail};
 
   try {
     if (eid) {
@@ -2964,11 +3085,14 @@ window.saveMember = async () => {
 
 
 window.deleteMemberFromModal = async () => {
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  if (myEmail !== ADMIN_GENERAL_EMAIL) { showToast('🔒 Apenas o admin geral pode remover membros'); return; }
   const id = document.getElementById('editMemberId').value;
   if (id) { await removeMember(id); closeEditMember(); }
 };
 window.removeMember = async id => {
-  if (!isMember) { showToast('🔒 Acesso restrito a administradores (membros aprovados)'); return; }
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  if (!isMember || myEmail !== ADMIN_GENERAL_EMAIL) { showToast('🔒 Apenas o admin geral pode remover membros'); return; }
   if (!confirmAction('Tem certeza que deseja remover este membro?')) return;
   const snap = await getDoc(doc(db,'members',id));
   const name = snap.exists() ? snap.data().name : id;
@@ -3046,7 +3170,7 @@ function renderSuggestions() {
       👎 <span class="score-num">${s.dislikes||0}</span>
     </button>`;
 
-    const rmBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')">✕</button>` : '';
+    const rmBtn = isAuditAdmin ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')" title="Excluir sugestão (Apenas Administrador)">✕</button>` : '';
 
     return `<div class="suggestion-item${rankClass}">
       ${trophy}
@@ -3139,6 +3263,10 @@ window.voteSuggestion = async (id, type) => {
 };
 
 window.removeSuggestion = async id => {
+  if (!isAuditAdmin) {
+    showToast('⚠ A exclusão de sugestões é restrita ao administrador');
+    return;
+  }
   const snap = await getDoc(doc(db,'suggestions',id));
   if (!snap.exists()) return;
   const s = snap.data();
@@ -3149,22 +3277,22 @@ window.removeSuggestion = async id => {
   await deleteDoc(doc(db,'suggestions',id));
   await addDoc(collection(db,'logs'), {
     action: 'Sugestão Removida',
-    detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: ${reason || 'Removido pelo moderador'}`,
+    detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: ${reason || 'Removido pelo administrador'}`,
     song: s.song,
     artist: s.artist,
     by: s.by,
     likes: s.likes || 0,
     dislikes: s.dislikes || 0,
-    reason: reason || 'Removido pelo moderador',
-    removedBy: auth.currentUser?.displayName?.split(' ')[0] || 'Membro',
+    reason: reason || 'Removido pelo administrador',
+    removedBy: auth.currentUser?.displayName?.split(' ')[0] || 'Admin',
     category: 'sugestoes',
-    who: auth.currentUser?.displayName || auth.currentUser?.email || 'Membro',
+    who: auth.currentUser?.displayName || auth.currentUser?.email || 'Administrador',
     whoEmail: auth.currentUser?.email || '',
     ts: serverTimestamp(),
     tsLocal: new Date().toLocaleString('pt-BR')
   });
   await refreshSuggestionsIfNeeded();
-  showToast('Sugestão removida.');
+  showToast('Sugestão excluída pelo administrador.');
 };
 
 window.addSuggestion = async () => {
@@ -6049,6 +6177,8 @@ function getNextFriday(fromDate = new Date()) {
   if (daysUntilFriday === 0 && isFridayAfterCutoff) {
     daysUntilFriday = 7;
   }
+  // Ciclo de 2 semanas: pula para a sexta-feira seguinte (+ 7 dias extras)
+  daysUntilFriday += 7;
   date.setDate(date.getDate() + daysUntilFriday);
   date.setHours(23, 59, 0, 0);
   return date;

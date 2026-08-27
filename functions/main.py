@@ -1862,6 +1862,84 @@ def admin_trigger_tuesday_repertoire(req: https_fn.Request) -> https_fn.Response
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 
+@https_fn.on_request()
+def admin_get_deletion_logs(req: https_fn.Request) -> https_fn.Response:
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        logs_ref = db.collection("logs")
+        logs = []
+        for doc in logs_ref.stream():
+            d = doc.to_dict() or {}
+            action = str(d.get("action", ""))
+            cat = str(d.get("category", ""))
+            if action == "Sugestão Removida" or cat == "sugestoes" or "remov" in action.lower() or "sugest" in action.lower():
+                d["_id"] = doc.id
+                if "ts" in d and hasattr(d["ts"], "isoformat"):
+                    d["ts"] = d["ts"].isoformat()
+                elif "ts" in d and hasattr(d["ts"], "timestamp"):
+                    d["ts"] = datetime.fromtimestamp(d["ts"].timestamp(), tz=ZoneInfo("America/Sao_Paulo")).isoformat()
+                logs.append(d)
+        return json_response({"ok": True, "count": len(logs), "logs": logs}, 200)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
+def admin_restore_deleted_suggestions(req: https_fn.Request) -> https_fn.Response:
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        payload = req.get_json(silent=True) or {}
+        items = payload.get("items", [])
+        results = []
+        for item in items:
+            song = (item.get("song") or "").strip()
+            artist = (item.get("artist") or "").strip()
+            if not song:
+                continue
+            doc_data = {
+                "song": song,
+                "artist": artist,
+                "by": item.get("by") or "Membro",
+                "likes": safe_int(item.get("likes"), 0),
+                "dislikes": safe_int(item.get("dislikes"), 0),
+                "voterMap": item.get("voterMap") or {},
+                "youtube": item.get("youtube") or "",
+                "note": item.get("note") or "",
+                "createdAt": firestore.SERVER_TIMESTAMP
+            }
+            new_ref = db.collection("suggestions").document()
+            new_ref.set(doc_data)
+            results.append({"id": new_ref.id, "song": song, "artist": artist, "likes": doc_data["likes"], "dislikes": doc_data["dislikes"]})
+            db.collection("logs").add({
+                "action": "Sugestão Restaurada",
+                "detail": f"{song} — {artist} · {doc_data['likes']}👍 {doc_data['dislikes']}👎 · Restaurado pelo admin",
+                "song": song,
+                "artist": artist,
+                "by": doc_data["by"],
+                "likes": doc_data["likes"],
+                "dislikes": doc_data["dislikes"],
+                "category": "sugestoes",
+                "who": "Administrador",
+                "whoEmail": "juliocereser@gmail.com",
+                "ts": firestore.SERVER_TIMESTAMP,
+                "tsLocal": now_sp().strftime("%d/%m/%Y %H:%M:%S")
+            })
+        return json_response({"ok": True, "restored": results}, 200)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+
 def send_wa_message(text):
     import requests
     url = f"https://api.green-api.com/waInstance{ID_INSTANCE}/sendMessage/{API_TOKEN}"

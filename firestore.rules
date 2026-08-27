@@ -41,7 +41,8 @@ service cloud.firestore {
     match /suggestions/{suggestionId} {
       allow read: if true;
       allow create: if signedIn();
-      allow update, delete: if isMember();
+      allow update: if isMember();
+      allow delete: if isAuditAdmin();
     }
 
     match /polls/{pollId} {
