@@ -538,6 +538,7 @@ def eliminate_bottom_suggestion(db, is_manual=False, executor="Sistema"):
             "likes": likes,
             "dislikes": dislikes,
             "score": score,
+            "voterMap": data.get("voterMap", {}),
             "reason": log_reason,
             "removedBy": executor,
             "category": "sugestoes",
@@ -1907,13 +1908,16 @@ def admin_restore_deleted_suggestions(req: https_fn.Request) -> https_fn.Respons
             artist = (item.get("artist") or "").strip()
             if not song:
                 continue
+            voter_map = item.get("voterMap") or {}
+            likes = len([v for v in voter_map.values() if v == "like"]) if voter_map else safe_int(item.get("likes"), 0)
+            dislikes = len([v for v in voter_map.values() if v == "dislike"]) if voter_map else safe_int(item.get("dislikes"), 0)
             doc_data = {
                 "song": song,
                 "artist": artist,
                 "by": item.get("by") or "Membro",
-                "likes": safe_int(item.get("likes"), 0),
-                "dislikes": safe_int(item.get("dislikes"), 0),
-                "voterMap": item.get("voterMap") or {},
+                "likes": likes,
+                "dislikes": dislikes,
+                "voterMap": voter_map,
                 "youtube": item.get("youtube") or "",
                 "note": item.get("note") or "",
                 "createdAt": firestore.SERVER_TIMESTAMP
@@ -1929,6 +1933,7 @@ def admin_restore_deleted_suggestions(req: https_fn.Request) -> https_fn.Respons
                 "by": doc_data["by"],
                 "likes": doc_data["likes"],
                 "dislikes": doc_data["dislikes"],
+                "voterMap": voter_map,
                 "category": "sugestoes",
                 "who": "Administrador",
                 "whoEmail": "juliocereser@gmail.com",
@@ -1936,6 +1941,54 @@ def admin_restore_deleted_suggestions(req: https_fn.Request) -> https_fn.Respons
                 "tsLocal": now_sp().strftime("%d/%m/%Y %H:%M:%S")
             })
         return json_response({"ok": True, "restored": results}, 200)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
+def admin_sync_suggestion_votes(req: https_fn.Request) -> https_fn.Response:
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        suggestions_ref = db.collection("suggestions")
+        fixed = []
+        for doc in suggestions_ref.stream():
+            d = doc.to_dict() or {}
+            voter_map = d.get("voterMap") or {}
+            real_likes = len([v for v in voter_map.values() if v == "like"])
+            real_dislikes = len([v for v in voter_map.values() if v == "dislike"])
+            curr_likes = d.get("likes") or 0
+            curr_dislikes = d.get("dislikes") or 0
+            if curr_likes != real_likes or curr_dislikes != real_dislikes:
+                doc.reference.update({
+                    "likes": real_likes,
+                    "dislikes": real_dislikes,
+                    "voterMap": voter_map
+                })
+                fixed.append({
+                    "id": doc.id,
+                    "song": d.get("song"),
+                    "artist": d.get("artist"),
+                    "old_likes": curr_likes,
+                    "new_likes": real_likes,
+                    "old_dislikes": curr_dislikes,
+                    "new_dislikes": real_dislikes
+                })
+        if fixed:
+            db.collection("logs").add({
+                "action": "Sincronização de Votos",
+                "detail": f"Sincronizados votos de {len(fixed)} sugestão(ões) com base nos votantes reais (voterMap)",
+                "category": "sugestoes",
+                "who": "Administrador",
+                "whoEmail": "juliocereser@gmail.com",
+                "ts": firestore.SERVER_TIMESTAMP,
+                "tsLocal": now_sp().strftime("%d/%m/%Y %H:%M:%S")
+            })
+        return json_response({"ok": True, "fixed_count": len(fixed), "fixed": fixed}, 200)
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 

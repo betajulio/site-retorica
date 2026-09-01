@@ -169,6 +169,7 @@
       <div class="admin-tools-grid">
         <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
         <button class="btn-ghost" style="border-color:#f97316;color:#fdba74" onclick="runDuplicateSuggestionsCleanup()">♻️ Limpar Músicas Duplicadas</button>
+        <button class="btn-ghost" style="border-color:#38bdf8;color:#7dd3fc" onclick="syncSuggestionVotes()">🔄 Sincronizar Votos das Sugestões</button>
         <button class="btn-ghost" style="border-color:#f43f5e;color:#fda4af" onclick="triggerWeeklyElimination()">🎯 Executar Eliminação da Lanterna</button>
         <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="triggerManualRehearsalZap()">📱 Disparar Zap Ensaio</button>
         <button class="btn-ghost" style="border-color:#93c5fd;color:#bfdbfe" onclick="forceTop3Tiebreaker()">⚔️ Forçar desempate Top 3</button>
@@ -741,6 +742,7 @@ window.runSuggestionsCleanup = async () => {
         by: s.by || 'Membro',
         likes: s.likes || 0,
         dislikes: s.dislikes || 0,
+        voterMap: s.voterMap || {},
         reason: 'Atingiu o limite de 3 dislikes (Varredura de manutenção)',
         removedBy: 'Varredura Automática',
         category: 'sugestoes',
@@ -756,6 +758,57 @@ window.runSuggestionsCleanup = async () => {
   } catch (e) {
     console.error('Cleanup error:', e);
     showToast('Erro durante a varredura. Veja o console.');
+  }
+};
+
+window.syncSuggestionVotes = async () => {
+  if (!confirm('Deseja sincronizar os votos de todas as sugestões com os votantes reais (voterMap), corrigindo divergências e evitando votos duplicados?')) return;
+  showToast('Sincronizando votos...');
+  try {
+    const snap = await getDocs(collection(db, 'suggestions'));
+    if (snap.empty) {
+      showToast('Nenhuma sugestão encontrada.');
+      return;
+    }
+    let fixedCount = 0;
+    const batchSize = 400;
+    let batch = writeBatch(db);
+    let opCount = 0;
+
+    for (const d of snap.docs) {
+      const s = d.data() || {};
+      const voterMap = s.voterMap || {};
+      const realLikes = Object.values(voterMap).filter(v => v === 'like').length;
+      const realDislikes = Object.values(voterMap).filter(v => v === 'dislike').length;
+
+      if ((s.likes || 0) !== realLikes || (s.dislikes || 0) !== realDislikes) {
+        batch.update(d.ref, { likes: realLikes, dislikes: realDislikes, voterMap });
+        fixedCount++;
+        opCount++;
+        if (opCount % batchSize === 0) {
+          await batch.commit();
+          batch = writeBatch(db);
+        }
+      }
+    }
+    if (opCount % batchSize !== 0 && opCount > 0) {
+      await batch.commit();
+    }
+
+    await addDoc(collection(db, 'logs'), {
+      action: 'Sincronização de Votos',
+      detail: `Sincronização de votos concluída: ${fixedCount} sugestão(ões) corrigida(s) com base nos votantes reais`,
+      category: 'sugestoes',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Administrador',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+
+    showToast(fixedCount > 0 ? `✓ ${fixedCount} sugestão(ões) sincronizada(s) com sucesso!` : '✓ Todas as sugestões já estão consistentes.');
+  } catch (err) {
+    console.error('Sync error:', err);
+    showToast('Erro ao sincronizar sugestões.');
   }
 };
 
@@ -855,6 +908,7 @@ window.runDuplicateSuggestionsCleanup = async () => {
           by: l.by || 'Membro',
           likes: l.likes || 0,
           dislikes: l.dislikes || 0,
+          voterMap: l.voterMap || {},
           reason: `Música duplicada (mantida versão de maior voto com ${wScore} pts)`,
           removedBy: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
           category: 'sugestoes',

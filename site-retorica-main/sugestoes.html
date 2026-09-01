@@ -852,33 +852,29 @@ window.voteSuggestion = async (id, type) => {
 
   const voterMap = {...(s.voterMap||{})};
   const current  = voterMap[uid];
-  let likes    = s.likes    || 0;
-  let dislikes = s.dislikes || 0;
 
   if (current === type) {
-    if (type === 'like')    likes--;
-    if (type === 'dislike') dislikes--;
     delete voterMap[uid];
   } else {
-    if (current === 'like')    likes--;
-    if (current === 'dislike') dislikes--;
-    if (type === 'like')    likes++;
-    if (type === 'dislike') dislikes++;
     voterMap[uid] = type;
   }
 
-  if (dislikes >= 3) {
+  const likes = Object.values(voterMap).filter(v => v === 'like').length;
+  const dislikes = Object.values(voterMap).filter(v => v === 'dislike').length;
+
+  if (dislikes >= 3 && isAuditAdmin) {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
       detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 3 dislikes`,
       song: s.song, artist: s.artist, by: s.by, likes, dislikes,
+      voterMap,
       reason: 'Atingiu o limite de 3 dislikes', removedBy: 'Sistema',
       category: 'sugestoes', who: 'Sistema', whoEmail: '',
       ts: serverTimestamp(), tsLocal: new Date().toLocaleString('pt-BR')
     });
     await loadSuggestionsSnapshot(true);
-    showToast('🗑 Sugestão removida (4+ dislikes)');
+    showToast('🗑 Sugestão removida (3+ dislikes)');
     return;
   }
 
@@ -904,6 +900,7 @@ window.removeSuggestion = async id => {
     detail: `${s.song} — ${s.artist} · ${s.likes||0}👍 ${s.dislikes||0}👎 · Motivo: ${reason||'Removido pelo administrador'}`,
     song: s.song, artist: s.artist, by: s.by,
     likes: s.likes||0, dislikes: s.dislikes||0,
+    voterMap: s.voterMap || {},
     reason: reason||'Removido pelo administrador',
     removedBy: auth.currentUser?.displayName?.split(' ')[0]||'Admin',
     category: 'sugestoes',
