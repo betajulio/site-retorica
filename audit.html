@@ -1638,11 +1638,17 @@ window.saveAllSchedules = async () => {
   }
 };
 
+let isTriggeringManual = false;
 window.triggerScheduleManually = async (key) => {
+  if (isTriggeringManual) {
+    showToast('Aguarde o disparo atual terminar...');
+    return;
+  }
   const item = currentSchedules[key];
   if (!item) return;
   if (!confirm(`Deseja executar o disparo manual de "${item.name}" agora?`)) return;
 
+  isTriggeringManual = true;
   showToast(`Disparando ${item.name}...`);
   try {
     if (item.triggerEndpoint) {
@@ -1651,13 +1657,12 @@ window.triggerScheduleManually = async (key) => {
       if (res.ok && data.ok !== false) {
         showToast(data.message || `✓ ${item.name} enviado com sucesso!`);
         return;
+      } else {
+        showToast(`⚠ Falha no envio: ${data.error || data.detail || 'Erro no servidor'}`);
+        return;
       }
     }
-  } catch (e) {
-    console.warn('HTTP direct trigger failed, attempting log fallback:', e);
-  }
 
-  try {
     await addDoc(collection(db, 'logs'), {
       action: `Disparo Manual: ${item.name}`,
       detail: `Execução manual via Central de Agendamentos`,
@@ -1671,6 +1676,8 @@ window.triggerScheduleManually = async (key) => {
   } catch (err) {
     console.error('triggerScheduleManually error:', err);
     showToast('⚠ Falha ao disparar. Verifique o console.');
+  } finally {
+    isTriggeringManual = false;
   }
 };
 

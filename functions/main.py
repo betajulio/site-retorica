@@ -1765,7 +1765,7 @@ def admin_trigger_pending_votes_report(req: https_fn.Request) -> https_fn.Respon
         if not msg:
             return json_response({"ok": False, "error": "Nenhuma sugestão cadastrada."}, 404)
 
-        result = send_wa_notification_with_logo(msg, db)
+        result = send_wa_message(msg)
         return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
@@ -2603,7 +2603,7 @@ def daily_pending_votes_report(event: scheduler_fn.ScheduledEvent) -> None:
         if not msg:
             print("[REPORT PENDENTES] Nenhuma sugestão encontrada.")
             return
-        result = send_wa_notification_with_logo(msg, db)
+        result = send_wa_message(msg)
         print(f"[REPORT PENDENTES] Disparo diário enviado: {result}")
     except Exception as exc:
         print(f"[REPORT PENDENTES] Erro durante disparo: {type(exc).__name__}: {exc}")
@@ -2661,7 +2661,7 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                     elif key == "pending_votes_report":
                         msg = build_pending_votes_report_message(db)
                         if msg:
-                            r = send_wa_notification_with_logo(msg, db)
+                            r = send_wa_message(msg)
                             result_ok = r.get("ok", False)
                             detail = r.get("detail", "")
                     elif key == "weekly_ranking":
