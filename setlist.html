@@ -1179,7 +1179,11 @@ window.closeMobileMenu = () => {
 };
 
 // --- FOCUS LISTENER ---
+let lastSetlistFocusRefreshAt = 0;
 window.addEventListener('focus', () => {
+  const now = Date.now();
+  if (now - lastSetlistFocusRefreshAt < 180000) return;
+  lastSetlistFocusRefreshAt = now;
   loadSetlistSnapshot(true);
   ensureForumSubscription(true);
 });

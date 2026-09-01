@@ -30,14 +30,135 @@
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--cream);font-family:'Lora',serif;overflow-x:hidden;background-attachment:fixed;transition:background-color .4s ease,background-image .4s ease}
 
-  /* TEMAS VISUAIS POR DIA DA SEMANA (FUNDO DO SITE) */
-  html.day-sun body, body.day-sun{background-color:#0c0906;background-image:radial-gradient(circle at 50% 0%,rgba(160,100,30,.14) 0%,transparent 60%),radial-gradient(circle at 10% 85%,rgba(100,50,15,.12) 0%,transparent 50%),radial-gradient(circle at 90% 40%,rgba(130,75,20,.10) 0%,transparent 55%),linear-gradient(180deg,#0d0a07 0%,#080604 100%)}
-  html.day-mon body, body.day-mon{background-color:#08090c;background-image:radial-gradient(circle at 50% -10%,rgba(60,90,130,.15) 0%,transparent 55%),radial-gradient(circle at 85% 70%,rgba(190,120,20,.08) 0%,transparent 50%),radial-gradient(circle at 15% 45%,rgba(40,60,90,.10) 0%,transparent 50%),linear-gradient(180deg,#090a0d 0%,#060709 100%)}
-  html.day-tue body, body.day-tue{background-color:#0a0804;background-image:radial-gradient(circle at 50% 0%,rgba(200,130,10,.18) 0%,transparent 65%),radial-gradient(circle at 85% 90%,rgba(139,58,10,.15) 0%,transparent 50%),radial-gradient(circle at 10% 30%,rgba(180,100,15,.12) 0%,transparent 55%),linear-gradient(180deg,#0b0905 0%,#070503 100%)}
-  html.day-wed body, body.day-wed{background-color:#0c0709;background-image:radial-gradient(circle at 50% 0%,rgba(160,30,60,.16) 0%,transparent 60%),radial-gradient(circle at 85% 40%,rgba(200,110,20,.12) 0%,transparent 50%),radial-gradient(circle at 15% 80%,rgba(130,20,50,.14) 0%,transparent 55%),linear-gradient(180deg,#0e070a 0%,#070405 100%)}
-  html.day-thu body, body.day-thu{background-color:#0d0805;background-image:radial-gradient(circle at 50% -10%,rgba(180,70,15,.18) 0%,transparent 60%),radial-gradient(circle at 90% 75%,rgba(140,60,10,.15) 0%,transparent 50%),radial-gradient(circle at 10% 40%,rgba(160,80,20,.12) 0%,transparent 50%),linear-gradient(180deg,#0e0906 0%,#070503 100%)}
-  html.day-fri body, body.day-fri{background-color:#0a0803;background-image:radial-gradient(ellipse at 50% -15%,rgba(232,168,32,.24) 0%,transparent 70%),radial-gradient(circle at 80% 60%,rgba(200,130,10,.14) 0%,transparent 50%),radial-gradient(circle at 20% 80%,rgba(232,168,32,.10) 0%,transparent 55%),linear-gradient(180deg,#0d0a04 0%,#060502 100%)}
-  html.day-sat body, body.day-sat{background-color:#0b0805;background-image:radial-gradient(circle at 25% 0%,rgba(232,168,32,.22) 0%,transparent 60%),radial-gradient(circle at 75% 0%,rgba(200,110,10,.20) 0%,transparent 60%),radial-gradient(circle at 50% 65%,rgba(139,58,10,.14) 0%,transparent 55%),linear-gradient(180deg,#0c0905 0%,#060402 100%)}
+  /* ============================================================
+     TEMAS VISUAIS DINÂMICOS POR DIA DA SEMANA (ROCK ATMOSPHERE)
+     ============================================================ */
+
+  /* Domingo (0): Vinyl Lounge / Classic Bronze, Warm Amber & Tobacco */
+  html.day-sun, body.day-sun {
+    --gold: #f59e0b;
+    --amber: #d97706;
+    --rust: #92400e;
+    --brown: #2e1c0c;
+    --dark: #120b05;
+    --black: #0b0704;
+  }
+  html.day-sun body, body.day-sun {
+    background-color: #0b0704;
+    background-image: 
+      radial-gradient(ellipse at 50% 0%, rgba(245,158,11,.24) 0%, transparent 60%),
+      radial-gradient(circle at 10% 85%, rgba(146,64,14,.25) 0%, transparent 50%),
+      radial-gradient(circle at 90% 40%, rgba(217,119,6,.20) 0%, transparent 55%),
+      linear-gradient(180deg, #0e0905 0%, #060402 100%);
+  }
+
+  /* Segunda-feira (1): Studio Noir / Electric Neon Cyan & Midnight Blue */
+  html.day-mon, body.day-mon {
+    --gold: #38bdf8;
+    --amber: #0ea5e9;
+    --rust: #0284c7;
+    --brown: #0c1e33;
+    --dark: #060e18;
+    --black: #030710;
+  }
+  html.day-mon body, body.day-mon {
+    background-color: #030710;
+    background-image: 
+      radial-gradient(ellipse at 50% -10%, rgba(56,189,248,.28) 0%, transparent 60%),
+      radial-gradient(circle at 85% 70%, rgba(14,165,233,.22) 0%, transparent 50%),
+      radial-gradient(circle at 15% 45%, rgba(2,132,199,.25) 0%, transparent 50%),
+      linear-gradient(180deg, #060d1a 0%, #020509 100%);
+  }
+
+  /* Terça-feira (2): Valve Amp & Hot Glow / Molten Orange & Warm Distortion */
+  html.day-tue, body.day-tue {
+    --gold: #fbbf24;
+    --amber: #f97316;
+    --rust: #c2410c;
+    --brown: #381a08;
+    --dark: #150903;
+    --black: #0b0502;
+  }
+  html.day-tue body, body.day-tue {
+    background-color: #0b0502;
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(249,115,22,.30) 0%, transparent 65%),
+      radial-gradient(circle at 85% 90%, rgba(194,65,12,.26) 0%, transparent 50%),
+      radial-gradient(circle at 10% 30%, rgba(251,191,36,.22) 0%, transparent 55%),
+      linear-gradient(180deg, #100703 0%, #050201 100%);
+  }
+
+  /* Quarta-feira (3): 70s Psychedelic Prog / Velvet Purple & Neon Magenta */
+  html.day-wed, body.day-wed {
+    --gold: #f472b6;
+    --amber: #c084fc;
+    --rust: #9333ea;
+    --brown: #2d1038;
+    --dark: #110517;
+    --black: #09020c;
+  }
+  html.day-wed body, body.day-wed {
+    background-color: #09020c;
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(192,132,252,.30) 0%, transparent 60%),
+      radial-gradient(circle at 85% 40%, rgba(244,114,182,.24) 0%, transparent 50%),
+      radial-gradient(circle at 15% 80%, rgba(147,51,234,.28) 0%, transparent 55%),
+      linear-gradient(180deg, #120518 0%, #050107 100%);
+  }
+
+  /* Quinta-feira (4): Grunge 90s / Toxic Emerald & Overdrive Moss */
+  html.day-thu, body.day-thu {
+    --gold: #a3e635;
+    --amber: #22c55e;
+    --rust: #15803d;
+    --brown: #112a14;
+    --dark: #051207;
+    --black: #030a04;
+  }
+  html.day-thu body, body.day-thu {
+    background-color: #030a04;
+    background-image: 
+      radial-gradient(ellipse at 50% -10%, rgba(34,197,94,.28) 0%, transparent 60%),
+      radial-gradient(circle at 90% 75%, rgba(163,230,53,.22) 0%, transparent 50%),
+      radial-gradient(circle at 10% 40%, rgba(21,128,61,.25) 0%, transparent 50%),
+      linear-gradient(180deg, #071509 0%, #020502 100%);
+  }
+
+  /* Sexta-feira (5): Friday Stage Lights / Solar Gold & High Voltage Platinum */
+  html.day-fri, body.day-fri {
+    --gold: #fef08a;
+    --amber: #eab308;
+    --rust: #a16207;
+    --brown: #332305;
+    --dark: #130d02;
+    --black: #0a0802;
+  }
+  html.day-fri body, body.day-fri {
+    background-color: #0a0802;
+    background-image: 
+      radial-gradient(ellipse at 50% -15%, rgba(254,240,138,.35) 0%, transparent 70%),
+      radial-gradient(circle at 80% 60%, rgba(234,179,8,.26) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(161,98,7,.25) 0%, transparent 55%),
+      linear-gradient(180deg, #110d03 0%, #050401 100%);
+  }
+
+  /* Sábado (6): Live Arena / Blood Red & Heavy Crimson Metal */
+  html.day-sat, body.day-sat {
+    --gold: #fca5a5;
+    --amber: #ef4444;
+    --rust: #b91c1c;
+    --brown: #380d0d;
+    --dark: #170404;
+    --black: #0c0202;
+  }
+  html.day-sat body, body.day-sat {
+    background-color: #0c0202;
+    background-image: 
+      radial-gradient(circle at 25% 0%, rgba(239,68,68,.35) 0%, transparent 60%),
+      radial-gradient(circle at 75% 0%, rgba(185,28,28,.30) 0%, transparent 60%),
+      radial-gradient(circle at 50% 65%, rgba(252,165,165,.20) 0%, transparent 55%),
+      linear-gradient(180deg, #140404 0%, #060101 100%);
+  }
   body.home-page #galeria .gallery-grid,
   body.home-page #galeria .member-only,
   body.home-page #tagManagerWrap,
@@ -5890,10 +6011,15 @@ function initLazySectionSubscriptions() {
 applySeasonalHeroTheme();
 initLazySectionSubscriptions();
 initCarouselTouch();
+let lastWindowFocusRefreshAt = 0;
 window.addEventListener('focus', () => {
+  const now = Date.now();
+  if (now - lastWindowFocusRefreshAt < 180000) return;
+  lastWindowFocusRefreshAt = now;
   if (currentSection === 'sugestoes') loadSuggestionsSnapshot(true);
   if (currentSection === 'enquetes') loadPollsSnapshot(true);
   if (currentSection === 'galeria') ensureGallerySubscription(true);
+  updatePromotionCountdowns(true);
 });
 setTimeout(()=>{
   document.getElementById('loadingOverlay').classList.add('hidden');
@@ -6261,17 +6387,33 @@ function renderPromotionBanner(timeUntil, paused = false) {
   `;
 }
 
+let promotionStateCache = { checkedAt: 0, data: null };
+
+async function getPromotionStateCached(force = false) {
+  const now = Date.now();
+  if (!force && promotionStateCache.data && (now - promotionStateCache.checkedAt < 15 * 60 * 1000)) {
+    return promotionStateCache.data;
+  }
+  try {
+    const snap = await getDoc(promotionStateRef);
+    promotionStateCache = {
+      checkedAt: now,
+      data: snap.exists() ? (snap.data() || {}) : {}
+    };
+  } catch (err) {
+    console.warn('[COUNTDOWN] Não foi possível ler promotion_state, usando fallback local.', err);
+    if (!promotionStateCache.data) {
+      promotionStateCache = { checkedAt: now, data: {} };
+    }
+  }
+  return promotionStateCache.data;
+}
+
 // Atualizar contadores na UI
-async function updatePromotionCountdowns() {
+async function updatePromotionCountdowns(forceFetch = false) {
   try {
     const now = Date.now();
-    let state = {};
-    try {
-      const stateSnap = await getDoc(promotionStateRef);
-      state = stateSnap.exists() ? (stateSnap.data() || {}) : {};
-    } catch (stateErr) {
-      console.warn('[COUNTDOWN] Não foi possível ler promotion_state, usando fallback local.', stateErr);
-    }
+    const state = await getPromotionStateCached(forceFetch);
     if (state.promotionPaused === true) {
       renderPromotionBanner(0, true);
       return;
@@ -6281,7 +6423,6 @@ async function updatePromotionCountdowns() {
     const nextPromo = nextPromoDate.getTime();
     const timeUntil = nextPromo - now;
     
-    console.log('[COUNTDOWN] Tempo até próxima promoção:', formatTimeRemaining(timeUntil));
     renderPromotionBanner(timeUntil);
   } catch (e) {
     console.error('[COUNTDOWN] Erro ao atualizar:', e);
@@ -6564,30 +6705,13 @@ async function completeRepertoryPoll(pollId, pollData) {
 
 // Iniciar sistema de promoção
 (async function startPromotionSystem() {
-  await initPromotionState();
-  await updatePromotionCountdowns();
+  await updatePromotionCountdowns(true);
   
-  // Verificar a cada minuto
-  setInterval(async () => {
-    try {
-      await checkAndPromote();
-      await checkPollsCompletion();
-      await updatePromotionCountdowns();
-    } catch (e) {
-      console.error('[PROMOÇÃO] Erro:', e);
-    }
-  }, 60000); // 1 minuto
-  
-  // Verificação inicial
-  setTimeout(async () => {
-    try {
-      await checkAndPromote();
-      await checkPollsCompletion();
-      await updatePromotionCountdowns();
-    } catch (e) {
-      console.error('[PROMOÇÃO] Erro inicial:', e);
-    }
-  }, 3000);
+  // Atualizar visualmente o relógio a cada 10s localmente na memória (zero leituras no Firestore)
+  setInterval(() => {
+    if (document.hidden) return;
+    updatePromotionCountdowns(false);
+  }, 10000);
 })();
 
 const VIDEO_FRAME_DEBUG_KEY = 'retorica_video_frame_debug_values';

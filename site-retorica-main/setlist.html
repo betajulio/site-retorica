@@ -13,7 +13,8 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:image" content="https://betajulio.github.io/site-retorica/imagens/logo_not_zap.jpg">
 <title>Setlist de Ensaio — Retórica</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css?v=19">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=19">
 <script>
 (function(){
   try{
@@ -97,6 +98,7 @@
   </ul>
   <div class="nav-auth">
     <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
+    <a href="index.html" class="coin-balance" id="coinBalance" style="display:none;text-decoration:none"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></a>
     <button class="btn-ghost btn-sm" id="loginBtn" onclick="openLogin()">Entrar</button>
     <button class="btn-ghost btn-sm" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
   </div>
@@ -116,12 +118,13 @@
   <a href="audit.html" id="auditLinkMobile" class="audit-admin-only" style="color:var(--gold)">Auditoria</a>
   <div style="border-top:1px solid rgba(200,130,10,.1);margin-top:.5rem;padding:1rem 2rem;display:flex;flex-direction:column;gap:.8rem">
     <span class="nav-user" id="navUserMobile" style="display:none;text-align:center">🎸 Membro</span>
+    <a href="index.html" class="coin-balance" id="coinBalanceMobile" style="display:none;text-decoration:none;margin:0 auto"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValueMobile">0</strong></a>
     <button class="btn-ghost" id="loginBtnMobile" onclick="openLoginMobile()">Entrar</button>
     <button class="btn-ghost" id="logoutBtnMobile" onclick="doLogout()" style="display:none">Sair</button>
   </div>
 </div>
 
-<main style="padding-top: 80px; max-width: 1100px; margin: 0 auto;">
+<main style="padding-top: 80px; max-width: 1100px; margin: 0 auto; padding-left: 1rem; padding-right: 1rem;">
   
   <!-- 04 SETLIST -->
   <section id="setlist" style="padding: 4rem 1.5rem 2rem;">
@@ -1121,6 +1124,8 @@ function getNextFriday(fromDate = new Date()) {
   if (daysUntilFriday === 0 && isFridayAfterCutoff) {
     daysUntilFriday = 7;
   }
+  // Ciclo de 2 semanas: pula para a sexta-feira seguinte (+ 7 dias extras)
+  daysUntilFriday += 7;
   date.setDate(date.getDate() + daysUntilFriday);
   date.setHours(23, 59, 0, 0);
   return date;
@@ -1174,7 +1179,11 @@ window.closeMobileMenu = () => {
 };
 
 // --- FOCUS LISTENER ---
+let lastSetlistFocusRefreshAt = 0;
 window.addEventListener('focus', () => {
+  const now = Date.now();
+  if (now - lastSetlistFocusRefreshAt < 180000) return;
+  lastSetlistFocusRefreshAt = now;
   loadSetlistSnapshot(true);
   ensureForumSubscription(true);
 });

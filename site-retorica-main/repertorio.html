@@ -802,7 +802,11 @@ window.closeMobileMenu = () => {
 };
 
 // --- FOCUS LISTENER ---
+let lastRepertorioFocusRefreshAt = 0;
 window.addEventListener('focus', () => {
+  const now = Date.now();
+  if (now - lastRepertorioFocusRefreshAt < 180000) return;
+  lastRepertorioFocusRefreshAt = now;
   loadRepertorioSnapshot(true);
 });
 
