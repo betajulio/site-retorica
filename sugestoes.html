@@ -112,6 +112,26 @@
       </div>
     </div>
     <div id="promotionCountdownBanner"></div>
+    
+    <!-- FAIXA DE FILTROS DINÂMICOS POR MEMBRO -->
+    <div class="suggestion-filters-bar" id="suggestionFiltersBar" style="display:none">
+      <button type="button" class="sug-filter-btn active" data-filter="all" onclick="setSuggestionFilter('all')">
+        <span class="filter-icon">🎵</span> Todas <span class="filter-count" id="countAll">0</span>
+      </button>
+      <button type="button" class="sug-filter-btn" data-filter="my" onclick="setSuggestionFilter('my')">
+        <span class="filter-icon">🎸</span> Sugeridas por mim <span class="filter-count" id="countMy">0</span>
+      </button>
+      <button type="button" class="sug-filter-btn" data-filter="liked" onclick="setSuggestionFilter('liked')">
+        <span class="filter-icon">👍</span> Músicas que dei Like <span class="filter-count" id="countLiked">0</span>
+      </button>
+      <button type="button" class="sug-filter-btn" data-filter="disliked" onclick="setSuggestionFilter('disliked')">
+        <span class="filter-icon">👎</span> Músicas que dei Dislike <span class="filter-count" id="countDisliked">0</span>
+      </button>
+      <button type="button" class="sug-filter-btn" data-filter="unvoted" onclick="setSuggestionFilter('unvoted')">
+        <span class="filter-icon">❓</span> Músicas que não votei <span class="filter-count" id="countUnvoted">0</span>
+      </button>
+    </div>
+
     <p id="suggestionsNotice" style="display:none;color:var(--smoke);font-style:italic;font-size:.88rem;margin-top:1rem">Faça login para sugerir músicas.</p>
     <div class="suggestions-list" id="suggestionsList"></div>
   </section>
@@ -317,6 +337,9 @@ function applyAuth() {
   const sugNotice = document.getElementById('suggestionsNotice');
   if (sugNotice) sugNotice.style.display = isLoggedIn ? 'none' : '';
 
+  const filterBar = document.getElementById('suggestionFiltersBar');
+  if (filterBar) filterBar.style.display = isLoggedIn ? 'flex' : 'none';
+
   // Expose member elements
   document.querySelectorAll('.member-only').forEach(el => {
     el.style.display = isMember ? 'block' : 'none';
@@ -327,6 +350,8 @@ function applyAuth() {
     const sugByEl = document.getElementById('sugBy');
     if (sugByEl) sugByEl.value = userName;
   }
+
+  renderSuggestions();
 }
 
 // --- POLLS LOGIC ---
@@ -778,16 +803,119 @@ async function loadSuggestionsSnapshot(force = false) {
   setTimeout(() => updatePromotionCountdowns(), 100);
 }
 
+let currentSuggestionFilter = 'all';
+
+window.setSuggestionFilter = (filterKey) => {
+  currentSuggestionFilter = filterKey || 'all';
+  renderSuggestions();
+};
+
+function isMySuggestion(s, uid, email, displayName, firstName) {
+  if (!uid && !email && !displayName) return false;
+  if (s.userId && uid && s.userId === uid) return true;
+  if (s.uid && uid && s.uid === uid) return true;
+  if (s.byEmail && email && s.byEmail.toLowerCase() === email) return true;
+  if (s.by) {
+    const normBy = normalizeSuggestionText(s.by);
+    if (displayName && normBy === normalizeSuggestionText(displayName)) return true;
+    if (firstName && normBy === normalizeSuggestionText(firstName)) return true;
+    if (email && normBy === normalizeSuggestionText(email.split('@')[0])) return true;
+    if (firstName && normBy.includes(normalizeSuggestionText(firstName))) return true;
+  }
+  return false;
+}
+
+function didILike(s, uid) {
+  if (!uid) return false;
+  return !!(s.voterMap && s.voterMap[uid] === 'like');
+}
+
+function didIDislike(s, uid) {
+  if (!uid) return false;
+  return !!(s.voterMap && s.voterMap[uid] === 'dislike');
+}
+
+function isUnvoted(s, uid) {
+  if (!uid) return false;
+  return !s.voterMap || (s.voterMap[uid] !== 'like' && s.voterMap[uid] !== 'dislike');
+}
+
 function renderSuggestions() {
   const list = document.getElementById('suggestionsList');
   if (!list) return;
-  if (!suggestionsCache.length) {
-    list.innerHTML='<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p>';
+
+  const uid = auth.currentUser?.uid || null;
+  const email = auth.currentUser?.email ? auth.currentUser.email.toLowerCase() : '';
+  const displayName = auth.currentUser?.displayName || '';
+  const firstName = displayName ? displayName.split(' ')[0] : '';
+
+  // Calcular contagens em tempo real na memória (0 leituras no Firestore)
+  const totalCount = suggestionsCache.length;
+  let myCount = 0;
+  let likedCount = 0;
+  let dislikedCount = 0;
+  let unvotedCount = 0;
+
+  suggestionsCache.forEach(({ data: s }) => {
+    if (isMySuggestion(s, uid, email, displayName, firstName)) myCount++;
+    if (didILike(s, uid)) likedCount++;
+    if (didIDislike(s, uid)) dislikedCount++;
+    if (isUnvoted(s, uid)) unvotedCount++;
+  });
+
+  // Atualizar contadores na barra de filtros
+  const countAllEl = document.getElementById('countAll');
+  const countMyEl = document.getElementById('countMy');
+  const countLikedEl = document.getElementById('countLiked');
+  const countDislikedEl = document.getElementById('countDisliked');
+  const countUnvotedEl = document.getElementById('countUnvoted');
+  if (countAllEl) countAllEl.textContent = totalCount;
+  if (countMyEl) countMyEl.textContent = myCount;
+  if (countLikedEl) countLikedEl.textContent = likedCount;
+  if (countDislikedEl) countDislikedEl.textContent = dislikedCount;
+  if (countUnvotedEl) countUnvotedEl.textContent = unvotedCount;
+
+  // Atualizar visual do botão ativo
+  document.querySelectorAll('.sug-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-filter') === currentSuggestionFilter);
+  });
+
+  if (!totalCount) {
+    list.innerHTML = '<p style="color:var(--smoke);font-style:italic;padding:1rem 0">Nenhuma sugestão ainda.</p> ';
     return;
   }
 
-  const uid = auth.currentUser?.uid || null;
-  const sorted = [...suggestionsCache].sort((a,b) => {
+  // Filtrar de acordo com a seleção do membro
+  let filtered = [...suggestionsCache];
+  if (isLoggedIn && uid) {
+    if (currentSuggestionFilter === 'my') {
+      filtered = filtered.filter(({ data: s }) => isMySuggestion(s, uid, email, displayName, firstName));
+    } else if (currentSuggestionFilter === 'liked') {
+      filtered = filtered.filter(({ data: s }) => didILike(s, uid));
+    } else if (currentSuggestionFilter === 'disliked') {
+      filtered = filtered.filter(({ data: s }) => didIDislike(s, uid));
+    } else if (currentSuggestionFilter === 'unvoted') {
+      filtered = filtered.filter(({ data: s }) => isUnvoted(s, uid));
+    }
+  }
+
+  if (!filtered.length) {
+    let emptyMsg = 'Nenhuma sugestão encontrada para este filtro.';
+    if (currentSuggestionFilter === 'my') emptyMsg = '🎸 Você ainda não sugeriu nenhuma música.';
+    else if (currentSuggestionFilter === 'liked') emptyMsg = '👍 Você ainda não deu like em nenhuma sugestão.';
+    else if (currentSuggestionFilter === 'disliked') emptyMsg = '👎 Você não deu dislike em nenhuma sugestão.';
+    else if (currentSuggestionFilter === 'unvoted') emptyMsg = '🎉 Incrível! Você já votou em todas as músicas sugeridas.';
+
+    list.innerHTML = `
+      <div style="text-align:center;padding:2.5rem 1rem;background:rgba(200,130,10,.03);border:1px dashed rgba(200,130,10,.18);border-radius:6px;margin:1rem 0">
+        <p style="font-size:1rem;color:var(--cream);margin-bottom:.6rem">${emptyMsg}</p>
+        <button class="btn-ghost btn-sm" onclick="setSuggestionFilter('all')" style="margin-top:.4rem">Ver todas as sugestões</button>
+      </div>
+    `;
+    return;
+  }
+
+  const sorted = filtered.sort((a,b) => {
     const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
     if (sb !== sa) return sb - sa;
     return (b.data.likes||0) - (a.data.likes||0);
@@ -798,11 +926,11 @@ function renderSuggestions() {
   list.innerHTML = sorted.map(({id, data: s}, i) => {
     const score     = getSuggestionScore(s);
     const myVote    = uid && s.voterMap ? s.voterMap[uid] : null;
-    const rankClass = i < 3 ? ` rank-${i+1}` : '';
-    const trophy    = i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
+    const rankClass = currentSuggestionFilter === 'all' && i < 3 ? ` rank-${i+1}` : '';
+    const trophy    = currentSuggestionFilter === 'all' && i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
 
     let isTie = false;
-    if (i < 3) {
+    if (currentSuggestionFilter === 'all' && i < 3) {
       isTie = sorted.some((other, idx) => {
         if (idx === i) return false;
         if (idx >= 3) return false;
@@ -981,7 +1109,10 @@ window.addSuggestion = async () => {
 
   try {
     await addDoc(collection(db, 'suggestions'), {
-      song, artist, by, youtube: youtube || '', note,
+      song, artist, by,
+      userId: auth.currentUser?.uid || '',
+      byEmail: auth.currentUser?.email ? auth.currentUser.email.toLowerCase() : '',
+      youtube: youtube || '', note,
       createdAt: serverTimestamp(),
       likes: 0, dislikes: 0, voterMap: {}
     });
