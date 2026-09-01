@@ -114,22 +114,28 @@
     <div id="promotionCountdownBanner"></div>
     
     <!-- FAIXA DE FILTROS DINÂMICOS POR MEMBRO -->
-    <div class="suggestion-filters-bar" id="suggestionFiltersBar" style="display:none">
-      <button type="button" class="sug-filter-btn active" data-filter="all" onclick="setSuggestionFilter('all')">
-        <span class="filter-icon">🎵</span> Todas <span class="filter-count" id="countAll">0</span>
-      </button>
-      <button type="button" class="sug-filter-btn" data-filter="my" onclick="setSuggestionFilter('my')">
-        <span class="filter-icon">🎸</span> Sugeridas por mim <span class="filter-count" id="countMy">0</span>
-      </button>
-      <button type="button" class="sug-filter-btn" data-filter="liked" onclick="setSuggestionFilter('liked')">
-        <span class="filter-icon">👍</span> Músicas que dei Like <span class="filter-count" id="countLiked">0</span>
-      </button>
-      <button type="button" class="sug-filter-btn" data-filter="disliked" onclick="setSuggestionFilter('disliked')">
-        <span class="filter-icon">👎</span> Músicas que dei Dislike <span class="filter-count" id="countDisliked">0</span>
-      </button>
-      <button type="button" class="sug-filter-btn" data-filter="unvoted" onclick="setSuggestionFilter('unvoted')">
-        <span class="filter-icon">❓</span> Músicas que não votei <span class="filter-count" id="countUnvoted">0</span>
-      </button>
+    <div class="suggestion-filters-wrap" id="suggestionFiltersBar" style="display:none">
+      <div class="sug-filters-label">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold)"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        <span>Filtrar por Status do Membro</span>
+      </div>
+      <div class="suggestion-filters-bar">
+        <button type="button" class="sug-filter-btn active" data-filter="all" onclick="setSuggestionFilter('all')">
+          <span class="filter-icon">🎵</span> Todas <span class="filter-count" id="countAll">0</span>
+        </button>
+        <button type="button" class="sug-filter-btn" data-filter="my" onclick="setSuggestionFilter('my')">
+          <span class="filter-icon">🎸</span> Sugeridas por mim <span class="filter-count" id="countMy">0</span>
+        </button>
+        <button type="button" class="sug-filter-btn" data-filter="liked" onclick="setSuggestionFilter('liked')">
+          <span class="filter-icon">👍</span> Músicas que dei Like <span class="filter-count" id="countLiked">0</span>
+        </button>
+        <button type="button" class="sug-filter-btn" data-filter="disliked" onclick="setSuggestionFilter('disliked')">
+          <span class="filter-icon">👎</span> Músicas que dei Dislike <span class="filter-count" id="countDisliked">0</span>
+        </button>
+        <button type="button" class="sug-filter-btn" data-filter="unvoted" onclick="setSuggestionFilter('unvoted')">
+          <span class="filter-icon">❓</span> Músicas que não votei <span class="filter-count" id="countUnvoted">0</span>
+        </button>
+      </div>
     </div>
 
     <p id="suggestionsNotice" style="display:none;color:var(--smoke);font-style:italic;font-size:.88rem;margin-top:1rem">Faça login para sugerir músicas.</p>
