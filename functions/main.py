@@ -660,6 +660,54 @@ def build_top_suggestions_message(db):
         print(f"Erro ao construir mensagem do Top 3: {type(exc).__name__}: {exc}")
         return None
 
+def build_pending_votes_report_message(db):
+    try:
+        approved_snap = db.collection("approved_emails").get()
+        approved_emails = set(d.id.strip().lower() for d in approved_snap if d.id.strip())
+        total_members = len(approved_emails)
+        if total_members == 0:
+            total_members = 6
+
+        suggestions = get_sorted_suggestions(db)
+        if not suggestions:
+            return None
+
+        pending_items = []
+        for doc in suggestions:
+            s = doc.to_dict() or {}
+            song = (s.get("song") or "Música").strip()
+            voter_map = s.get("voterMap") or {}
+            voted_count = len(voter_map)
+            not_voted_count = max(0, total_members - voted_count)
+            if not_voted_count > 0:
+                pending_items.append({
+                    "song": song,
+                    "not_voted_count": not_voted_count,
+                    "score": get_suggestion_score(s)
+                })
+
+        pending_items.sort(key=lambda x: (x["not_voted_count"], x["score"]), reverse=True)
+
+        lines = [
+            "🎸 *SUGESTÕES PENDENTES DE VOTO* 🗳️",
+            ""
+        ]
+
+        if not pending_items:
+            lines.append("🎉 *Todas as sugestões estão 100% votadas por todos os membros da banda!*")
+        else:
+            for item in pending_items:
+                c = item["not_voted_count"]
+                member_text = "1 membro não votou" if c == 1 else f"{c} membros não votaram"
+                lines.append(f"🎵 *{item['song']}* — {member_text}")
+
+        lines.append("")
+        lines.append(f"💡 *Veja e vote nas sugestões:* {SUGGESTIONS_URL}")
+        return "\n".join(lines).strip()
+    except Exception as exc:
+        print(f"Erro ao construir report de votos pendentes: {type(exc).__name__}: {exc}")
+        return None
+
 def build_weekly_member_ranking_message(db):
     try:
         approved_snap = db.collection("approved_emails").get()
@@ -1703,6 +1751,26 @@ def admin_trigger_top_suggestions(req: https_fn.Request) -> https_fn.Response:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 
 @https_fn.on_request()
+def admin_trigger_pending_votes_report(req: https_fn.Request) -> https_fn.Response:
+    """Dispara manualmente o relatório de músicas pendentes de voto para o WhatsApp (uso admin)."""
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        msg = build_pending_votes_report_message(db)
+        if not msg:
+            return json_response({"ok": False, "error": "Nenhuma sugestão cadastrada."}, 404)
+
+        result = send_wa_notification_with_logo(msg, db)
+        return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
 def admin_trigger_suggestion_elimination(req: https_fn.Request) -> https_fn.Response:
     """Dispara a eliminação da música com menor pontuação (lanterna) manualmente (uso admin)."""
     if req.method == "OPTIONS":
@@ -2525,7 +2593,22 @@ def weekly_member_ranking(event: scheduler_fn.ScheduledEvent) -> None:
     except Exception as exc:
         print(f"[RANKING SEMANAL] Erro durante disparo: {type(exc).__name__}: {exc}")
 
-# 13. AGENDAMENTO DINÂMICO: DISPATCHER AUTOMÁTICO (CADA 10 MINUTOS)
+# 13. AGENDAMENTO: REPORT DE VOTOS PENDENTES DAS SUGESTÕES (TODOS OS DIAS ÀS 18:00)
+@scheduler_fn.on_schedule(schedule="0 18 * * *", timezone="America/Sao_Paulo")
+def daily_pending_votes_report(event: scheduler_fn.ScheduledEvent) -> None:
+    """Envia diariamente às 18:00 as músicas que faltam voto e a quantidade de membros faltantes."""
+    db = firestore.client()
+    try:
+        msg = build_pending_votes_report_message(db)
+        if not msg:
+            print("[REPORT PENDENTES] Nenhuma sugestão encontrada.")
+            return
+        result = send_wa_notification_with_logo(msg, db)
+        print(f"[REPORT PENDENTES] Disparo diário enviado: {result}")
+    except Exception as exc:
+        print(f"[REPORT PENDENTES] Erro durante disparo: {type(exc).__name__}: {exc}")
+
+# 14. AGENDAMENTO DINÂMICO: DISPATCHER AUTOMÁTICO (CADA 10 MINUTOS)
 @scheduler_fn.on_schedule(schedule="*/10 * * * *", timezone="America/Sao_Paulo")
 def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
     """Verifica a cada 10 minutos se alguma tarefa configurada no Firestore (config/schedules) deve ser disparada."""
@@ -2571,6 +2654,12 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                 try:
                     if key == "top_suggestions":
                         msg = build_top_suggestions_message(db)
+                        if msg:
+                            r = send_wa_notification_with_logo(msg, db)
+                            result_ok = r.get("ok", False)
+                            detail = r.get("detail", "")
+                    elif key == "pending_votes_report":
+                        msg = build_pending_votes_report_message(db)
                         if msg:
                             r = send_wa_notification_with_logo(msg, db)
                             result_ok = r.get("ok", False)

@@ -179,6 +179,7 @@
         <button id="pollReminderPauseBtn" class="btn-ghost" style="border-color:#818cf8;color:#c7d2fe" onclick="togglePollReminderPause()">⏸ Pausar lembretes de enquete</button>
         <button class="btn-ghost" style="border-color:#a78bfa;color:#c4b5fd" onclick="triggerPollReminderZap()">📢 Disparar Lembrete de Enquetes</button>
         <button class="btn-ghost" style="border-color:#f472b6;color:#fbcfe8" onclick="triggerTopSuggestionsZap()">🏆 Disparar Top 3 Sugestões</button>
+        <button class="btn-ghost" style="border-color:#34d399;color:#6ee7b7" onclick="triggerPendingVotesReportZap()">🗳️ Disparar Report Votos Pendentes</button>
         <button class="btn-ghost" style="border-color:#fbbf24;color:#fde68a" onclick="triggerWeeklyRankingZap()">📊 Disparar Ranking Semanal</button>
         <button class="btn-ghost" style="border-color:#86efac;color:#bbf7d0" onclick="testCuriosidades()">🎸 Testar Curiosidades do Dia</button>
         <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
@@ -1014,6 +1015,37 @@ window.triggerTopSuggestionsZap = async () => {
   }
 };
 
+window.triggerPendingVotesReportZap = async () => {
+  if (!confirm('Deseja disparar o relatório de votos pendentes das sugestões para o WhatsApp agora?')) return;
+  showToast('Disparando relatório de votos pendentes...');
+  try {
+    const res = await fetch('https://us-central1-retorica-b05b3.cloudfunctions.net/admin_trigger_pending_votes_report?token=retorica-force-top3-20260418', { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok !== false) {
+      showToast(data.message || '✓ Relatório de votos pendentes enviado com sucesso!');
+      return;
+    }
+  } catch(e) {
+    console.warn('Direct HTTP trigger failed, falling back to log trigger:', e);
+  }
+
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Disparar Report Votos Pendentes',
+      detail: 'Solicitação manual via página de auditoria',
+      category: 'sugestoes',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    showToast('✓ Comando enviado! O WhatsApp será disparado em instantes.');
+  } catch (err) {
+    console.error('Trigger pending votes report error:', err);
+    showToast('⚠ Erro ao disparar relatório. Veja o console.');
+  }
+};
+
 window.triggerWeeklyElimination = async () => {
   if (!confirm('Deseja realmente remover agora a música com menor pontuação (lanterna das sugestões)?\n\nEssa ação excluirá a música e enviará o aviso ao WhatsApp.')) return;
   showToast('Executando eliminação da lanterna...');
@@ -1423,6 +1455,17 @@ const DEFAULT_SCHEDULES = {
     days: [0, 1, 2, 3, 4, 5, 6],
     enabled: true,
     triggerEndpoint: 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_trigger_daily_reminder?token=retorica-force-top3-20260418'
+  },
+  pending_votes_report: {
+    id: 'pending_votes_report',
+    name: 'Report Votos Pendentes (Sugestões)',
+    icon: '🗳️',
+    category: 'Sugestões',
+    description: 'Informa diariamente as músicas das sugestões que ainda aguardam votos e quantos membros não votaram.',
+    time: '18:00',
+    days: [0, 1, 2, 3, 4, 5, 6],
+    enabled: true,
+    triggerEndpoint: 'https://us-central1-retorica-b05b3.cloudfunctions.net/admin_trigger_pending_votes_report?token=retorica-force-top3-20260418'
   }
 };
 
