@@ -2,6 +2,7 @@ import re
 import json
 import os
 import unicodedata
+import html
 from urllib.parse import quote_plus
 from firebase_functions import firestore_fn, scheduler_fn, https_fn
 from firebase_admin import initialize_app, firestore
@@ -1853,50 +1854,15 @@ def admin_clear_current_setlist(req: https_fn.Request) -> https_fn.Response:
 
 @https_fn.on_request()
 def admin_send_curiosidades(req: https_fn.Request) -> https_fn.Response:
-    """Envia as curiosidades do dia para o WhatsApp manualmente (uso admin)."""
-    import requests as http_requests, re
+    """Envia as curiosidades do dia e top musicas para o WhatsApp manualmente (uso admin)."""
     if req.method == "OPTIONS":
         return json_response({}, 204)
     token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
     if token != PROMOTION_ADMIN_TOKEN:
         return json_response({"ok": False, "error": "unauthorized"}, 403)
 
-    now_local = now_sp()
-    day   = now_local.day
-    month = now_local.month
-    month_names    = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"]
-    month_names_pt = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
-    date_str  = f"{day:02d} de {month_names_pt[month - 1]}"
-    slug_date = f"{day:02d}-de-{month_names[month - 1]}"
-    slug      = f"almanaque-da-musica-ucsfm-{slug_date}"
-
-    facts = []
-    try:
-        wp_url = f"https://ucsfm.com.br/wp-json/wp/v2/posts?slug={slug}&per_page=1"
-        resp = http_requests.get(wp_url, timeout=15)
-        posts = resp.json()
-        if isinstance(posts, list) and posts:
-            content = posts[0].get("content", {}).get("rendered", "")
-            raw = re.findall(r"<(?:p|li)[^>]*>(.*?)</(?:p|li)>", content, re.DOTALL | re.IGNORECASE)
-            for item in raw:
-                text = re.sub(r"<[^>]+>", "", item).strip()
-                if len(text) > 10 and "confira" not in text.lower():
-                    facts.append(text)
-    except Exception as exc:
-        return json_response({"ok": False, "error": f"Erro ao buscar almanaque: {exc}"}, 500)
-
-    if not facts:
-        return json_response({"ok": False, "error": f"Nenhum fato encontrado para {date_str}"}, 404)
-
-    lines = ["🎸 *BOM DIA, RETÓRICA!* 🤘", "", f"📅 *{date_str}* na história da música:", ""]
-    for fact in facts:
-        lines.append(f"🔹 {fact}")
-    lines += ["", "_Que o rock esteja com vocês hoje!_ 🎶", NEWS_FOOTER]
-    msg = "\n".join(lines)
-
-    result = send_wa_message(msg)
-    fetch_and_send_top_music()
-    return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "facts_count": len(facts)}, 200 if result.get("ok") else 500)
+    result = send_daily_curiosidades_and_top_music()
+    return json_response(result, 200 if result.get("ok") else 500)
 
 def build_tuesday_repertoire_message(db):
     sat_iso = get_next_saturday_iso()
@@ -2196,27 +2162,203 @@ def send_wa_notification_with_logo(text, db=None):
     msg_res = send_wa_message(text)
     return msg_res if msg_res.get("ok") else img_res
 
+UCSFM_REQUEST_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
+
+def extract_facts_from_html_content(content):
+    if not content:
+        return []
+    facts = []
+    raw = re.findall(r"<(?:p|li)[^>]*>(.*?)</(?:p|li)>", content, re.DOTALL | re.IGNORECASE)
+    for item in raw:
+        clean = html.unescape(re.sub(r"<[^>]+>", "", item).strip())
+        if len(clean) > 10 and "confira" not in clean.lower():
+            facts.append(clean)
+    return facts
+
+def extract_facts_from_markdown(text):
+    if not text:
+        return []
+    facts = []
+    start = text.find("Confira alguns fatos")
+    if start == -1:
+        start = text.find("# Almanaque")
+        if start == -1:
+            start = 0
+    section = text[start:]
+    for line in section.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if "Central de Conteúdo" in line or line.startswith(("[Facebook]", "#### Fernando", "### [Almanaque", "Fonte:")):
+            break
+        line = re.sub(r"^[\*\-\+]\s+", "", line).strip()
+        if line.startswith("#") or line.startswith("![") or line.startswith("["):
+            continue
+        if len(line) > 15 and "confira alguns fatos" not in line.lower():
+            clean = re.sub(r"\*\*([^*]+)\*\*", r"*\1*", line)
+            facts.append(clean)
+    return facts
+
+def fetch_daily_curiosidades_facts(reference=None):
+    import requests
+    now_local = reference or now_sp()
+    day = now_local.day
+    month = now_local.month
+    month_names = [
+        "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+        "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    ]
+    month_names_pt = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ]
+    m_name = month_names[month - 1]
+    m_name_pt = month_names_pt[month - 1]
+    date_str = f"{day:02d} de {m_name_pt}"
+
+    # 1. Estratégia Principal: Obter link do post via RSS (rss2json) e extrair via Jina Reader (bypassa Cloudflare/WAF)
+    try:
+        rss_url = "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fucsfm.com.br%2Ffeed%2F"
+        r = requests.get(rss_url, headers=UCSFM_REQUEST_HEADERS, timeout=8)
+        if r.ok:
+            data = r.json()
+            for it in data.get("items", []):
+                t = it.get("title", "").lower()
+                link = it.get("link", "")
+                if "almanaque" in t and (str(day) in t or m_name in t or str(day) in link):
+                    jina_url = f"https://r.jina.ai/{link}"
+                    jina_resp = requests.get(jina_url, timeout=12)
+                    if jina_resp.ok:
+                        facts = extract_facts_from_markdown(jina_resp.text)
+                        if facts:
+                            print(f"[CURIOSIDADES] Sucesso via RSS2JSON + Jina ({len(facts)} fatos): {link}")
+                            return facts, date_str
+    except Exception as e:
+        print(f"[CURIOSIDADES] Falha na estratégia RSS2JSON + Jina: {e}")
+
+    # 2. Estratégia de Fallback: Testar slugs candidatos diretamente via Jina Reader
+    candidate_slugs = [
+        f"almanaque-da-musica-ucsfm-{day:02d}-de-{m_name}-2",
+        f"almanaque-da-musica-ucsfm-{day}-de-{m_name}-2",
+        f"almanaque-da-musica-ucsfm-{day:02d}-de-{m_name}",
+        f"almanaque-da-musica-ucsfm-{day}-de-{m_name}",
+        f"almanaque-da-musica-ucsfm-{day:02d}-de-{m_name}-3",
+        f"almanaque-da-musica-ucsfm-{day}-de-{m_name}-3",
+    ]
+
+    for slug in candidate_slugs:
+        try:
+            jina_url = f"https://r.jina.ai/https://ucsfm.com.br/{slug}/"
+            jina_resp = requests.get(jina_url, timeout=10)
+            if jina_resp.ok:
+                facts = extract_facts_from_markdown(jina_resp.text)
+                if facts:
+                    print(f"[CURIOSIDADES] Sucesso via Jina com slug {slug} ({len(facts)} fatos)")
+                    return facts, date_str
+        except Exception:
+            pass
+
+    # 3. Estratégia de Fallback: Consulta direta à API REST do WordPress
+    for slug in candidate_slugs:
+        try:
+            wp_url = f"https://ucsfm.com.br/wp-json/wp/v2/posts?slug={slug}&per_page=1"
+            resp = requests.get(wp_url, headers=UCSFM_REQUEST_HEADERS, timeout=6)
+            if resp.ok and resp.text.strip().startswith("["):
+                posts = resp.json()
+                if isinstance(posts, list) and posts:
+                    facts = extract_facts_from_html_content(posts[0].get("content", {}).get("rendered", ""))
+                    if facts:
+                        return facts, date_str
+        except Exception:
+            pass
+
+    return [], date_str
+
 def fetch_and_send_top_music():
     import requests
+    sent_count = 0
+    errors = []
+
+    # 1. Top Rock
     try:
         lines_rock = ["🎸 *TOP 3 ROCK NACIONAL E INTERNACIONAL* 🤘", ""]
-        r_rock = requests.get('https://itunes.apple.com/us/rss/topsongs/limit=3/genre=21/json', timeout=10).json()
-        for i, entry in enumerate(r_rock.get('feed', {}).get('entry', [])):
-            title = entry.get('title', {}).get('label', '')
-            lines_rock.append(f"#{i+1} - {title}")
-        send_wa_message("\n".join(lines_rock))
+        r_rock = requests.get('https://itunes.apple.com/us/rss/topsongs/limit=3/genre=21/json', timeout=10)
+        if r_rock.ok:
+            data = r_rock.json()
+            for i, entry in enumerate(data.get('feed', {}).get('entry', [])):
+                title = entry.get('title', {}).get('label', '')
+                lines_rock.append(f"#{i+1} - {title}")
+            res_rock = send_wa_message("\n".join(lines_rock))
+            if res_rock.get("ok"):
+                sent_count += 1
+            else:
+                errors.append(f"rock: {res_rock.get('detail')}")
+        else:
+            errors.append(f"rock_http_{r_rock.status_code}")
     except Exception as e:
-        print(f"Erro top rock: {e}")
+        errors.append(f"rock_exc_{e}")
+        print(f"[TOP MUSIC] Erro top rock: {e}")
 
+    # 2. Top Metal
     try:
         lines_metal = ["🔥 *TOP 3 HEAVY METAL* 🤘", ""]
-        r_metal = requests.get('https://itunes.apple.com/us/rss/topsongs/limit=3/genre=1153/json', timeout=10).json()
-        for i, entry in enumerate(r_metal.get('feed', {}).get('entry', [])):
-            title = entry.get('title', {}).get('label', '')
-            lines_metal.append(f"#{i+1} - {title}")
-        send_wa_message("\n".join(lines_metal))
+        r_metal = requests.get('https://itunes.apple.com/us/rss/topsongs/limit=3/genre=1153/json', timeout=10)
+        if r_metal.ok:
+            data = r_metal.json()
+            for i, entry in enumerate(data.get('feed', {}).get('entry', [])):
+                title = entry.get('title', {}).get('label', '')
+                lines_metal.append(f"#{i+1} - {title}")
+            res_metal = send_wa_message("\n".join(lines_metal))
+            if res_metal.get("ok"):
+                sent_count += 1
+            else:
+                errors.append(f"metal: {res_metal.get('detail')}")
+        else:
+            errors.append(f"metal_http_{r_metal.status_code}")
     except Exception as e:
-        print(f"Erro top metal: {e}")
+        errors.append(f"metal_exc_{e}")
+        print(f"[TOP MUSIC] Erro top metal: {e}")
+
+    ok = sent_count > 0
+    detail = f"sent={sent_count}/2" + (f", errors: {'; '.join(errors)}" if errors else "")
+    return {"ok": ok, "sent_count": sent_count, "detail": detail}
+
+def send_daily_curiosidades_and_top_music():
+    now_local = now_sp()
+    facts, date_str = fetch_daily_curiosidades_facts(now_local)
+
+    curiosidades_sent = False
+    curiosidades_detail = ""
+
+    if facts:
+        lines = ["🎸 *BOM DIA, RETÓRICA!* 🤘", "", f"📅 *{date_str}* na história da música:", ""]
+        for fact in facts:
+            lines.append(f"🔹 {fact}")
+        lines += ["", "_Que o rock esteja com vocês hoje!_ 🎶", NEWS_FOOTER]
+        msg = "\n".join(lines)
+        res = send_wa_message(msg)
+        curiosidades_sent = bool(res.get("ok"))
+        curiosidades_detail = str(res.get("detail", ""))
+        print(f"[CURIOSIDADES] Disparo curiosidades enviado: {curiosidades_sent} ({curiosidades_detail})")
+    else:
+        curiosidades_detail = f"Nenhum fato encontrado para {date_str}"
+        print(f"[CURIOSIDADES] {curiosidades_detail}")
+
+    # Top músicas NUNCA deve ser bloqueado por falha nas curiosidades
+    top_music_res = fetch_and_send_top_music()
+    top_music_sent = bool(top_music_res.get("ok"))
+    print(f"[TOP MUSIC] Disparo top music enviado: {top_music_sent} ({top_music_res.get('detail')})")
+
+    overall_ok = curiosidades_sent or top_music_sent
+    return {
+        "ok": overall_ok,
+        "curiosidades_sent": curiosidades_sent,
+        "facts_count": len(facts),
+        "top_music_sent": top_music_sent,
+        "detail": f"curiosidades: {curiosidades_detail} | top_music: {top_music_res.get('detail')}"
+    }
 
 # 1. GATILHO: NOVA ENQUETE
 @firestore_fn.on_document_created(document="polls/{pollId}")
@@ -2504,64 +2646,9 @@ def poll_monitor(event: scheduler_fn.ScheduledEvent) -> None:
 # 10. AGENDAMENTO: CURIOSIDADES DO DIA (TODOS OS DIAS ÀS 10:00)
 @scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Sao_Paulo")
 def daily_curiosidades(event: scheduler_fn.ScheduledEvent) -> None:
-    """Busca o almanaque musical da UCSFM e envia bom dia com curiosidades para o grupo."""
-    import requests
-
-    now_local = now_sp()
-    day   = now_local.day
-    month = now_local.month
-    year  = now_local.year
-
-    month_names = [
-        "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-        "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
-    ]
-    month_names_pt = [
-        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-    ]
-    date_str   = f"{day:02d} de {month_names_pt[month - 1]}"
-    slug_date  = f"{day:02d}-de-{month_names[month - 1]}"
-    slug       = f"almanaque-da-musica-ucsfm-{slug_date}"
-
-    facts = []
-    try:
-        wp_url = f"https://ucsfm.com.br/wp-json/wp/v2/posts?slug={slug}&per_page=1"
-        resp = requests.get(wp_url, timeout=15)
-        posts = resp.json()
-
-        if isinstance(posts, list) and posts:
-            import re
-            content = posts[0].get("content", {}).get("rendered", "")
-            # Extrai texto de <p> e <li>, ignorando vazios e o parágrafo introdutório longo
-            raw = re.findall(r"<(?:p|li)[^>]*>(.*?)</(?:p|li)>", content, re.DOTALL | re.IGNORECASE)
-            for item in raw:
-                text = re.sub(r"<[^>]+>", "", item).strip()
-                # Pula o parágrafo de introdução ("Confira alguns fatos...")
-                if len(text) > 10 and "confira" not in text.lower():
-                    facts.append(text)
-    except Exception as exc:
-        print(f"[CURIOSIDADES] Erro ao buscar almanaque: {exc}")
-
-    if not facts:
-        print(f"[CURIOSIDADES] Nenhum fato encontrado para {date_str}, mensagem não enviada.")
-        return
-
-    # Monta a mensagem formatada
-    lines = [f"🎸 *BOM DIA, RETÓRICA!* 🤘"]
-    lines.append("")
-    lines.append(f"📅 *{date_str}* na história da música:")
-    lines.append("")
-    for fact in facts:
-        lines.append(f"🔹 {fact}")
-    lines.append("")
-    lines.append("_Que o rock esteja com vocês hoje!_ 🎶")
-    lines.append(NEWS_FOOTER)
-
-    msg = "\n".join(lines)
-    result = send_wa_message(msg)
-    fetch_and_send_top_music()
-    print(f"[CURIOSIDADES] Mensagem enviada: {result}")
+    """Busca o almanaque musical da UCSFM e paradas da Apple Music e envia para o grupo."""
+    result = send_daily_curiosidades_and_top_music()
+    print(f"[CURIOSIDADES] Execução agendada finalizada: {result}")
 
 # 11. AGENDAMENTO: TOP 3 SUGESTÕES DIÁRIAS (TODOS OS DIAS ÀS 15:00)
 @scheduler_fn.on_schedule(schedule="0 15 * * *", timezone="America/Sao_Paulo")
@@ -2671,34 +2758,9 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                             result_ok = r.get("ok", False)
                             detail = r.get("detail", "")
                     elif key == "daily_curiosidades":
-                        import requests as http_requests, re
-                        now_local = now_sp()
-                        day, month = now_local.day, now_local.month
-                        month_names_pt = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
-                        date_str = f"{day:02d} de {month_names_pt[month - 1]}"
-                        slug_date = f"{day:02d}-de-{['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][month-1]}"
-                        facts = []
-                        try:
-                            wp_url = f"https://ucsfm.com.br/wp-json/wp/v2/posts?slug=almanaque-da-musica-ucsfm-{slug_date}&per_page=1"
-                            posts = http_requests.get(wp_url, timeout=15).json()
-                            if isinstance(posts, list) and posts:
-                                content = posts[0].get("content", {}).get("rendered", "")
-                                raw = re.findall(r"<(?:p|li)[^>]*>(.*?)</(?:p|li)>", content, re.DOTALL | re.IGNORECASE)
-                                for item in raw:
-                                    text = re.sub(r"<[^>]+>", "", item).strip()
-                                    if len(text) > 10 and "confira" not in text.lower():
-                                        facts.append(text)
-                        except Exception as e:
-                            print(f"[DYNAMIC SCHEDULER] Erro fatos ucsfm: {e}")
-                        if facts:
-                            lines = ["🎸 *BOM DIA, RETÓRICA!* 🤘", "", f"📅 *{date_str}* na história da música:", ""]
-                            for fact in facts:
-                                lines.append(f"🔹 {fact}")
-                            lines += ["", "_Que o rock esteja com vocês hoje!_ 🎶", NEWS_FOOTER]
-                            r = send_wa_message("\n".join(lines))
-                            fetch_and_send_top_music()
-                            result_ok = r.get("ok", False)
-                            detail = r.get("detail", "")
+                        r = send_daily_curiosidades_and_top_music()
+                        result_ok = r.get("ok", False)
+                        detail = r.get("detail", "")
                     elif key == "tuesday_repertoire":
                         msg, err = build_tuesday_repertoire_message(db)
                         if msg:
