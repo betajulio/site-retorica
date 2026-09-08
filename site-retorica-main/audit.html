@@ -2221,6 +2221,14 @@ window.deleteRehearsalAlbum = async (albumId, title) => {
       ts: serverTimestamp(),
       tsLocal: new Date().toLocaleString('pt-BR')
     });
+    showToast('✓ Álbum de ensaio excluído.');
+    loadRehearsalAlbumsList();
+  } catch (err) {
+    console.error('deleteRehearsalAlbum error:', err);
+    showToast('⚠ Erro ao excluir álbum de ensaio.');
+  }
+};
+
 // ── Regras da Banda (Exclusivo Master Admin) ────────────────────────────
 
 const DEFAULT_BAND_RULES = [
