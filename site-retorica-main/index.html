@@ -170,8 +170,10 @@
   body.gallery-page .gallery-full-link{display:none!important}
   body.gallery-page #hero,
   body.gallery-page #membros,
+  body.gallery-page #regras,
   body.gallery-page #links-rapidos,
   body.gallery-page #links-rapidos + .full-divider,
+  body.gallery-page #regras + .full-divider,
   body.gallery-page #membros + .full-divider{display:none!important}
   body.gallery-page #galeria{padding-top:96px}
   section,.modal,.form-card,.member-card,.poll-card,.setlist-panel,.rep-item,.forum-thread,.suggestion-item,.carousel-info-panel,.lb-caption-block,.lb-comments-wrap,.coin-guide-panel,.coin-guide-card{min-width:0}
@@ -559,6 +561,8 @@
   .member-admin-only-flex{display:none}
   .audit-admin-only{display:none}
   body.is-audit-admin .audit-admin-only{display:block}
+  .audit-admin-only-flex{display:none}
+  body.is-audit-admin .audit-admin-only-flex{display:flex}
 
   /* TOCA DO MINEIRO */
   .toca-badge{position:relative;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:1.6rem;background:
@@ -1079,6 +1083,34 @@
   </div>
 </div>
 
+<!-- EDIT BAND RULES MODAL (MASTER ADMIN ONLY) -->
+<div class="modal-overlay" id="editBandRulesModal">
+  <div class="modal modal-wide" style="max-width:680px;max-height:88vh;display:flex;flex-direction:column">
+    <button class="modal-close" onclick="closeBandRulesModal()">✕</button>
+    <div class="modal-title" style="color:var(--gold)">📜 Gerenciar Regras da Banda</div>
+    <div class="modal-subtitle" style="margin-bottom:1rem">Apenas o Master Admin pode editar as regras da Retórica</div>
+
+    <div style="overflow-y:auto;padding-right:.4rem;flex:1;display:flex;flex-direction:column;gap:1rem">
+      <div class="form-group">
+        <label for="modalBandRulesNoticeInput">📢 Comunicado / Preâmbulo Geral (opcional)</label>
+        <input type="text" id="modalBandRulesNoticeInput" placeholder="Ex: Diretrizes oficiais aprovadas em reunião para o bom andamento da banda.">
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.2rem">
+        <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--amber);letter-spacing:.08em;text-transform:uppercase">Lista de Regras</span>
+        <button type="button" class="btn-ghost btn-sm" onclick="addBandRuleItemModal()">+ Adicionar Regra</button>
+      </div>
+
+      <div id="modalBandRulesItemsList" style="display:flex;flex-direction:column;gap:.8rem"></div>
+    </div>
+
+    <div style="display:flex;gap:.8rem;justify-content:flex-end;margin-top:1.2rem;border-top:1px solid rgba(200,130,10,.18);padding-top:1rem">
+      <button type="button" class="btn-ghost" onclick="closeBandRulesModal()">Cancelar</button>
+      <button type="button" class="btn" onclick="saveBandRulesFromModal()">💾 Salvar Regras</button>
+    </div>
+  </div>
+</div>
+
 <!-- NAV -->
 <nav>
   <a href="index.html" class="nav-logo">Retórica</a>
@@ -1090,6 +1122,7 @@
     <li><a href="setlist.html">Setlist de Ensaio</a></li>
     <li><a href="repertorio.html">Repertório</a></li>
     <li style="position:relative"><a href="noticias.html">Notícias</a><span class="badge-new">NEW</span></li>
+    <li class="member-admin-only"><a href="#regras" style="color:var(--gold)">📜 Regras</a></li>
     <li class="member-admin-only"><a href="logs.html" style="color:var(--amber)">⚙ Admin</a></li>
     <li class="audit-admin-only"><a href="audit.html" style="color:var(--gold)">Auditoria</a></li>
   </ul>
@@ -1113,6 +1146,7 @@
   <a href="setlist.html">Setlist de Ensaio</a>
   <a href="repertorio.html">Repertório</a>
   <a href="noticias.html">Notícias <span class="badge-mobile-inline">NEW</span></a>
+  <a href="#regras" class="member-admin-only" onclick="closeMobileMenu()" style="color:var(--gold)">📜 Regras da Banda</a>
   <a href="logs.html" id="adminLinkMobile" class="member-admin-only" style="color:var(--amber)">⚙ Portal Admin</a>
   <a href="audit.html" id="auditLinkMobile" class="audit-admin-only" style="color:var(--gold)">Auditoria</a>
   <div class="nav-mobile-auth">
@@ -1168,7 +1202,38 @@
   </div>
 </section>
 
-<hr class="full-divider">
+<!-- REGRAS DA BANDA (EXCLUSIVO PARA MEMBROS · EDITÁVEL APENAS PELO MASTER ADMIN) -->
+<section id="regras" class="member-admin-only" style="padding-top:4rem;padding-bottom:4rem">
+  <div class="section-header" style="position:static;margin-bottom:2rem">
+    <div class="section-number">📜</div>
+    <div class="section-title-wrap">
+      <h2>Regras da Banda</h2>
+      <p>Diretrizes, compromissos e convivência na Toca</p>
+    </div>
+    <div class="section-line"></div>
+    <div class="audit-admin-only">
+      <button class="btn-ghost btn-sm" onclick="openBandRulesModal()" style="border-color:var(--gold);color:var(--gold);white-space:nowrap">✏ Editar Regras</button>
+    </div>
+  </div>
+
+  <div id="bandRulesNoticeBanner" style="display:none;background:linear-gradient(135deg,rgba(42,26,8,.9),rgba(19,15,9,.95));border:1px solid rgba(200,130,10,.35);padding:1rem 1.2rem;border-radius:2px;margin-bottom:1.5rem">
+    <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--amber);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.3rem">📢 Comunicado da Banda</div>
+    <div id="bandRulesNoticeText" style="font-size:.88rem;color:var(--cream);line-height:1.5;font-style:italic"></div>
+  </div>
+
+  <div id="bandRulesContainer" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.2rem">
+    <div style="color:var(--smoke);font-size:.82rem;font-style:italic">Carregando regras da banda…</div>
+  </div>
+
+  <div style="margin-top:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem;border-top:1px solid rgba(200,130,10,.12);padding-top:1rem">
+    <span id="bandRulesLastUpdated" style="font-size:.72rem;color:var(--smoke);font-style:italic"></span>
+    <div class="audit-admin-only">
+      <a href="audit.html" style="font-size:.72rem;color:var(--amber);text-decoration:none;font-family:'Cinzel',serif">⚙ Abrir no Painel de Auditoria ↗</a>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider member-admin-only">
 
 <!-- 03 GALERIA -->
 <section id="galeria">
@@ -2228,6 +2293,7 @@ onAuthStateChanged(auth, async user => {
   applyAuth();
   if (isMember) {
     ensureUpcomingRehearsalForum().catch(err => console.warn('Upcoming forum ensure error:', err));
+    loadBandRulesSnapshot();
   }
   if (currentSection === 'membros') loadMembersSnapshot();
   if (currentSection === 'setlist') loadSetlistSnapshot();
@@ -2242,6 +2308,7 @@ onAuthStateChanged(auth, async user => {
   renderForum();
   renderSetlist();
   renderRepFromCache();
+  renderBandRules();
 });
 
 function applyAuth() {
@@ -7118,8 +7185,272 @@ window.resetVideoFrameDebugValues = () => {
   buildVideoFrameAssetDebugGroup('videoFrameDebugFrameGlacial', 'Moldura tvglacial', 'tvglacial');
   buildVideoFrameAssetDebugGroup('videoFrameDebugFrameCorote', 'Moldura tvcorote', 'tvcorote');
   buildVideoFrameAssetDebugGroup('videoFrameDebugFrameDonaBenta', 'Moldura donabenta', 'donabenta');
-  if (new URLSearchParams(location.search).get('videoFrameDebug') === '1') {
-    toggleVideoFrameDebug(true);
+// ─── REGRAS DA BANDA (EXCLUSIVO MEMBROS · MASTER ADMIN) ─────────────
+
+const DEFAULT_SITE_BAND_RULES = [
+  {
+    id: 'r_ensaios',
+    category: 'Ensaios',
+    icon: '🥁',
+    title: 'Assiduidade & Pontualidade',
+    desc: 'Os ensaios ocorrem aos sábados na Toca do Mineiro. Chegue no horário combinado para montagem e aquecimento. Avise com pelo menos 48h de antecedência caso surja algum imprevisto inadiável.'
+  },
+  {
+    id: 'r_repertorio',
+    category: 'Repertório',
+    icon: '🎸',
+    title: 'Estudo Prévio das Músicas',
+    desc: 'Todas as músicas definidas no setlist semanal de terça-feira devem ser estudadas e treinadas individualmente antes do ensaio, garantindo que o tempo juntos seja focado em entrosamento e dinâmica.'
+  },
+  {
+    id: 'r_equipamentos',
+    category: 'Equipamentos',
+    icon: '🔌',
+    title: 'Zelo com os Instrumentos e Espaço',
+    desc: 'Cuidado com cabos, amplificadores e instrumentos da Toca. Ao final de cada ensaio, guarde os equipamentos nos devidos lugares, desligue as réguas e mantenha o ambiente limpo e organizado.'
+  },
+  {
+    id: 'r_votacoes',
+    category: 'Decisões',
+    icon: '🗳️',
+    title: 'Participação nas Votações e Enquetes',
+    desc: 'Mantenha a frequência de votos nas sugestões de repertório e enquetes semanais no site. As decisões sobre novas músicas e setlists de shows são tomadas democraticamente pela banda.'
+  },
+  {
+    id: 'r_convivencia',
+    category: 'Convivência',
+    icon: '🤘',
+    title: 'Respeito, União e Rock n Roll',
+    desc: 'Críticas construtivas e opiniões sinceras são sempre bem-vindas para o crescimento do grupo. O foco é a diversão, a energia positiva e o amor ao rock clássico!'
+  }
+];
+
+let siteBandRules = JSON.parse(JSON.stringify(DEFAULT_SITE_BAND_RULES));
+let siteBandRulesNotice = '';
+let siteBandRulesLoaded = false;
+let siteBandRulesUnsub = null;
+let editingModalRules = [];
+
+function loadBandRulesSnapshot() {
+  if (siteBandRulesUnsub) return;
+  siteBandRulesUnsub = onSnapshot(doc(db, 'config', 'bandRules'), (snap) => {
+    if (snap.exists()) {
+      const data = snap.data() || {};
+      if (Array.isArray(data.rules) && data.rules.length) {
+        siteBandRules = data.rules;
+      }
+      siteBandRulesNotice = data.notice || '';
+      const updatedStr = data.updatedAtLocal || (data.updatedAt?.toDate ? data.updatedAt.toDate().toLocaleString('pt-BR') : '');
+      const updater = data.updatedBy ? ` por ${data.updatedBy}` : '';
+      const updatedEl = document.getElementById('bandRulesLastUpdated');
+      if (updatedEl) {
+        updatedEl.textContent = updatedStr ? `Última atualização: ${updatedStr}${updater}` : '';
+      }
+    }
+    siteBandRulesLoaded = true;
+    renderBandRules();
+  }, (err) => {
+    console.warn('Band rules onSnapshot error:', err);
+    renderBandRules();
+  });
+}
+
+function renderBandRules() {
+  const container = document.getElementById('bandRulesContainer');
+  if (!container) return;
+
+  if (!isMember) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // Banner de Comunicado
+  const banner = document.getElementById('bandRulesNoticeBanner');
+  const bannerText = document.getElementById('bandRulesNoticeText');
+  if (banner && bannerText) {
+    if (siteBandRulesNotice) {
+      bannerText.textContent = `"${siteBandRulesNotice}"`;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  if (!siteBandRules.length) {
+    container.innerHTML = '<div style="color:var(--smoke);font-size:.82rem;font-style:italic">Nenhuma diretriz cadastrada no momento.</div>';
+    return;
+  }
+
+  container.innerHTML = siteBandRules.map((rule, idx) => {
+    const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === AUDIT_EMAIL;
+    const adminActions = isMasterAdmin ? `
+      <div style="display:flex;gap:.35rem;align-items:center;margin-left:auto">
+        <button class="btn-ghost btn-sm" style="padding:.15rem .45rem;font-size:.65rem;border-color:rgba(200,130,10,.3);color:var(--gold)" onclick="openBandRulesModal(${idx})" title="Editar Regras">✏</button>
+      </div>
+    ` : '';
+
+    return `
+      <div class="band-rule-card" style="background:linear-gradient(135deg,rgba(42,26,8,.85),rgba(19,15,9,.94));border:1px solid rgba(200,130,10,.25);border-left:3px solid var(--amber);border-radius:2px;padding:1.2rem;display:flex;flex-direction:column;gap:.6rem;transition:transform .2s,border-color .2s;box-shadow:0 8px 24px rgba(0,0,0,.25)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem">
+          <div style="display:flex;align-items:center;gap:.55rem">
+            <span style="font-size:1.3rem;line-height:1">${rule.icon || '📌'}</span>
+            <span style="display:inline-block;background:rgba(200,130,10,.12);border:1px solid rgba(200,130,10,.3);color:var(--gold);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .45rem;border-radius:1px;font-family:'Cinzel',serif;font-weight:bold">${escapeHtml(rule.category || 'Geral')}</span>
+          </div>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:.9rem;color:rgba(200,130,10,.35)">#${idx + 1}</span>
+          ${adminActions}
+        </div>
+        <div style="font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--cream);letter-spacing:.03em;margin-top:.2rem">${escapeHtml(rule.title)}</div>
+        <div style="font-size:.84rem;color:var(--paper);line-height:1.55;font-style:normal">${escapeHtml(rule.desc)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Modal de Edição (Exclusivo Master Admin) ──────────────────────────────
+
+window.openBandRulesModal = () => {
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === AUDIT_EMAIL;
+  if (!isMasterAdmin) {
+    showToast(`⚠ Apenas o Master Admin (${AUDIT_EMAIL}) pode editar as regras.`);
+    return;
+  }
+
+  editingModalRules = JSON.parse(JSON.stringify(siteBandRules.length ? siteBandRules : DEFAULT_SITE_BAND_RULES));
+  const noticeInput = document.getElementById('modalBandRulesNoticeInput');
+  if (noticeInput) noticeInput.value = siteBandRulesNotice || '';
+
+  renderModalBandRulesItems();
+  document.getElementById('editBandRulesModal')?.classList.add('show');
+};
+
+window.closeBandRulesModal = () => {
+  document.getElementById('editBandRulesModal')?.classList.remove('show');
+};
+
+function renderModalBandRulesItems() {
+  const container = document.getElementById('modalBandRulesItemsList');
+  if (!container) return;
+
+  if (!editingModalRules.length) {
+    container.innerHTML = '<div style="color:var(--smoke);font-size:.78rem;font-style:italic">Nenhuma regra. Clique em "+ Adicionar Regra".</div>';
+    return;
+  }
+
+  container.innerHTML = editingModalRules.map((rule, idx) => `
+    <div style="background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.2);padding:.8rem .9rem;border-radius:2px;display:grid;gap:.6rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem">
+        <div style="display:flex;align-items:center;gap:.4rem;flex:1;min-width:240px">
+          <input type="text" id="m_rule_icon_${idx}" value="${escapeHtml(rule.icon || '📌')}" style="width:38px;text-align:center;font-size:1.1rem;padding:.2rem;background:rgba(255,255,255,.05);border:1px solid rgba(200,130,10,.28);color:var(--gold)">
+          <input type="text" id="m_rule_cat_${idx}" value="${escapeHtml(rule.category || 'Geral')}" placeholder="Categoria" style="width:110px;font-size:.72rem;padding:.3rem .5rem;background:rgba(255,255,255,.05);border:1px solid rgba(200,130,10,.28);color:var(--amber);font-family:'Cinzel',serif;text-transform:uppercase">
+          <input type="text" id="m_rule_title_${idx}" value="${escapeHtml(rule.title || '')}" placeholder="Título da Regra *" style="flex:1;font-size:.82rem;padding:.3rem .5rem;background:rgba(255,255,255,.05);border:1px solid rgba(200,130,10,.28);color:var(--cream);font-weight:bold">
+        </div>
+        <div style="display:flex;gap:.3rem;align-items:center">
+          <button type="button" class="btn-ghost btn-sm" style="padding:.18rem .4rem" onclick="moveModalRule(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+          <button type="button" class="btn-ghost btn-sm" style="padding:.18rem .4rem" onclick="moveModalRule(${idx}, 1)" ${idx === editingModalRules.length - 1 ? 'disabled' : ''}>▼</button>
+          <button type="button" class="btn-danger" style="padding:.18rem .45rem;font-size:.65rem" onclick="removeModalRule(${idx})">✕</button>
+        </div>
+      </div>
+      <textarea id="m_rule_desc_${idx}" rows="2" placeholder="Descrição da regra..." style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.2);color:var(--cream);padding:.4rem .6rem;font-family:inherit;font-size:.78rem;line-height:1.45;resize:vertical">${escapeHtml(rule.desc || '')}</textarea>
+    </div>
+  `).join('');
+}
+
+window.addBandRuleItemModal = () => {
+  collectModalRulesFromInputs();
+  editingModalRules.push({
+    id: `r_${Date.now()}`,
+    category: 'Geral',
+    icon: '⚡',
+    title: '',
+    desc: ''
+  });
+  renderModalBandRulesItems();
+};
+
+window.removeModalRule = (idx) => {
+  collectModalRulesFromInputs();
+  editingModalRules.splice(idx, 1);
+  renderModalBandRulesItems();
+};
+
+window.moveModalRule = (idx, dir) => {
+  collectModalRulesFromInputs();
+  const next = idx + dir;
+  if (next < 0 || next >= editingModalRules.length) return;
+  const item = editingModalRules.splice(idx, 1)[0];
+  editingModalRules.splice(next, 0, item);
+  renderModalBandRulesItems();
+};
+
+function collectModalRulesFromInputs() {
+  editingModalRules.forEach((rule, idx) => {
+    const icon = document.getElementById(`m_rule_icon_${idx}`)?.value.trim() || '📌';
+    const cat = document.getElementById(`m_rule_cat_${idx}`)?.value.trim() || 'Geral';
+    const title = document.getElementById(`m_rule_title_${idx}`)?.value.trim() || '';
+    const desc = document.getElementById(`m_rule_desc_${idx}`)?.value.trim() || '';
+    rule.icon = icon;
+    rule.category = cat;
+    rule.title = title;
+    rule.desc = desc;
+  });
+}
+
+window.saveBandRulesFromModal = async () => {
+  const isMasterAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === AUDIT_EMAIL;
+  if (!isMasterAdmin) {
+    showToast(`⚠ Apenas o Master Admin (${AUDIT_EMAIL}) pode salvar as regras.`);
+    return;
+  }
+
+  collectModalRulesFromInputs();
+  const noticeInput = document.getElementById('modalBandRulesNoticeInput');
+  const notice = noticeInput?.value.trim() || '';
+
+  const validRules = editingModalRules.filter(r => r.title.trim());
+  if (!validRules.length) {
+    showToast('⚠ Adicione ao menos uma regra com título antes de salvar.');
+    return;
+  }
+
+  showToast('💾 Salvando regras da banda...');
+  try {
+    const payload = {
+      notice,
+      rules: validRules,
+      updatedAt: serverTimestamp(),
+      updatedAtLocal: new Date().toLocaleString('pt-BR'),
+      updatedBy: auth.currentUser?.displayName || auth.currentUser?.email || 'Master Admin',
+      updatedByEmail: auth.currentUser?.email || AUDIT_EMAIL
+    };
+
+    await setDoc(doc(db, 'config', 'bandRules'), payload);
+
+    await addDoc(collection(db, 'logs'), {
+      action: 'Regras da Banda Atualizadas',
+      detail: `${validRules.length} regra(s) salvas via site por ${auth.currentUser?.email || 'Master Admin'}`,
+      category: 'membros',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Master Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+
+    siteBandRules = validRules;
+    siteBandRulesNotice = notice;
+    renderBandRules();
+    closeBandRulesModal();
+    showToast('✓ Regras da Banda salvas com sucesso!');
+  } catch (err) {
+    console.error('saveBandRulesFromModal error:', err);
+    showToast(`⚠ Erro ao salvar regras: ${err.message || err}`);
+  }
+};
+
+(function initBandRulesDirectAccess() {
+  if (window.location.hash === '#regras') {
+    setTimeout(() => {
+      document.getElementById('regras')?.scrollIntoView({ behavior: 'smooth' });
+    }, 400);
   }
 })();
 

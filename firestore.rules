@@ -107,9 +107,9 @@ service cloud.firestore {
 
     match /config/{docId} {
       allow read: if publicConfigDoc(docId)
-        || (docId == 'readAudit' && isMember());
-      allow create, update, delete: if (docId == 'readAudit' && isAuditAdmin())
-        || (docId != 'readAudit' && isMember());
+        || ((docId == 'readAudit' || docId == 'bandRules') && isMember());
+      allow create, update, delete: if ((docId == 'readAudit' || docId == 'bandRules') && isAuditAdmin())
+        || (docId != 'readAudit' && docId != 'bandRules' && isMember());
     }
 
     match /read_audit_events/{eventId} {
