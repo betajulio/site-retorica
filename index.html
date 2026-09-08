@@ -1380,6 +1380,40 @@
   </div>
 </section>
 
+<hr class="full-divider">
+
+<!-- 03 NOTÍCIAS DO ROCK -->
+<section id="noticias-destaque" style="padding: 3.5rem 1.5rem 4rem; text-align: center;">
+  <div class="section-header" style="position:static; margin-bottom: 2rem;">
+    <div class="section-number">03</div>
+    <div class="section-title-wrap">
+      <h2>Notícias do Rock</h2>
+      <p>Mundo do Rock · Histórias, Paradas musicais e Notícias</p>
+    </div>
+    <div class="section-line"></div>
+  </div>
+  <div class="historia-card" style="max-width: 920px; margin: 0 auto; padding: 2.2rem 1.8rem; text-align: center; border: 1px solid rgba(200,130,10,0.3); border-radius: 4px; background: linear-gradient(135deg, rgba(42,26,8,0.7), rgba(19,15,9,0.92)); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+    <div style="display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.8rem">
+      <span style="font-size:2rem">🤘</span>
+      <h3 style="font-family:'Cinzel',serif;font-size:1.35rem;color:var(--gold);letter-spacing:.06em;margin:0">Mundo do Rock em Tempo Real</h3>
+    </div>
+    <p style="color:var(--cream);font-size:.92rem;line-height:1.6;max-width:680px;margin:0 auto 1.6rem;font-family:'Lora',serif">
+      Acompanhe curiosidades diárias da história do rock, lançamentos e rankings oficiais da Apple Music e o feed completo das principais fontes do rock nacional e internacional.
+    </p>
+    <div style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
+      <a href="noticias.html" class="btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.8rem;font-size:.82rem">
+        📰 Abrir Notícias do Rock
+      </a>
+      <a href="noticias.html#historia" class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.4rem;font-size:.82rem">
+        ♦ Curiosidades do Dia
+      </a>
+      <a href="noticias.html#topRock" class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.4rem;font-size:.82rem">
+        ★ Top Músicas Rock
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
   <button class="lightbox-close" onclick="closeLightbox()">✕</button>
@@ -6414,23 +6448,18 @@ if (banner && btn && dismiss && dismissSecondary && !window.matchMedia('(display
 const NEWS_POPUP_DISMISS_KEY = 'retorica_news_dismissed_date';
 
 (function showNewsPopup() {
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const dismissedToday = localStorage.getItem(NEWS_POPUP_DISMISS_KEY) === today;
-  const dayNumber = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86400000);
-  const isPopupDay = dayNumber % 2 === 0;
-  if (!isPopupDay || dismissedToday) return;
+  if (sessionStorage.getItem('retorica_news_dismissed_session')) return;
 
   setTimeout(() => {
     const el = document.getElementById('newsPopup');
     if (el) el.classList.add('show');
-  }, 3000);
+  }, 2500);
 })();
 
 window.dismissNewsPopup = function() {
   const el = document.getElementById('newsPopup');
   if (el) { el.classList.remove('show'); el.classList.add('dismissed'); }
-  localStorage.setItem(NEWS_POPUP_DISMISS_KEY, new Date().toISOString().slice(0, 10));
+  sessionStorage.setItem('retorica_news_dismissed_session', '1');
 };
 
 // ─── SISTEMA DE PROMOÇÃO AUTOMÁTICA ──────────────────────────────────

@@ -212,7 +212,21 @@
   /* TOP ROCK GRID */
   .top-rock-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem}
   @media(max-width:1024px){ .top-rock-grid{grid-template-columns:repeat(2,1fr)} }
-  @media(max-width:768px){ .top-rock-grid{grid-template-columns:1fr} .nav-links{display:none} .nav-hamburger{display:flex} nav{padding:0 0.8rem} .nav-logo{font-size:.78rem!important;letter-spacing:.05em!important} }
+  @media(max-width:768px){
+    section{padding:2.5rem 1rem}
+    .top-rock-grid{grid-template-columns:1fr}
+    .news-grid{grid-template-columns:1fr!important}
+    .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;gap:.3rem;padding-bottom:.3rem}
+    .tab-btn{padding:.6rem .85rem;font-size:.72rem}
+    .nav-links{display:none}
+    .nav-back{display:none!important}
+    .nav-hamburger{display:flex}
+    nav{padding:0 0.8rem}
+    .nav-logo{font-size:.78rem!important;letter-spacing:.05em!important}
+    .section-header{gap:.8rem;margin-bottom:1.8rem}
+    .section-number{font-size:2.2rem;min-width:36px}
+    .section-title-wrap h2{font-size:1.2rem}
+  }
   @media(max-width:380px){ .nav-logo{font-size:.68rem!important;letter-spacing:.03em!important} }
 
   .col-container{display:flex;flex-direction:column;gap:.6rem}
@@ -253,7 +267,10 @@
   <a href="index.html" class="nav-logo">Retórica</a>
   <ul class="nav-links">
     <li><a href="index.html">Home</a></li>
-    <li><a href="noticias.html" style="color:var(--gold)">Notícias</a></li>
+    <li><a href="#historia">Curiosidades</a></li>
+    <li><a href="#topRock">Destaques</a></li>
+    <li><a href="#noticias" style="color:var(--gold)">Notícias</a></li>
+    <li><a href="galeria.html">Galeria</a></li>
     <li class="member-admin-only"><a href="logs.html" style="color:var(--amber)">⚡ Admin</a></li>
     <li class="audit-admin-only"><a href="audit.html" style="color:var(--gold)">Auditoria</a></li>
   </ul>
@@ -265,8 +282,16 @@
 
 <div class="nav-mobile-menu" id="navMobileMenu">
   <a href="index.html">Home</a>
-  <a href="noticias.html">Notícias <span class="badge-mobile-inline">NEW</span></a>
-  <a href="index.html" style="border:none; color:var(--amber)">Voltar à Home</a>
+  <a href="#historia" onclick="toggleMobileMenu()">♦ Curiosidades da Música</a>
+  <a href="#topRock" onclick="toggleMobileMenu()">★ Destaques Apple Music</a>
+  <a href="#noticias" onclick="toggleMobileMenu()" style="color:var(--gold)">♫ Últimas Notícias <span class="badge-mobile-inline">NEW</span></a>
+  <a href="galeria.html">Galeria</a>
+  <a href="sugestoes.html">Sugestões</a>
+  <a href="enquetes.html">Enquetes</a>
+  <a href="setlist.html">Setlist de Ensaio</a>
+  <a href="repertorio.html">Repertório</a>
+  <a href="logs.html" class="member-admin-only" style="color:var(--amber)">⚡ Admin</a>
+  <a href="audit.html" class="audit-admin-only" style="color:var(--gold)">Auditoria</a>
 </div>
 
 <div id="hero">
@@ -465,39 +490,104 @@ const RSS_SOURCES = [
   { id: 'loudwire', name: 'Loudwire', url: 'https://loudwire.com/feed/', type: 'internacional' }
 ];
 
+function parseSafeDate(dateStr) {
+  if (!dateStr) return new Date();
+  if (typeof dateStr === 'string') {
+    const isoSafe = dateStr.includes(' ') && !dateStr.includes('T') ? dateStr.replace(' ', 'T') : dateStr;
+    const d = new Date(isoSafe);
+    if (!isNaN(d.getTime())) return d;
+  }
+  const fallback = new Date(dateStr);
+  return isNaN(fallback.getTime()) ? new Date() : fallback;
+}
+
 async function fetchNews(f) {
   try {
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(f.url)}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
-    return d.items.map(it => ({ title: it.title, link: it.link, date: new Date(it.pubDate), source: f.name, type: f.type, thumb: it.thumbnail }));
-  } catch(e) { return []; }
+    if (d.status !== 'ok' || !Array.isArray(d.items)) throw new Error(d.message || 'Sem itens');
+    return d.items.map(it => {
+      const pub = parseSafeDate(it.pubDate);
+      let thumb = it.thumbnail || '';
+      if (!thumb && it.enclosure && it.enclosure.link) thumb = it.enclosure.link;
+      if (!thumb && it.description) {
+        const m = it.description.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (m) thumb = m[1];
+      }
+      return {
+        title: it.title,
+        link: it.link,
+        date: pub.toISOString(),
+        timestamp: pub.getTime(),
+        source: f.name,
+        type: f.type,
+        thumb: thumb
+      };
+    });
+  } catch(e) {
+    console.warn(`[NEWS] Falha ao carregar ${f.name}:`, e);
+    return [];
+  }
 }
 
 async function loadNews() {
   const cached = localStorage.getItem(CACHE_KEY);
   if (cached) {
-    const p = JSON.parse(cached);
-    if (Date.now() - p.ts < CACHE_TTL) { renderNews(p.items); return; }
+    try {
+      const p = JSON.parse(cached);
+      if (Array.isArray(p.items) && p.items.length) {
+        renderNews(p.items);
+        if (Date.now() - p.ts < CACHE_TTL) return;
+      }
+    } catch(e) {}
   }
-  const all = (await Promise.all(RSS_SOURCES.map(fetchNews))).flat().sort((a,b) => b.date - a.date);
-  if (all.length) {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ items: all, ts: Date.now() }));
-    renderNews(all);
-    document.getElementById('updateInfo').textContent = 'Sincronizado em: ' + new Date().toLocaleString();
+
+  try {
+    const results = await Promise.all(RSS_SOURCES.map(fetchNews));
+    const all = results.flat().sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+    if (all.length) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ items: all, ts: Date.now() }));
+      renderNews(all);
+      const updateEl = document.getElementById('updateInfo');
+      if (updateEl) updateEl.textContent = 'Sincronizado em: ' + new Date().toLocaleString('pt-BR');
+    } else {
+      const existing = localStorage.getItem(CACHE_KEY);
+      if (!existing) {
+        document.getElementById('newsContent').innerHTML = `
+          <div style="text-align:center;padding:3rem 1rem;color:var(--smoke)">
+            <p style="font-size:1.8rem;margin-bottom:.5rem">📻</p>
+            <p style="font-size:.9rem;color:var(--cream);margin-bottom:.4rem">Nenhuma notícia carregada no momento</p>
+            <p style="font-size:.78rem;margin-bottom:1.2rem">Verifique sua conexão ou recarregue o feed.</p>
+            <button class="refresh-btn" style="margin:0 auto;display:inline-block" onclick="location.reload()">↻ Tentar novamente</button>
+          </div>
+        `;
+      }
+    }
+  } catch(err) {
+    console.error('[NEWS] Erro geral ao carregar notícias:', err);
   }
 }
 
 function renderNews(items) {
-  const tab = document.querySelector('.tab-btn.active').dataset.tab;
+  const activeTabBtn = document.querySelector('.tab-btn.active');
+  const tab = activeTabBtn ? activeTabBtn.dataset.tab : 'all';
   const filtered = tab === 'all' ? items : items.filter(it => it.type === tab);
+  if (!filtered.length) {
+    document.getElementById('newsContent').innerHTML = `
+      <p style="text-align:center;color:var(--smoke);padding:2rem;font-size:.85rem">Nenhuma notícia nesta categoria no momento.</p>
+    `;
+    return;
+  }
   let h = '<div class="news-grid">';
   filtered.slice(0, 12).forEach(it => {
+    const dateFormatted = it.date ? new Date(it.date).toLocaleDateString('pt-BR') : '';
     h += `<div class="news-card">
-      ${it.thumb?`<img class="news-card-thumb" src="${it.thumb}" loading="lazy">`:''}
+      ${it.thumb ? `<img class="news-card-thumb" src="${it.thumb}" alt="Notícia" loading="lazy" onerror="this.style.display='none'">` : ''}
       <div class="news-card-body">
-        <div class="news-card-source">${it.source} • ${new Date(it.date).toLocaleDateString()}</div>
+        <div class="news-card-source">${it.source}${dateFormatted ? ` • ${dateFormatted}` : ''}</div>
         <div class="news-card-title">${it.title}</div>
-        <a class="news-card-link" href="${it.link}" target="_blank">Ler notícia completa</a>
+        <a class="news-card-link" href="${it.link}" target="_blank" rel="noopener noreferrer">Ler notícia completa →</a>
       </div>
     </div>`;
   });
@@ -505,11 +595,14 @@ function renderNews(items) {
 }
 
 document.getElementById('newsTabs').addEventListener('click', e => {
-  if (!e.target.classList.contains('tab-btn')) return;
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
-  const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
-  if (cached) renderNews(cached.items);
+  btn.classList.add('active');
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+    if (cached && Array.isArray(cached.items)) renderNews(cached.items);
+  } catch(e) {}
 });
 
 loadHistoria(); loadTopRock(); loadNews();
