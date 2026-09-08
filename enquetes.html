@@ -547,6 +547,40 @@ window.addSuggestion = async () => {
 
   if (!song || !artist) { showToast('⚠ Preencha música e artista'); return; }
 
+  const normSong = (song || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+
+  // 1. Verificar se já existe no repertório
+  try {
+    const repSnap = await getDocs(collection(db, 'repertorio'));
+    const inRep = repSnap.docs.find(d => {
+      const r = d.data() || {};
+      const rSong = (r.song || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+      return rSong && rSong === normSong;
+    });
+    if (inRep) {
+      showToast(`⚠ A música "${song}" já faz parte do repertório oficial da banda!`);
+      return;
+    }
+  } catch (err) {
+    console.warn('Verificação de repertório:', err);
+  }
+
+  // 2. Verificar se já existe nas sugestões
+  try {
+    const sugSnap = await getDocs(collection(db, 'suggestions'));
+    const inSug = sugSnap.docs.find(d => {
+      const s = d.data() || {};
+      const sSong = (s.song || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+      return sSong && sSong === normSong;
+    });
+    if (inSug) {
+      showToast(`⚠ A música "${song}" já foi sugerida anteriormente!`);
+      return;
+    }
+  } catch (err) {
+    console.warn('Verificação de sugestões:', err);
+  }
+
   try {
     await addDoc(collection(db, 'suggestions'), {
       song, artist, by, youtube, note,

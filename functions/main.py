@@ -42,6 +42,12 @@ def safe_int(value, default=0):
         return int(value)
     except (ValueError, TypeError):
         return default
+
+def slugify_text(value):
+    normalized = unicodedata.normalize("NFKD", str(value or ""))
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^a-zA-Z0-9]+", "-", ascii_text.lower()).strip("-")
+
 try:
     SP_TZ = ZoneInfo("America/Sao_Paulo")
 except Exception:
@@ -309,11 +315,13 @@ def get_active_polls(db):
         if deadline:
             dl_sp = deadline.astimezone(SP_TZ) if deadline.tzinfo else deadline.replace(tzinfo=SP_TZ)
             if now >= dl_sp:
-                # Prazo expirou: marca explicitamente como fechada no Firestore
-                try:
-                    doc.reference.set({"closed": True}, merge=True)
-                except Exception:
-                    pass
+                # Prazo expirou: não fechar diretamente enquetes de promoção (deixar apuração para advance_promotion_pipeline)
+                p_type = str(p.get("type", "")).lower()
+                if p_type not in ["repertory", "repertoire", "tiebreaker", "promotion"]:
+                    try:
+                        doc.reference.set({"closed": True}, merge=True)
+                    except Exception:
+                        pass
                 continue
         else:
             # Enquetes sem prazo: verifica data de criação
@@ -869,31 +877,100 @@ def create_repertory_poll_backend(db, suggestion_doc):
     suggestion_doc.reference.delete()
     return poll_ref.id
 
-def apply_repertory_poll_result(db, poll):
+def apply_repertory_poll_result(db, poll, poll_id=None):
+    if poll.get("resultProcessed") is True:
+        return poll.get("processedResult") or "already_processed"
+
     options = poll.get("options", []) or []
-    yes_votes = options[0].get("votes", 0) if len(options) > 0 else 0
-    no_votes = options[1].get("votes", 0) if len(options) > 1 else 0
+    yes_votes = safe_int(options[0].get("votes", 0)) if len(options) > 0 else 0
+    no_votes = safe_int(options[1].get("votes", 0)) if len(options) > 1 else 0
     song_and_artist = extract_repertory_poll_song(poll)
     song_title, artist = (song_and_artist.split(" - ", 1) + [""])[:2]
+    song_title = song_title.strip()
+    artist = artist.strip()
+
+    norm_song = slugify_text(song_title)
 
     if yes_votes > no_votes:
-        db.collection("repertorio").document().set({
-            "song": song_title.strip(),
-            "artist": artist.strip(),
-            "addedAt": firestore.SERVER_TIMESTAMP,
-            "by": "Sistema Automático"
-        })
+        # 1. Adicionar ao repertório (apenas se ainda não estiver presente)
+        rep_exists = False
+        for rep_doc in db.collection("repertorio").stream():
+            rd = rep_doc.to_dict() or {}
+            if slugify_text(rd.get("song", "")) == norm_song:
+                rep_exists = True
+                break
+        if not rep_exists:
+            db.collection("repertorio").document().set({
+                "song": song_title,
+                "artist": artist,
+                "addedAt": firestore.SERVER_TIMESTAMP,
+                "by": "Sistema Automático"
+            })
+
+        # 2. Varredura obrigatória em suggestions: eliminar qualquer documento da música que entrou no repertório
+        suggestion_id = poll.get("suggestionId")
+        if suggestion_id:
+            try:
+                db.collection("suggestions").document(str(suggestion_id)).delete()
+            except Exception:
+                pass
+
+        for sug_doc in db.collection("suggestions").stream():
+            sd = sug_doc.to_dict() or {}
+            if slugify_text(sd.get("song", "")) == norm_song:
+                try:
+                    sug_doc.reference.delete()
+                except Exception:
+                    pass
+
+        if poll_id:
+            try:
+                db.collection("polls").document(poll_id).set({
+                    "closed": True,
+                    "resultProcessed": True,
+                    "processedResult": "approved"
+                }, merge=True)
+            except Exception:
+                pass
         return "approved"
 
-    db.collection("suggestions").document().set({
-        "song": song_title.strip(),
-        "artist": artist.strip(),
-        "by": "Sistema",
-        "createdAt": firestore.SERVER_TIMESTAMP,
-        "likes": 0,
-        "dislikes": 0,
-        "voterMap": {}
-    })
+    # Se NÃO foi aprovada (Não > Sim ou Empate):
+    # Antes de recriar como sugestão, certificar de que a música NÃO existe no repertório
+    rep_exists = False
+    for rep_doc in db.collection("repertorio").stream():
+        rd = rep_doc.to_dict() or {}
+        if slugify_text(rd.get("song", "")) == norm_song:
+            rep_exists = True
+            break
+
+    # E verificar se já não existe em sugestões
+    sug_exists = False
+    for sug_doc in db.collection("suggestions").stream():
+        sd = sug_doc.to_dict() or {}
+        if slugify_text(sd.get("song", "")) == norm_song:
+            sug_exists = True
+            break
+
+    if not rep_exists and not sug_exists:
+        db.collection("suggestions").document().set({
+            "song": song_title,
+            "artist": artist,
+            "by": "Sistema",
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "likes": 0,
+            "dislikes": 0,
+            "voterMap": {}
+        })
+
+    if poll_id:
+        try:
+            db.collection("polls").document(poll_id).set({
+                "closed": True,
+                "resultProcessed": True,
+                "processedResult": "rejected"
+            }, merge=True)
+        except Exception:
+            pass
     return "rejected"
 
 def extract_repertory_poll_song(poll):
@@ -972,16 +1049,22 @@ def build_tiebreaker_result_message(db, poll):
 def process_due_repertory_poll_doc(db, poll_doc):
     poll = poll_doc.to_dict() or {}
     deadline = to_datetime(poll.get("deadline"))
-    if poll.get("closed") is True or not deadline or now_sp().astimezone(deadline.tzinfo or SP_TZ) < deadline:
+    if poll.get("resultProcessed") is True or not deadline or now_sp().astimezone(deadline.tzinfo or SP_TZ) < deadline:
         return None
 
-    poll_doc.reference.set({"closed": True}, merge=True)
-    result = apply_repertory_poll_result(db, poll)
+    result = apply_repertory_poll_result(db, poll, poll_doc.id)
+    poll_doc.reference.set({"closed": True, "resultProcessed": True, "processedResult": result}, merge=True)
     return {"pollId": poll_doc.id, "result": result}
 
 def process_due_repertory_polls(db):
     completed = []
-    for poll_doc in db.collection("polls").where("type", "==", "repertory").where("closed", "==", False).stream():
+    for poll_doc in db.collection("polls").where("type", "==", "repertory").stream():
+        d = poll_doc.to_dict() or {}
+        if d.get("resultProcessed") is True:
+            continue
+        deadline = to_datetime(d.get("deadline"))
+        if not deadline or now_sp().astimezone(deadline.tzinfo or SP_TZ) < deadline:
+            continue
         result = process_due_repertory_poll_doc(db, poll_doc)
         if result:
             completed.append(result)
@@ -1011,11 +1094,19 @@ def activate_or_queue_repertory_poll(db, suggestion_doc):
             state = normalize_promotion_state(db)
             active_repertory = state.get("activeRepertoryPoll")
 
+    if active_repertory:
+        state_ref.set({"pendingRepertorySuggestionId": suggestion_doc.id}, merge=True)
+        return {
+            "status": "queued",
+            "pollId": None,
+            "suggestionId": suggestion_doc.id
+        }
+
     poll_id = create_repertory_poll_backend(db, suggestion_doc)
-    updates = {"pendingRepertorySuggestionId": None}
-    if not active_repertory:
-        updates["activeRepertoryPoll"] = poll_id
-    state_ref.set(updates, merge=True)
+    state_ref.set({
+        "activeRepertoryPoll": poll_id,
+        "pendingRepertorySuggestionId": None
+    }, merge=True)
     return {
         "status": "created",
         "pollId": poll_id,
@@ -1283,11 +1374,12 @@ def process_repertory_completion(db):
 
     poll = poll_snap.to_dict() or {}
     deadline = to_datetime(poll.get("deadline"))
-    if poll.get("closed") is True or not deadline or now_sp().astimezone(deadline.tzinfo or SP_TZ) < deadline:
+    if not deadline or now_sp().astimezone(deadline.tzinfo or SP_TZ) < deadline:
         return
 
-    poll_ref.set({"closed": True}, merge=True)
-    apply_repertory_poll_result(db, poll)
+    if poll.get("resultProcessed") is not True:
+        apply_repertory_poll_result(db, poll, poll_id)
+        poll_ref.set({"closed": True, "resultProcessed": True}, merge=True)
 
     pending_suggestion_id = state.get("pendingRepertorySuggestionId")
     if pending_suggestion_id:
@@ -1315,12 +1407,6 @@ def process_repertory_completion(db):
         "nextPromotionDate": get_next_promotion_datetime()
     }, merge=True)
     print(f"Enquete de repertório concluída automaticamente: {poll_id}")
-
-def slugify_text(value):
-    normalized = unicodedata.normalize("NFKD", value or "")
-    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
-    slug = re.sub(r"[^a-zA-Z0-9]+", "-", ascii_text.lower()).strip("-")
-    return slug
 
 def json_response(payload, status=200):
     resp = https_fn.Response(
@@ -2025,6 +2111,55 @@ def admin_sync_suggestion_votes(req: https_fn.Request) -> https_fn.Response:
         return json_response({"ok": True, "fixed_count": len(fixed), "fixed": fixed}, 200)
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
+@https_fn.on_request()
+def admin_cleanup_repertoire_suggestions(req: https_fn.Request) -> https_fn.Response:
+    if req.method == "OPTIONS":
+        return json_response({}, 204)
+    token = (req.args.get("token") or req.headers.get("x-admin-token") or "").strip()
+    if token != PROMOTION_ADMIN_TOKEN:
+        return json_response({"ok": False, "error": "unauthorized"}, 403)
+
+    db = firestore.client()
+    try:
+        # Carrega todas as músicas do repertório
+        rep_slugs = set()
+        for doc in db.collection("repertorio").stream():
+            d = doc.to_dict() or {}
+            song = (d.get("song") or "").strip()
+            if song:
+                rep_slugs.add(slugify_text(song))
+
+        removed = []
+        for doc in db.collection("suggestions").stream():
+            d = doc.to_dict() or {}
+            song = (d.get("song") or "").strip()
+            artist = (d.get("artist") or "").strip()
+            if song and slugify_text(song) in rep_slugs:
+                doc.reference.delete()
+                removed.append({
+                    "id": doc.id,
+                    "song": song,
+                    "artist": artist,
+                    "by": d.get("by") or "Membro"
+                })
+                db.collection("logs").add({
+                    "action": "Sugestão Removida (Já no Repertório)",
+                    "detail": f"{song} — {artist} · Removida automaticamente pois já faz parte do repertório da banda",
+                    "song": song,
+                    "artist": artist,
+                    "by": d.get("by") or "Membro",
+                    "category": "sugestoes",
+                    "who": "Varredura Automática",
+                    "whoEmail": "juliocereser@gmail.com",
+                    "ts": firestore.SERVER_TIMESTAMP,
+                    "tsLocal": now_sp().strftime("%d/%m/%Y %H:%M:%S")
+                })
+
+        return json_response({"ok": True, "removed_count": len(removed), "removed": removed}, 200)
+    except Exception as exc:
+        return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
 
 
 def send_wa_message(text):

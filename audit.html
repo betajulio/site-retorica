@@ -928,9 +928,13 @@ window.syncSuggestionVotes = async () => {
 };
 
 window.runDuplicateSuggestionsCleanup = async () => {
-  showToast('🔍 Verificando sugestões duplicadas...');
+  showToast('🔍 Verificando sugestões duplicadas e músicas já no repertório...');
   try {
-    const snap = await getDocs(collection(db, 'suggestions'));
+    const [snap, repSnap] = await Promise.all([
+      getDocs(collection(db, 'suggestions')),
+      getDocs(collection(db, 'repertorio'))
+    ]);
+
     if (snap.empty) {
       showToast('Nenhuma sugestão cadastrada.');
       return;
@@ -945,10 +949,31 @@ window.runDuplicateSuggestionsCleanup = async () => {
         .trim();
     }
 
-    // Agrupa por chave normalizada (música + artista)
-    const groups = new Map();
+    // 1. Músicas que já estão no repertório
+    const repSongSet = new Set();
+    repSnap.docs.forEach(docSnap => {
+      const rd = docSnap.data() || {};
+      const sNorm = normalizeText(rd.song);
+      if (sNorm) repSongSet.add(sNorm);
+    });
+
+    const alreadyInRep = [];
+    const validSuggestions = [];
+
     snap.docs.forEach(docSnap => {
       const data = docSnap.data() || {};
+      const songNorm = normalizeText(data.song);
+      if (songNorm && repSongSet.has(songNorm)) {
+        alreadyInRep.push({ id: docSnap.id, data });
+      } else {
+        validSuggestions.push({ id: docSnap.id, data });
+      }
+    });
+
+    // 2. Agrupa por chave normalizada (música + artista) entre as que não estão no repertório
+    const groups = new Map();
+    validSuggestions.forEach(item => {
+      const data = item.data || {};
       const songNorm = normalizeText(data.song);
       const artistNorm = normalizeText(data.artist);
       const key = `${songNorm}___${artistNorm}`;
@@ -956,7 +981,7 @@ window.runDuplicateSuggestionsCleanup = async () => {
       if (!groups.has(key)) {
         groups.set(key, []);
       }
-      groups.get(key).push({ id: docSnap.id, data });
+      groups.get(key).push(item);
     });
 
     const duplicates = [];
@@ -981,31 +1006,53 @@ window.runDuplicateSuggestionsCleanup = async () => {
       }
     });
 
-    if (duplicates.length === 0) {
-      showToast('✓ Nenhuma música duplicada encontrada nas sugestões!');
+    const totalLosers = duplicates.reduce((acc, g) => acc + g.losers.length, 0);
+    const totalToRemove = alreadyInRep.length + totalLosers;
+
+    if (totalToRemove === 0) {
+      showToast('✓ Nenhuma sugestão duplicada ou já pertencente ao repertório encontrada!');
       return;
     }
 
-    const totalToRemove = duplicates.reduce((acc, g) => acc + g.losers.length, 0);
-    const summaryLines = duplicates.slice(0, 6).map(g => {
-      const w = g.winner.data;
-      const wScore = (w.likes || 0) - (w.dislikes || 0);
-      const lDetails = g.losers.map(l => {
-        const ld = l.data;
-        const lScore = (ld.likes || 0) - (ld.dislikes || 0);
-        return `"${ld.song}" (${ld.by || 'Membro'}: ${lScore} pts [${ld.likes || 0}👍/${ld.dislikes || 0}👎])`;
-      }).join(', ');
-      return `• "${w.song}" — MANTER: ${w.by || 'Membro'} (${wScore} pts [${w.likes || 0}👍/${w.dislikes || 0}👎]) | REMOVER: ${lDetails}`;
-    });
-
-    const extra = duplicates.length > 6 ? `\n... e mais ${duplicates.length - 6} caso(s).` : '';
-    const confirmMsg = `Foram encontradas ${duplicates.length} música(s) com duplicidade (total de ${totalToRemove} sugestão(ões) repetida(s) para remover):\n\n${summaryLines.join('\n')}${extra}\n\nDeseja remover as duplicatas de menor voto agora?`;
+    let confirmMsg = `Foram encontradas:\n`;
+    if (alreadyInRep.length > 0) {
+      confirmMsg += `• ${alreadyInRep.length} sugestão(ões) que JÁ ESTÃO NO REPERTÓRIO: ${alreadyInRep.map(x => `"${x.data.song}"`).join(', ')}\n`;
+    }
+    if (duplicates.length > 0) {
+      confirmMsg += `• ${duplicates.length} grupo(s) com duplicidade (${totalLosers} sugestões repetidas de menor pontuação).\n`;
+    }
+    confirmMsg += `\nDeseja realizar a limpeza agora?`;
 
     if (!confirm(confirmMsg)) return;
 
-    showToast(`Removendo ${totalToRemove} duplicata(s)...`);
+    showToast(`Removendo ${totalToRemove} item(ns)...`);
     let removedCount = 0;
 
+    // Remover as que já estão no repertório
+    for (const item of alreadyInRep) {
+      const d = item.data;
+      await deleteDoc(doc(db, 'suggestions', item.id));
+      await addDoc(collection(db, 'logs'), {
+        action: 'Sugestão Removida (Já no Repertório)',
+        detail: `"${d.song}" — ${d.artist} removida automaticamente da lista de sugestões pois já consta no repertório oficial da banda.`,
+        song: d.song,
+        artist: d.artist,
+        by: d.by || 'Membro',
+        likes: d.likes || 0,
+        dislikes: d.dislikes || 0,
+        voterMap: d.voterMap || {},
+        reason: 'Música já faz parte do repertório',
+        removedBy: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+        category: 'sugestoes',
+        who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+        whoEmail: auth.currentUser?.email || '',
+        ts: serverTimestamp(),
+        tsLocal: new Date().toLocaleString('pt-BR')
+      });
+      removedCount++;
+    }
+
+    // Remover duplicatas internas de menor voto
     for (const group of duplicates) {
       const w = group.winner.data;
       const wScore = (w.likes || 0) - (w.dislikes || 0);
@@ -1036,7 +1083,7 @@ window.runDuplicateSuggestionsCleanup = async () => {
       }
     }
 
-    showToast(`✓ Sucesso: ${removedCount} sugestão(ões) duplicada(s) removida(s)!`);
+    showToast(`✓ Sucesso: ${removedCount} sugestão(ões) tratada(s) e removida(s)!`);
   } catch (err) {
     console.error('runDuplicateSuggestionsCleanup error:', err);
     showToast('⚠ Erro ao remover duplicatas. Veja o console.');

@@ -1068,6 +1068,22 @@ window.addSuggestion = async () => {
   const normSong = normalizeSuggestionText(song);
   const normArtist = normalizeSuggestionText(artist);
 
+  // 0. Verificar se já existe no repertório da banda
+  try {
+    const repSnap = await getDocs(collection(db, 'repertorio'));
+    const inRep = repSnap.docs.find(d => {
+      const r = d.data() || {};
+      return normalizeSuggestionText(r.song) === normSong;
+    });
+    if (inRep) {
+      const r = inRep.data() || {};
+      showToast(`⚠ A música "${r.song || song}" já faz parte do repertório oficial da banda!`);
+      return;
+    }
+  } catch (err) {
+    console.warn('Verificação de repertório no Firestore:', err);
+  }
+
   // 1. Verificar se já existe na lista local de sugestões
   const existsInCache = (suggestionsCache || []).find(item => {
     const s = item.data || {};
