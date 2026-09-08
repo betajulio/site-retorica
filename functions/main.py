@@ -2507,11 +2507,14 @@ def on_poll_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | No
         desc_txt = f"\n📝 _{d}_" if d else ""
         send_wa_notification_with_logo(f"🗳️ *NOVA ENQUETE NO AR!*\n\n❓ *{q}*{desc_txt}\n{opts_txt}{POLL_FOOTER}", firestore.client())
 
-# 2. GATILHO: NOVAS FOTOS
+# 2. GATILHO: NOVAS FOTOS E ÁLBUNS
 @firestore_fn.on_document_created(document="gallery/{photoId}")
 def on_photo_added(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | None]) -> None:
     p = event.data.to_dict()
     if p:
+        if p.get('skipWhatsAppNotification') is True:
+            return
+
         media_type = p.get('mediaType', 'image')
         caption_db = p.get('caption', '')
         youtube_title = str(p.get('youtubeTitle', '') or '').strip()
@@ -2522,7 +2525,32 @@ def on_photo_added(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
         item_date = format_gallery_item_date(p)
         desc_txt = f"📝 _{caption_db}_\n\n" if caption_db else ""
         date_txt = f"\n🗓️ Data: *{item_date}*" if item_date else ""
-        if media_type == 'youtube':
+        photo_id = event.params.get("photoId") if getattr(event, "params", None) else (getattr(event.data, "id", None) or "")
+        site_session_url = f"https://betajulio.github.io/site-retorica/galeria.html?tag=Ensaio&photoId={photo_id}#galeria" if photo_id else "https://betajulio.github.io/site-retorica/galeria.html?tag=Ensaio#galeria"
+
+        if media_type == 'album':
+            album_url = p.get('albumUrl', '') or p.get('url', '')
+            album_title = str(p.get('title') or p.get('caption') or 'Ensaio da Retórica').strip()
+            thumb_url = p.get('thumbUrl') or p.get('url')
+            caption_clean = str(p.get('caption') or '').strip()
+            desc_part = f"\n📝 _{caption_clean}_\n" if (caption_clean and caption_clean != album_title) else ""
+
+            msg = (
+                f"🎥📸 *REGISTRO DO ENSAIO: VÍDEOS & FOTOS!* 🎸\n\n"
+                f"🤘 *{album_title}*\n"
+                f"👤 Enviado por: *{user_name}*{date_txt}{desc_part}\n\n"
+                f"🎬 Contém os vídeos gravados e fotos do ensaio!\n\n"
+                f"🌐 *Acessar no Site da Banda:*\n"
+                f"{site_session_url}\n\n"
+                f"🔒 *Link do Álbum Completo (Membros):*\n"
+                f"{album_url}\n\n"
+                f"Confiram as gravações e fotos do ensaio! 🤘{GALLERY_FOOTER}"
+            )
+            if thumb_url:
+                send_wa_image(thumb_url, msg)
+            else:
+                send_wa_notification_with_logo(msg, firestore.client())
+        elif media_type == 'youtube':
             video_url = p.get('url', '')
             title_txt = f"🎵 *Música:* {youtube_title}\n" if youtube_title else ""
             video_txt = f"\n🎬 *Assistir:* {video_url}" if video_url else ""
@@ -2669,6 +2697,51 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
         except Exception as exc:
             error_detail = f"{type(exc).__name__}: {exc}"[:300]
             print(f"Erro ao processar disparo de Ranking Semanal: {error_detail}")
+            update_log_delivery_status(db, log_id, "failed", error_detail)
+
+    # F. Disparo Manual de Álbum de Ensaio
+    elif action in ["Disparar Zap Album Ensaio", "Disparar Zap Álbum Ensaio"]:
+        db = firestore.client()
+        try:
+            album_id = log.get('albumId')
+            album_data = None
+            if album_id:
+                snap = db.collection("gallery").document(album_id).get()
+                if snap.exists:
+                    album_data = snap.to_dict()
+            if not album_data:
+                album_data = log
+
+            album_title = str(album_data.get('title') or album_data.get('caption') or 'Ensaio da Retórica').strip()
+            album_url = album_data.get('albumUrl') or album_data.get('url') or ''
+            thumb_url = album_data.get('thumbUrl') or album_data.get('url') or ''
+            user_name = album_data.get('addedBy', 'Admin')
+            item_date = album_data.get('date', '')
+            date_txt = f"\n🗓️ Data: *{item_date}*" if item_date else ""
+            caption_clean = str(album_data.get('caption') or '').strip()
+            desc_part = f"\n📝 _{caption_clean}_\n" if (caption_clean and caption_clean != album_title) else ""
+            target_id = album_id or ''
+            site_session_url = f"https://betajulio.github.io/site-retorica/galeria.html?tag=Ensaio&photoId={target_id}#galeria" if target_id else "https://betajulio.github.io/site-retorica/galeria.html?tag=Ensaio#galeria"
+
+            msg = (
+                f"🎥📸 *REGISTRO DO ENSAIO: VÍDEOS & FOTOS!* 🎸\n\n"
+                f"🤘 *{album_title}*\n"
+                f"👤 Enviado por: *{user_name}*{date_txt}{desc_part}\n\n"
+                f"🎬 Contém os vídeos gravados e fotos do ensaio!\n\n"
+                f"🌐 *Acessar no Site da Banda:*\n"
+                f"{site_session_url}\n\n"
+                f"🔒 *Link do Álbum Completo (Membros):*\n"
+                f"{album_url}\n\n"
+                f"Confiram as gravações e fotos do ensaio! 🤘{GALLERY_FOOTER}"
+            )
+            if thumb_url:
+                result = send_wa_image(thumb_url, msg)
+            else:
+                result = send_wa_notification_with_logo(msg, db)
+            update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
+        except Exception as exc:
+            error_detail = f"{type(exc).__name__}: {exc}"[:300]
+            print(f"Erro ao processar disparo de Álbum de Ensaio: {error_detail}")
             update_log_delivery_status(db, log_id, "failed", error_detail)
 
 # 5. AGENDAMENTO: LEMBRETE DIÁRIO (14:10)

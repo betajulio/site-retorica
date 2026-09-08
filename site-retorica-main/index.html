@@ -4395,7 +4395,9 @@ function getGalleryMediaType(itemData) {
 
 function matchesMediaType(itemData) {
   if (activeMediaTypeFilter === 'Todos') return true;
-  return getGalleryMediaType(itemData) === activeMediaTypeFilter;
+  const mt = getGalleryMediaType(itemData);
+  if (activeMediaTypeFilter === 'image') return mt === 'image' || mt === 'album';
+  return mt === activeMediaTypeFilter;
 }
 
 function getGalleryThumbUrl(itemData) {
@@ -4483,6 +4485,36 @@ async function loadGallerySnapshot(force = false) {
       renderLightboxComments(currentLbId, found.data);
     }
   }
+  checkDeepLinkGallery();
+}
+
+let deepLinkChecked = false;
+function checkDeepLinkGallery() {
+  if (deepLinkChecked) return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const photoId = params.get('photoId') || params.get('albumId');
+    const tag = params.get('tag');
+    if (tag) {
+      activeTagFilter = tag;
+      renderGallery();
+    }
+    if (photoId) {
+      const item = galleryCache.find(x => x.id === photoId);
+      if (item) {
+        if ((item.data?.membersOnly || item.data?.mediaType === 'album') && !isMember) {
+          showToast('🔒 Este álbum de ensaio é exclusivo para membros. Faça login para acessar.');
+        } else {
+          openLightbox(photoId);
+        }
+      }
+    }
+    if (window.location.hash === '#galeria' || photoId || tag) {
+      const sec = document.getElementById('galeria');
+      if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+    }
+    if (photoId || tag) deepLinkChecked = true;
+  } catch(e) {}
 }
 
 function renderGallery() {
@@ -4491,6 +4523,7 @@ function renderGallery() {
   const grid  = document.getElementById('galleryGrid');
 
   const filtered = galleryCache.filter(({data:p}) => {
+    if ((p.membersOnly || p.mediaType === 'album') && !isMember) return false;
     const tagMatch = activeTagFilter === 'Todas' || (p.tags||['Todas']).includes(activeTagFilter);
     return tagMatch && matchesMediaType(p);
   });
@@ -4537,6 +4570,12 @@ function renderGallery() {
     if (mediaType === 'youtube') {
       panelTags.push('<span class="carousel-panel-tag">YouTube</span>');
       panelTags.push('<span class="carousel-panel-tag video">▶ Vídeo</span>');
+    } else if (mediaType === 'album') {
+      panelTags.push('<span class="carousel-panel-tag" style="background:rgba(200,130,10,.25);border-color:var(--gold);color:var(--gold)">🎥📸 Vídeos & Fotos</span>');
+      panelTags.push('<span class="carousel-panel-tag" style="background:rgba(139,58,10,.3);border-color:#fca5a5;color:#fca5a5">🔒 Membros</span>');
+      if (p.albumUrl) {
+        panelTags.push(`<a href="${p.albumUrl}" target="_blank" rel="noopener noreferrer" class="carousel-panel-tag" style="background:rgba(200,130,10,.35);border-color:var(--gold);color:var(--gold);text-decoration:none" onclick="event.stopPropagation()">🔗 Acessar Vídeos & Fotos ↗</a>`);
+      }
     } else {
       panelTags.push('<span class="carousel-panel-tag">Foto</span>');
     }
@@ -4600,7 +4639,9 @@ function renderGallery() {
         : '';
       const mediaBadge = mediaType === 'youtube'
         ? `<div class="thumb-media-stack">${p.addedBy ? `<div class="thumb-video-credit"><strong>${getFirstName(p.addedBy)}</strong></div>` : ''}<div class="thumb-media-tag">YouTube</div><div class="thumb-media-tag video">Vídeo</div></div>`
-        : `<div class="media-pill">Foto</div>`;
+        : (mediaType === 'album'
+            ? `<div class="media-pill" style="border-color:var(--amber);color:var(--gold);background:rgba(200,130,10,.25)">🎥📸 Vídeos & Fotos</div>`
+            : `<div class="media-pill">Foto</div>`);
       const videoFrame = mediaType === 'youtube'
         ? `<div class="video-portrait-frame thumb-video-frame" aria-hidden="true" style="background-image:url('imagens/portrait_video.png')"></div>`
         : '';
@@ -5096,9 +5137,15 @@ window.openLightbox = async id => {
   const snap = await getDoc(doc(db,'gallery',id));
   if (!snap.exists()) return;
   const p = snap.data();
+  const mediaType = getGalleryMediaType(p);
+
+  if ((p.membersOnly || mediaType === 'album') && !isMember) {
+    showToast('🔒 Este álbum de ensaio é exclusivo para membros autenticados.');
+    return;
+  }
+
   currentLbId = id;
   await loadGalleryCommentsSnapshot(id, true);
-  const mediaType = getGalleryMediaType(p);
   const imgEl = document.getElementById('lbImg');
   const videoWrap = document.getElementById('lbVideoWrap');
   const videoFrame = document.getElementById('lbVideoFrame');
@@ -5108,14 +5155,14 @@ window.openLightbox = async id => {
     imgEl.style.display = 'none';
     imgEl.src = '';
     videoWrap.style.display = 'block';
-      videoFrame.src = getYoutubeEmbedUrl(p.videoId);
+    videoFrame.src = getYoutubeEmbedUrl(p.videoId);
     captionBlock.classList.add('video-mode');
   } else {
     videoWrap.style.display = 'none';
     videoFrame.src = '';
     imgEl.style.display = 'block';
-    imgEl.src = p.url;
-    imgEl.alt = p.caption || '';
+    imgEl.src = p.thumbUrl || p.url;
+    imgEl.alt = p.title || p.caption || '';
     captionBlock.classList.remove('video-mode');
   }
 
@@ -5130,18 +5177,28 @@ window.openLightbox = async id => {
   if (mediaType === 'youtube' && youtubeTitle && !p.youtubeTitle) {
     updateDoc(doc(db,'gallery',id), { youtubeTitle }).catch(() => {});
   }
-  const videoCredit = mediaType === 'youtube' && p.addedBy
-    ? `<div class="lb-video-credit">Pedrada sugerida por <strong>${p.addedBy}</strong></div>`
-    : '';
-  const videoShareBtn = mediaType === 'youtube' && p.url
-    ? `<button class="lb-video-share-btn" type="button" onclick="copyGalleryVideoLink('${String(p.url).replace(/'/g, "\\'")}');event.stopPropagation()">Compartilhar</button>`
-    : '';
-  videoHeadEl.innerHTML = mediaType === 'youtube' ? `${videoCredit}${videoShareBtn}` : '';
-  const videoTitleHtml = mediaType === 'youtube' && youtubeTitle ? `<strong class="lb-video-title">${escapeHtml(youtubeTitle)}</strong>` : '';
-  const captionBody = p.caption ? escapeHtml(p.caption) : '';
-  captionEl.innerHTML = mediaType === 'youtube'
-    ? `${videoTitleHtml}${captionBody}${editHtml}`
-    : `${p.caption || ''}${editHtml}`;
+
+  if (mediaType === 'youtube') {
+    const videoCredit = p.addedBy ? `<div class="lb-video-credit">Pedrada sugerida por <strong>${p.addedBy}</strong></div>` : '';
+    const videoShareBtn = p.url ? `<button class="lb-video-share-btn" type="button" onclick="copyGalleryVideoLink('${String(p.url).replace(/'/g, "\\'")}');event.stopPropagation()">Compartilhar</button>` : '';
+    videoHeadEl.innerHTML = `${videoCredit}${videoShareBtn}`;
+    const videoTitleHtml = youtubeTitle ? `<strong class="lb-video-title">${escapeHtml(youtubeTitle)}</strong>` : '';
+    const captionBody = p.caption ? escapeHtml(p.caption) : '';
+    captionEl.innerHTML = `${videoTitleHtml}${captionBody}${editHtml}`;
+  } else if (mediaType === 'album') {
+    const albumCredit = `<div class="lb-video-credit" style="color:var(--gold)">🎥📸 Álbum do Ensaio · <strong>${escapeHtml(p.addedBy || 'Membro')}</strong></div>`;
+    const albumShareBtn = `<button class="lb-video-share-btn" type="button" onclick="shareGalleryAlbumToWhatsApp('${id}');event.stopPropagation()" style="border-color:#22c55e;color:#86efac">📲 Compartilhar no Zap</button>`;
+    videoHeadEl.innerHTML = `${albumCredit}${albumShareBtn}`;
+    const albumTitleHtml = `<strong class="lb-video-title" style="display:block;color:var(--gold);font-size:1.15rem;margin-bottom:.35rem">${escapeHtml(p.title || 'Ensaio da Retórica')}</strong>`;
+    const albumDescHtml = p.caption ? `<div style="margin:.3rem 0 .6rem;color:var(--cream);font-size:.84rem;line-height:1.45">${escapeHtml(p.caption)}</div>` : '';
+    const openAlbumBtn = p.albumUrl
+      ? `<div style="margin:.5rem 0 .3rem"><a href="${p.albumUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:.5rem;background:linear-gradient(135deg,var(--amber),var(--rust));color:var(--black);font-family:'Cinzel',serif;font-weight:bold;font-size:.76rem;padding:.5rem 1.1rem;text-decoration:none;letter-spacing:.08em;text-transform:uppercase;border-radius:2px;box-shadow:0 4px 12px rgba(0,0,0,.4)">🔗 Acessar Vídeos Gravados & Fotos do Ensaio ↗</a></div>`
+      : '';
+    captionEl.innerHTML = `${albumTitleHtml}${albumDescHtml}${openAlbumBtn}${editHtml}`;
+  } else {
+    videoHeadEl.innerHTML = '';
+    captionEl.innerHTML = `${p.caption || ''}${editHtml}`;
+  }
 
   document.getElementById('lbMeta').textContent = `${p.addedBy||''} · ${p.date||''}`;
 
@@ -5165,6 +5222,16 @@ window.openLightbox = async id => {
   lb.dataset.id = id;
   lb.classList.add('open');
   document.body.classList.add('lb-no-scroll');
+};
+
+window.shareGalleryAlbumToWhatsApp = async (id) => {
+  const item = galleryCache.find(x => x.id === id);
+  if (!item) return;
+  const p = item.data;
+  const title = p.title || p.caption || 'Ensaio da Retórica';
+  const siteDirectUrl = `${window.location.origin}${window.location.pathname}?tag=Ensaio&photoId=${id}#galeria`;
+  const text = `🎥📸 *REGISTRO DO ENSAIO: VÍDEOS & FOTOS!* 🎸\n\n🤘 *${title}*\n🗓️ Data: ${p.date || ''}\n\n🎬 Contém os vídeos gravados e fotos do ensaio!\n\n🌐 *Acessar no Site da Banda:*\n${siteDirectUrl}\n\n🔒 *Link do Álbum Completo (Membros):*\n${p.albumUrl}\n\nConfiram as gravações e fotos do ensaio! 🤘`;
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
 };
 
 window.copyGalleryVideoLink = async (url) => {
@@ -5531,6 +5598,9 @@ function renderMediaTypeBar() {
     { id: 'image', label: 'Fotos' },
     { id: 'youtube', label: 'Vídeos' }
   ];
+  if (isMember) {
+    items.push({ id: 'album', label: 'Ensaios (Vídeos & Fotos) 🔒' });
+  }
   bar.innerHTML = items.map(item => {
     const isActive = activeMediaTypeFilter === item.id;
     const style = isActive

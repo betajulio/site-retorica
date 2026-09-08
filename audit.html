@@ -388,6 +388,91 @@
           <div style="color:var(--smoke);font-size:.8rem;font-style:italic">Carregando agendamentos…</div>
         </div>
       </div>
+
+      <!-- Painel: Publicação de Álbum do Ensaio (Vídeos Gravados & Fotos - Exclusivo Membros) -->
+      <div class="admin-inline-config" style="flex-direction:column;gap:1.1rem;background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.38);margin-top:1.2rem">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
+          <div>
+            <div class="admin-inline-config-title" style="color:var(--gold);font-size:1.05rem">🎥📸 Publicar Álbum do Ensaio (Vídeos & Fotos)</div>
+            <div class="admin-inline-config-sub" style="max-width:820px">Cadastre o link do álbum contendo os <strong>vídeos gravados e fotos</strong> do ensaio (Google Fotos, OneDrive, etc.). O ensaio será publicado no site e <strong>visível apenas para membros logados</strong>. Também dispara no WhatsApp da banda com foto de capa e link direto para a sessão no site.</div>
+          </div>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <span class="status-pill on" style="font-size:.65rem">🔒 Acesso Restrito a Membros</span>
+          </div>
+        </div>
+
+        <form id="albumRehearsalForm" onsubmit="event.preventDefault();publishRehearsalAlbum()" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;width:100%">
+          <div class="admin-inline-field" style="grid-column:1/-1">
+            <label for="albumUrlInput">🔗 Link do Álbum (Vídeos Gravados & Fotos — Google Fotos, OneDrive, Flickr, Drive, etc.) *</label>
+            <input type="url" id="albumUrlInput" required placeholder="https://photos.app.goo.gl/... ou https://photos.google.com/share/..." oninput="updateAlbumPreview()">
+          </div>
+
+          <div class="admin-inline-field">
+            <label for="albumTitleInput">🎸 Título / Identificação do Ensaio *</label>
+            <input type="text" id="albumTitleInput" required placeholder="Ex: Ensaio Geral na Toca — Gravações & Fotos" oninput="updateAlbumPreview()">
+          </div>
+
+          <div class="admin-inline-field">
+            <label for="albumDateInput">🗓️ Data do Ensaio</label>
+            <input type="text" id="albumDateInput" placeholder="Ex: 08/09/2026" oninput="updateAlbumPreview()">
+          </div>
+
+          <div class="admin-inline-field" style="grid-column:1/-1">
+            <label>🖼️ Foto de Capa (Thumbnail do Ensaio e do WhatsApp)</label>
+            <div style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:center">
+              <input type="file" id="albumThumbFileInput" accept="image/*" style="font-size:.75rem;padding:.4rem;flex:1;min-width:240px" onchange="handleAlbumThumbFileSelect(this)">
+              <span style="font-size:.72rem;color:var(--smoke);text-transform:uppercase">ou URL direta:</span>
+              <input type="url" id="albumThumbUrlInput" placeholder="https://.../capa.jpg" style="flex:1;min-width:240px" oninput="updateAlbumPreview()">
+            </div>
+            <div id="albumThumbUploadStatus" style="font-size:.72rem;color:var(--gold);margin-top:.25rem;font-style:italic"></div>
+          </div>
+
+          <div class="admin-inline-field" style="grid-column:1/-1">
+            <label for="albumCaptionInput">📝 Descrição / Observações (opcional)</label>
+            <textarea id="albumCaptionInput" rows="2" placeholder="Ex: Músicas passadas, gravações das pedradas e registros de fotos." style="background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.28);color:var(--cream);padding:.6rem .8rem;font:inherit;resize:vertical" oninput="updateAlbumPreview()"></textarea>
+          </div>
+
+          <div style="grid-column:1/-1;display:flex;align-items:center;gap:.6rem;margin-top:.3rem">
+            <input type="checkbox" id="albumShareWhatsAppCheckbox" checked style="accent-color:var(--amber);width:16px;height:16px;cursor:pointer">
+            <label for="albumShareWhatsAppCheckbox" style="font-size:.78rem;color:var(--paper);cursor:pointer;text-transform:none;letter-spacing:normal">
+              📲 Disparar imediatamente no grupo do WhatsApp da banda com a foto de capa e link direto para o site
+            </label>
+          </div>
+
+          <!-- Prévia Visual -->
+          <div id="albumLivePreviewCard" style="grid-column:1/-1;background:rgba(0,0,0,.35);border:1px solid rgba(200,130,10,.2);border-radius:2px;padding:.9rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+            <div id="albumLivePreviewImgWrap" style="width:110px;height:80px;background:rgba(200,130,10,.08);border:1px solid rgba(200,130,10,.3);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:2px;flex-shrink:0">
+              <img id="albumLivePreviewImg" src="imagens/Toca_do_Mineiro_logo_final.png" alt="Prévia" style="width:100%;height:100%;object-fit:cover">
+            </div>
+            <div style="flex:1;min-width:200px">
+              <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-bottom:.3rem">
+                <span class="status-pill on" style="font-size:.58rem;padding:.2rem .4rem">🎥 Vídeos & Fotos</span>
+                <span class="status-pill off" style="font-size:.58rem;padding:.2rem .4rem">🔒 Exclusivo Membros</span>
+              </div>
+              <div id="albumLivePreviewTitle" style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold);font-weight:bold">Título do Ensaio</div>
+              <div id="albumLivePreviewDesc" style="font-size:.75rem;color:var(--smoke);margin-top:.2rem;line-height:1.4">Descrição aparecerá aqui...</div>
+              <div id="albumLivePreviewLink" style="font-size:.7rem;color:var(--amber);margin-top:.3rem;word-break:break-all">Link: https://...</div>
+            </div>
+          </div>
+
+          <div style="grid-column:1/-1;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;margin-top:.5rem">
+            <button type="submit" id="btnPublishAlbum" class="btn" style="padding:.65rem 1.4rem;font-size:.75rem">🚀 Publicar Álbum nos Ensaios</button>
+            <button type="button" class="btn-ghost" onclick="resetAlbumForm()">Limpar formulário</button>
+            <span id="albumPublishStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
+          </div>
+        </form>
+
+        <!-- Lista de Álbuns de Ensaios já Publicados -->
+        <div style="width:100%;border-top:1px solid rgba(200,130,10,.15);padding-top:.9rem;margin-top:.5rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem;flex-wrap:wrap;gap:.5rem">
+            <div style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);letter-spacing:.06em">📂 Álbuns de Ensaios Publicados</div>
+            <button class="btn-ghost" style="font-size:.65rem;padding:.25rem .6rem" onclick="loadRehearsalAlbumsList(true)">🔄 Atualizar Lista</button>
+          </div>
+          <div id="rehearsalAlbumsList" style="display:grid;gap:.6rem;max-height:360px;overflow-y:auto">
+            <div style="color:var(--smoke);font-size:.75rem;font-style:italic">Carregando álbuns de ensaios…</div>
+          </div>
+        </div>
+      </div>
     </div><!-- /admin-tools -->
 
 
@@ -447,6 +532,7 @@ import {
   onSnapshot, orderBy, query, limit, serverTimestamp, Timestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDUgxw6RxmiQJnlo1trXL7l8lLYKuk0984",
@@ -465,6 +551,7 @@ const SET_PROMOTION_PAUSE_URL = 'https://us-central1-retorica-b05b3.cloudfunctio
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 const auditRef = doc(db, 'config', 'readAudit');
 const promotionStateRef = doc(db, 'promotion_state', 'current');
@@ -1470,6 +1557,8 @@ onAuthStateChanged(auth, async user => {
   loadPollReminderPauseState();
   loadMembersForLinking();
   loadSchedulesConfig();
+  initAlbumDateDefault();
+  loadRehearsalAlbumsList();
   startStreams();
 });
 
@@ -1846,6 +1935,273 @@ window.triggerScheduleManually = async (key) => {
     showToast('⚠ Falha ao disparar. Verifique o console.');
   } finally {
     isTriggeringManual = false;
+  }
+};
+
+// ── Publicação de Álbuns de Ensaios (Exclusivo Membros) ──────────────────
+
+let rehearsalAlbumsCache = [];
+let selectedAlbumThumbFile = null;
+
+function initAlbumDateDefault() {
+  const dateInput = document.getElementById('albumDateInput');
+  if (dateInput && !dateInput.value) {
+    const today = new Date();
+    const d = String(today.getDate()).padStart(2, '0');
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const y = today.getFullYear();
+    dateInput.value = `${d}/${m}/${y}`;
+  }
+}
+
+window.handleAlbumThumbFileSelect = (input) => {
+  if (input.files && input.files[0]) {
+    selectedAlbumThumbFile = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const previewImg = document.getElementById('albumLivePreviewImg');
+      if (previewImg) previewImg.src = e.target.result;
+    };
+    reader.readAsDataURL(selectedAlbumThumbFile);
+    document.getElementById('albumThumbUploadStatus').textContent = `Foto selecionada: ${selectedAlbumThumbFile.name} (${Math.round(selectedAlbumThumbFile.size/1024)} KB)`;
+  } else {
+    selectedAlbumThumbFile = null;
+    document.getElementById('albumThumbUploadStatus').textContent = '';
+  }
+  updateAlbumPreview();
+};
+
+window.updateAlbumPreview = () => {
+  const title = document.getElementById('albumTitleInput')?.value.trim() || 'Título do Ensaio';
+  const url = document.getElementById('albumUrlInput')?.value.trim() || 'https://...';
+  const date = document.getElementById('albumDateInput')?.value.trim() || '';
+  const caption = document.getElementById('albumCaptionInput')?.value.trim() || '';
+  const customThumbUrl = document.getElementById('albumThumbUrlInput')?.value.trim();
+
+  const titleEl = document.getElementById('albumLivePreviewTitle');
+  const descEl = document.getElementById('albumLivePreviewDesc');
+  const linkEl = document.getElementById('albumLivePreviewLink');
+  const imgEl = document.getElementById('albumLivePreviewImg');
+
+  if (titleEl) titleEl.textContent = `${title}${date ? ` (${date})` : ''}`;
+  if (descEl) descEl.textContent = caption || 'Sem descrição adicional.';
+  if (linkEl) linkEl.textContent = `Link: ${url}`;
+  if (imgEl && customThumbUrl && !selectedAlbumThumbFile) {
+    imgEl.src = customThumbUrl;
+  } else if (imgEl && !selectedAlbumThumbFile && !customThumbUrl) {
+    imgEl.src = 'imagens/Toca_do_Mineiro_logo_final.png';
+  }
+};
+
+window.resetAlbumForm = () => {
+  document.getElementById('albumRehearsalForm')?.reset();
+  selectedAlbumThumbFile = null;
+  const uploadStatus = document.getElementById('albumThumbUploadStatus');
+  if (uploadStatus) uploadStatus.textContent = '';
+  initAlbumDateDefault();
+  updateAlbumPreview();
+};
+
+window.publishRehearsalAlbum = async () => {
+  const albumUrl = document.getElementById('albumUrlInput')?.value.trim();
+  const title = document.getElementById('albumTitleInput')?.value.trim();
+  const date = document.getElementById('albumDateInput')?.value.trim() || new Date().toLocaleDateString('pt-BR');
+  const caption = document.getElementById('albumCaptionInput')?.value.trim() || '';
+  const thumbUrlInput = document.getElementById('albumThumbUrlInput')?.value.trim();
+  const shareWhatsApp = document.getElementById('albumShareWhatsAppCheckbox')?.checked ?? true;
+  const statusEl = document.getElementById('albumPublishStatus');
+  const btn = document.getElementById('btnPublishAlbum');
+
+  if (!albumUrl) {
+    showToast('⚠ Informe o link do álbum de fotos.');
+    return;
+  }
+  if (!title) {
+    showToast('⚠ Informe o título do ensaio.');
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Enviando...';
+  showToast('⏳ Processando publicação do álbum...', { persist: true });
+
+  try {
+    let finalThumbUrl = thumbUrlInput || '';
+
+    // Se o usuário selecionou um arquivo local de thumbnail, sobe para o Firebase Storage
+    if (selectedAlbumThumbFile) {
+      statusEl.textContent = 'Enviando imagem de capa...';
+      const ext = selectedAlbumThumbFile.name.split('.').pop() || 'jpg';
+      const cleanName = title.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 30);
+      const storagePath = `gallery/albums/${Date.now()}_${cleanName}.${ext}`;
+      const fileRef = storageRef(storage, storagePath);
+      const uploadTask = await uploadBytesResumable(fileRef, selectedAlbumThumbFile);
+      finalThumbUrl = await getDownloadURL(uploadTask.ref);
+    }
+
+    if (!finalThumbUrl) {
+      finalThumbUrl = 'https://betajulio.github.io/site-retorica/imagens/Toca_do_Mineiro_logo_final.png';
+    }
+
+    const userName = auth.currentUser?.displayName?.split(' ')[0] || auth.currentUser?.email?.split('@')[0] || 'Admin';
+
+    // Criação do documento na coleção 'gallery'
+    const docRef = await addDoc(collection(db, 'gallery'), {
+      mediaType: 'album',
+      sourceType: 'album_link',
+      albumUrl,
+      url: finalThumbUrl,
+      thumbUrl: finalThumbUrl,
+      title,
+      caption,
+      date,
+      addedBy: userName,
+      tags: ['Todas', 'Ensaio'],
+      membersOnly: true, // EXCLUSIVO PARA MEMBROS
+      skipWhatsAppNotification: !shareWhatsApp,
+      createdAt: serverTimestamp(),
+      commentCount: 0,
+      replyCount: 0,
+      reactions: {}
+    });
+
+    const albumId = docRef.id;
+
+    // Log para auditoria
+    await addDoc(collection(db, 'logs'), {
+      action: 'Álbum de Ensaio Publicado',
+      detail: `"${title}" (${date}) — Link: ${albumUrl}`,
+      category: 'galeria',
+      albumId,
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+
+    showToast('✓ Álbum de fotos publicado nos Ensaios com sucesso!');
+    statusEl.textContent = '✓ Publicado com sucesso!';
+    resetAlbumForm();
+    await loadRehearsalAlbumsList(true);
+  } catch (err) {
+    console.error('Erro ao publicar álbum:', err);
+    showToast(`⚠ Erro ao publicar: ${err?.message || err}`);
+    statusEl.textContent = 'Erro ao publicar.';
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+window.loadRehearsalAlbumsList = async (force = false) => {
+  const container = document.getElementById('rehearsalAlbumsList');
+  if (!container) return;
+
+  try {
+    const q = query(collection(db, 'gallery'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    const albums = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.mediaType === 'album' || data.albumUrl) {
+        albums.push({ id: d.id, ...data });
+      }
+    });
+
+    rehearsalAlbumsCache = albums;
+
+    if (!albums.length) {
+      container.innerHTML = '<div style="color:var(--smoke);font-size:.75rem;font-style:italic">Nenhum álbum de ensaio publicado ainda.</div>';
+      return;
+    }
+
+    container.innerHTML = albums.map(item => {
+      const siteDirectUrl = `https://betajulio.github.io/site-retorica/galeria.html?tag=Ensaio&photoId=${item.id}#galeria`;
+      const thumb = item.thumbUrl || item.url || 'imagens/Toca_do_Mineiro_logo_final.png';
+      const safeTitle = (item.title || item.caption || 'Ensaio').replace(/'/g, "\\'");
+      return `
+        <div style="background:rgba(0,0,0,.45);border:1px solid rgba(200,130,10,.2);padding:.6rem .8rem;border-radius:2px;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:.7rem;flex:1;min-width:220px">
+            <img src="${thumb}" style="width:48px;height:48px;object-fit:cover;border-radius:2px;border:1px solid rgba(200,130,10,.3)" alt="Capa">
+            <div>
+              <div style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);font-weight:bold">${esc(item.title || 'Ensaio')} <span style="font-size:.68rem;color:var(--smoke)">(${esc(item.date || '')})</span></div>
+              <div style="font-size:.7rem;color:var(--paper);margin-top:.15rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+                <span class="status-pill off" style="font-size:.55rem;padding:.15rem .35rem">🔒 Exclusivo Membros</span>
+                <a href="${item.albumUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--amber);text-decoration:none;font-size:.7rem">🔗 Álbum Externo ↗</a>
+                <a href="${siteDirectUrl}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc;text-decoration:none;font-size:.7rem">🌐 No Site ↗</a>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+            <button class="btn-ghost" style="padding:.3rem .6rem;font-size:.68rem;border-color:rgba(134,239,172,.4);color:#86efac" onclick="triggerAlbumWhatsAppManually('${item.id}')" title="Disparar no WhatsApp da Banda com Thumbnail">📲 Disparar Zap</button>
+            <button class="btn-ghost" style="padding:.3rem .6rem;font-size:.68rem;border-color:rgba(56,189,248,.4);color:#7dd3fc" onclick="shareAlbumToWhatsApp('${item.id}')" title="Compartilhar no WhatsApp Web / App">💬 Compartilhar</button>
+            <button class="btn-danger" style="padding:.3rem .6rem;font-size:.68rem" onclick="deleteRehearsalAlbum('${item.id}', '${safeTitle}')">🗑 Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Erro ao carregar lista de álbuns:', err);
+    container.innerHTML = '<div style="color:#fca5a5;font-size:.75rem">Falha ao carregar lista de álbuns.</div>';
+  }
+};
+
+window.triggerAlbumWhatsAppManually = async (albumId) => {
+  const album = rehearsalAlbumsCache.find(a => a.id === albumId);
+  const title = album?.title || 'Ensaio';
+  if (!confirm(`Deseja disparar a notificação deste ensaio ("${title}") com foto de capa no grupo do WhatsApp da banda agora?`)) return;
+
+  showToast('Disparando no WhatsApp da banda...');
+  try {
+    await addDoc(collection(db, 'logs'), {
+      action: 'Disparar Zap Album Ensaio',
+      detail: `Disparo manual via Auditoria para o ensaio "${title}"`,
+      category: 'galeria',
+      albumId,
+      title: album?.title || '',
+      caption: album?.caption || '',
+      albumUrl: album?.albumUrl || album?.url || '',
+      thumbUrl: album?.thumbUrl || album?.url || '',
+      date: album?.date || '',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    showToast('✓ Comando enviado! O WhatsApp da banda receberá a notificação.');
+  } catch (err) {
+    console.error('Erro ao disparar no WhatsApp:', err);
+    showToast('⚠ Falha ao registrar comando de disparo.');
+  }
+};
+
+window.shareAlbumToWhatsApp = (albumId) => {
+  const album = rehearsalAlbumsCache.find(a => a.id === albumId);
+  if (!album) return;
+  const title = album.title || album.caption || 'Ensaio da Retórica';
+  const siteDirectUrl = `https://betajulio.github.io/site-retorica/galeria.html?tag=Ensaio&photoId=${album.id}#galeria`;
+  const text = `🎥📸 *REGISTRO DO ENSAIO: VÍDEOS & FOTOS!* 🎸\n\n🤘 *${title}*\n🗓️ Data: ${album.date || ''}\n\n🎬 Contém os vídeos gravados e fotos do ensaio!\n\n🌐 *Acessar no Site da Banda:*\n${siteDirectUrl}\n\n🔒 *Link do Álbum Completo (Membros):*\n${album.albumUrl}\n\nConfiram as gravações e fotos do ensaio! 🤘`;
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+};
+
+window.deleteRehearsalAlbum = async (albumId, title) => {
+  if (!confirm(`Tem certeza que deseja excluir o álbum "${title}" dos Ensaios do site?`)) return;
+
+  try {
+    await deleteDoc(doc(db, 'gallery', albumId));
+    await addDoc(collection(db, 'logs'), {
+      action: 'Álbum de Ensaio Excluído',
+      detail: `"${title}" [${albumId}]`,
+      category: 'galeria',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+    showToast('✓ Álbum de fotos excluído.');
+    await loadRehearsalAlbumsList(true);
+  } catch (err) {
+    console.error('Erro ao excluir álbum:', err);
+    showToast('⚠ Erro ao excluir álbum.');
   }
 };
 
