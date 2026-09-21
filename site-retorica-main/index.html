@@ -2302,6 +2302,15 @@ function applyAuth() {
     const userName = auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ') || auth.currentUser?.email?.split('@')[0] || 'Membro';
     const sugByEl = document.getElementById('sugBy');
     if (sugByEl) sugByEl.value = userName;
+
+    if (auth.currentUser?.email) {
+      const cleanEmail = auth.currentUser.email.toLowerCase().trim();
+      const memberItem = membersCache.find(m => (m.data?.ownerEmail || '').toLowerCase().trim() === cleanEmail);
+      if (memberItem && (!memberItem.data.ownerUid || memberItem.data.ownerUid !== auth.currentUser.uid)) {
+        updateDoc(doc(db, 'members', memberItem.id), { ownerUid: auth.currentUser.uid, ownerEmail: cleanEmail }).catch(() => {});
+        memberItem.data.ownerUid = auth.currentUser.uid;
+      }
+    }
   }
   // Re-render member cards so edit buttons appear/disappear correctly when auth changes
   renderMembersFromCache();
@@ -2774,8 +2783,8 @@ const INSTRUMENTS = ['Vocal','Guitarra','Guitarra Base','Baixo','Bateria','Tecla
 function canEditMember(memberData = {}) {
   if (!isMember || !auth.currentUser) return false;
   const myEmail = (auth.currentUser.email || '').toLowerCase();
-  // Admin geral pode editar qualquer perfil
-  if (myEmail === ADMIN_GENERAL_EMAIL) return true;
+  // Admin geral ativo pode editar qualquer perfil
+  if (myEmail === ADMIN_GENERAL_EMAIL && !isAdminPaused) return true;
   // Perfil tem ownerEmail salvo → compara diretamente
   const ownerEmail = (memberData.ownerEmail || '').toLowerCase();
   if (ownerEmail && ownerEmail === myEmail) return true;
@@ -2807,11 +2816,11 @@ async function autoLinkMemberOwnerEmail(user) {
       if (data.ownerEmail) continue;
       const memberName = normalizeName(data.name || '');
       if (memberName.startsWith(alias)) {
-        await updateDoc(doc(db, 'members', d.id), { ownerEmail: email });
+        await updateDoc(doc(db, 'members', d.id), { ownerEmail: email, ownerUid: user.uid });
         console.log(`[autoLink] ownerEmail vinculado: ${email} → ${data.name} (${d.id})`);
         // Atualiza o cache local se já estiver carregado
         const cached = membersCache.find(c => c.id === d.id);
-        if (cached) cached.data.ownerEmail = email;
+        if (cached) { cached.data.ownerEmail = email; cached.data.ownerUid = user.uid; }
         break;
       }
     }
@@ -3098,7 +3107,7 @@ function resetEditModal() {
 
 window.openAddMember = () => {
   const myEmail = (auth.currentUser?.email || '').toLowerCase();
-  if (!isMember || myEmail !== ADMIN_GENERAL_EMAIL) { showToast('🔒 Apenas o admin geral pode adicionar membros'); return; }
+  if (!isMember || myEmail !== ADMIN_GENERAL_EMAIL || isAdminPaused) { showToast('🔒 Apenas o admin geral ativo pode adicionar membros'); return; }
   resetEditModal();
   document.getElementById('editModalTitle').textContent = 'Novo Membro';
   document.getElementById('deleteMemberBtn').style.display = 'none';
@@ -3121,7 +3130,7 @@ window.openEditMember = async id => {
   }
   if (!canEditMember(m)) { showToast('🔒 Você só pode editar o seu próprio perfil'); return; }
   const myEmail = (auth.currentUser?.email || '').toLowerCase();
-  const isAdmin = myEmail === ADMIN_GENERAL_EMAIL;
+  const isGeneralAdmin = myEmail === ADMIN_GENERAL_EMAIL && !isAdminPaused;
   document.getElementById('editMemberId').value      = id;
   document.getElementById('editMemberName').value    = m.name||'';
   document.getElementById('editMemberSince').value   = m.since||'';
@@ -3131,8 +3140,8 @@ window.openEditMember = async id => {
   if (m.photo) { const p=document.getElementById('editPhotoPreview'); p.src=m.photo; p.style.display='block'; if(m.photo.startsWith('http')) document.getElementById('editPhotoUrl').value=m.photo; }
   (Array.isArray(m.instruments)?m.instruments:(m.role?[m.role]:[])).forEach(i=>{ const cb=document.querySelector(`#editInstrumentsCheck input[value="${i}"]`); if(cb) cb.checked=true; });
   document.getElementById('editModalTitle').textContent = 'Editar Membro';
-  // Só o admin geral pode deletar membros
-  document.getElementById('deleteMemberBtn').style.display = isAdmin ? 'block' : 'none';
+  // Só o admin geral ativo pode deletar membros
+  document.getElementById('deleteMemberBtn').style.display = isGeneralAdmin ? 'block' : 'none';
   document.getElementById('editModalSub').textContent   = m.name;
   document.getElementById('editMemberModal').classList.add('show');
 };
@@ -3142,7 +3151,7 @@ window.closeEditMember = () => document.getElementById('editMemberModal').classL
 window.saveMember = async () => {
   if (!isMember) { showToast('🔒 Acesso restrito a membros aprovados'); return; }
   const myEmail = (auth.currentUser?.email || '').toLowerCase();
-  const isAdmin = myEmail === ADMIN_GENERAL_EMAIL;
+  const isGeneralAdminActive = myEmail === ADMIN_GENERAL_EMAIL && !isAdminPaused;
   const eidCheck = document.getElementById('editMemberId').value;
   if (eidCheck) {
     const snapCheck = await getDoc(doc(db,'members',eidCheck));
@@ -3165,7 +3174,7 @@ window.saveMember = async () => {
         }
       }
     }
-  } else if (!isAdmin) {
+  } else if (!isGeneralAdminActive) {
     showToast('🔒 Apenas o admin geral pode adicionar membros');
     return;
   }
@@ -3210,7 +3219,7 @@ window.saveMember = async () => {
     ownerEmail = prev.exists() ? (prev.data().ownerEmail || '') : '';
   }
   // Só preenche se ainda estiver vazio E o usuário não for o admin
-  if (!ownerEmail && !isAdmin) {
+  if (!ownerEmail && !isGeneralAdminActive) {
     ownerEmail = myEmail;
   }
 
@@ -3224,6 +3233,12 @@ window.saveMember = async () => {
       showToast(`✓ ${name} atualizado!`);
     } else {
       await addDoc(collection(db,'members'), {...data, createdAt:serverTimestamp()});
+      if (ownerEmail) {
+        await setDoc(doc(db, 'approved_emails', ownerEmail.toLowerCase().trim()), {
+          addedAt: serverTimestamp(),
+          name: name
+        }, { merge: true }).catch(() => {});
+      }
       await loadMembersSnapshot(true);
       await writeLog('Membro adicionado', `${name} (${instruments.join(', ')})`, 'membros');
       showToast(`✓ ${name} adicionado(a)!`);
@@ -3246,20 +3261,24 @@ window.saveMember = async () => {
 
 window.deleteMemberFromModal = async () => {
   const myEmail = (auth.currentUser?.email || '').toLowerCase();
-  if (myEmail !== ADMIN_GENERAL_EMAIL) { showToast('🔒 Apenas o admin geral pode remover membros'); return; }
+  if (myEmail !== ADMIN_GENERAL_EMAIL || isAdminPaused) { showToast('🔒 Apenas o admin geral pode remover membros'); return; }
   const id = document.getElementById('editMemberId').value;
   if (id) { await removeMember(id); closeEditMember(); }
 };
 window.removeMember = async id => {
   const myEmail = (auth.currentUser?.email || '').toLowerCase();
-  if (!isMember || myEmail !== ADMIN_GENERAL_EMAIL) { showToast('🔒 Apenas o admin geral pode remover membros'); return; }
-  if (!confirmAction('Tem certeza que deseja remover este membro?')) return;
+  if (!isMember || myEmail !== ADMIN_GENERAL_EMAIL || isAdminPaused) { showToast('🔒 Apenas o admin geral pode remover membros'); return; }
+  if (!confirmAction('Tem certeza que deseja remover este membro da banda?\n\nAs contagens e cálculos de votos serão recalculados automaticamente.')) return;
   const snap = await getDoc(doc(db,'members',id));
   const name = snap.exists() ? snap.data().name : id;
+  const ownerEmail = snap.exists() ? (snap.data().ownerEmail || '').toLowerCase().trim() : '';
   await deleteDoc(doc(db,'members',id));
+  if (ownerEmail && ownerEmail !== ADMIN_GENERAL_EMAIL) {
+    await deleteDoc(doc(db, 'approved_emails', ownerEmail)).catch(() => {});
+  }
   await loadMembersSnapshot(true);
   await writeLog('Membro removido', name, 'membros');
-  showToast('Membro removido.');
+  showToast(`✓ Membro ${name} removido. Cálculos de votos atualizados.`);
 };
 
 // ─── SUGGESTIONS ───────────────────────────────────────────────────
@@ -3389,19 +3408,22 @@ window.voteSuggestion = async (id, type) => {
   const likes = Object.values(voterMap).filter(v => v === 'like').length;
   const dislikes = Object.values(voterMap).filter(v => v === 'dislike').length;
 
-  // EXCLUSÃO AUTOMÁTICA
-  if (dislikes >= 3 && isAuditAdmin) {
+  const totalBandMembers = Math.max(2, membersCache.length || 6);
+  const dislikeThreshold = Math.max(2, Math.ceil(totalBandMembers / 2));
+
+  // EXCLUSÃO AUTOMÁTICA DINÂMICA (maioria dos membros ativos)
+  if (dislikes >= dislikeThreshold && isAuditAdmin) {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 3 dislikes`,
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes (maioria dos ${totalBandMembers} membros)`,
       song: s.song,
       artist: s.artist,
       by: s.by,
       likes: likes,
       dislikes: dislikes,
       voterMap,
-      reason: 'Atingiu o limite de 3 dislikes',
+      reason: `Atingiu o limite de ${dislikeThreshold} dislikes`,
       removedBy: 'Sistema',
       category: 'sugestoes',
       who: 'Sistema',
@@ -3410,7 +3432,7 @@ window.voteSuggestion = async (id, type) => {
       tsLocal: new Date().toLocaleString('pt-BR')
     });
     await refreshSuggestionsIfNeeded();
-    showToast('🗑 Sugestão removida (3+ dislikes)');
+    showToast(`🗑 Sugestão removida (${dislikeThreshold}+ dislikes)`);
     return;
   }
 

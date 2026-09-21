@@ -26,6 +26,11 @@
   }catch(e){}
 })();
 </script>
+<style>
+.admin-only { display: none; }
+body.is-admin .admin-only { display: block; }
+body.is-admin-paused .admin-only { display: none !important; }
+</style>
 </head>
 <body>
 
@@ -104,14 +109,14 @@
     </div>
 
     <!-- Criar Enquete Action Button (Below Polls) -->
-    <div class="member-only" style="margin-top:2.2rem;text-align:center">
+    <div class="admin-only" style="margin-top:2.2rem;text-align:center">
       <button class="btn" id="btnToggleCreatePoll" onclick="toggleCreatePollForm()" style="display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.6rem;font-size:.85rem">
         <span>➕</span> Criar enquete
       </button>
     </div>
 
     <!-- Poll Creation Form (Initially Hidden) -->
-    <div id="createPollSection" class="member-only" style="display:none;margin-top:1.5rem">
+    <div id="createPollSection" class="admin-only" style="display:none;margin-top:1.5rem">
       <div class="form-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;border-bottom:1px solid rgba(200,130,10,.2);padding-bottom:.6rem">
           <p style="font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--gold);margin:0">Criar Nova Enquete</p>
@@ -179,7 +184,10 @@ import {
 // --- STATE ---
 let isLoggedIn = false;
 let isMember = false;
+let isAdmin = false;
+let isAdminPaused = false;
 let isAuditAdmin = false;
+const AUDIT_EMAIL = 'juliocereser@gmail.com';
 let currentSection = 'sugestoes';
 let suggestionsLoaded = false;
 let pollsLoaded = false;
@@ -279,6 +287,25 @@ async function isEmailApproved(email) {
   return snap.exists();
 }
 
+async function isEmailAdminPaused(email) {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  if (clean === AUDIT_EMAIL) return false;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'pausedAdmins'));
+    if (!snap.exists()) return false;
+    const data = snap.data() || {};
+    if (data.pausedMap && typeof data.pausedMap[clean] === 'boolean') {
+      return data.pausedMap[clean];
+    }
+    const emails = Array.isArray(data.emails) ? data.emails.map(e => String(e).toLowerCase().trim()) : [];
+    return emails.includes(clean);
+  } catch (err) {
+    console.warn('Erro ao verificar status de pausa de admin:', err);
+    return false;
+  }
+}
+
 // --- LOGINS ---
 window.openLogin = () => {
   document.getElementById('loginModal').classList.add('show');
@@ -311,7 +338,10 @@ window.doLogout = async () => {
 onAuthStateChanged(auth, async user => {
   if (user) {
     const approved = await isEmailApproved(user.email);
+    const isPaused = await isEmailAdminPaused(user.email);
     isMember = approved;
+    isAdminPaused = isPaused;
+    isAdmin = approved && !isPaused;
     isLoggedIn = true;
     const firstName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'Visitante';
     document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
@@ -319,8 +349,10 @@ onAuthStateChanged(auth, async user => {
   } else {
     isLoggedIn = false;
     isMember   = false;
+    isAdmin    = false;
+    isAdminPaused = false;
   }
-  isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === AUDIT_EMAIL;
   document.body.classList.toggle('is-audit-admin', isAuditAdmin);
   applyAuth();
   loadSuggestionsSnapshot(true);
@@ -330,6 +362,8 @@ onAuthStateChanged(auth, async user => {
 function applyAuth() {
   document.body.classList.toggle('logged-in', isLoggedIn);
   document.body.classList.toggle('is-member', isMember);
+  document.body.classList.toggle('is-admin', isAdmin);
+  document.body.classList.toggle('is-admin-paused', isAdminPaused);
   
   document.getElementById('loginBtn').style.display  = isLoggedIn ? 'none' : '';
   document.getElementById('logoutBtn').style.display = isLoggedIn ? '' : 'none';
@@ -346,6 +380,9 @@ function applyAuth() {
   // Expose member elements
   document.querySelectorAll('.member-only').forEach(el => {
     el.style.display = isMember ? 'block' : 'none';
+  });
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = isAdmin ? 'block' : 'none';
   });
 
   if (isLoggedIn) {
@@ -765,8 +802,8 @@ function renderPolls() {
 
     const myVoteLabel   = hasVoted ? `<span class="poll-my-vote">Você já votou nesta enquete.</span>` : '';
     const changeVoteBtn = isMember && hasVoted && !isClosed ? `<button class="btn-ghost btn-sm" onclick="removePollVote('${id}')">Mudar voto</button>` : '';
-    const closeBtn      = isMember && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
-    const deleteBtn     = isMember ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
+    const closeBtn      = isAdmin && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
+    const deleteBtn     = isAdmin ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
 
     const createdLabel = p.createdAt ? `<span style="font-size:.7rem;color:var(--smoke)">Criada em ${formatTs(p.createdAt)}</span>` : '';
 
@@ -909,6 +946,7 @@ window.removePollVote = async id => {
 };
 
 window.deletePoll = async id => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Tem certeza que deseja excluir esta enquete?')) return;
   const snap = await getDoc(doc(db,'polls',id));
   const q = snap.exists() ? snap.data().question : id;
@@ -919,7 +957,7 @@ window.deletePoll = async id => {
 };
 
 window.createPoll = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const q        = document.getElementById('pollQuestion').value.trim();
   const opts     = Array.from(document.querySelectorAll('.poll-opt-input')).map(i=>i.value.trim()).filter(Boolean);
   const deadline = document.getElementById('pollDeadline').value;
@@ -942,7 +980,7 @@ window.createPoll = async () => {
 };
 
 window.closePoll = async id => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   await updateDoc(doc(db,'polls',id), {closed: true});
   await loadPollsSnapshot(true);
   await writeLog('Enquete encerrada manualmente', pollsCache.find(p=>p.id===id)?.data.question||id, 'enquetes');

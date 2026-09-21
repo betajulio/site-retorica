@@ -19,12 +19,22 @@ service cloud.firestore {
       return signedIn() && emailKey() == 'juliocereser@gmail.com';
     }
 
+    function isPausedAdmin() {
+      return exists(/databases/$(database)/documents/config/pausedAdmins)
+        && ('emails' in get(/databases/$(database)/documents/config/pausedAdmins).data)
+        && (emailKey() in get(/databases/$(database)/documents/config/pausedAdmins).data.emails);
+    }
+
+    function isAdminActive() {
+      return isAuditAdmin() || (isMember() && !isPausedAdmin());
+    }
+
     function isOwnApprovedEmailDoc(emailId) {
       return signedIn() && emailId == emailKey();
     }
 
     function publicConfigDoc(docId) {
-      return docId in ['galleryTags', 'galleryCompression'];
+      return docId in ['galleryTags', 'galleryCompression', 'pausedAdmins'];
     }
 
     match /approved_emails/{emailId} {
@@ -35,19 +45,20 @@ service cloud.firestore {
 
     match /members/{memberId} {
       allow read: if true;
-      allow create, update, delete: if isMember();
+      allow create, delete: if isAdminActive();
+      allow update: if isMember();
     }
 
     match /suggestions/{suggestionId} {
       allow read: if true;
       allow create: if signedIn();
-      allow update: if isMember();
+      allow update: if isAdminActive();
       allow delete: if isAuditAdmin();
     }
 
     match /polls/{pollId} {
       allow read: if true;
-      allow create, update, delete: if isMember();
+      allow create, update, delete: if isAdminActive();
 
       match /votes/{userId} {
         allow get: if signedIn() && request.auth.uid == userId;
@@ -58,29 +69,29 @@ service cloud.firestore {
 
     match /setlists/{docId} {
       allow read: if true;
-      allow create, update, delete: if isMember();
+      allow create, update, delete: if isAdminActive();
     }
 
     match /repertorio/{docId} {
       allow read: if true;
-      allow create, update, delete: if isMember();
+      allow create, update, delete: if isAdminActive();
     }
 
     match /forum/{threadId} {
       allow read: if true;
-      allow create, update, delete: if isMember();
+      allow create, update, delete: if isAdminActive();
 
       match /posts/{postId} {
         allow read: if true;
-        allow create, update, delete: if isMember();
+        allow create, update, delete: if isAdminActive();
       }
     }
 
     match /gallery/{photoId} {
       allow read: if true;
       allow create: if isMember();
-      allow delete: if isMember();
-      allow update: if isMember()
+      allow delete: if isAdminActive();
+      allow update: if isAdminActive()
         || (
           signedIn()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'commentCount', 'replyCount'])
@@ -90,12 +101,13 @@ service cloud.firestore {
         allow read: if true;
         allow create: if signedIn();
         allow update: if signedIn();
-        allow delete: if isMember();
+        allow delete: if isAdminActive();
       }
     }
 
     match /logs/{logId} {
-      allow read, create, delete: if isMember();
+      allow read, create: if isMember();
+      allow delete: if isAdminActive();
       allow update: if false;
     }
 
@@ -108,8 +120,8 @@ service cloud.firestore {
     match /config/{docId} {
       allow read: if publicConfigDoc(docId)
         || ((docId == 'readAudit' || docId == 'bandRules') && isMember());
-      allow create, update, delete: if ((docId == 'readAudit' || docId == 'bandRules') && isAuditAdmin())
-        || (docId != 'readAudit' && docId != 'bandRules' && isMember());
+      allow create, update, delete: if ((docId == 'readAudit' || docId == 'bandRules' || docId == 'pausedAdmins') && isAuditAdmin())
+        || (docId != 'readAudit' && docId != 'bandRules' && docId != 'pausedAdmins' && isAdminActive());
     }
 
     match /read_audit_events/{eventId} {
@@ -123,12 +135,12 @@ service cloud.firestore {
 
     match /promotion_state/{docId} {
       allow read: if true;
-      allow create, update, delete: if isMember();
+      allow create, update, delete: if isAdminActive();
     }
 
     match /rehearsal_state/{docId} {
       allow read: if true;
-      allow create, update, delete: if isMember();
+      allow create, update, delete: if isAdminActive();
     }
 
     match /{document=**} {

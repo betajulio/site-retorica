@@ -204,6 +204,9 @@ import {
 // --- STATE ---
 let isLoggedIn = false;
 let isMember = false;
+let isAdmin = false;
+let isAdminPaused = false;
+const AUDIT_EMAIL = 'juliocereser@gmail.com';
 let setlistLoaded = false;
 let forumSubscribed = false;
 let forumHistoryOpen = false;
@@ -384,6 +387,25 @@ async function isEmailApproved(email) {
   return snap.exists();
 }
 
+async function isEmailAdminPaused(email) {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  if (clean === AUDIT_EMAIL) return false;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'pausedAdmins'));
+    if (!snap.exists()) return false;
+    const data = snap.data() || {};
+    if (data.pausedMap && typeof data.pausedMap[clean] === 'boolean') {
+      return data.pausedMap[clean];
+    }
+    const emails = Array.isArray(data.emails) ? data.emails.map(e => String(e).toLowerCase().trim()) : [];
+    return emails.includes(clean);
+  } catch (err) {
+    console.warn('Erro ao verificar status de pausa de admin:', err);
+    return false;
+  }
+}
+
 // --- LOGINS ---
 window.openLogin = () => {
   document.getElementById('loginModal').classList.add('show');
@@ -416,7 +438,10 @@ window.doLogout = async () => {
 onAuthStateChanged(auth, async user => {
   if (user) {
     const approved = await isEmailApproved(user.email);
+    const isPaused = await isEmailAdminPaused(user.email);
     isMember = approved;
+    isAdminPaused = isPaused;
+    isAdmin = approved && !isPaused;
     isLoggedIn = true;
     const firstName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'Visitante';
     document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
@@ -424,8 +449,10 @@ onAuthStateChanged(auth, async user => {
   } else {
     isLoggedIn = false;
     isMember   = false;
+    isAdmin    = false;
+    isAdminPaused = false;
   }
-  const isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  const isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === AUDIT_EMAIL;
   document.body.classList.toggle('is-audit-admin', isAuditAdmin);
   applyAuth();
   loadSetlistSnapshot(true);
@@ -436,6 +463,8 @@ onAuthStateChanged(auth, async user => {
 function applyAuth() {
   document.body.classList.toggle('logged-in', isLoggedIn);
   document.body.classList.toggle('is-member', isMember);
+  document.body.classList.toggle('is-admin', isAdmin);
+  document.body.classList.toggle('is-admin-paused', isAdminPaused);
   
   document.getElementById('loginBtn').style.display  = isLoggedIn ? 'none' : '';
   document.getElementById('logoutBtn').style.display = isLoggedIn ? '' : 'none';
@@ -663,9 +692,13 @@ window.removeSetSong = async idx => {
 };
 
 // Draggables
-window.dStart = e=>{ dragSrc=e.currentTarget; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; };
+window.dStart = e=>{
+  if (!isAdmin) { e.preventDefault(); return; }
+  dragSrc=e.currentTarget; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move';
+};
 window.dOver  = e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; };
 window.dDrop  = async e=>{
+  if (!isAdmin) { e.preventDefault(); return; }
   e.preventDefault(); const t=e.currentTarget;
   if(!dragSrc||dragSrc===t) return;
   const fi=parseInt(dragSrc.dataset.idx), ti=parseInt(t.dataset.idx);
@@ -846,7 +879,7 @@ window.addPost = async id => {
 };
 
 window.addForumThread = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const title=document.getElementById('newThreadTitle').value.trim();
   if (!title) { showToast('⚠ Digite o título'); return; }
   await addDoc(collection(db,'forum'),{title,date:new Date().toLocaleDateString('pt-BR'),open:true,closed:false,closedAt:null,createdAt:serverTimestamp()});
@@ -857,6 +890,7 @@ window.addForumThread = async () => {
 };
 
 window.deleteThread = async id => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Tem certeza que deseja excluir este tópico do fórum?')) return;
   const snap = await getDoc(doc(db,'forum',id));
   const title = snap.exists() ? snap.data().title : id;
@@ -917,7 +951,7 @@ function renderForum() {
           <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
             <div class="post-avatar" style="width:24px;height:24px;font-size:.6rem">${rp.author.charAt(0)}</div>
             <span class="post-author">${rp.author}</span><span class="post-date">${rp.date}</span>
-            ${isMember?`<button class="lb-cdel" onclick="delFrp('${id}','${p.__postKey}',${rpi})">✕</button>`:''}
+            ${isAdmin?`<button class="lb-cdel" onclick="delFrp('${id}','${p.__postKey}',${rpi})">✕</button>`:''}
           </div>
           <div class="post-text" style="font-size:.82rem">${rp.text}</div>
           <div class="frp-act">
@@ -973,7 +1007,7 @@ function renderForum() {
         <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${id}')">Enviar</button></div>
       </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-top:.5rem">${threadClosed?'Este fórum foi encerrado e está disponível apenas para consulta.':'Apenas membros podem comentar.'}</p>`;
     
-    const delBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
+    const delBtn = isAdmin ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
     const statusHtml = threadClosed ? '<div class="poll-status-closed">🔒 Fórum encerrado</div>' : '<div class="poll-status-open">🟢 Fórum aberto</div>';
     const closeMeta = threadClosed && t.closedAt ? ` · encerrado em ${formatTs(t.closedAt)}` : '';
     
@@ -1074,8 +1108,8 @@ window.frpReact = async (threadId, postKey, replyIdx, type) => {
 };
 
 window.delFrp = async (threadId, postKey, replyIdx) => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Excluir esta resposta?')) return;
-  if (!isMember) return;
   const thread = forumCache.find(t => t.id === threadId);
   const post = getForumPostsForRender(threadId, thread?.data || {}).find(p => p.__postKey === postKey);
   if (!post) return;

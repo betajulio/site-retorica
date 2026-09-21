@@ -183,7 +183,10 @@ import {
 // --- STATE ---
 let isLoggedIn = false;
 let isMember = false;
+let isAdmin = false;
+let isAdminPaused = false;
 let isAuditAdmin = false;
+const AUDIT_EMAIL = 'juliocereser@gmail.com';
 let currentSection = 'sugestoes';
 let suggestionsLoaded = false;
 let pollsLoaded = false;
@@ -283,6 +286,25 @@ async function isEmailApproved(email) {
   return snap.exists();
 }
 
+async function isEmailAdminPaused(email) {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  if (clean === AUDIT_EMAIL) return false;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'pausedAdmins'));
+    if (!snap.exists()) return false;
+    const data = snap.data() || {};
+    if (data.pausedMap && typeof data.pausedMap[clean] === 'boolean') {
+      return data.pausedMap[clean];
+    }
+    const emails = Array.isArray(data.emails) ? data.emails.map(e => String(e).toLowerCase().trim()) : [];
+    return emails.includes(clean);
+  } catch (err) {
+    console.warn('Erro ao verificar status de pausa de admin:', err);
+    return false;
+  }
+}
+
 // --- LOGINS ---
 window.openLogin = () => {
   document.getElementById('loginModal').classList.add('show');
@@ -315,7 +337,10 @@ window.doLogout = async () => {
 onAuthStateChanged(auth, async user => {
   if (user) {
     const approved = await isEmailApproved(user.email);
+    const isPaused = await isEmailAdminPaused(user.email);
     isMember = approved;
+    isAdminPaused = isPaused;
+    isAdmin = approved && !isPaused;
     isLoggedIn = true;
     const firstName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'Visitante';
     document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
@@ -323,8 +348,10 @@ onAuthStateChanged(auth, async user => {
   } else {
     isLoggedIn = false;
     isMember   = false;
+    isAdmin    = false;
+    isAdminPaused = false;
   }
-  isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === 'juliocereser@gmail.com';
+  isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === AUDIT_EMAIL;
   document.body.classList.toggle('is-audit-admin', isAuditAdmin);
   applyAuth();
   loadSuggestionsSnapshot(true);
@@ -334,6 +361,8 @@ onAuthStateChanged(auth, async user => {
 function applyAuth() {
   document.body.classList.toggle('logged-in', isLoggedIn);
   document.body.classList.toggle('is-member', isMember);
+  document.body.classList.toggle('is-admin', isAdmin);
+  document.body.classList.toggle('is-admin-paused', isAdminPaused);
   
   document.getElementById('loginBtn').style.display  = isLoggedIn ? 'none' : '';
   document.getElementById('logoutBtn').style.display = isLoggedIn ? '' : 'none';
@@ -504,8 +533,8 @@ function renderPolls() {
 
     const myVoteLabel   = hasVoted ? `<span class="poll-my-vote">Você já votou nesta enquete.</span>` : '';
     const changeVoteBtn = isMember && hasVoted && !isClosed ? `<button class="btn-ghost btn-sm" onclick="removePollVote('${id}')">Mudar voto</button>` : '';
-    const closeBtn      = isMember && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
-    const deleteBtn     = isMember ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
+    const closeBtn      = isAdmin && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
+    const deleteBtn     = isAdmin ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
 
     const createdLabel = p.createdAt ? `<span style="font-size:.7rem;color:var(--smoke)">Criada em ${formatTs(p.createdAt)}</span>` : '';
 
@@ -628,6 +657,7 @@ window.removePollVote = async id => {
 };
 
 window.deletePoll = async id => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Tem certeza que deseja excluir esta enquete?')) return;
   const snap = await getDoc(doc(db,'polls',id));
   const q = snap.exists() ? snap.data().question : id;
@@ -638,7 +668,7 @@ window.deletePoll = async id => {
 };
 
 window.createPoll = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const q        = document.getElementById('pollQuestion').value.trim();
   const opts     = Array.from(document.querySelectorAll('.poll-opt-input')).map(i=>i.value.trim()).filter(Boolean);
   const deadline = document.getElementById('pollDeadline').value;
@@ -660,7 +690,7 @@ window.createPoll = async () => {
 };
 
 window.closePoll = async id => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   await updateDoc(doc(db,'polls',id), {closed: true});
   await loadPollsSnapshot(true);
   await writeLog('Enquete encerrada manualmente', pollsCache.find(p=>p.id===id)?.data.question||id, 'enquetes');
@@ -799,6 +829,14 @@ window.addEventListener('load', () => {
 });
 // --- SUGGESTIONS LOGIC ---
 let suggestionsCache = [];
+let membersCount = 6;
+
+async function refreshMembersCount() {
+  try {
+    const snap = await getDocs(collection(db, 'members'));
+    if (!snap.empty) membersCount = snap.size;
+  } catch (e) {}
+}
 
 function getSuggestionScore(s) {
   return (s.likes||0) - (s.dislikes||0);
@@ -806,6 +844,7 @@ function getSuggestionScore(s) {
 
 async function loadSuggestionsSnapshot(force = false) {
   if (suggestionsLoaded && !force) return;
+  refreshMembersCount();
   const snap = await getDocs(query(collection(db,'suggestions'), orderBy('createdAt','desc')));
   suggestionsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   suggestionsLoaded = true;
@@ -1000,19 +1039,22 @@ window.voteSuggestion = async (id, type) => {
   const likes = Object.values(voterMap).filter(v => v === 'like').length;
   const dislikes = Object.values(voterMap).filter(v => v === 'dislike').length;
 
-  if (dislikes >= 3 && isAuditAdmin) {
+  const totalBandMembers = Math.max(2, membersCount || 6);
+  const dislikeThreshold = Math.max(2, Math.ceil(totalBandMembers / 2));
+
+  if (dislikes >= dislikeThreshold && isAuditAdmin) {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de 3 dislikes`,
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes (maioria dos ${totalBandMembers} membros)`,
       song: s.song, artist: s.artist, by: s.by, likes, dislikes,
       voterMap,
-      reason: 'Atingiu o limite de 3 dislikes', removedBy: 'Sistema',
+      reason: `Atingiu o limite de ${dislikeThreshold} dislikes`, removedBy: 'Sistema',
       category: 'sugestoes', who: 'Sistema', whoEmail: '',
       ts: serverTimestamp(), tsLocal: new Date().toLocaleString('pt-BR')
     });
     await loadSuggestionsSnapshot(true);
-    showToast('🗑 Sugestão removida (3+ dislikes)');
+    showToast(`🗑 Sugestão removida (${dislikeThreshold}+ dislikes)`);
     return;
   }
 

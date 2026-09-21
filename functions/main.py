@@ -5,7 +5,7 @@ import unicodedata
 import html
 from urllib.parse import quote_plus
 from firebase_functions import firestore_fn, scheduler_fn, https_fn
-from firebase_admin import initialize_app, firestore
+from firebase_admin import initialize_app, firestore, auth as admin_auth
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -632,10 +632,11 @@ def build_top_suggestions_message(db):
                     is_tie = True
                     break
 
-            tie_tag = " ⚔️ *(Empate)*" if is_tie else ""
+            tie_tag = " ⚔️" if is_tie else ""
             rank_icon = rank_emojis[idx] if idx < len(rank_emojis) else f"{idx+1}º"
+            artist_part = f" – {artist}" if artist else ""
 
-            lines.append(f"{rank_icon} *{song}* — {artist} (por {by_user}){tie_tag} · 👍 {likes} | 👎 {dislikes}")
+            lines.append(f"{rank_icon} *{song}*{artist_part}{tie_tag} · 👍 {likes} | 👎 {dislikes}")
 
         # Seção da Lanterna / Na mira da eliminação semanal
         if total_suggs >= 2:
@@ -643,22 +644,20 @@ def build_top_suggestions_message(db):
             b_data = bottom_doc.to_dict() or {}
             b_song = b_data.get("song", "Música")
             b_artist = b_data.get("artist", "Artista")
-            b_by = b_data.get("by", "Membro")
             b_likes = safe_int(b_data.get("likes", 0))
             b_dislikes = safe_int(b_data.get("dislikes", 0))
             b_score = get_suggestion_score(b_data)
 
             elim_dt = get_next_weekly_elimination_datetime(db)
             elim_time_str = format_elimination_time_remaining(elim_dt)
+            b_artist_part = f" – {b_artist}" if b_artist else ""
 
             lines.extend([
                 "",
                 "━━━━━━━━━━━━━━━━━━━━",
-                "🎯 *NA MIRA DA ELIMINAÇÃO SEMANAL:*",
-                f"⚠️ *{b_song}* — {b_artist} (por {b_by})",
-                f"📊 *Pontuação:* {b_score} pts (👍 {b_likes} | 👎 {b_dislikes})",
-                f"⏳ *Eliminação em:* {elim_time_str}",
-                "_Dica: Votem no site para salvar a música antes do prazo!_",
+                "🎯 *NA MIRA DA ELIMINAÇÃO:*",
+                f"⚠️ *{b_song}*{b_artist_part} · {b_score} pts (👍 {b_likes} | 👎 {b_dislikes})",
+                f"⏳ *Prazo:* {elim_time_str} · _Votem no site para salvar!_",
                 "━━━━━━━━━━━━━━━━━━━━"
             ])
 
@@ -669,11 +668,61 @@ def build_top_suggestions_message(db):
         print(f"Erro ao construir mensagem do Top 3: {type(exc).__name__}: {exc}")
         return None
 
+def get_active_band_members(db):
+    """
+    Retorna a lista de integrantes ativos da banda da coleção 'members'.
+    Para cada integrante, obtém id, nome, email e UID para cálculo preciso e dinâmico de votos.
+    Se novos membros forem adicionados ou membros forem removidos, esta função reflete
+    imediatamente a composição real da banda.
+    """
+    try:
+        members_snap = db.collection("members").get()
+        active_members = []
+        for doc in members_snap:
+            d = doc.to_dict() or {}
+            email = (d.get("ownerEmail") or d.get("email") or "").strip().lower()
+            name = (d.get("name") or doc.id).strip()
+            uid = d.get("ownerUid") or d.get("uid")
+
+            # Se tiver email mas não tiver UID gravado, busca no Firebase Auth Admin e salva
+            if email and not uid:
+                try:
+                    user_rec = admin_auth.get_user_by_email(email)
+                    uid = user_rec.uid
+                    doc.reference.set({"ownerUid": uid}, merge=True)
+                except Exception:
+                    pass
+
+            active_members.append({
+                "id": doc.id,
+                "name": name,
+                "email": email,
+                "uid": uid
+            })
+
+        if active_members:
+            return active_members
+    except Exception as e:
+        print(f"Erro ao buscar membros ativos: {e}")
+
+    # Fallback caso a coleção 'members' não retorne documentos
+    approved_snap = db.collection("approved_emails").get()
+    fallback = []
+    for d in approved_snap:
+        em = d.id.strip().lower()
+        if em:
+            fallback.append({
+                "id": em,
+                "name": em.split("@")[0].title(),
+                "email": em,
+                "uid": None
+            })
+    return fallback
+
 def build_pending_votes_report_message(db):
     try:
-        approved_snap = db.collection("approved_emails").get()
-        approved_emails = set(d.id.strip().lower() for d in approved_snap if d.id.strip())
-        total_members = len(approved_emails)
+        active_members = get_active_band_members(db)
+        total_members = len(active_members)
         if total_members == 0:
             total_members = 6
 
@@ -681,17 +730,41 @@ def build_pending_votes_report_message(db):
         if not suggestions:
             return None
 
+        # Mapeamentos para identificar membros ativos que já votaram
+        uid_to_member = {}
+        email_to_member = {}
+        for m in active_members:
+            if m.get("uid"):
+                uid_to_member[m["uid"]] = m
+            if m.get("email"):
+                email_to_member[m["email"]] = m
+
         pending_items = []
         for doc in suggestions:
             s = doc.to_dict() or {}
             song = (s.get("song") or "Música").strip()
+            artist = (s.get("artist") or "").strip()
             voter_map = s.get("voterMap") or {}
-            voted_count = len(voter_map)
-            not_voted_count = max(0, total_members - voted_count)
+
+            # Descobre quais membros ATIVOS já votaram nesta sugestão
+            voted_active_ids = set()
+            for key in voter_map.keys():
+                if key in uid_to_member:
+                    voted_active_ids.add(uid_to_member[key]["id"])
+                elif key.lower() in email_to_member:
+                    voted_active_ids.add(email_to_member[key.lower()]["id"])
+
+            # Membros ativos que ainda NÃO votaram nesta música específica
+            missing_members = [m for m in active_members if m["id"] not in voted_active_ids]
+            not_voted_count = len(missing_members)
+
+            # Se todos os membros ativos votaram, not_voted_count é 0 -> música completa!
             if not_voted_count > 0:
                 pending_items.append({
                     "song": song,
+                    "artist": artist,
                     "not_voted_count": not_voted_count,
+                    "missing_names": [m["name"].split()[0] for m in missing_members],
                     "score": get_suggestion_score(s)
                 })
 
@@ -703,12 +776,15 @@ def build_pending_votes_report_message(db):
         ]
 
         if not pending_items:
-            lines.append("🎉 *Todas as sugestões estão 100% votadas por todos os membros da banda!*")
+            lines.append(f"🎉 *Todas as sugestões estão 100% votadas pelos {total_members} membros da banda!*")
         else:
             for item in pending_items:
                 c = item["not_voted_count"]
-                member_text = "1 membro não votou" if c == 1 else f"{c} membros não votaram"
-                lines.append(f"🎵 *{item['song']}* — {member_text}")
+                falta_label = f"falta {c}" if c == 1 else f"faltam {c}"
+                names_str = f" ({falta_label}: {', '.join(item['missing_names'])})" if item.get("missing_names") else f" ({falta_label})"
+                artist = item.get("artist", "").strip()
+                title = f"*{item['song']}* – {artist}" if artist else f"*{item['song']}*"
+                lines.append(f"▪️ {title}{names_str}")
 
         lines.append("")
         lines.append(f"💡 *Veja e vote nas sugestões:* {SUGGESTIONS_URL}")
@@ -719,20 +795,8 @@ def build_pending_votes_report_message(db):
 
 def build_weekly_member_ranking_message(db):
     try:
-        approved_snap = db.collection("approved_emails").get()
-        members_snap = db.collection("members").get()
+        active_members = get_active_band_members(db)
         stats_snap = db.collection("member_stats").get()
-
-        approved_emails = set(d.id.strip().lower() for d in approved_snap if d.id.strip())
-
-        # Mapa de nomes pelo members collection
-        name_by_email = {}
-        for d in members_snap:
-            m = d.to_dict() or {}
-            m_name = (m.get("name") or "").strip()
-            m_email = (m.get("email") or "").strip().lower()
-            if m_name and m_email:
-                name_by_email[m_email] = m_name
 
         # Mapear stats por email
         stats_by_email = {}
@@ -740,15 +804,16 @@ def build_weekly_member_ranking_message(db):
             stats_by_email[d.id.strip().lower()] = d.to_dict() or {}
 
         participants = []
-        for email in approved_emails:
+        for m in active_members:
+            email = m.get("email")
+            if not email:
+                continue
             st = stats_by_email.get(email, {})
-            # Nome: name_by_email ou st.name ou deduzir do email
-            raw_name = name_by_email.get(email) or (st.get("name") or "").strip()
+            raw_name = m.get("name") or (st.get("name") or "").strip()
             if not raw_name:
                 prefix = email.split("@")[0]
                 raw_name = prefix.replace(".", " ").replace("_", " ").title()
-            
-            # Usar apenas o primeiro nome ou nome curto para ficar limpo no ranking
+
             short_name = raw_name.split()[0] if raw_name else "Membro"
 
             coins = safe_int(st.get("coins", 0))
@@ -784,33 +849,29 @@ def build_weekly_member_ranking_message(db):
 
         lines = [
             "🏆 *PAINEL SEMANAL DA RETÓRICA* 🎸",
-            "📅 Sexta-feira, 13:00 | Desempenho e Engajamento da Banda",
             "",
-            "━━━━━━━━━━━━━━━━━━━━",
-            "🪙 *TOP COINS (Saldo)*"
+            "🪙 *COINS*"
         ]
 
         for idx, p in enumerate(by_coins):
             prefix = coins_icons[idx] if idx < len(coins_icons) else f"{idx+1}º"
             suffix = coins_suffixes[idx] if idx < len(coins_suffixes) else (" ⚠️" if idx >= 3 else "")
-            lines.append(f"{prefix} *{p['name']}* — {p['coins']} Coins{suffix}")
+            lines.append(f"{prefix} *{p['name']}* · {p['coins']} coins{suffix}")
 
         lines.extend([
             "",
-            "━━━━━━━━━━━━━━━━━━━━",
-            "⚡ *TOP INTERAÇÕES (Votos, Sugestões e Fórum)*"
+            "⚡ *AÇÕES (Votos & Fórum)*"
         ])
 
         for idx, p in enumerate(by_interactions):
             prefix = coins_icons[idx] if idx < len(coins_icons) else f"{idx+1}º"
             suffix = interactions_suffixes[idx] if idx < len(interactions_suffixes) else (" ⚠️" if idx >= 3 else "")
             act_str = f"{p['interactions']} {'ação' if p['interactions'] == 1 else 'ações'}"
-            lines.append(f"{prefix} *{p['name']}* — {act_str}{suffix}")
+            lines.append(f"{prefix} *{p['name']}* · {act_str}{suffix}")
 
         lines.extend([
             "",
-            "━━━━━━━━━━━━━━━━━━━━",
-            "🔥 *TOP ASSIDUIDADE (Presença & Sequência Diária)*"
+            "🔥 *ASSIDUIDADE (Sequência)*"
         ])
 
         for idx, p in enumerate(by_assiduidade):
@@ -818,14 +879,13 @@ def build_weekly_member_ranking_message(db):
             suffix = assiduidade_suffixes[idx] if idx < len(assiduidade_suffixes) else (" ⚠️" if idx >= 3 else "")
             streak = p["streakDays"]
             total_days = p["totalLoginDays"]
-            streak_str = f"{streak} {'dia seguido' if streak == 1 else 'dias seguidos'}"
-            total_str = f"({total_days} no total)"
-            lines.append(f"{prefix} *{p['name']}* — {streak_str} {total_str}{suffix}")
+            streak_str = f"{streak}d seguidos"
+            total_str = f"({total_days} tot)"
+            lines.append(f"{prefix} *{p['name']}* · {streak_str} {total_str}{suffix}")
 
         lines.extend([
             "",
-            "━━━━━━━━━━━━━━━━━━━━",
-            "💡 *Quem está na lanterna:* Entre no site para resgatar seus coins diários, votar e subir no ranking!",
+            "💡 *Suba no ranking resgatando coins diários e votando!*",
             f"👉 {HOME_URL}"
         ])
 
@@ -1832,7 +1892,7 @@ def admin_trigger_top_suggestions(req: https_fn.Request) -> https_fn.Response:
         if not msg:
             return json_response({"ok": True, "message": "Nenhuma sugestão cadastrada."}, 200)
         
-        result = send_wa_notification_with_logo(msg, db)
+        result = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Top 3 Sugestões 🎵")
         return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
@@ -1888,7 +1948,7 @@ def admin_trigger_weekly_ranking(req: https_fn.Request) -> https_fn.Response:
         if not msg:
             return json_response({"ok": True, "message": "Nenhum membro ou estatística cadastrada."}, 200)
         
-        result = send_wa_notification_with_logo(msg, db)
+        result = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Ranking Semanal de Membros 🏆")
         return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
@@ -2074,20 +2134,34 @@ def admin_sync_suggestion_votes(req: https_fn.Request) -> https_fn.Response:
 
     db = firestore.client()
     try:
+        active_members = get_active_band_members(db)
+        active_uids = set(m["uid"] for m in active_members if m.get("uid"))
+        active_emails = set(m["email"].lower() for m in active_members if m.get("email"))
+
         suggestions_ref = db.collection("suggestions")
         fixed = []
         for doc in suggestions_ref.stream():
             d = doc.to_dict() or {}
             voter_map = d.get("voterMap") or {}
-            real_likes = len([v for v in voter_map.values() if v == "like"])
-            real_dislikes = len([v for v in voter_map.values() if v == "dislike"])
+
+            # Filtra apenas votos de membros ativos da banda
+            clean_voter_map = {}
+            if active_uids or active_emails:
+                for k, val in voter_map.items():
+                    if k in active_uids or k.lower() in active_emails:
+                        clean_voter_map[k] = val
+            else:
+                clean_voter_map = voter_map
+
+            real_likes = len([v for v in clean_voter_map.values() if v == "like"])
+            real_dislikes = len([v for v in clean_voter_map.values() if v == "dislike"])
             curr_likes = d.get("likes") or 0
             curr_dislikes = d.get("dislikes") or 0
-            if curr_likes != real_likes or curr_dislikes != real_dislikes:
+            if curr_likes != real_likes or curr_dislikes != real_dislikes or len(clean_voter_map) != len(voter_map):
                 doc.reference.update({
                     "likes": real_likes,
                     "dislikes": real_dislikes,
-                    "voterMap": voter_map
+                    "voterMap": clean_voter_map
                 })
                 fixed.append({
                     "id": doc.id,
@@ -2101,7 +2175,7 @@ def admin_sync_suggestion_votes(req: https_fn.Request) -> https_fn.Response:
         if fixed:
             db.collection("logs").add({
                 "action": "Sincronização de Votos",
-                "detail": f"Sincronizados votos de {len(fixed)} sugestão(ões) com base nos votantes reais (voterMap)",
+                "detail": f"Sincronizados votos de {len(fixed)} sugestão(ões) com base nos {len(active_members)} membros ativos atuais",
                 "category": "sugestoes",
                 "who": "Administrador",
                 "whoEmail": "juliocereser@gmail.com",
@@ -2283,17 +2357,20 @@ def get_current_band_logo_url(db=None):
     # Padrão
     return "https://betajulio.github.io/site-retorica/imagens/logo_not_zap.jpg"
 
-def send_wa_notification_with_logo(text, db=None):
-    """Envia a mensagem com a imagem do logo atual da banda (dinâmico)."""
+def send_wa_notification_with_logo(text, db=None, separate_image=True, image_caption="🎸 Retórica — Banda Oficial"):
+    """Envia a mensagem com a imagem do logo atual da banda (dinâmico).
+    Com separate_image=True (padrão), envia a foto com legenda curta e o texto a seguir como sendMessage separado,
+    garantindo que o balão de texto se expanda em largura total sem ficar espremido no limite de 330px da imagem.
+    """
     logo_url = get_current_band_logo_url(db)
-    if len(text) <= 1000:
+    if not separate_image and len(text) <= 1000:
         res = send_wa_image(logo_url, text)
         if res.get("ok"):
             return res
         print(f"Envio com imagem+legenda retornou {res.get('detail')}. Enviando imagem separada + texto.")
 
-    # Se a legenda for longa ou o envio com legenda falhar, envia o logo e o texto completo
-    img_res = send_wa_image(logo_url, "🎸 Retórica — Banda Oficial")
+    # Envia o logo isolado e a mensagem completa de texto separada
+    img_res = send_wa_image(logo_url, image_caption)
     msg_res = send_wa_message(text)
     return msg_res if msg_res.get("ok") else img_res
 
@@ -2675,7 +2752,7 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
         try:
             msg = build_top_suggestions_message(db)
             if msg:
-                result = send_wa_notification_with_logo(msg, db)
+                result = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Top 3 Sugestões 🎵")
             else:
                 result = {"ok": False, "detail": "Nenhuma sugestão encontrada para montar o Top 3."}
             update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
@@ -2690,7 +2767,7 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
         try:
             msg = build_weekly_member_ranking_message(db)
             if msg:
-                result = send_wa_notification_with_logo(msg, db)
+                result = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Ranking Semanal de Membros 🏆")
             else:
                 result = {"ok": False, "detail": "Nenhum membro ou estatística encontrada para montar o ranking."}
             update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
@@ -2868,7 +2945,7 @@ def daily_top_suggestions(event: scheduler_fn.ScheduledEvent) -> None:
         if not msg:
             print("[TOP SUGESTÕES] Nenhuma sugestão encontrada no momento.")
             return
-        result = send_wa_notification_with_logo(msg, db)
+        result = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Top 3 Sugestões 🎵")
         print(f"[TOP SUGESTÕES] Disparo enviado: {result}")
     except Exception as exc:
         print(f"[TOP SUGESTÕES] Erro durante disparo: {type(exc).__name__}: {exc}")
@@ -2883,7 +2960,7 @@ def weekly_member_ranking(event: scheduler_fn.ScheduledEvent) -> None:
         if not msg:
             print("[RANKING SEMANAL] Nenhum membro/estatística encontrada no momento.")
             return
-        result = send_wa_notification_with_logo(msg, db)
+        result = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Ranking Semanal de Membros 🏆")
         print(f"[RANKING SEMANAL] Disparo semanal enviado: {result}")
     except Exception as exc:
         print(f"[RANKING SEMANAL] Erro durante disparo: {type(exc).__name__}: {exc}")
@@ -2950,7 +3027,7 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                     if key == "top_suggestions":
                         msg = build_top_suggestions_message(db)
                         if msg:
-                            r = send_wa_notification_with_logo(msg, db)
+                            r = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Top 3 Sugestões 🎵")
                             result_ok = r.get("ok", False)
                             detail = r.get("detail", "")
                     elif key == "pending_votes_report":
@@ -2962,7 +3039,7 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                     elif key == "weekly_ranking":
                         msg = build_weekly_member_ranking_message(db)
                         if msg:
-                            r = send_wa_notification_with_logo(msg, db)
+                            r = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Ranking Semanal de Membros 🏆")
                             result_ok = r.get("ok", False)
                             detail = r.get("detail", "")
                     elif key == "daily_curiosidades":

@@ -11,7 +11,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:image" content="https://betajulio.github.io/site-retorica/imagens/logo_not_zap.jpg">
-<title>Galeria — Retórica</title>
+<title>Retórica — Classic Rock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=IM+Fell+English+SC&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <script>
 (function(){
@@ -165,7 +165,7 @@
   body.home-page #videoFrameDebug,
   body.home-page #galleryMediaTypeBar,
   body.home-page #galleryTagBar{display:none!important}
-  body.home-page #galeria .toca-badge{margin-bottom:1.3rem}
+  body.home-page #galeria .toca-badge{display:none!important}
   .gallery-full-link{display:flex;justify-content:center;margin:1.4rem 0 0}
   body.gallery-page .gallery-full-link{display:none!important}
   body.gallery-page #hero,
@@ -268,9 +268,9 @@
   .member-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:0;transition:opacity .3s}
   .member-card:hover{border-color:rgba(200,130,10,.5);transform:translateY(-3px)}
   .member-card:hover::before{opacity:1}
-  .member-card.editable{cursor:pointer}
-  .member-edit-hint{position:absolute;bottom:0;left:0;right:0;background:rgba(200,130,10,.12);color:var(--amber);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.35rem;opacity:0;transition:opacity .2s;font-family:'Cinzel',serif}
-  .member-card.editable .member-edit-hint{opacity:1}
+  body.is-member .member-card{cursor:pointer}
+  .member-edit-hint{position:absolute;bottom:0;left:0;right:0;background:rgba(200,130,10,.12);color:var(--amber);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.35rem;display:none;font-family:'Cinzel',serif}
+  .editable-member .member-edit-hint{display:block}
   .member-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--brown),var(--rust));margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.6rem;color:var(--gold);border:2px solid rgba(200,130,10,.3);overflow:hidden}
   .member-avatar img{width:100%;height:100%;object-fit:cover}
   .member-name{font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;color:var(--cream);margin-bottom:.5rem}
@@ -550,8 +550,8 @@
 
   /* AUTH */
   .member-only{display:none}
-  body.is-member .member-only{display:block}
-  body.is-member .member-only-flex{display:flex}
+  body.logged-in .member-only{display:block}
+  body.logged-in .member-only-flex{display:flex}
   .member-only-flex{display:none}
   .member-admin-only{display:none}
   body.is-member .member-admin-only{display:block}
@@ -559,6 +559,21 @@
   .member-admin-only-flex{display:none}
   .audit-admin-only{display:none}
   body.is-audit-admin .audit-admin-only{display:block}
+  .audit-admin-only-flex{display:none}
+  body.is-audit-admin .audit-admin-only-flex{display:flex}
+  .admin-only{display:none}
+  body.is-admin .admin-only{display:block}
+  body.is-admin .admin-only-flex{display:flex}
+  .admin-only-flex{display:none}
+  body.is-admin-paused .admin-only,
+  body.is-admin-paused .admin-only-flex,
+  body.is-admin-paused .member-edit-hint,
+  body.is-admin-paused .setlist-remove,
+  body.is-admin-paused .rep-item .setlist-remove,
+  body.is-admin-paused .setlist-add-row,
+  body.is-admin-paused .admin-action-btn,
+  body.is-admin-paused #tagManagerWrap{display:none!important}
+  body.is-admin-paused .setlist-item.editable{cursor:default!important}
 
   /* TOCA DO MINEIRO */
   .toca-badge{position:relative;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:1.6rem;background:
@@ -851,20 +866,19 @@
     input,select,textarea{font-size:1rem} /* prevent iOS zoom */
 
     /* Members */
-    .members-grid{grid-template-columns:1fr;gap:1rem}
-    .member-card{padding:1.2rem .8rem}
+    .members-grid{grid-template-columns:1fr!important;gap:1.2rem;width:100%}
+    .member-card{padding:1.2rem .9rem;width:100%;box-sizing:border-box}
     .member-avatar{width:64px;height:64px;font-size:1.3rem}
     .member-name{font-size:.85rem}
-    .member-recommendations{margin-top:.85rem;padding:.9rem .75rem .75rem}
+    .member-recommendations{margin-top:.85rem;padding:.9rem .75rem .75rem;width:100%;box-sizing:border-box}
     .member-rec-title{margin-bottom:.55rem;font-size:.64rem;letter-spacing:.1em}
-    .member-rec-grid{gap:.65rem}
+    .member-rec-grid{display:flex;flex-direction:column;gap:.65rem;width:100%}
     .member-rec-form-grid{grid-template-columns:1fr}
-    .member-rec-item{grid-template-columns:68px minmax(0,1fr);gap:.7rem;align-items:flex-start;padding:.82rem .75rem;background:linear-gradient(180deg,rgba(18,13,7,.95),rgba(10,8,4,.78));border-left-width:3px;text-align:left}
-    .member-rec-thumb{width:68px;height:68px;flex-shrink:0}
-    .member-rec-copy{padding-top:.05rem;width:100%}
-    .member-rec-label{justify-content:flex-start}
-    .member-rec-label{font-size:.55rem;line-height:1.2;margin-bottom:.3rem}
-    .member-rec-value{font-size:.8rem;line-height:1.45}
+    .member-rec-item{display:grid;grid-template-columns:56px minmax(0,1fr);gap:.7rem;align-items:flex-start;padding:.82rem .75rem;background:linear-gradient(180deg,rgba(18,13,7,.95),rgba(10,8,4,.78));border-left-width:3px;text-align:left;width:100%;box-sizing:border-box}
+    .member-rec-thumb{width:56px;height:56px;flex-shrink:0}
+    .member-rec-copy{padding-top:.05rem;width:100%;min-width:0}
+    .member-rec-label{justify-content:flex-start;font-size:.55rem;line-height:1.2;margin-bottom:.3rem}
+    .member-rec-value{font-size:.8rem;line-height:1.45;word-break:break-word;overflow-wrap:anywhere}
     .member-rec-link{margin-top:.4rem;font-size:.58rem;justify-content:flex-start}
     .member-rec-edit-thumb-row{flex-direction:column}
     .member-rec-row-head{grid-template-columns:1fr}
@@ -947,8 +961,10 @@
 
   /* ── SMALL PHONES ── */
   @media(max-width:380px){
+    .nav-logo{font-size:.68rem!important;letter-spacing:.03em!important}
+    .nav-user{max-width:52px;font-size:.54rem}
     .hero-title{font-size:clamp(2.4rem,16vw,3.2rem)!important}
-    .members-grid{grid-template-columns:1fr 1fr}
+    .members-grid{grid-template-columns:1fr!important}
     .carousel-slide img{max-height:240px}
   }
 
@@ -984,7 +1000,7 @@
   }
 </style>
 </head>
-<body class="gallery-page">
+<body class="home-page">
 
 <!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay">
@@ -1070,6 +1086,8 @@
       <div class="member-rec-list-editor" id="memberRecommendationsEditor"></div>
     </div>
     <div style="display:flex;gap:.8rem;justify-content:flex-end">
+      <button class="btn-ghost" onclick="deleteMemberFromModal()" id="deleteMemberBtn" style="display:none;color:#f87171;border-color:rgba(248,113,113,0.3)">Deletar</button>
+      <div style="flex:1"></div>
       <button class="btn-ghost" onclick="closeEditMember()">Cancelar</button>
       <button class="btn" onclick="saveMember()">Salvar</button>
     </div>
@@ -1080,8 +1098,8 @@
 <nav>
   <a href="index.html" class="nav-logo">Retórica</a>
   <ul class="nav-links">
-    <li><a href="index.html">Home</a></li>
-    <li><a href="galeria.html" style="color:var(--gold)">Galeria</a></li>
+    <li><a href="#" style="color:var(--gold)">Home</a></li>
+    <li><a href="galeria.html">Galeria</a></li>
     <li><a href="sugestoes.html">Sugestões</a></li>
     <li style="position:relative"><a href="enquetes.html">Enquetes <span id="promoCountdownNav" class="badge-new" style="display:none"></span></a></li>
     <li><a href="setlist.html">Setlist de Ensaio</a></li>
@@ -1093,20 +1111,24 @@
   </ul>
   <div class="nav-auth">
     <span class="nav-user" id="navUser" style="display:none">🎸 Membro</span>
-    <a href="index.html" class="coin-balance" id="coinBalance" style="display:none;text-decoration:none"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></a>
     <span class="coin-balance" id="coinBalance" style="display:none" role="button" tabindex="0" aria-label="Abrir detalhes das Retorica Coins" onclick="openCoinGuide()" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault();openCoinGuide();}"><img src="imagens/coin.png" alt="Retorica Coin"><strong id="coinBalanceValue">0</strong></span>
     <button class="btn-ghost btn-sm" id="loginBtn" onclick="openLogin()">Entrar</button>
-    <button class="btn-ghost btn-sm" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
+    <button class="btn-ghost btn-sm member-only" id="logoutBtn" onclick="doLogout()" style="display:none">Sair</button>
   </div>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()" aria-label="Menu">
     <span></span><span></span><span></span>
   </button>
 </nav>
 
+<!-- AVISO DE ACESSO ADM PAUSADO (MODO SOMENTE VISUALIZAÇÃO) -->
+<div id="adminPausedBanner" style="display:none;background:linear-gradient(90deg,rgba(185,28,28,.95),rgba(153,27,27,.98));color:#fff;padding:.65rem 1.2rem;font-size:.78rem;font-family:'Cinzel',serif;letter-spacing:.04em;text-align:center;position:sticky;top:60px;z-index:999;border-bottom:1px solid rgba(255,255,255,.2);box-shadow:0 3px 12px rgba(0,0,0,.6)">
+  ⏸️ Modo Somente Visualização — Seu acesso administrativo está temporariamente pausado. Você pode visualizar os conteúdos da banda, mas ações de edição estão desabilitadas.
+</div>
+
 <!-- MOBILE MENU -->
 <div class="nav-mobile-menu" id="navMobileMenu">
-  <a href="index.html">Home</a>
-  <a href="galeria.html" style="color:var(--gold)">Galeria</a>
+  <a href="#" style="color:var(--gold)">Home</a>
+  <a href="galeria.html">Galeria</a>
   <a href="sugestoes.html">Sugestões</a>
   <a href="enquetes.html">Enquetes <span class="badge-mobile-inline" id="promoCountdownNavMobile" style="display:none"></span></a>
   <a href="setlist.html">Setlist de Ensaio</a>
@@ -1163,42 +1185,17 @@
     <div class="section-line"></div>
   </div>
   <div class="members-grid" id="membersGrid"></div>
-  <div class="member-only" style="margin-top:2rem">
+  <div class="admin-only" style="margin-top:2rem">
     <button class="btn" onclick="openAddMember()">+ Adicionar Membro</button>
   </div>
 </section>
 
 <hr class="full-divider">
 
-<!-- Acesso rápido às seções separadas -->
-<section id="links-rapidos" style="padding: 3rem 1.5rem; text-align: center;">
-  <div class="section-header" style="position:static; margin-bottom: 2rem;">
-    <div class="section-number">02</div>
-    <div class="section-title-wrap"><h2>Ferramentas da Banda</h2><p>Acesse as seções de gerenciamento</p></div>
-    <div class="section-line"></div>
-  </div>
-  <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; max-width: 800px; margin: 0 auto;">
-    <a href="sugestoes.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
-      💡 Sugestões &amp; Enquetes
-    </a>
-    <a href="setlist.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
-      🎵 Setlist de Ensaio
-    </a>
-    <a href="repertorio.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
-      📋 Repertório
-    </a>
-    <a href="galeria.html" class="btn" style="flex: 1; min-width: 200px; text-align: center; text-decoration: none; padding: 1.2rem 1.5rem;">
-      📷 Galeria completa
-    </a>
-  </div>
-</section>
-
-<hr class="full-divider">
-
-<!-- 03 GALERIA -->
+<!-- 02 GALERIA -->
 <section id="galeria">
   <div class="section-header">
-    <div class="section-number">01</div>
+    <div class="section-number">02</div>
     <div class="section-title-wrap">
       <h2>Galeria</h2>
       <p>Memórias da Toca do Mineiro</p>
@@ -1219,8 +1216,8 @@
     </div>
   </div>
 
-  <!-- Gerenciar Tags (apenas membros — oculto por padrão) -->
-  <div class="member-only" id="tagManagerWrap" style="display:none;margin:.8rem 0 1rem;padding:.9rem 1.1rem;background:rgba(10,8,4,.5);border:1px solid rgba(200,130,10,.18);border-radius:2px">
+  <!-- Gerenciar Tags (apenas admins ativos — oculto por padrão) -->
+  <div class="admin-only" id="tagManagerWrap" style="display:none;margin:.8rem 0 1rem;padding:.9rem 1.1rem;background:rgba(10,8,4,.5);border:1px solid rgba(200,130,10,.18);border-radius:2px">
     <p style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.7rem">Editar Tags</p>
     <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem">
       <span style="font-size:.7rem;color:var(--smoke);letter-spacing:.08em;text-transform:uppercase">Tags existentes:</span>
@@ -1284,7 +1281,7 @@
     </div>
   </div>
 
-  <!-- Upload — apenas membros -->
+  <!-- Upload — membros (incluindo admins pausados) -->
   <div class="member-only" style="margin-top:2rem">
     <div class="form-card">
       <p style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold);margin-bottom:1.2rem">Adicionar Foto</p>
@@ -1336,6 +1333,40 @@
         </div>
       </div>
       <button class="btn" onclick="addYoutubeGalleryMedia()">Publicar Vídeo</button>
+    </div>
+  </div>
+</section>
+
+<hr class="full-divider">
+
+<!-- 03 NOTÍCIAS DO ROCK -->
+<section id="noticias-destaque" style="padding: 3.5rem 1.5rem 4rem; text-align: center;">
+  <div class="section-header" style="position:static; margin-bottom: 2rem;">
+    <div class="section-number">03</div>
+    <div class="section-title-wrap">
+      <h2>Notícias do Rock</h2>
+      <p>Mundo do Rock · Histórias, Paradas musicais e Notícias</p>
+    </div>
+    <div class="section-line"></div>
+  </div>
+  <div class="historia-card" style="max-width: 920px; margin: 0 auto; padding: 2.2rem 1.8rem; text-align: center; border: 1px solid rgba(200,130,10,0.3); border-radius: 4px; background: linear-gradient(135deg, rgba(42,26,8,0.7), rgba(19,15,9,0.92)); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+    <div style="display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.8rem">
+      <span style="font-size:2rem">🤘</span>
+      <h3 style="font-family:'Cinzel',serif;font-size:1.35rem;color:var(--gold);letter-spacing:.06em;margin:0">Mundo do Rock em Tempo Real</h3>
+    </div>
+    <p style="color:var(--cream);font-size:.92rem;line-height:1.6;max-width:680px;margin:0 auto 1.6rem;font-family:'Lora',serif">
+      Acompanhe curiosidades diárias da história do rock, lançamentos e rankings oficiais da Apple Music e o feed completo das principais fontes do rock nacional e internacional.
+    </p>
+    <div style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
+      <a href="noticias.html" class="btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.8rem;font-size:.82rem">
+        📰 Abrir Notícias do Rock
+      </a>
+      <a href="noticias.html#historia" class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.4rem;font-size:.82rem">
+        ♦ Curiosidades do Dia
+      </a>
+      <a href="noticias.html#topRock" class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.4rem;font-size:.82rem">
+        ★ Top Músicas Rock
+      </a>
     </div>
   </div>
 </section>
@@ -1457,8 +1488,10 @@ const provider = new GoogleAuthProvider();
 
 // ─── STATE ─────────────────────────────────────────────────────────
 let isLoggedIn    = false; // true = qualquer Google user logado
-let isMember      = false; // true = email aprovado (admin)
-let isAuditAdmin  = false;
+let isMember      = false; // true = email aprovado como membro
+let isAdminPaused = false; // true = acesso administrativo pausado (modo somente visualização)
+let isAdmin       = false; // true = acesso administrativo ativo (pode editar/excluir/gerenciar)
+let isAuditAdmin  = false; // true = email de auditoria
 let currentTab    = 0;
 let currentRepTab = 'all';
 let dragSrc       = null;
@@ -1477,6 +1510,16 @@ const MEMBER_STREAK_BONUS_STEP = 2;
 const MEMBER_STREAK_BONUS_CAP = 10;
 const VIDEO_FRAME_ASSETS = ['tvglacial.png', 'tvcorote.png', 'donabenta.png'];
 const AUDIT_EMAIL = 'juliocereser@gmail.com';
+const ADMIN_GENERAL_EMAIL = 'juliocereser@gmail.com';
+// Mapa de e-mail → nome canônico do membro (para vincular perfis sem ownerEmail)
+const MEMBER_EMAIL_MAP = {
+  'juliocereser@gmail.com':   'julio',
+  'mfa200023@gmail.com':      'matheus',
+  'vinitorressantos@gmail.com': 'vinicius',
+  'neibatera1@gmail.com':     'nei',
+  'rgmaia6@gmail.com':        'roni',
+  'renatoapluiz@gmail.com':   'renato'
+};
 const MEMBER_SCORE_STREAK_WEIGHT = 12;
 const MEMBER_SCORE_ACTION_WEIGHT = 6;
 const MEMBER_SCORE_CATEGORY_WEIGHT = 8;
@@ -1568,6 +1611,23 @@ async function auditReadEvent({ page = 'index', action, collectionName, estimate
 async function isEmailApproved(email) {
   const snap = await getDoc(doc(db, 'approved_emails', email.toLowerCase()));
   return snap.exists();
+}
+
+async function isEmailAdminPaused(email) {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  if (clean === AUDIT_EMAIL.toLowerCase() || clean === ADMIN_GENERAL_EMAIL.toLowerCase()) return false;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'pausedAdmins'));
+    if (snap.exists()) {
+      const data = snap.data() || {};
+      const list = Array.isArray(data.emails) ? data.emails.map(e => String(e).toLowerCase().trim()) : [];
+      return list.includes(clean);
+    }
+  } catch (err) {
+    console.warn('isEmailAdminPaused err:', err);
+  }
+  return false;
 }
 
 function normalizeName(value = '') {
@@ -2207,7 +2267,10 @@ onAuthStateChanged(auth, async user => {
   if (user) {
     const approved = await isEmailApproved(user.email);
     isMember = approved;
+    isAdminPaused = approved ? await isEmailAdminPaused(user.email) : false;
+    isAdmin = isMember && !isAdminPaused;
     isLoggedIn = true;
+    isAuditAdmin = (user.email || '').toLowerCase() === AUDIT_EMAIL && !isAdminPaused;
     const firstName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'Visitante';
     document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
     document.getElementById('navUserMobile').textContent = `🎸 ${firstName}`;
@@ -2219,6 +2282,10 @@ onAuthStateChanged(auth, async user => {
       await syncMemberCoinBalance(user, typeof reward?.totalCoins === 'number' ? reward.totalCoins : null);
       if (reward?.awarded) showCoinReward(reward);
       await writeLog('Login membro', `${user.displayName || ''} (${user.email})`, 'acesso');
+      // Vincula automaticamente o ownerEmail do perfil e aguarda antes de carregar membros
+      await autoLinkMemberOwnerEmail(user).catch(err => console.warn('autoLink error:', err));
+      // Força reload do cache de membros após o link, para que canEditMember funcione corretamente
+      if (membersLoaded) { membersLoaded = false; }
     } else {
       memberCoinBalance = 0;
       updateCoinBalanceUI();
@@ -2229,6 +2296,9 @@ onAuthStateChanged(auth, async user => {
   } else {
     isLoggedIn = false;
     isMember   = false;
+    isAdminPaused = false;
+    isAdmin = false;
+    isAuditAdmin = false;
     memberCoinBalance = 0;
     memberCoinGuideCache = { email: '', data: null, fetchedAt: 0 };
     closeCoinGuide();
@@ -2251,13 +2321,21 @@ onAuthStateChanged(auth, async user => {
   renderForum();
   renderSetlist();
   renderRepFromCache();
+  renderBandRules();
 });
 
 function applyAuth() {
-  isAuditAdmin = isLoggedIn && (auth.currentUser?.email || '').toLowerCase() === AUDIT_EMAIL;
   document.body.classList.toggle('logged-in', isLoggedIn);
   document.body.classList.toggle('is-member', isMember);
+  document.body.classList.toggle('is-admin', isAdmin);
+  document.body.classList.toggle('is-admin-paused', isAdminPaused);
   document.body.classList.toggle('is-audit-admin', isAuditAdmin);
+  
+  const pausedBanner = document.getElementById('adminPausedBanner');
+  if (pausedBanner) {
+    pausedBanner.style.display = (isLoggedIn && isAdminPaused) ? 'block' : 'none';
+  }
+
   // desktop nav
   document.getElementById('loginBtn').style.display  = isLoggedIn ? 'none' : '';
   document.getElementById('logoutBtn').style.display = isLoggedIn ? '' : 'none';
@@ -2274,6 +2352,8 @@ function applyAuth() {
     const sugByEl = document.getElementById('sugBy');
     if (sugByEl) sugByEl.value = userName;
   }
+  // Re-render member cards so edit buttons appear/disappear correctly when auth changes
+  renderMembersFromCache();
 }
 
 window.openLogin  = () => { showStep1(); document.getElementById('loginModal').classList.add('show'); };
@@ -2517,7 +2597,7 @@ function getNextSaturdayInfo() {
 
 let ensuringUpcomingForum = null;
 async function ensureUpcomingRehearsalForum() {
-  if (!isMember) return;
+  if (!isAdmin) return;
   if (ensuringUpcomingForum) return ensuringUpcomingForum;
 
   ensuringUpcomingForum = (async () => {
@@ -2734,6 +2814,61 @@ window.chooseSetlistCifra = async index => {
 // ─── MEMBERS ───────────────────────────────────────────────────────
 const INSTRUMENTS = ['Vocal','Guitarra','Guitarra Base','Baixo','Bateria','Teclado','Violão','Outro'];
 
+/**
+ * Verifica se o usuário logado pode editar um perfil de membro.
+ * Admin geral pode editar qualquer um.
+ * Outros membros só podem editar o próprio perfil,
+ * identificado pelo campo `ownerEmail` no documento ou pelo mapa de nomes.
+ */
+function canEditMember(memberData = {}) {
+  if (!isMember || !auth.currentUser) return false;
+  const myEmail = (auth.currentUser.email || '').toLowerCase();
+  // Admin geral ativo pode editar qualquer perfil
+  if (myEmail === ADMIN_GENERAL_EMAIL && !isAdminPaused) return true;
+  // Perfil tem ownerEmail salvo → compara diretamente
+  const ownerEmail = (memberData.ownerEmail || '').toLowerCase();
+  if (ownerEmail && ownerEmail === myEmail) return true;
+  // Fallback: verifica se o nome do membro bate com o apelido mapeado para o email atual
+  const myAlias = MEMBER_EMAIL_MAP[myEmail] || '';
+  if (myAlias) {
+    const memberName = normalizeName(memberData.name || '');
+    if (memberName.startsWith(myAlias)) return true;
+  }
+  return false;
+}
+
+/**
+ * Vincula automaticamente o ownerEmail do membro ao seu perfil no Firestore
+ * no momento do login, usando o MEMBER_EMAIL_MAP como referência.
+ * Só grava se o perfil ainda não tiver ownerEmail definido.
+ * Opera silenciosamente em background — não bloqueia o fluxo de auth.
+ */
+async function autoLinkMemberOwnerEmail(user) {
+  const email = (user?.email || '').toLowerCase();
+  if (!email || email === ADMIN_GENERAL_EMAIL) return; // admin não precisa de auto-link
+  const alias = MEMBER_EMAIL_MAP[email];
+  if (!alias) return; // email não está no mapa
+  try {
+    const snap = await getDocs(collection(db, 'members'));
+    for (const d of snap.docs) {
+      const data = d.data();
+      // Pula se já tiver ownerEmail definido (imutável)
+      if (data.ownerEmail) continue;
+      const memberName = normalizeName(data.name || '');
+      if (memberName.startsWith(alias)) {
+        await updateDoc(doc(db, 'members', d.id), { ownerEmail: email });
+        console.log(`[autoLink] ownerEmail vinculado: ${email} → ${data.name} (${d.id})`);
+        // Atualiza o cache local se já estiver carregado
+        const cached = membersCache.find(c => c.id === d.id);
+        if (cached) cached.data.ownerEmail = email;
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn('[autoLink] Erro ao vincular ownerEmail:', err);
+  }
+}
+
 function renderMembersFromCache() {
   const grid = document.getElementById('membersGrid');
   if (!membersCache.length) {
@@ -2747,12 +2882,12 @@ function renderMembersFromCache() {
     const avatar  = m.photo
       ? `<div class="member-avatar"><img src="${m.photo}" alt="${m.name[0]}"></div>`
       : `<div class="member-avatar">${m.name.charAt(0)}</div>`;
-    const canEditMembers = isMember;
-    const editCb  = canEditMembers ? `onclick="openEditMember('${id}')"` : '';
-    const hint    = canEditMembers ? `<div class="member-edit-hint">✏ Editar</div>` : '';
-    const rmBtn   = isMember ? `<button class="remove-btn" onclick="event.stopPropagation();removeMember('${id}')">✕</button>` : '';
-    return `<div class="member-card${canEditMembers?' editable':''}" ${editCb}>
-      ${rmBtn}${avatar}
+    // canEditMember drive CSS visual only; onclick always bound so auth-timing doesn't break clicks
+    // Real permission check happens inside openEditMember, where auth is guaranteed resolved
+    const canEdit = canEditMember(m);
+    const hint = canEdit ? `<div class="member-edit-hint">&#9999;&#65039; Editar</div>` : '';
+    return `<div class="member-card${canEdit ? ' editable-member' : ''}" onclick="openEditMember('${id}')">
+      ${avatar}
       <div class="member-name">${m.name}</div>
       <div class="member-instruments">${tags}</div>
       ${m.since ? `<div class="member-since">${sinceLabel(m.since)}</div>` : ''}
@@ -3011,19 +3146,30 @@ function resetEditModal() {
 }
 
 window.openAddMember = () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros aprovados'); return; }
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  if (!isMember || myEmail !== ADMIN_GENERAL_EMAIL || isAdminPaused) { showToast('🔒 Apenas o admin geral ativo pode adicionar membros'); return; }
   resetEditModal();
   document.getElementById('editModalTitle').textContent = 'Novo Membro';
+  document.getElementById('deleteMemberBtn').style.display = 'none';
   document.getElementById('editModalSub').textContent   = 'Preencha os dados do novo integrante';
   document.getElementById('editMemberModal').classList.add('show');
 };
 
 window.openEditMember = async id => {
-  if (!isMember) { showToast('⚠ Acesso restrito a administradores'); return; }
   resetEditModal();
   const snap = await getDoc(doc(db,'members',id));
   if (!snap.exists()) return;
-  const m = snap.data();
+  let m = snap.data();
+  // Se ownerEmail ainda não foi gravado (race condition do autoLink no login),
+  // executa o link agora e relê o documento antes de checar permissão
+  if (!canEditMember(m) && !m.ownerEmail) {
+    await autoLinkMemberOwnerEmail(auth.currentUser).catch(() => {});
+    const snapRetry = await getDoc(doc(db,'members',id));
+    if (snapRetry.exists()) m = snapRetry.data();
+  }
+  if (!canEditMember(m)) { showToast('🔒 Você só pode editar o seu próprio perfil'); return; }
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  const isGeneralAdmin = myEmail === ADMIN_GENERAL_EMAIL && !isAdminPaused;
   document.getElementById('editMemberId').value      = id;
   document.getElementById('editMemberName').value    = m.name||'';
   document.getElementById('editMemberSince').value   = m.since||'';
@@ -3033,6 +3179,8 @@ window.openEditMember = async id => {
   if (m.photo) { const p=document.getElementById('editPhotoPreview'); p.src=m.photo; p.style.display='block'; if(m.photo.startsWith('http')) document.getElementById('editPhotoUrl').value=m.photo; }
   (Array.isArray(m.instruments)?m.instruments:(m.role?[m.role]:[])).forEach(i=>{ const cb=document.querySelector(`#editInstrumentsCheck input[value="${i}"]`); if(cb) cb.checked=true; });
   document.getElementById('editModalTitle').textContent = 'Editar Membro';
+  // Só o admin geral ativo pode deletar membros
+  document.getElementById('deleteMemberBtn').style.display = isGeneralAdmin ? 'block' : 'none';
   document.getElementById('editModalSub').textContent   = m.name;
   document.getElementById('editMemberModal').classList.add('show');
 };
@@ -3040,7 +3188,35 @@ window.openEditMember = async id => {
 window.closeEditMember = () => document.getElementById('editMemberModal').classList.remove('show');
 
 window.saveMember = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a administradores'); return; }
+  if (!isMember) { showToast('🔒 Acesso restrito a membros aprovados'); return; }
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  const isGeneralAdminActive = myEmail === ADMIN_GENERAL_EMAIL && !isAdminPaused;
+  const eidCheck = document.getElementById('editMemberId').value;
+  if (eidCheck) {
+    const snapCheck = await getDoc(doc(db,'members',eidCheck));
+    if (snapCheck.exists()) {
+      const snapData = snapCheck.data();
+      // canEditMember usa ownerEmail do Firestore + fallback do MEMBER_EMAIL_MAP
+      // Se ownerEmail ainda não foi gravado (race condition do autoLink), tenta gravar agora e reavaliar
+      if (!canEditMember(snapData)) {
+        if (!snapData.ownerEmail) {
+          // Tenta executar o autoLink de forma síncrona e reavalia
+          await autoLinkMemberOwnerEmail(auth.currentUser).catch(() => {});
+          const snapRetry = await getDoc(doc(db,'members',eidCheck));
+          if (!canEditMember(snapRetry.data ? snapRetry.data() : snapData)) {
+            showToast('🔒 Você só pode editar o seu próprio perfil');
+            return;
+          }
+        } else {
+          showToast('🔒 Você só pode editar o seu próprio perfil');
+          return;
+        }
+      }
+    }
+  } else if (!isGeneralAdminActive) {
+    showToast('🔒 Apenas o admin geral pode adicionar membros');
+    return;
+  }
   const name    = document.getElementById('editMemberName').value.trim();
   const since   = document.getElementById('editMemberSince').value;
   const contact = document.getElementById('editMemberContact').value.trim();
@@ -3074,7 +3250,19 @@ window.saveMember = async () => {
     : [];
   const { recommendations, recommendationMeta } = recommendationItemsToLegacyMap(recommendationsList);
 
-  const data = {name, since, contact, instruments, photo, recommendations, recommendationMeta, recommendationsList};
+  // ownerEmail é imutável: preserva sempre o valor já gravado no Firestore.
+  // Se não houver valor gravado e o usuário não for admin, usa o próprio email.
+  let ownerEmail = '';
+  if (eid) {
+    const prev = await getDoc(doc(db, 'members', eid));
+    ownerEmail = prev.exists() ? (prev.data().ownerEmail || '') : '';
+  }
+  // Só preenche se ainda estiver vazio E o usuário não for o admin
+  if (!ownerEmail && !isGeneralAdminActive) {
+    ownerEmail = myEmail;
+  }
+
+  const data = {name, since, contact, instruments, photo, recommendations, recommendationMeta, recommendationsList, ownerEmail};
 
   try {
     if (eid) {
@@ -3102,8 +3290,17 @@ window.saveMember = async () => {
   }
 };
 
+
+
+window.deleteMemberFromModal = async () => {
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  if (myEmail !== ADMIN_GENERAL_EMAIL || isAdminPaused) { showToast('🔒 Apenas o admin geral pode remover membros'); return; }
+  const id = document.getElementById('editMemberId').value;
+  if (id) { await removeMember(id); closeEditMember(); }
+};
 window.removeMember = async id => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros aprovados'); return; }
+  const myEmail = (auth.currentUser?.email || '').toLowerCase();
+  if (!isMember || myEmail !== ADMIN_GENERAL_EMAIL || isAdminPaused) { showToast('🔒 Apenas o admin geral pode remover membros'); return; }
   if (!confirmAction('Tem certeza que deseja remover este membro?')) return;
   const snap = await getDoc(doc(db,'members',id));
   const name = snap.exists() ? snap.data().name : id;
@@ -3488,17 +3685,17 @@ function renderPolls() {
     if (isClosed && total > 0) {
       const maxVotes  = Math.max(...(p.options||[]).map(o=>o.votes||0));
       const winners   = (p.options||[]).filter(o=>(o.votes||0)===maxVotes);
-      winnerHtml = `<div class="poll-winner">🏆 ${winners.length===1?'Vencedor':'Empate'}: ${winners.map(w=>w.label).join(' · ')}</div>`;
+      winnerHtml = `<div class="poll-winner">🏆 ${winners.length===1?'Vencedor':'Empate'}: <strong>${winners.map(w=>escapeHtml(w.label)).join(' · ')}</strong></div>`;
     }
 
     // Bars (always shown), without exposing who voted in each option.
     const bars = (p.options||[]).map((o,i) => {
       const pct    = total ? Math.round((o.votes||0)/total*100) : 0;
       return `<div class="poll-bar-item">
-        <div class="poll-bar-label">${o.label}</div>
+        <div class="poll-bar-label">${escapeHtml(o.label)}</div>
         <div class="poll-bar-right">
-          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
-            <div class="poll-bar-track" style="flex:1"><div class="poll-bar-fill" style="width:${pct}%"></div></div>
+          <div class="poll-bar-row">
+            <div class="poll-bar-track"><div class="poll-bar-fill" style="width:${pct}%"></div></div>
             <span class="poll-bar-pct">${pct}% (${o.votes||0})</span>
           </div>
         </div>
@@ -3508,34 +3705,34 @@ function renderPolls() {
     // Vote form (only if open + logged in + not voted) — name comes from Google account
     const voterName = auth.currentUser?.displayName?.split(' ').slice(0,2).join(' ') || auth.currentUser?.email?.split('@')[0] || 'Membro';
     const voteForm = canVote ? `
-      <div class="poll-options" style="margin-top:1rem">
-        ${(p.options||[]).map((o,i)=>`<div class="poll-option"><input type="radio" id="p${id}o${i}" name="poll_${id}"><label class="poll-option-label" for="p${id}o${i}"><div class="poll-dot"></div>${o.label}</label></div>`).join('')}
-        <div style="margin-top:.8rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
-          <span style="font-size:.78rem;color:var(--amber);font-family:'Cinzel',serif">Voto secreto como: ${voterName}</span>
+      <div class="poll-options">
+        ${(p.options||[]).map((o,i)=>`<div class="poll-option"><input type="radio" id="p${id}o${i}" name="poll_${id}"><label class="poll-option-label" for="p${id}o${i}"><div class="poll-dot"></div><span style="flex:1;min-width:0">${escapeHtml(o.label)}</span></label></div>`).join('')}
+        <div style="margin-top:.85rem;display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap">
+          <span style="font-size:.78rem;color:var(--amber);font-family:'Cinzel',serif">Voto secreto como: <strong>${escapeHtml(voterName)}</strong></span>
           <button class="btn btn-sm" onclick="submitPollVote('${id}')">Votar</button>
         </div>
       </div>` : '';
 
     const myVoteLabel   = hasVoted ? `<span class="poll-my-vote">Você já votou nesta enquete.</span>` : '';
     const changeVoteBtn = isMember && hasVoted && !isClosed ? `<button class="btn-ghost btn-sm" onclick="removePollVote('${id}')">Mudar voto</button>` : '';
-    const closeBtn      = isMember && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
-    const deleteBtn     = isMember ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
+    const closeBtn      = isAdmin && !isClosed ? `<button class="btn-ghost btn-sm" onclick="closePoll('${id}')">Encerrar</button>` : '';
+    const deleteBtn     = isAdmin ? `<button class="btn-ghost btn-sm" onclick="deletePoll('${id}')">Excluir</button>` : '';
 
     const createdLabel = p.createdAt ? `<span style="font-size:.7rem;color:var(--smoke)">Criada em ${formatTs(p.createdAt)}</span>` : '';
 
     return `<div class="poll-card">
-      <div class="poll-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.8rem;flex-wrap:wrap;gap:.5rem">
-        <div class="poll-question" style="width:100%;margin-bottom:.3rem">${p.question}</div>
-        ${(closeBtn || deleteBtn) ? `<div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-bottom:.2rem">${closeBtn}${deleteBtn}</div>` : ''}
+      <div class="poll-header">
+        <div class="poll-question">${escapeHtml(p.question)}</div>
+        ${(closeBtn || deleteBtn) ? `<div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${closeBtn}${deleteBtn}</div>` : ''}
       </div>
-      <div style="display:flex;gap:.8rem;align-items:center;margin-bottom:.8rem;flex-wrap:wrap">${statusBadge}${deadlineHtml}${createdLabel}</div>
+      <div class="poll-meta-row">${statusBadge}${deadlineHtml}${createdLabel}</div>
       ${countdownBadgeHtml}
       ${bars}
       ${winnerHtml}
       ${voteForm}
       <div class="poll-footer">
         <span class="poll-total">${total} voto${total!==1?'s':''}</span>
-        <div style="display:flex;gap:.5rem;align-items:center">${myVoteLabel}${changeVoteBtn}</div>
+        <div style="display:flex;gap:.55rem;align-items:center;flex-wrap:wrap">${myVoteLabel}${changeVoteBtn}</div>
       </div>
     </div>`;
   };  // end buildPollCard
@@ -3647,6 +3844,7 @@ window.removePollVote = async id => {
 };
 
 window.deletePoll = async id => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Tem certeza que deseja excluir esta enquete?')) return;
   const snap = await getDoc(doc(db,'polls',id));
   const q = snap.exists() ? snap.data().question : id;
@@ -3657,7 +3855,7 @@ window.deletePoll = async id => {
 };
 
 window.createPoll = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const q        = document.getElementById('pollQuestion').value.trim();
   const opts     = Array.from(document.querySelectorAll('.poll-opt-input')).map(i=>i.value.trim()).filter(Boolean);
   const deadline = document.getElementById('pollDeadline').value; // "2025-06-14T20:00"
@@ -3675,11 +3873,11 @@ window.createPoll = async () => {
   document.getElementById('pollQuestion').value='';
   document.getElementById('pollDeadline').value='';
   document.querySelectorAll('.poll-opt-input').forEach(i=>i.value='');
-  showToast('✓ Enquete criada!');
+  showToast('✓ Enquete publicada!');
 };
 
 window.closePoll = async id => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   await updateDoc(doc(db,'polls',id), {closed: true});
   await refreshPollsIfNeeded();
   await writeLog('Enquete encerrada manualmente', pollsCache.find(p=>p.id===id)?.data.question||id, 'enquetes');
@@ -3770,15 +3968,15 @@ function renderSetlist() {
         </button>
         <span class="poll-my-vote" title="Ranking">Rank ${votes.score > 0 ? '+' : ''}${votes.score}</span>` : '';
     return `
-    <li class="setlist-item${isMember?' editable':''}" ${isMember?`draggable="true" data-idx="${i}" ondragstart="dStart(event)" ondragover="dOver(event)" ondrop="dDrop(event)" ondragend="dEnd(event)"`:''}">
+    <li class="setlist-item${isAdmin?' editable':''}" ${isAdmin?`draggable="true" data-idx="${i}" ondragstart="dStart(event)" ondragover="dOver(event)" ondrop="dDrop(event)" ondragend="dEnd(event)"`:''}">
       <span class="setlist-num">${i+1}</span>
       <div class="setlist-song">${s.song}<div class="setlist-artist">${s.artist}</div></div>
       <div class="setlist-actions">
         ${rankControls}
         ${s.youtube ? ytBtn(s.youtube) : `<button class="btn-icon" onclick="findSetlistYoutube(${i});event.stopPropagation()">⚡ Auto vídeo</button>${ytSearchBtn(s.song, s.artist)}`}
         ${s.cifra ? cifraBtn(s.cifra) : `<button class="btn-icon" onclick="chooseSetlistCifra(${i});event.stopPropagation()">♫ Auto cifra</button>`}
-        ${isMember ? `<button class="btn-icon" onclick="editSetSongLinks(${i});event.stopPropagation()">✎ Links</button>` : ''}
-        ${isMember ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
+        ${isAdmin ? `<button class="btn-icon" onclick="editSetSongLinks(${i});event.stopPropagation()">✎ Links</button>` : ''}
+        ${isAdmin ? `<button class="setlist-remove" onclick="removeSetSong(${i})">✕</button>` : ''}
       </div>
     </li>`;
   }).join('');
@@ -3791,7 +3989,7 @@ function renderSetlist() {
       </button>
     </div>` : '';
   
-  const addRow = isMember ? `
+  const addRow = isAdmin ? `
     <div class="setlist-add-row">
       <input class="setlist-input" id="setSong" placeholder="Música">
       <input class="setlist-input" id="setArtist" placeholder="Artista">
@@ -3813,7 +4011,7 @@ window.toggleSetlistExpand = () => {
 };
 
 window.addSetSong = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const song = document.getElementById('setSong').value.trim();
   const artist = document.getElementById('setArtist').value.trim();
   const youtube = document.getElementById('setYt').value.trim();
@@ -3859,7 +4057,7 @@ window.voteSetSong = async (idx, type) => {
 };
 
 window.editSetSongLinks = async idx => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const arr = [...getActiveSetlistSongs()];
   const current = arr[idx];
   if (!current) return;
@@ -3877,6 +4075,7 @@ window.editSetSongLinks = async idx => {
 };
 
 window.removeSetSong = async idx => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Deseja realmente remover esta música do setlist?')) return;
   const arr = [...getActiveSetlistSongs()];
   const removed = arr[idx];
@@ -3888,9 +4087,13 @@ window.removeSetSong = async idx => {
   renderRepFromCache();
 };
 
-window.dStart = e=>{ dragSrc=e.currentTarget; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; };
+window.dStart = e=>{
+  if (!isAdmin) { e.preventDefault(); return; }
+  dragSrc=e.currentTarget; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move';
+};
 window.dOver  = e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; };
 window.dDrop  = async e=>{
+  if (!isAdmin) { e.preventDefault(); return; }
   e.preventDefault(); const t=e.currentTarget;
   if(!dragSrc||dragSrc===t) return;
   const fi=parseInt(dragSrc.dataset.idx), ti=parseInt(t.dataset.idx);
@@ -3919,9 +4122,9 @@ function renderRepFromCache() {
   const items = displaySongs.map(({id, data: r}, i) => {
     const isInSetlist = setlistKeys.has(normalizeSongKey(r.song, r.artist));
     const setlistTag = isInSetlist ? '<span class="rep-setlist-tag">No ensaio</span>' : '';
-    const sendToSetlistBtn = isMember ? `<button class="btn-icon" onclick="addRepToSetlist('${id}');event.stopPropagation()">➕ Ensaio</button>` : '';
-    const editBtn = isMember ? `<button class="btn-icon" onclick="openRepEdit('${id}');event.stopPropagation()">✎ Editar</button>` : '';
-    const rmBtn   = isMember ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
+    const sendToSetlistBtn = isAdmin ? `<button class="btn-icon" onclick="addRepToSetlist('${id}');event.stopPropagation()">➕ Ensaio</button>` : '';
+    const editBtn = isAdmin ? `<button class="btn-icon" onclick="openRepEdit('${id}');event.stopPropagation()">✎ Editar</button>` : '';
+    const rmBtn   = isAdmin ? `<button class="setlist-remove" onclick="removeRepSong('${id}')">✕</button>` : '';
     return `<div class="rep-item${isInSetlist ? ' in-setlist' : ''}">
       <span class="rep-num">${i+1}</span>
       <div class="rep-info">
@@ -3968,7 +4171,7 @@ async function loadRepertorioSnapshot(force = false) {
 }
 
 window.addRepSong = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const song   = document.getElementById('repSong').value.trim();
   const artist = document.getElementById('repArtist').value.trim();
   const youtube= document.getElementById('repYt').value.trim();
@@ -3982,7 +4185,7 @@ window.addRepSong = async () => {
 };
 
 window.addRepToSetlist = async id => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const item = repCache.find(entry => entry.id === id);
   if (!item) { showToast('⚠ Música não encontrada no repertório'); return; }
 
@@ -4020,7 +4223,7 @@ window.addRepToSetlist = async id => {
 };
 
 window.openRepEdit = async id => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const snap = await getDoc(doc(db,'repertorio',id));
   if (!snap.exists()) return;
   const r = snap.data();
@@ -4046,29 +4249,30 @@ window.openRepEdit = async id => {
           </div>
         </div>
       </div>
-      <div style="display:flex;gap:.7rem;justify-content:flex-end;margin-top:1.2rem">
-        <button class="btn-ghost btn-sm" onclick="this.closest('[style*=fixed]').remove()">Cancelar</button>
-        <button class="btn btn-sm" onclick="saveRepEdit('${id}',this)">💾 Salvar</button>
+      <div style="display:flex;gap:.6rem;margin-top:1.2rem;justify-content:flex-end">
+        <button class="btn-ghost btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancelar</button>
+        <button class="btn btn-sm" id="btnSaveRepEdit">Salvar</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
-};
 
-window.saveRepEdit = async (id, btn) => {
-  const overlay = btn.closest('[style*=fixed]');
-  const song    = overlay.querySelector('#repEditSong').value.trim();
-  const artist  = overlay.querySelector('#repEditArtist').value.trim();
-  const youtube = overlay.querySelector('#repEditYt').value.trim();
-  const cifra   = overlay.querySelector('#repEditCifra').value.trim();
-  if (!song||!artist) { showToast('⚠ Preencha música e artista'); return; }
-  await updateDoc(doc(db,'repertorio',id), {song, artist, youtube, cifra});
-  await loadRepertorioSnapshot(true);
-  await writeLog('Música do repertório editada', `${song} — ${artist}`, 'repertorio');
-  overlay.remove();
-  showToast(`✓ "${song}" atualizada!`);
+  document.getElementById('btnSaveRepEdit').onclick = async () => {
+    if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
+    const song   = document.getElementById('repEditSong').value.trim();
+    const artist = document.getElementById('repEditArtist').value.trim();
+    const youtube= document.getElementById('repEditYt').value.trim();
+    const cifra  = document.getElementById('repEditCifra').value.trim();
+    if (!song||!artist) { showToast('⚠ Preencha música e artista'); return; }
+    await updateDoc(doc(db,'repertorio',id),{song,artist,youtube,cifra});
+    await loadRepertorioSnapshot(true);
+    await writeLog('Música do repertório editada', `${song} — ${artist}`, 'repertorio');
+    overlay.remove();
+    showToast(`✓ "${song}" atualizada!`);
+  };
 };
 
 window.removeRepSong = async id => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Deseja realmente remover esta música do repertório?')) return;
   const snap = await getDoc(doc(db,'repertorio',id));
   const r = snap.exists() ? snap.data() : {};
@@ -4079,7 +4283,7 @@ window.removeRepSong = async id => {
 };
 
 window.importSetlistToRep = async () => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const songs = getActiveSetlistSongs();
   if (!songs.length) { showToast('⚠ Nenhuma música no setlist atual'); return; }
   const existing = repCache.map(({data:r}) => r.song.toLowerCase().trim());
@@ -4219,7 +4423,7 @@ window.addPost = async id => {
 };
 
 window.addForumThread = async () => {
-  if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const title=document.getElementById('newThreadTitle').value.trim();
   if (!title) { showToast('⚠ Digite o título'); return; }
   await addDoc(collection(db,'forum'),{title,date:new Date().toLocaleDateString('pt-BR'),open:true,closed:false,closedAt:null,createdAt:serverTimestamp()});
@@ -4230,6 +4434,7 @@ window.addForumThread = async () => {
 };
 
 window.deleteThread = async id => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Tem certeza que deseja excluir este tópico do fórum?')) return;
   const snap = await getDoc(doc(db,'forum',id));
   const title = snap.exists() ? snap.data().title : id;
@@ -4443,10 +4648,10 @@ function renderGallery() {
     const likes    = Object.values(r).filter(v=>v==='like').length;
     const dislikes = Object.values(r).filter(v=>v==='dislike').length;
     const comments = getGalleryCommentCount(p);
-    const editBtn = isMember
+    const editBtn = isAdmin
       ? `<button onclick="event.stopPropagation();editCaption('${id}')" style="background:rgba(200,130,10,.2);border:1px solid rgba(200,130,10,.4);color:var(--amber);padding:.2rem .5rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-right:.4rem">✏ Descrição</button>`
       : '';
-    const del = isMember
+    const del = isAdmin
       ? `<button onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')" style="background:rgba(139,58,10,.8);border:none;color:var(--cream);padding:.3rem .7rem;cursor:pointer;border-radius:1px;font-size:.72rem;font-family:'Cinzel',serif;letter-spacing:.05em">✕ Excluir</button>`
       : '';
     const frameAsset = mediaType === 'youtube' ? VIDEO_FRAME_ASSETS[(carouselFramePhase + carouselIndex) % VIDEO_FRAME_ASSETS.length] : '';
@@ -4512,7 +4717,7 @@ function renderGallery() {
   });
 
   // Só re-renderiza a grade se o conjunto de fotos mudou
-  const newGridIds = `${isMember ? 'member' : 'visitor'}:${gridSorted.map(x => x.id).join(',')}`;
+  const newGridIds = `${isAdmin ? 'admin' : (isMember ? 'member' : 'visitor')}:${gridSorted.map(x => x.id).join(',')}`;
   const gridNeedsUpdate = newGridIds !== galleryLastGridIds;
   galleryLastGridIds = newGridIds;
 
@@ -4524,7 +4729,7 @@ function renderGallery() {
       const likes    = Object.values(r).filter(v=>v==='like').length;
       const dislikes = Object.values(r).filter(v=>v==='dislike').length;
       const comments = getGalleryCommentCount(p);
-      const del = isMember
+      const del = isAdmin
         ? `<button class="gallery-thumb-del" onclick="event.stopPropagation();deleteGalleryPhoto('${id}','${p.storagePath||''}')">✕</button>`
         : '';
       const mediaBadge = mediaType === 'youtube'
@@ -4921,7 +5126,7 @@ window.addYoutubeGalleryMedia = async () => {
 
 // Delete from Storage + Firestore
 window.editCaption = async id => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const snap = await getDoc(doc(db,'gallery',id));
   if (!snap.exists()) return;
   const current = snap.data().caption || '';
@@ -4933,7 +5138,7 @@ window.editCaption = async id => {
 };
 
 window.deleteGalleryPhoto = async (id, path) => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Tem certeza que deseja excluir esta foto da galeria?')) return;
   const snap = await getDoc(doc(db,'gallery',id));
   const caption = snap.exists() ? (snap.data().caption || 'sem descrição') : id;
@@ -5058,7 +5263,7 @@ window.openLightbox = async id => {
 
   // Caption + edit button
   const captionEl = document.getElementById('lbCaption');
-  const editHtml = isMember
+  const editHtml = isAdmin
     ? `<button onclick="editCaption('${id}')" style="background:none;border:1px solid rgba(200,130,10,.25);color:var(--amber);padding:.15rem .45rem;cursor:pointer;border-radius:1px;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;margin-left:.5rem;vertical-align:middle;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(200,130,10,.25)'">✏</button>`
     : '';
   const youtubeTitle = mediaType === 'youtube'
@@ -5076,7 +5281,7 @@ window.openLightbox = async id => {
     const captionBody = p.caption ? escapeHtml(p.caption) : '';
     captionEl.innerHTML = `${videoTitleHtml}${captionBody}${editHtml}`;
   } else if (mediaType === 'album') {
-    const albumCredit = `<div class="lb-video-credit" style="color:var(--gold)">🎥📸 Gravações em Vídeo & Fotos · <strong>${escapeHtml(p.addedBy || 'Membro')}</strong></div>`;
+    const albumCredit = `<div class="lb-video-credit" style="color:var(--gold)">🎥📸 Álbum do Ensaio · <strong>${escapeHtml(p.addedBy || 'Membro')}</strong></div>`;
     const albumShareBtn = `<button class="lb-video-share-btn" type="button" onclick="shareGalleryAlbumToWhatsApp('${id}');event.stopPropagation()" style="border-color:#22c55e;color:#86efac">📲 Compartilhar no Zap</button>`;
     videoHeadEl.innerHTML = `${albumCredit}${albumShareBtn}`;
     const albumTitleHtml = `<strong class="lb-video-title" style="display:block;color:var(--gold);font-size:1.15rem;margin-bottom:.35rem">${escapeHtml(p.title || 'Ensaio da Retórica')}</strong>`;
@@ -5223,7 +5428,7 @@ function renderLightboxComments(id, p) {
     const cLikes = Object.values(cr).filter(v=>v==='like').length;
     const cDislikes = Object.values(cr).filter(v=>v==='dislike').length;
     const cMy = uid ? cr[uid] : null;
-    const canDel = isMember; // só membros podem deletar
+    const canDel = isAdmin; // só administradores ativos podem deletar
     const replies = c.replies || [];
 
     let repliesHtml = '';
@@ -5376,8 +5581,8 @@ window.lbCmtReact = async (id, commentKey, type, rIdx, reaction) => {
 };
 
 window.delLbComment = async (id, commentKey) => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Excluir este comentário?')) return;
-  if (!isMember) return;
   const photo = galleryCache.find(item => item.id === id)?.data || {};
   const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
   if (!comment) return;
@@ -5403,8 +5608,8 @@ window.delLbComment = async (id, commentKey) => {
 };
 
 window.delLbReply = async (id, commentKey, rIdx) => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Excluir esta resposta?')) return;
-  if (!isMember) return;
   const photo = galleryCache.find(item => item.id === id)?.data || {};
   const comment = getGalleryCommentsForRender(id, photo).find(c => c.__commentKey === commentKey);
   if (!comment) return;
@@ -5473,7 +5678,7 @@ function renderTagBar() {
       : 'cursor:pointer';
     return `<span class="toca-chip" style="${style};user-select:none;transition:all .2s" onclick="setTagFilter('${t}')">${t}</span>`;
   }).join('');
-  if (isMember) {
+  if (isAdmin) {
     const isOpen = document.getElementById('tagManagerWrap')?.style.display !== 'none';
     html += `<span class="toca-chip" id="editTagsToggleChip" onclick="toggleTagManager()" style="cursor:pointer;border-style:dashed;opacity:.7;user-select:none;transition:all .2s${isOpen ? ';background:rgba(200,130,10,.18);opacity:1' : ''}">${isOpen ? '✕ Fechar' : '✎ Editar Tags'}</span>`;
   }
@@ -5548,7 +5753,7 @@ function renderTagManagerChips() {
 }
 
 window.moveGalleryTag = async (idx, dir) => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const target = idx + dir;
   if (target < 0 || target >= galleryTags.length) return;
   const next = [...galleryTags];
@@ -5584,7 +5789,7 @@ window.selectYoutubeUploadTag = tag => {
 };
 
 window.addGalleryTag = async () => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const input = document.getElementById('newTagInput');
   const tag = input.value.trim();
   if (!tag) { showToast('⚠ Digite o nome da tag'); return; }
@@ -5596,7 +5801,7 @@ window.addGalleryTag = async () => {
 };
 
 window.removeGalleryTag = async idx => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const tag = galleryTags[idx];
 
   // Check if any photos have this tag
@@ -5642,6 +5847,7 @@ window.removeGalleryTag = async idx => {
 };
 
 window.confirmRemoveTag = async (idx, tag, btn) => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const overlay = btn.closest('[style*=fixed]');
   const targetBtn = overlay.querySelector('#migrateTagPicker .gallery-tag-btn.active');
   if (!targetBtn) { showToast('⚠ Selecione uma tag de destino'); return; }
@@ -5665,7 +5871,7 @@ window.confirmRemoveTag = async (idx, tag, btn) => {
 };
 
 window.renameGalleryTag = async idx => {
-  if (!isMember) return;
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const oldName = galleryTags[idx];
   const newName = prompt(`Renomear tag "${oldName}" para:`, oldName);
   if (!newName || !newName.trim()) return;
@@ -5831,6 +6037,7 @@ function updateBulkSelCount() {
 }
 
 window.bulkMigratePhotos = async () => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   const grid    = document.getElementById('bulkPhotoGrid');
   const editTag = document.getElementById('bulkDestTag')?.value;
   if (!editTag) { showToast('⚠ Selecione a tag que deseja editar'); return; }
@@ -5912,7 +6119,7 @@ function renderForum() {
           <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
             <div class="post-avatar" style="width:24px;height:24px;font-size:.6rem">${rp.author.charAt(0)}</div>
             <span class="post-author">${rp.author}</span><span class="post-date">${rp.date}</span>
-            ${isMember?`<button class="lb-cdel" onclick="delFrp('${id}','${p.__postKey}',${rpi})">✕</button>`:''}
+            ${isAdmin?`<button class="lb-cdel" onclick="delFrp('${id}','${p.__postKey}',${rpi})">✕</button>`:''}
           </div>
           <div class="post-text" style="font-size:.82rem">${rp.text}</div>
           <div class="frp-act">
@@ -5965,7 +6172,7 @@ function renderForum() {
         <div class="form-group" style="flex:1"><input type="text" id="fMsg_${id}" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addPost('${id}')"></div>
         <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPost('${id}')">Enviar</button></div>
       </div>` : `<p style="font-size:.8rem;color:var(--smoke);font-style:italic;margin-top:.5rem">${threadClosed?'Este fórum foi encerrado e está disponível apenas para consulta.':'Apenas membros podem comentar.'}</p>`;
-    const delBtn = isMember ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
+    const delBtn = isAdmin ? `<button class="btn-ghost btn-sm" onclick="event.stopPropagation();deleteThread('${id}')">Excluir</button>` : '';
     const statusHtml = threadClosed ? '<div class="poll-status-closed">🔒 Fórum encerrado</div>' : '<div class="poll-status-open">🟢 Fórum aberto</div>';
     const closeMeta = threadClosed && t.closedAt ? ` · encerrado em ${formatTs(t.closedAt)}` : '';
     return `<div class="forum-thread">
@@ -6065,8 +6272,8 @@ window.frpReact = async (threadId, postKey, replyIdx, type) => {
 };
 
 window.delFrp = async (threadId, postKey, replyIdx) => {
+  if (!isAdmin) { showToast('⚠ Acesso administrativo pausado. Modo somente visualização.'); return; }
   if (!confirmAction('Excluir esta resposta?')) return;
-  if (!isMember) return;
   const thread = forumCache.find(t => t.id === threadId);
   const post = getForumPostsForRender(threadId, thread?.data || {}).find(p => p.__postKey === postKey);
   if (!post) return;
@@ -6237,23 +6444,18 @@ if (banner && btn && dismiss && dismissSecondary && !window.matchMedia('(display
 const NEWS_POPUP_DISMISS_KEY = 'retorica_news_dismissed_date';
 
 (function showNewsPopup() {
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const dismissedToday = localStorage.getItem(NEWS_POPUP_DISMISS_KEY) === today;
-  const dayNumber = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86400000);
-  const isPopupDay = dayNumber % 2 === 0;
-  if (!isPopupDay || dismissedToday) return;
+  if (sessionStorage.getItem('retorica_news_dismissed_session')) return;
 
   setTimeout(() => {
     const el = document.getElementById('newsPopup');
     if (el) el.classList.add('show');
-  }, 3000);
+  }, 2500);
 })();
 
 window.dismissNewsPopup = function() {
   const el = document.getElementById('newsPopup');
   if (el) { el.classList.remove('show'); el.classList.add('dismissed'); }
-  localStorage.setItem(NEWS_POPUP_DISMISS_KEY, new Date().toISOString().slice(0, 10));
+  sessionStorage.setItem('retorica_news_dismissed_session', '1');
 };
 
 // ─── SISTEMA DE PROMOÇÃO AUTOMÁTICA ──────────────────────────────────
@@ -6262,6 +6464,7 @@ const PROMOTION_LOCK_MS = 2 * 60 * 1000;
 
 // Inicializar estado de promoção
 async function initPromotionState() {
+  if (!isAdmin) return;
   try {
     const snap = await getDoc(promotionStateRef);
     if (!snap.exists()) {
@@ -6539,6 +6742,7 @@ async function updatePromotionCountdowns(forceFetch = false) {
 
 // Verificar e executar promoção automática
 async function checkAndPromote() {
+  if (!isAdmin) return;
   const promotion = await claimPromotionExecution();
   if (!promotion || promotion.action === 'noop' || promotion.action === 'rescheduled') {
     return;
@@ -7008,17 +7212,11 @@ window.resetVideoFrameDebugValues = () => {
   buildVideoFrameAssetDebugGroup('videoFrameDebugFrameGlacial', 'Moldura tvglacial', 'tvglacial');
   buildVideoFrameAssetDebugGroup('videoFrameDebugFrameCorote', 'Moldura tvcorote', 'tvcorote');
   buildVideoFrameAssetDebugGroup('videoFrameDebugFrameDonaBenta', 'Moldura donabenta', 'donabenta');
-  if (new URLSearchParams(location.search).get('videoFrameDebug') === '1') {
-    toggleVideoFrameDebug(true);
-  }
 })();
 
 </script>
 </body>
 </html>
-
-
-
 
 
 

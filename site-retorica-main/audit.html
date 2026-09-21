@@ -364,13 +364,39 @@
         </div>
       </div><!-- /admin-inline-config compressão -->
 
-      <!-- Painel: Vínculo Membro ↔ E-mail -->
+      <!-- Painel: Vínculo Membro ↔ E-mail & Controle de Acesso ADM -->
       <div class="admin-inline-config" style="flex-direction:column;gap:.9rem">
         <div class="admin-inline-config-copy">
-          <div class="admin-inline-config-title">🔗 Vínculo Membro ↔ E-mail</div>
-          <div class="admin-inline-config-sub">Associe o e-mail de login de cada membro ao seu perfil. Ao fazer login com esse e-mail, o membro só poderá editar o próprio perfil. Campos em branco indicam nenhum vínculo ativo.</div>
+          <div class="admin-inline-config-title">🔗 Vínculo Membro ↔ E-mail & Controle de Acesso ADM</div>
+          <div class="admin-inline-config-sub">Associe o e-mail de login de cada membro ao seu perfil e controle o acesso administrativo (<strong>Desativar / Ativar ADM</strong>). Membros com ADM desativado continuam acessando o site e editando o próprio perfil/fotos, porém em modo somente leitura nas demais áreas (sem permissão de alteração ou exclusão).</div>
         </div>
         <div id="memberLinksGrid" style="display:grid;gap:.65rem"></div>
+      </div>
+
+      <!-- Painel: Controle de Acesso Administrativo (Pausar Acesso ADM) -->
+      <div class="admin-inline-config" style="flex-direction:column;gap:1.1rem;background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.35)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
+          <div>
+            <div class="admin-inline-config-title" style="color:var(--gold);font-size:1.05rem">⏸️ Controle de Acesso Administrativo (Pausar ADM)</div>
+            <div class="admin-inline-config-sub" style="max-width:820px">Gerencie o acesso administrativo dos usuários da banda. Ao pausar o acesso adm de um usuário, ele permanece com login ativo no site, <strong>porém em modo somente visualização</strong> — sem poder adicionar, editar ou excluir repertório, setlist, enquetes, fotos, regras ou configurações.</div>
+          </div>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <span id="pausedAdminsBadge" class="status-pill on" style="font-size:.72rem">Carregando status…</span>
+            <button class="btn-ghost" style="font-size:.72rem;padding:.3rem .7rem" onclick="refreshAdminAccessList()">🔄 Atualizar</button>
+          </div>
+        </div>
+
+        <!-- Entrada manual de e-mail para pausar -->
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;background:rgba(0,0,0,.25);padding:.6rem .8rem;border:1px solid rgba(200,130,10,.15);border-radius:2px">
+          <span style="font-size:.75rem;color:var(--paper)">Pausar por e-mail direto:</span>
+          <input type="email" id="customPauseEmailInput" placeholder="usuario@gmail.com" style="background:rgba(255,255,255,.05);border:1px solid rgba(200,130,10,.3);color:var(--cream);padding:.4rem .6rem;font-size:.78rem;flex:1;min-width:200px">
+          <button class="btn-ghost" style="border-color:#fbbf24;color:#fde68a;font-size:.75rem;padding:.4rem .8rem;white-space:nowrap" onclick="pauseCustomEmail()">⏸️ Pausar este e-mail</button>
+        </div>
+
+        <!-- Grid de Usuários Administradores -->
+        <div id="adminAccessGrid" style="display:grid;gap:.65rem;width:100%">
+          <div style="color:var(--smoke);font-size:.8rem;font-style:italic">Carregando administradores…</div>
+        </div>
       </div>
 
       <!-- Painel: Central de Agendamentos & Disparos WhatsApp -->
@@ -987,14 +1013,27 @@ window.runSuggestionsCleanup = async () => {
 };
 
 window.syncSuggestionVotes = async () => {
-  if (!confirm('Deseja sincronizar os votos de todas as sugestões com os votantes reais (voterMap), corrigindo divergências e evitando votos duplicados?')) return;
-  showToast('Sincronizando votos...');
+  if (!confirm('Deseja sincronizar os votos de todas as sugestões com os membros ativos atuais da banda, removendo votos de integrantes que saíram e corrigindo divergências?')) return;
+  showToast('Sincronizando votos com os membros ativos...');
   try {
-    const snap = await getDocs(collection(db, 'suggestions'));
+    const [snap, membersSnap] = await Promise.all([
+      getDocs(collection(db, 'suggestions')),
+      getDocs(collection(db, 'members'))
+    ]);
+
     if (snap.empty) {
       showToast('Nenhuma sugestão encontrada.');
       return;
     }
+
+    const activeUids = new Set();
+    const activeEmails = new Set();
+    membersSnap.forEach(d => {
+      const data = d.data() || {};
+      if (data.ownerUid) activeUids.add(data.ownerUid);
+      if (data.ownerEmail) activeEmails.add(data.ownerEmail.toLowerCase().trim());
+    });
+
     let fixedCount = 0;
     const batchSize = 400;
     let batch = writeBatch(db);
@@ -1003,11 +1042,22 @@ window.syncSuggestionVotes = async () => {
     for (const d of snap.docs) {
       const s = d.data() || {};
       const voterMap = s.voterMap || {};
-      const realLikes = Object.values(voterMap).filter(v => v === 'like').length;
-      const realDislikes = Object.values(voterMap).filter(v => v === 'dislike').length;
 
-      if ((s.likes || 0) !== realLikes || (s.dislikes || 0) !== realDislikes) {
-        batch.update(d.ref, { likes: realLikes, dislikes: realDislikes, voterMap });
+      let cleanVoterMap = { ...voterMap };
+      if (activeUids.size > 0 || activeEmails.size > 0) {
+        cleanVoterMap = {};
+        for (const [k, v] of Object.entries(voterMap)) {
+          if (activeUids.has(k) || activeEmails.has(k.toLowerCase())) {
+            cleanVoterMap[k] = v;
+          }
+        }
+      }
+
+      const realLikes = Object.values(cleanVoterMap).filter(v => v === 'like').length;
+      const realDislikes = Object.values(cleanVoterMap).filter(v => v === 'dislike').length;
+
+      if ((s.likes || 0) !== realLikes || (s.dislikes || 0) !== realDislikes || Object.keys(cleanVoterMap).length !== Object.keys(voterMap).length) {
+        batch.update(d.ref, { likes: realLikes, dislikes: realDislikes, voterMap: cleanVoterMap });
         fixedCount++;
         opCount++;
         if (opCount % batchSize === 0) {
@@ -1022,7 +1072,7 @@ window.syncSuggestionVotes = async () => {
 
     await addDoc(collection(db, 'logs'), {
       action: 'Sincronização de Votos',
-      detail: `Sincronização de votos concluída: ${fixedCount} sugestão(ões) corrigida(s) com base nos votantes reais`,
+      detail: `Sincronização de votos concluída: ${fixedCount} sugestão(ões) corrigida(s) com base nos ${membersSnap.size} membros ativos`,
       category: 'sugestoes',
       who: auth.currentUser?.displayName || auth.currentUser?.email || 'Administrador',
       whoEmail: auth.currentUser?.email || '',
@@ -1030,7 +1080,7 @@ window.syncSuggestionVotes = async () => {
       tsLocal: new Date().toLocaleString('pt-BR')
     });
 
-    showToast(fixedCount > 0 ? `✓ ${fixedCount} sugestão(ões) sincronizada(s) com sucesso!` : '✓ Todas as sugestões já estão consistentes.');
+    showToast(fixedCount > 0 ? `✓ ${fixedCount} sugestão(ões) sincronizada(s) com os membros ativos!` : '✓ Todas as sugestões já estão 100% consistentes com os membros atuais.');
   } catch (err) {
     console.error('Sync error:', err);
     showToast('Erro ao sincronizar sugestões.');
@@ -1579,6 +1629,7 @@ onAuthStateChanged(auth, async user => {
   loadPromotionPauseState();
   loadPollReminderPauseState();
   loadMembersForLinking();
+  loadPausedAdminsConfig();
   loadSchedulesConfig();
   initAlbumDateDefault();
   loadRehearsalAlbumsList();
@@ -1598,6 +1649,7 @@ async function loadMembersForLinking() {
     const snap = await getDocs(query(collection(db, 'members'), orderBy('createdAt', 'asc')));
     memberLinksData = snap.docs.map(d => ({ id: d.id, name: d.data().name || '(sem nome)', ownerEmail: d.data().ownerEmail || '' }));
     renderMemberLinks();
+    buildAdminUsersList().then(() => renderAdminAccessList());
   } catch (err) {
     console.error('loadMembersForLinking error:', err);
     grid.innerHTML = '<div class="muted">Erro ao carregar membros.</div>';
@@ -1611,18 +1663,52 @@ function renderMemberLinks() {
     grid.innerHTML = '<div class="muted">Nenhum membro cadastrado.</div>';
     return;
   }
-  grid.innerHTML = memberLinksData.map(m => `
-    <div id="mlrow-${m.id}" style="display:grid;grid-template-columns:1fr 2fr auto auto;gap:.6rem;align-items:center;border:1px solid rgba(200,130,10,.14);background:rgba(10,8,4,.45);padding:.7rem .9rem">
-      <div>
-        <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--cream);letter-spacing:.04em">${esc(m.name)}</div>
-        <div id="mlstatus-${m.id}" style="font-size:.68rem;color:${m.ownerEmail ? 'var(--gold)' : 'var(--smoke)'};margin-top:.18rem">${m.ownerEmail ? '✓ ' + esc(m.ownerEmail) : 'Sem vínculo'}</div>
+  const pausedEmails = new Set((pausedAdminsData.emails || []).map(e => String(e).toLowerCase().trim()));
+  const masterEmail = AUDIT_EMAIL.toLowerCase();
+
+  grid.innerHTML = memberLinksData.map(m => {
+    const email = (m.ownerEmail || '').toLowerCase().trim();
+    const isMaster = email && email === masterEmail;
+    const isPaused = email && pausedEmails.has(email);
+
+    let statusBadge = '';
+    let actionBtn = '';
+
+    if (isMaster) {
+      statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(200,130,10,.18);color:var(--gold);border:1px solid rgba(200,130,10,.4);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600">🛡️ Master</span>`;
+      actionBtn = `<span style="font-size:.72rem;color:var(--gold);opacity:.8;padding:.4rem .6rem;user-select:none">🛡️ Inalterável</span>`;
+    } else if (email) {
+      if (isPaused) {
+        statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.4);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600">⏸️ Desativado</span>`;
+        actionBtn = `<button class="btn" style="white-space:nowrap;font-size:.74rem;padding:.42rem .75rem;background:rgba(34,197,94,.18);border:1px solid #4ade80;color:#86efac;font-weight:600" onclick="toggleAdminPause('${esc(email)}', false)" title="Reativar acesso administrativo completo deste membro">▶️ Ativar ADM</button>`;
+      } else {
+        statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(34,197,94,.14);color:#86efac;border:1px solid rgba(34,197,94,.32);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600">🟢 Ativo</span>`;
+        actionBtn = `<button class="btn-ghost" style="white-space:nowrap;font-size:.74rem;padding:.42rem .75rem;border-color:rgba(239,68,68,.4);color:#fca5a5" onclick="toggleAdminPause('${esc(email)}', true)" title="Desativar acesso administrativo (somente visualização)">⏸️ Desativar ADM</button>`;
+      }
+    } else {
+      statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(255,255,255,.05);color:var(--smoke);border:1px solid rgba(255,255,255,.1);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em">Sem vínculo</span>`;
+      actionBtn = `<button class="btn-ghost" style="white-space:nowrap;font-size:.72rem;padding:.42rem .65rem;opacity:.4;cursor:not-allowed" disabled title="Vincule um e-mail primeiro para poder desativar/ativar">⏸️ Desativar ADM</button>`;
+    }
+
+    return `
+      <div id="mlrow-${m.id}" style="display:grid;grid-template-columns:minmax(140px, 1.2fr) minmax(180px, 2fr) auto;gap:.6rem;align-items:center;border:1px solid ${isPaused ? 'rgba(239,68,68,.38)' : 'rgba(200,130,10,.14)'};background:${isPaused ? 'rgba(32,10,10,.6)' : 'rgba(10,8,4,.45)'};padding:.7rem .9rem;border-radius:2px;transition:all .2s ease">
+        <div>
+          <div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap">
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--cream);letter-spacing:.04em;font-weight:600">${esc(m.name)}</span>
+            ${statusBadge}
+          </div>
+          <div id="mlstatus-${m.id}" style="font-size:.68rem;color:${m.ownerEmail ? 'var(--gold)' : 'var(--smoke)'};margin-top:.2rem">${m.ownerEmail ? '✓ ' + esc(m.ownerEmail) : 'Sem vínculo de e-mail'}</div>
+        </div>
+        <input id="mlinput-${m.id}" type="email" placeholder="e-mail do membro" value="${esc(m.ownerEmail)}"
+          style="background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.28);color:var(--cream);padding:.6rem .75rem;font-size:.8rem;width:100%">
+        <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn-ghost" style="white-space:nowrap;font-size:.74rem;padding:.42rem .7rem" onclick="saveMemberLink('${m.id}')">🔗 Vincular</button>
+          <button class="btn-ghost" style="white-space:nowrap;font-size:.74rem;padding:.42rem .7rem;border-color:rgba(239,68,68,.38);color:#fca5a5" onclick="clearMemberLink('${m.id}')">✕ Remover</button>
+          ${actionBtn}
+        </div>
       </div>
-      <input id="mlinput-${m.id}" type="email" placeholder="e-mail do membro" value="${esc(m.ownerEmail)}"
-        style="background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.28);color:var(--cream);padding:.6rem .75rem;font-size:.8rem;width:100%">
-      <button class="btn-ghost" style="white-space:nowrap" onclick="saveMemberLink('${m.id}')">🔗 Vincular</button>
-      <button class="btn-ghost" style="white-space:nowrap;border-color:rgba(239,68,68,.38);color:#fca5a5" onclick="clearMemberLink('${m.id}')">✕ Remover</button>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 window.saveMemberLink = async (memberId) => {
@@ -1637,6 +1723,8 @@ window.saveMemberLink = async (memberId) => {
     if (member) member.ownerEmail = email;
     if (statusEl) { statusEl.textContent = '✓ ' + email; statusEl.style.color = 'var(--gold)'; }
     showToast(`✓ Vínculo salvo para ${email}`);
+    renderMemberLinks();
+    buildAdminUsersList().then(() => renderAdminAccessList());
   } catch (err) {
     console.error('saveMemberLink error:', err);
     showToast('⚠ Erro ao vincular. ' + (err.message || ''));
@@ -1655,10 +1743,286 @@ window.clearMemberLink = async (memberId) => {
     if (input) input.value = '';
     if (statusEl) { statusEl.textContent = 'Sem vínculo'; statusEl.style.color = 'var(--smoke)'; }
     showToast('✓ Vínculo removido.');
+    renderMemberLinks();
+    buildAdminUsersList().then(() => renderAdminAccessList());
   } catch (err) {
     console.error('clearMemberLink error:', err);
     showToast('⚠ Erro ao remover vínculo. ' + (err.message || ''));
   }
+};
+
+// ── Controle de Acesso Administrativo (Pausar ADM) ──────────────────────────
+
+let pausedAdminsData = { emails: [], pausedMap: {} };
+let cachedAdminUsers = [];
+let unsubPausedAdmins = null;
+
+function loadPausedAdminsConfig() {
+  if (unsubPausedAdmins) {
+    unsubPausedAdmins();
+    unsubPausedAdmins = null;
+  }
+  const ref = doc(db, 'config', 'pausedAdmins');
+  unsubPausedAdmins = onSnapshot(ref, snap => {
+    if (snap.exists()) {
+      const data = snap.data() || {};
+      pausedAdminsData = {
+        emails: Array.isArray(data.emails) ? data.emails.map(e => String(e).toLowerCase().trim()) : [],
+        pausedMap: (data.pausedMap && typeof data.pausedMap === 'object') ? data.pausedMap : {}
+      };
+    } else {
+      pausedAdminsData = { emails: [], pausedMap: {} };
+    }
+    renderAdminAccessList();
+    renderMemberLinks();
+  }, err => {
+    console.error('loadPausedAdminsConfig snapshot error:', err);
+  });
+}
+
+window.refreshAdminAccessList = async () => {
+  const grid = document.getElementById('adminAccessGrid');
+  if (grid) grid.innerHTML = '<div class="muted">Recarregando administradores…</div>';
+  await buildAdminUsersList();
+  renderAdminAccessList();
+  showToast('✓ Lista de administradores atualizada.');
+};
+
+async function buildAdminUsersList() {
+  try {
+    // 1. Coleção de e-mails aprovados
+    let approvedEmails = [];
+    try {
+      const snapAppr = await getDocs(collection(db, 'approved_emails'));
+      approvedEmails = snapAppr.docs.map(d => d.id.toLowerCase().trim()).filter(Boolean);
+    } catch (e) {
+      console.warn('buildAdminUsersList approved_emails err:', e);
+    }
+
+    // E-mails canônicos da banda caso a listagem retorne vazia
+    const knownEmails = [
+      AUDIT_EMAIL.toLowerCase(),
+      'mfa200023@gmail.com',
+      'vinitorressantos@gmail.com',
+      'neibatera1@gmail.com',
+      'rgmaia6@gmail.com',
+      'renatoapluiz@gmail.com'
+    ];
+    knownEmails.forEach(em => {
+      if (!approvedEmails.includes(em)) approvedEmails.push(em);
+    });
+
+    // Incluir e-mails pausados na config caso existam
+    if (Array.isArray(pausedAdminsData.emails)) {
+      pausedAdminsData.emails.forEach(em => {
+        if (em && !approvedEmails.includes(em)) approvedEmails.push(em);
+      });
+    }
+
+    // 2. Coleção members para resgatar nomes e funções
+    let membersList = [];
+    try {
+      const snapMemb = await getDocs(query(collection(db, 'members'), orderBy('createdAt', 'asc')));
+      membersList = snapMemb.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      console.warn('buildAdminUsersList members err:', e);
+    }
+
+    const emailToMember = {};
+    membersList.forEach(m => {
+      const owner = (m.ownerEmail || '').toLowerCase().trim();
+      if (owner) emailToMember[owner] = m;
+    });
+
+    const fallbackNames = {
+      'juliocereser@gmail.com': { name: 'Júlio Cereser', role: 'Vocal / Master Admin' },
+      'mfa200023@gmail.com': { name: 'Matheus', role: 'Guitarra' },
+      'vinitorressantos@gmail.com': { name: 'Vinícius', role: 'Guitarra' },
+      'neibatera1@gmail.com': { name: 'Nei', role: 'Bateria' },
+      'rgmaia6@gmail.com': { name: 'Roni', role: 'Baixo' },
+      'renatoapluiz@gmail.com': { name: 'Renato', role: 'Teclado' }
+    };
+
+    cachedAdminUsers = approvedEmails.map(email => {
+      const m = emailToMember[email];
+      const fb = fallbackNames[email];
+      let name = m?.name || fb?.name || email.split('@')[0];
+      let role = (Array.isArray(m?.instruments) && m.instruments.length ? m.instruments.join(', ') : (m?.role || fb?.role || 'Membro'));
+      const isMaster = email === AUDIT_EMAIL.toLowerCase();
+      return {
+        email,
+        name,
+        role,
+        isMaster
+      };
+    });
+
+    // Master Admin no topo, depois alfabético
+    cachedAdminUsers.sort((a, b) => {
+      if (a.isMaster) return -1;
+      if (b.isMaster) return 1;
+      return a.name.localeCompare(b.name, 'pt-BR');
+    });
+
+  } catch (err) {
+    console.error('buildAdminUsersList error:', err);
+  }
+}
+
+function renderAdminAccessList() {
+  const grid = document.getElementById('adminAccessGrid');
+  const badge = document.getElementById('pausedAdminsBadge');
+  if (!grid) return;
+
+  if (!cachedAdminUsers.length) {
+    buildAdminUsersList().then(() => renderAdminAccessList());
+    return;
+  }
+
+  const pausedEmails = new Set((pausedAdminsData.emails || []).map(e => String(e).toLowerCase().trim()));
+  const totalCount = cachedAdminUsers.length;
+  const pausedCount = cachedAdminUsers.filter(u => pausedEmails.has(u.email)).length;
+
+  if (badge) {
+    if (pausedCount > 0) {
+      badge.textContent = `⏸️ ${pausedCount} de ${totalCount} pausado(s)`;
+      badge.className = 'status-pill off';
+      badge.style.background = 'rgba(239,68,68,.18)';
+      badge.style.color = '#fca5a5';
+      badge.style.borderColor = 'rgba(239,68,68,.4)';
+    } else {
+      badge.textContent = `🟢 Todos ativos (${totalCount})`;
+      badge.className = 'status-pill on';
+      badge.style.background = '';
+      badge.style.color = '';
+      badge.style.borderColor = '';
+    }
+  }
+
+  grid.innerHTML = cachedAdminUsers.map(u => {
+    const isPaused = pausedEmails.has(u.email);
+    const info = pausedAdminsData.pausedMap?.[u.email];
+    const pausedDetail = (isPaused && info?.pausedAt)
+      ? `<div style="font-size:.65rem;color:#fca5a5;margin-top:.2rem">Pausado em ${fmtTime(info.pausedAt)}${info.pausedBy ? ` por ${info.pausedBy.split('@')[0]}` : ''}</div>`
+      : '';
+
+    let statusPill = '';
+    let actionBtn = '';
+
+    if (u.isMaster) {
+      statusPill = `<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .55rem;background:rgba(200,130,10,.18);border:1px solid var(--amber);color:var(--gold);border-radius:2px;font-size:.68rem;font-weight:bold;letter-spacing:.04em">🛡️ MASTER ADMIN</span>`;
+      actionBtn = `<span style="font-size:.7rem;color:var(--smoke);font-style:italic">Inalterável</span>`;
+    } else if (isPaused) {
+      statusPill = `<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .55rem;background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.5);color:#fca5a5;border-radius:2px;font-size:.68rem;font-weight:bold;letter-spacing:.04em">⏸️ ADM PAUSADO (VISUALIZAÇÃO)</span>`;
+      actionBtn = `<button class="btn" style="padding:.4rem .85rem;font-size:.72rem;white-space:nowrap;background:rgba(34,197,94,.2);border:1px solid #4ade80;color:#86efac" onclick="toggleAdminPause('${esc(u.email)}', false)">▶️ Reativar Acesso ADM</button>`;
+    } else {
+      statusPill = `<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .55rem;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.4);color:#86efac;border-radius:2px;font-size:.68rem;font-weight:bold;letter-spacing:.04em">🟢 ADM ATIVO</span>`;
+      actionBtn = `<button class="btn-ghost" style="padding:.4rem .85rem;font-size:.72rem;white-space:nowrap;border-color:rgba(239,68,68,.4);color:#fca5a5" onclick="toggleAdminPause('${esc(u.email)}', true)">⏸️ Pausar Acesso ADM</button>`;
+    }
+
+    return `
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:.8rem;align-items:center;border:1px solid ${isPaused ? 'rgba(239,68,68,.3)' : 'rgba(200,130,10,.14)'};background:${isPaused ? 'rgba(30,10,10,.55)' : 'rgba(10,8,4,.45)'};padding:.75rem .95rem;border-radius:2px;transition:all .2s ease">
+        <div>
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+            <span style="font-family:'Cinzel',serif;font-size:.84rem;color:var(--cream);font-weight:600;letter-spacing:.03em">${esc(u.name)}</span>
+            <span style="font-size:.7rem;color:var(--smoke)">· ${esc(u.role)}</span>
+          </div>
+          <div style="font-size:.72rem;color:var(--gold);margin-top:.15rem;word-break:break-all">${esc(u.email)}</div>
+          ${pausedDetail}
+        </div>
+        <div>${statusPill}</div>
+        <div>${actionBtn}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.toggleAdminPause = async (email, shouldPause) => {
+  const cleanEmail = (email || '').toLowerCase().trim();
+  if (!cleanEmail) return;
+  if (cleanEmail === AUDIT_EMAIL.toLowerCase()) {
+    showToast('⚠ O Master Admin não pode ter seu acesso pausado.');
+    return;
+  }
+
+  const u = cachedAdminUsers.find(x => x.email === cleanEmail);
+  const m = memberLinksData.find(x => (x.ownerEmail || '').toLowerCase().trim() === cleanEmail);
+  const memberName = u?.name || m?.name;
+  const displayName = memberName ? `${memberName} (${cleanEmail})` : cleanEmail;
+
+  if (shouldPause) {
+    if (!confirm(`Deseja desativar o acesso administrativo de ${displayName}?\n\nO usuário NÃO poderá mais executar funções administrativas (adicionar, editar ou excluir repertório, setlist, enquetes, galeria, fórum, regras da banda ou configs).\nEle terá permissão APENAS para visualizar e editar o próprio perfil.`)) {
+      return;
+    }
+  } else {
+    if (!confirm(`Deseja reativar o acesso administrativo completo de ${displayName}?`)) {
+      return;
+    }
+  }
+
+  try {
+    const ref = doc(db, 'config', 'pausedAdmins');
+    const snap = await getDoc(ref);
+    const curr = snap.exists() ? (snap.data() || {}) : {};
+    let emails = Array.isArray(curr.emails) ? [...curr.emails.map(e => String(e).toLowerCase().trim())] : [];
+    let pausedMap = (curr.pausedMap && typeof curr.pausedMap === 'object') ? { ...curr.pausedMap } : {};
+
+    if (shouldPause) {
+      if (!emails.includes(cleanEmail)) emails.push(cleanEmail);
+      pausedMap[cleanEmail] = {
+        paused: true,
+        pausedAt: new Date().toISOString(),
+        pausedBy: auth.currentUser?.email || AUDIT_EMAIL
+      };
+    } else {
+      emails = emails.filter(e => e !== cleanEmail);
+      delete pausedMap[cleanEmail];
+    }
+
+    await setDoc(ref, {
+      emails,
+      pausedMap,
+      updatedAt: serverTimestamp(),
+      updatedBy: auth.currentUser?.email || AUDIT_EMAIL
+    }, { merge: true });
+
+    // Atualiza estado local imediatamente
+    pausedAdminsData = { emails, pausedMap };
+    renderAdminAccessList();
+    renderMemberLinks();
+
+    // Log de auditoria
+    await addDoc(collection(db, 'logs'), {
+      action: shouldPause ? 'Acesso ADM desativado' : 'Acesso ADM reativado',
+      detail: `Acesso administrativo de ${displayName} foi ${shouldPause ? 'desativado (modo somente visualização)' : 'reativado'} por ${auth.currentUser?.email || AUDIT_EMAIL}`,
+      category: 'membros',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Master Admin',
+      whoEmail: auth.currentUser?.email || AUDIT_EMAIL,
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    }).catch(err => console.warn('Erro ao registrar log de pausa:', err));
+
+    showToast(shouldPause ? `⏸️ Acesso administrativo de ${displayName} desativado.` : `✓ Acesso administrativo de ${displayName} reativado!`);
+
+  } catch (err) {
+    console.error('toggleAdminPause error:', err);
+    showToast('⚠ Erro ao alterar acesso administrativo: ' + (err.message || err));
+  }
+};
+
+window.pauseCustomEmail = async () => {
+  const input = document.getElementById('customPauseEmailInput');
+  const email = (input?.value || '').toLowerCase().trim();
+  if (!email) {
+    showToast('⚠ Digite um e-mail válido.');
+    return;
+  }
+  if (!email.includes('@') || !email.includes('.')) {
+    showToast('⚠ Formato de e-mail inválido.');
+    return;
+  }
+  await window.toggleAdminPause(email, true);
+  if (input) input.value = '';
 };
 
 // ── Central de Agendamentos & Disparos WhatsApp ──────────────────────────
