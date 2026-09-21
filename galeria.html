@@ -1622,10 +1622,25 @@ async function isEmailAdminPaused(email) {
     if (snap.exists()) {
       const data = snap.data() || {};
       const list = Array.isArray(data.emails) ? data.emails.map(e => String(e).toLowerCase().trim()) : [];
-      return list.includes(clean);
+      if (list.includes(clean)) return true;
     }
   } catch (err) {
     console.warn('isEmailAdminPaused err:', err);
+  }
+  // Dual check: checa diretamente no documento do membro no Firestore
+  try {
+    const snapM = await getDocs(collection(db, 'members'));
+    for (const d of snapM.docs) {
+      const data = d.data() || {};
+      const mEmail = (data.ownerEmail || '').toLowerCase().trim();
+      const mName = normalizeName(data.name || '');
+      const isMatch = mEmail === clean || (MEMBER_EMAIL_MAP && MEMBER_EMAIL_MAP[clean] && mName.includes(MEMBER_EMAIL_MAP[clean]));
+      if (isMatch && (data.adminPaused === true || data.isPaused === true)) {
+        return true;
+      }
+    }
+  } catch (errM) {
+    console.warn('isEmailAdminPaused member check err:', errM);
   }
   return false;
 }

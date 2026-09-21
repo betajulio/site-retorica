@@ -1471,6 +1471,7 @@ const provider = new GoogleAuthProvider();
 // ─── STATE ─────────────────────────────────────────────────────────
 let isLoggedIn    = false; // true = qualquer Google user logado
 let isMember      = false; // true = email aprovado (admin)
+let isAdminPaused = false; // true = acesso administrativo pausado
 let isAuditAdmin    = false; // true = email de auditoria
 let currentTab    = 0;
 let currentRepTab = 'all';
@@ -1591,6 +1592,38 @@ async function auditReadEvent({ page = 'index', action, collectionName, estimate
 async function isEmailApproved(email) {
   const snap = await getDoc(doc(db, 'approved_emails', email.toLowerCase()));
   return snap.exists();
+}
+
+async function isEmailAdminPaused(email) {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  if (clean === AUDIT_EMAIL.toLowerCase() || clean === ADMIN_GENERAL_EMAIL.toLowerCase()) return false;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'pausedAdmins'));
+    if (snap.exists()) {
+      const data = snap.data() || {};
+      const list = Array.isArray(data.emails) ? data.emails.map(e => String(e).toLowerCase().trim()) : [];
+      if (list.includes(clean)) return true;
+    }
+  } catch (err) {
+    console.warn('isEmailAdminPaused config err:', err);
+  }
+  // Dual check: checa diretamente no documento do membro no Firestore
+  try {
+    const snapM = await getDocs(collection(db, 'members'));
+    for (const d of snapM.docs) {
+      const data = d.data() || {};
+      const mEmail = (data.ownerEmail || '').toLowerCase().trim();
+      const mName = normalizeName(data.name || '');
+      const isMatch = mEmail === clean || (MEMBER_EMAIL_MAP && MEMBER_EMAIL_MAP[clean] && mName.includes(MEMBER_EMAIL_MAP[clean]));
+      if (isMatch && (data.adminPaused === true || data.isPaused === true)) {
+        return true;
+      }
+    }
+  } catch (errM) {
+    console.warn('isEmailAdminPaused member check err:', errM);
+  }
+  return false;
 }
 
 function normalizeName(value = '') {
@@ -2230,6 +2263,7 @@ onAuthStateChanged(auth, async user => {
   if (user) {
     const approved = await isEmailApproved(user.email);
     isMember = approved;
+    isAdminPaused = approved ? await isEmailAdminPaused(user.email) : false;
     isLoggedIn = true;
     isAuditAdmin = (user.email || '').toLowerCase() === AUDIT_EMAIL;
     const firstName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'Visitante';
@@ -2257,6 +2291,7 @@ onAuthStateChanged(auth, async user => {
   } else {
     isLoggedIn = false;
     isMember   = false;
+    isAdminPaused = false;
     isAuditAdmin = false;
     memberCoinBalance = 0;
     memberCoinGuideCache = { email: '', data: null, fetchedAt: 0 };
@@ -2286,6 +2321,7 @@ onAuthStateChanged(auth, async user => {
 function applyAuth() {
   document.body.classList.toggle('logged-in', isLoggedIn);
   document.body.classList.toggle('is-member', isMember);
+  document.body.classList.toggle('is-admin-paused', isAdminPaused);
   document.body.classList.toggle('is-audit-admin', isAuditAdmin);
   // desktop nav
   document.getElementById('loginBtn').style.display  = isLoggedIn ? 'none' : '';

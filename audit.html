@@ -1639,7 +1639,34 @@ onAuthStateChanged(auth, async user => {
 
 // ── Vínculo Membro ↔ E-mail ─────────────────────────────────────────────────
 
-let memberLinksData = []; // { id, name, ownerEmail }
+const CANONICAL_MEMBER_EMAILS = {
+  'julio': 'juliocereser@gmail.com',
+  'matheus': 'mfa200023@gmail.com',
+  'vini': 'vinitorressantos@gmail.com',
+  'vinicius': 'vinitorressantos@gmail.com',
+  'nei': 'neibatera1@gmail.com',
+  'roni': 'rgmaia6@gmail.com',
+  'renato': 'renatoapluiz@gmail.com'
+};
+
+function normalizeMemberName(value = '') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function getCanonicalEmailForName(name = '') {
+  const norm = normalizeMemberName(name);
+  for (const [key, email] of Object.entries(CANONICAL_MEMBER_EMAILS)) {
+    if (norm.includes(key)) return email;
+  }
+  return '';
+}
+
+let memberLinksData = []; // { id, name, ownerEmail, hasExplicitLink, adminPaused }
 
 async function loadMembersForLinking() {
   const grid = document.getElementById('memberLinksGrid');
@@ -1647,7 +1674,20 @@ async function loadMembersForLinking() {
   grid.innerHTML = '<div class="muted">Carregando membros…</div>';
   try {
     const snap = await getDocs(query(collection(db, 'members'), orderBy('createdAt', 'asc')));
-    memberLinksData = snap.docs.map(d => ({ id: d.id, name: d.data().name || '(sem nome)', ownerEmail: d.data().ownerEmail || '' }));
+    memberLinksData = snap.docs.map(d => {
+      const data = d.data() || {};
+      const savedEmail = (data.ownerEmail || '').toLowerCase().trim();
+      const fallbackEmail = getCanonicalEmailForName(data.name);
+      const email = savedEmail || fallbackEmail || '';
+      const isPaused = data.adminPaused === true || data.isPaused === true;
+      return {
+        id: d.id,
+        name: data.name || '(sem nome)',
+        ownerEmail: email,
+        hasExplicitLink: !!savedEmail,
+        adminPaused: isPaused
+      };
+    });
     renderMemberLinks();
     buildAdminUsersList().then(() => renderAdminAccessList());
   } catch (err) {
@@ -1669,7 +1709,7 @@ function renderMemberLinks() {
   grid.innerHTML = memberLinksData.map(m => {
     const email = (m.ownerEmail || '').toLowerCase().trim();
     const isMaster = email && email === masterEmail;
-    const isPaused = email && pausedEmails.has(email);
+    const isPaused = m.adminPaused === true || (email && pausedEmails.has(email));
 
     let statusBadge = '';
     let actionBtn = '';
@@ -1677,18 +1717,18 @@ function renderMemberLinks() {
     if (isMaster) {
       statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(200,130,10,.18);color:var(--gold);border:1px solid rgba(200,130,10,.4);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600">🛡️ Master</span>`;
       actionBtn = `<span style="font-size:.72rem;color:var(--gold);opacity:.8;padding:.4rem .6rem;user-select:none">🛡️ Inalterável</span>`;
-    } else if (email) {
-      if (isPaused) {
-        statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.4);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600">⏸️ Desativado</span>`;
-        actionBtn = `<button class="btn" style="white-space:nowrap;font-size:.74rem;padding:.42rem .75rem;background:rgba(34,197,94,.18);border:1px solid #4ade80;color:#86efac;font-weight:600" onclick="toggleAdminPause('${esc(email)}', false)" title="Reativar acesso administrativo completo deste membro">▶️ Ativar ADM</button>`;
-      } else {
-        statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(34,197,94,.14);color:#86efac;border:1px solid rgba(34,197,94,.32);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600">🟢 Ativo</span>`;
-        actionBtn = `<button class="btn-ghost" style="white-space:nowrap;font-size:.74rem;padding:.42rem .75rem;border-color:rgba(239,68,68,.4);color:#fca5a5" onclick="toggleAdminPause('${esc(email)}', true)" title="Desativar acesso administrativo (somente visualização)">⏸️ Desativar ADM</button>`;
-      }
+    } else if (isPaused) {
+      statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.4);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600">⏸️ Desativado</span>`;
+      actionBtn = `<button class="btn" style="white-space:nowrap;font-size:.74rem;padding:.42rem .75rem;background:rgba(34,197,94,.18);border:1px solid #4ade80;color:#86efac;font-weight:600;cursor:pointer" onclick="toggleMemberAdminPause('${m.id}')" title="Reativar acesso administrativo completo deste membro">▶️ Ativar ADM</button>`;
     } else {
-      statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(255,255,255,.05);color:var(--smoke);border:1px solid rgba(255,255,255,.1);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em">Sem vínculo</span>`;
-      actionBtn = `<button class="btn-ghost" style="white-space:nowrap;font-size:.72rem;padding:.42rem .65rem;opacity:.4;cursor:not-allowed" disabled title="Vincule um e-mail primeiro para poder desativar/ativar">⏸️ Desativar ADM</button>`;
+      statusBadge = `<span style="display:inline-flex;align-items:center;background:rgba(34,197,94,.14);color:#86efac;border:1px solid rgba(34,197,94,.32);border-radius:999px;font-size:.62rem;padding:.12rem .5rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600">🟢 Ativo</span>`;
+      actionBtn = `<button class="btn-ghost" style="white-space:nowrap;font-size:.74rem;padding:.42rem .75rem;border-color:rgba(239,68,68,.4);color:#fca5a5;cursor:pointer" onclick="toggleMemberAdminPause('${m.id}')" title="Desativar acesso administrativo (somente visualização)">⏸️ Desativar ADM</button>`;
     }
+
+    const emailStatusText = m.ownerEmail
+      ? (m.hasExplicitLink ? `✓ ${esc(m.ownerEmail)}` : `⚡ Sugerido: ${esc(m.ownerEmail)}`)
+      : 'Sem vínculo de e-mail';
+    const emailStatusColor = m.ownerEmail ? 'var(--gold)' : 'var(--smoke)';
 
     return `
       <div id="mlrow-${m.id}" style="display:grid;grid-template-columns:minmax(140px, 1.2fr) minmax(180px, 2fr) auto;gap:.6rem;align-items:center;border:1px solid ${isPaused ? 'rgba(239,68,68,.38)' : 'rgba(200,130,10,.14)'};background:${isPaused ? 'rgba(32,10,10,.6)' : 'rgba(10,8,4,.45)'};padding:.7rem .9rem;border-radius:2px;transition:all .2s ease">
@@ -1697,19 +1737,133 @@ function renderMemberLinks() {
             <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--cream);letter-spacing:.04em;font-weight:600">${esc(m.name)}</span>
             ${statusBadge}
           </div>
-          <div id="mlstatus-${m.id}" style="font-size:.68rem;color:${m.ownerEmail ? 'var(--gold)' : 'var(--smoke)'};margin-top:.2rem">${m.ownerEmail ? '✓ ' + esc(m.ownerEmail) : 'Sem vínculo de e-mail'}</div>
+          <div id="mlstatus-${m.id}" style="font-size:.68rem;color:${emailStatusColor};margin-top:.2rem">${emailStatusText}</div>
         </div>
         <input id="mlinput-${m.id}" type="email" placeholder="e-mail do membro" value="${esc(m.ownerEmail)}"
           style="background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.28);color:var(--cream);padding:.6rem .75rem;font-size:.8rem;width:100%">
         <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-          <button class="btn-ghost" style="white-space:nowrap;font-size:.74rem;padding:.42rem .7rem" onclick="saveMemberLink('${m.id}')">🔗 Vincular</button>
-          <button class="btn-ghost" style="white-space:nowrap;font-size:.74rem;padding:.42rem .7rem;border-color:rgba(239,68,68,.38);color:#fca5a5" onclick="clearMemberLink('${m.id}')">✕ Remover</button>
+          <button class="btn-ghost" style="white-space:nowrap;font-size:.74rem;padding:.42rem .7rem" onclick="saveMemberLink('${m.id}')">🔗 Salvar Vínculo</button>
+          <button class="btn-ghost" style="white-space:nowrap;font-size:.74rem;padding:.42rem .7rem;border-color:rgba(239,68,68,.38);color:#fca5a5" onclick="clearMemberLink('${m.id}')">✕ Limpar</button>
           ${actionBtn}
         </div>
       </div>
     `;
   }).join('');
 }
+
+window.toggleMemberAdminPause = async (memberId) => {
+  const m = memberLinksData.find(x => x.id === memberId);
+  if (!m) {
+    showToast('⚠ Membro não encontrado.');
+    return;
+  }
+
+  const input = document.getElementById(`mlinput-${memberId}`);
+  let email = (m.ownerEmail || input?.value || '').toLowerCase().trim();
+
+  if (!email) {
+    email = prompt(`Digite o e-mail de "${m.name}" para gerenciar o acesso administrativo:`) || '';
+    email = email.toLowerCase().trim();
+  }
+
+  if (!email || !email.includes('@')) {
+    showToast('⚠ Um e-mail válido é obrigatório para gerenciar o acesso administrativo.');
+    return;
+  }
+
+  if (email === AUDIT_EMAIL.toLowerCase()) {
+    showToast('⚠ O Master Admin não pode ter seu acesso desativado.');
+    return;
+  }
+
+  const pausedEmails = new Set((pausedAdminsData.emails || []).map(e => String(e).toLowerCase().trim()));
+  const isCurrentlyPaused = m.adminPaused === true || pausedEmails.has(email);
+  const shouldPause = !isCurrentlyPaused;
+
+  const displayName = `${m.name} (${email})`;
+  if (shouldPause) {
+    if (!confirm(`Deseja desativar o acesso administrativo de ${displayName}?\n\nO usuário NÃO poderá executar alterações administrativas (adicionar, editar ou excluir repertório, setlist, enquetes, galeria, fórum, regras ou configs).\nEle terá permissão APENAS para visualizar e editar o próprio perfil.`)) {
+      return;
+    }
+  } else {
+    if (!confirm(`Deseja reativar o acesso administrativo completo de ${displayName}?`)) {
+      return;
+    }
+  }
+
+  try {
+    // 1. Atualiza diretamente no documento do membro (permite update por membros autenticados)
+    await updateDoc(doc(db, 'members', memberId), {
+      adminPaused: shouldPause,
+      isPaused: shouldPause,
+      ownerEmail: email
+    });
+    m.adminPaused = shouldPause;
+    m.ownerEmail = email;
+    m.hasExplicitLink = true;
+    if (input) input.value = email;
+
+    // 2. Tenta sincronizar com config/pausedAdmins (com fallback caso regras estejam pendentes no console)
+    let emails = Array.isArray(pausedAdminsData.emails) ? [...pausedAdminsData.emails] : [];
+    let pausedMap = (pausedAdminsData.pausedMap && typeof pausedAdminsData.pausedMap === 'object') ? { ...pausedAdminsData.pausedMap } : {};
+
+    try {
+      const ref = doc(db, 'config', 'pausedAdmins');
+      const snap = await getDoc(ref);
+      const curr = snap.exists() ? (snap.data() || {}) : {};
+      emails = Array.isArray(curr.emails) ? [...curr.emails.map(e => String(e).toLowerCase().trim())] : emails;
+      pausedMap = (curr.pausedMap && typeof curr.pausedMap === 'object') ? { ...curr.pausedMap } : pausedMap;
+
+      if (shouldPause) {
+        if (!emails.includes(email)) emails.push(email);
+        pausedMap[email] = {
+          paused: true,
+          pausedAt: new Date().toISOString(),
+          pausedBy: auth.currentUser?.email || AUDIT_EMAIL
+        };
+      } else {
+        emails = emails.filter(e => e !== email);
+        delete pausedMap[email];
+      }
+
+      await setDoc(ref, {
+        emails,
+        pausedMap,
+        updatedAt: serverTimestamp(),
+        updatedBy: auth.currentUser?.email || AUDIT_EMAIL
+      }, { merge: true });
+    } catch (cfgErr) {
+      console.warn('Persistência em config/pausedAdmins encontrou restrição (as regras podem requerer deploy no console):', cfgErr);
+      if (shouldPause) {
+        if (!emails.includes(email)) emails.push(email);
+        pausedMap[email] = { paused: true, pausedAt: new Date().toISOString(), pausedBy: auth.currentUser?.email || AUDIT_EMAIL };
+      } else {
+        emails = emails.filter(e => e !== email);
+        delete pausedMap[email];
+      }
+    }
+
+    pausedAdminsData = { emails, pausedMap };
+    renderMemberLinks();
+    buildAdminUsersList().then(() => renderAdminAccessList());
+
+    // 3. Log de auditoria
+    await addDoc(collection(db, 'logs'), {
+      action: shouldPause ? 'Acesso ADM desativado' : 'Acesso ADM reativado',
+      detail: `Acesso administrativo de ${displayName} foi ${shouldPause ? 'desativado (modo somente visualização)' : 'reativado'} por ${auth.currentUser?.email || AUDIT_EMAIL}`,
+      category: 'membros',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Master Admin',
+      whoEmail: auth.currentUser?.email || AUDIT_EMAIL,
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    }).catch(err => console.warn('Erro ao registrar log de pausa:', err));
+
+    showToast(shouldPause ? `⏸️ Acesso administrativo de ${displayName} desativado.` : `✓ Acesso administrativo de ${displayName} reativado!`);
+  } catch (err) {
+    console.error('toggleMemberAdminPause error:', err);
+    showToast('⚠ Erro ao alterar acesso administrativo: ' + (err.message || err));
+  }
+};
 
 window.saveMemberLink = async (memberId) => {
   const input = document.getElementById(`mlinput-${memberId}`);
@@ -1720,7 +1874,10 @@ window.saveMemberLink = async (memberId) => {
   try {
     await updateDoc(doc(db, 'members', memberId), { ownerEmail: email });
     const member = memberLinksData.find(m => m.id === memberId);
-    if (member) member.ownerEmail = email;
+    if (member) {
+      member.ownerEmail = email;
+      member.hasExplicitLink = true;
+    }
     if (statusEl) { statusEl.textContent = '✓ ' + email; statusEl.style.color = 'var(--gold)'; }
     showToast(`✓ Vínculo salvo para ${email}`);
     renderMemberLinks();
@@ -1738,8 +1895,10 @@ window.clearMemberLink = async (memberId) => {
   if (!member?.ownerEmail) { showToast('Este membro já não possui vínculo.'); return; }
   if (!confirm(`Remover o vínculo de e-mail "${member.ownerEmail}" do membro "${member.name}"?`)) return;
   try {
-    await updateDoc(doc(db, 'members', memberId), { ownerEmail: '' });
+    await updateDoc(doc(db, 'members', memberId), { ownerEmail: '', adminPaused: false, isPaused: false });
     member.ownerEmail = '';
+    member.hasExplicitLink = false;
+    member.adminPaused = false;
     if (input) input.value = '';
     if (statusEl) { statusEl.textContent = 'Sem vínculo'; statusEl.style.color = 'var(--smoke)'; }
     showToast('✓ Vínculo removido.');
@@ -1830,8 +1989,18 @@ async function buildAdminUsersList() {
 
     const emailToMember = {};
     membersList.forEach(m => {
-      const owner = (m.ownerEmail || '').toLowerCase().trim();
-      if (owner) emailToMember[owner] = m;
+      const owner = (m.ownerEmail || '').toLowerCase().trim() || getCanonicalEmailForName(m.name);
+      if (owner) {
+        emailToMember[owner] = m;
+        if (m.adminPaused === true || m.isPaused === true) {
+          if (!pausedAdminsData.emails.includes(owner)) {
+            pausedAdminsData.emails.push(owner);
+          }
+          if (!pausedAdminsData.pausedMap[owner]) {
+            pausedAdminsData.pausedMap[owner] = { paused: true };
+          }
+        }
+      }
     });
 
     const fallbackNames = {
@@ -1961,30 +2130,64 @@ window.toggleAdminPause = async (email, shouldPause) => {
   }
 
   try {
-    const ref = doc(db, 'config', 'pausedAdmins');
-    const snap = await getDoc(ref);
-    const curr = snap.exists() ? (snap.data() || {}) : {};
-    let emails = Array.isArray(curr.emails) ? [...curr.emails.map(e => String(e).toLowerCase().trim())] : [];
-    let pausedMap = (curr.pausedMap && typeof curr.pausedMap === 'object') ? { ...curr.pausedMap } : {};
-
-    if (shouldPause) {
-      if (!emails.includes(cleanEmail)) emails.push(cleanEmail);
-      pausedMap[cleanEmail] = {
-        paused: true,
-        pausedAt: new Date().toISOString(),
-        pausedBy: auth.currentUser?.email || AUDIT_EMAIL
-      };
+    // 1. Atualiza diretamente no documento do membro (MUITO SEGURO - permitido para membros no Firestore)
+    if (m) {
+      await updateDoc(doc(db, 'members', m.id), {
+        adminPaused: shouldPause,
+        isPaused: shouldPause
+      }).catch(err => console.warn('Falha ao atualizar doc do membro:', err));
+      m.adminPaused = shouldPause;
     } else {
-      emails = emails.filter(e => e !== cleanEmail);
-      delete pausedMap[cleanEmail];
+      try {
+        const snapM = await getDocs(query(collection(db, 'members'), where('ownerEmail', '==', cleanEmail)));
+        for (const d of snapM.docs) {
+          await updateDoc(doc(db, 'members', d.id), {
+            adminPaused: shouldPause,
+            isPaused: shouldPause
+          }).catch(() => {});
+        }
+      } catch (e) {}
     }
 
-    await setDoc(ref, {
-      emails,
-      pausedMap,
-      updatedAt: serverTimestamp(),
-      updatedBy: auth.currentUser?.email || AUDIT_EMAIL
-    }, { merge: true });
+    // 2. Sincroniza com config/pausedAdmins
+    let emails = Array.isArray(pausedAdminsData.emails) ? [...pausedAdminsData.emails] : [];
+    let pausedMap = (pausedAdminsData.pausedMap && typeof pausedAdminsData.pausedMap === 'object') ? { ...pausedAdminsData.pausedMap } : {};
+
+    try {
+      const ref = doc(db, 'config', 'pausedAdmins');
+      const snap = await getDoc(ref);
+      const curr = snap.exists() ? (snap.data() || {}) : {};
+      emails = Array.isArray(curr.emails) ? [...curr.emails.map(e => String(e).toLowerCase().trim())] : emails;
+      pausedMap = (curr.pausedMap && typeof curr.pausedMap === 'object') ? { ...curr.pausedMap } : pausedMap;
+
+      if (shouldPause) {
+        if (!emails.includes(cleanEmail)) emails.push(cleanEmail);
+        pausedMap[cleanEmail] = {
+          paused: true,
+          pausedAt: new Date().toISOString(),
+          pausedBy: auth.currentUser?.email || AUDIT_EMAIL
+        };
+      } else {
+        emails = emails.filter(e => e !== cleanEmail);
+        delete pausedMap[cleanEmail];
+      }
+
+      await setDoc(ref, {
+        emails,
+        pausedMap,
+        updatedAt: serverTimestamp(),
+        updatedBy: auth.currentUser?.email || AUDIT_EMAIL
+      }, { merge: true });
+    } catch (cfgErr) {
+      console.warn('Persistência em config/pausedAdmins encontrou restrição (as regras podem requerer deploy no console):', cfgErr);
+      if (shouldPause) {
+        if (!emails.includes(cleanEmail)) emails.push(cleanEmail);
+        pausedMap[cleanEmail] = { paused: true, pausedAt: new Date().toISOString(), pausedBy: auth.currentUser?.email || AUDIT_EMAIL };
+      } else {
+        emails = emails.filter(e => e !== cleanEmail);
+        delete pausedMap[cleanEmail];
+      }
+    }
 
     // Atualiza estado local imediatamente
     pausedAdminsData = { emails, pausedMap };

@@ -293,17 +293,28 @@ async function isEmailAdminPaused(email) {
   if (clean === AUDIT_EMAIL) return false;
   try {
     const snap = await getDoc(doc(db, 'config', 'pausedAdmins'));
-    if (!snap.exists()) return false;
-    const data = snap.data() || {};
-    if (data.pausedMap && typeof data.pausedMap[clean] === 'boolean') {
-      return data.pausedMap[clean];
+    if (snap.exists()) {
+      const data = snap.data() || {};
+      if (data.pausedMap && typeof data.pausedMap[clean] === 'boolean') {
+        if (data.pausedMap[clean]) return true;
+      }
+      const emails = Array.isArray(data.emails) ? data.emails.map(e => String(e).toLowerCase().trim()) : [];
+      if (emails.includes(clean)) return true;
     }
-    const emails = Array.isArray(data.emails) ? data.emails.map(e => String(e).toLowerCase().trim()) : [];
-    return emails.includes(clean);
   } catch (err) {
     console.warn('Erro ao verificar status de pausa de admin:', err);
-    return false;
   }
+  try {
+    const snapM = await getDocs(collection(db, 'members'));
+    for (const d of snapM.docs) {
+      const data = d.data() || {};
+      const mEmail = (data.ownerEmail || '').toLowerCase().trim();
+      if (mEmail === clean && (data.adminPaused === true || data.isPaused === true)) {
+        return true;
+      }
+    }
+  } catch (e) {}
+  return false;
 }
 
 // --- LOGINS ---
