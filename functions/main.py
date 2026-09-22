@@ -421,13 +421,37 @@ def get_suggestion_score(data):
     return safe_int((data or {}).get("likes", 0)) - safe_int((data or {}).get("dislikes", 0))
 
 def get_sorted_suggestions(db):
+    try:
+        active_members = get_active_band_members(db)
+        active_uids = set(m["uid"] for m in active_members if m.get("uid"))
+        active_emails = set(m["email"].lower() for m in active_members if m.get("email"))
+    except Exception:
+        active_uids = set()
+        active_emails = set()
+
+    def compute_active_counts(data):
+        voter_map = data.get("voterMap")
+        if isinstance(voter_map, dict) and (active_uids or active_emails):
+            a_likes = 0
+            a_dislikes = 0
+            for k, val in voter_map.items():
+                if k in active_uids or str(k).lower() in active_emails:
+                    if val == "like":
+                        a_likes += 1
+                    elif val == "dislike":
+                        a_dislikes += 1
+            return a_likes, a_dislikes
+        return safe_int(data.get("likes", 0)), safe_int(data.get("dislikes", 0))
+
     def suggestion_sort_key(doc):
         data = doc.to_dict() or {}
+        a_likes, a_dislikes = compute_active_counts(data)
+        score = a_likes - a_dislikes
         created_at = to_datetime(data.get("createdAt"))
         created_ts = created_at.timestamp() if isinstance(created_at, datetime) else 0
         return (
-            get_suggestion_score(data),
-            safe_int(data.get("likes", 0)),
+            score,
+            a_likes,
             created_ts
         )
 
@@ -671,10 +695,25 @@ def build_top_suggestions_message(db):
 def get_active_band_members(db):
     """
     Retorna a lista de integrantes ativos da banda da coleção 'members'.
-    Para cada integrante, obtém id, nome, email e UID para cálculo preciso e dinâmico de votos.
-    Se novos membros forem adicionados ou membros forem removidos, esta função reflete
-    imediatamente a composição real da banda.
+    Exclui membros inativos/pausados (adminPaused, isPaused ou pausedAdmins).
+    Para cada integrante ativo, obtém id, nome, email e UID para cálculo preciso e dinâmico de votos.
+    Se novos membros forem adicionados, reativados ou pausados, esta função reflete
+    imediatamente a composição real ativa da banda.
     """
+    paused_emails = set()
+    try:
+        paused_doc = db.collection("config").document("pausedAdmins").get()
+        if paused_doc.exists:
+            pdata = paused_doc.to_dict() or {}
+            for em in pdata.get("emails", []):
+                if em:
+                    paused_emails.add(str(em).strip().lower())
+            for em, pinfo in (pdata.get("pausedMap") or {}).items():
+                if pinfo is True or (isinstance(pinfo, dict) and pinfo.get("paused") is True):
+                    paused_emails.add(str(em).strip().lower())
+    except Exception as e:
+        print(f"Aviso ao consultar config/pausedAdmins: {e}")
+
     try:
         members_snap = db.collection("members").get()
         active_members = []
@@ -683,6 +722,15 @@ def get_active_band_members(db):
             email = (d.get("ownerEmail") or d.get("email") or "").strip().lower()
             name = (d.get("name") or doc.id).strip()
             uid = d.get("ownerUid") or d.get("uid")
+
+            # Verifica se o membro está pausado/desativado
+            is_paused = (
+                d.get("adminPaused") is True
+                or d.get("isPaused") is True
+                or (email and email in paused_emails)
+            )
+            if is_paused:
+                continue
 
             # Se tiver email mas não tiver UID gravado, busca no Firebase Auth Admin e salva
             if email and not uid:
@@ -710,7 +758,7 @@ def get_active_band_members(db):
     fallback = []
     for d in approved_snap:
         em = d.id.strip().lower()
-        if em:
+        if em and em not in paused_emails:
             fallback.append({
                 "id": em,
                 "name": em.split("@")[0].title(),
@@ -2144,24 +2192,24 @@ def admin_sync_suggestion_votes(req: https_fn.Request) -> https_fn.Response:
             d = doc.to_dict() or {}
             voter_map = d.get("voterMap") or {}
 
-            # Filtra apenas votos de membros ativos da banda
-            clean_voter_map = {}
-            if active_uids or active_emails:
-                for k, val in voter_map.items():
-                    if k in active_uids or k.lower() in active_emails:
-                        clean_voter_map[k] = val
-            else:
-                clean_voter_map = voter_map
+            # Calcula votos considerando apenas membros ativos da banda
+            # IMPORTANTE: voterMap é preservado na íntegra para que os votos de membros inativos retornem ao serem reativados
+            real_likes = 0
+            real_dislikes = 0
+            for k, val in voter_map.items():
+                is_active = (k in active_uids) or (str(k).lower() in active_emails) if (active_uids or active_emails) else True
+                if is_active:
+                    if val == "like":
+                        real_likes += 1
+                    elif val == "dislike":
+                        real_dislikes += 1
 
-            real_likes = len([v for v in clean_voter_map.values() if v == "like"])
-            real_dislikes = len([v for v in clean_voter_map.values() if v == "dislike"])
             curr_likes = d.get("likes") or 0
             curr_dislikes = d.get("dislikes") or 0
-            if curr_likes != real_likes or curr_dislikes != real_dislikes or len(clean_voter_map) != len(voter_map):
+            if curr_likes != real_likes or curr_dislikes != real_dislikes:
                 doc.reference.update({
                     "likes": real_likes,
-                    "dislikes": real_dislikes,
-                    "voterMap": clean_voter_map
+                    "dislikes": real_dislikes
                 })
                 fixed.append({
                     "id": doc.id,

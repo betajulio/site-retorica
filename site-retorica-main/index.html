@@ -3320,8 +3320,44 @@ window.removeMember = async id => {
 // ─── SUGGESTIONS ───────────────────────────────────────────────────
 let suggestionsCache = [];
 
+function getActiveBandMembersInfo() {
+  const activeUids = new Set();
+  const activeEmails = new Set();
+  let count = 0;
+  membersCache.forEach(({ id, data: m }) => {
+    const email = (m.ownerEmail || '').toLowerCase().trim();
+    const isPaused = m.adminPaused === true || m.isPaused === true;
+    if (!isPaused) {
+      count++;
+      if (m.ownerUid) activeUids.add(m.ownerUid);
+      if (email) activeEmails.add(email);
+    }
+  });
+  return { activeUids, activeEmails, count: count || 6 };
+}
+
+function computeActiveSuggestionVotes(s) {
+  if (!s) return { likes: 0, dislikes: 0 };
+  const voterMap = s.voterMap;
+  const { activeUids, activeEmails } = getActiveBandMembersInfo();
+  if (voterMap && (activeUids.size > 0 || activeEmails.size > 0)) {
+    let likes = 0;
+    let dislikes = 0;
+    for (const [k, v] of Object.entries(voterMap)) {
+      const isActive = activeUids.has(k) || activeEmails.has(String(k).toLowerCase());
+      if (isActive) {
+        if (v === 'like') likes++;
+        else if (v === 'dislike') dislikes++;
+      }
+    }
+    return { likes, dislikes };
+  }
+  return { likes: s.likes || 0, dislikes: s.dislikes || 0 };
+}
+
 function getSuggestionScore(s) {
-  return (s.likes||0) - (s.dislikes||0);
+  const { likes, dislikes } = computeActiveSuggestionVotes(s);
+  return likes - dislikes;
 }
 
 async function loadSuggestionsSnapshot(force = false) {
@@ -3344,17 +3380,20 @@ function renderSuggestions() {
 
   const uid = auth.currentUser?.uid || null;
 
-  // Sort by score desc, then by likes desc as tiebreaker
+  // Sort by score desc, then by active likes desc as tiebreaker
   const sorted = [...suggestionsCache].sort((a,b) => {
     const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
     if (sb !== sa) return sb - sa;
-    return (b.data.likes||0) - (a.data.likes||0);
+    const aVotes = computeActiveSuggestionVotes(a.data);
+    const bVotes = computeActiveSuggestionVotes(b.data);
+    return (bVotes.likes || 0) - (aVotes.likes || 0);
   });
 
   const trophies = ['🥇','🥈','🥉'];
 
   list.innerHTML = sorted.map(({id, data: s}, i) => {
     const score     = getSuggestionScore(s);
+    const { likes: activeLikes, dislikes: activeDislikes } = computeActiveSuggestionVotes(s);
     const myVote    = uid && s.voterMap ? s.voterMap[uid] : null; // 'like' | 'dislike' | null
     const hasVoted  = myVote !== null && myVote !== undefined;
     const rankClass = i < 3 ? ` rank-${i+1}` : '';
@@ -3366,8 +3405,9 @@ function renderSuggestions() {
       isTie = sorted.some((other, idx) => {
         if (idx === i) return false;
         if (idx >= 3) return false;
+        const otherVotes = computeActiveSuggestionVotes(other.data);
         return getSuggestionScore(other.data) === score
-          && (other.data.likes || 0) === (s.likes || 0);
+          && (otherVotes.likes || 0) === activeLikes;
       });
     }
 
@@ -3375,14 +3415,14 @@ function renderSuggestions() {
       onclick="voteSuggestion('${id}','like')"
       ${!isMember?'disabled title="Acesso restrito a membros"':''}
       title="${myVote==='like'?'Remover like':'Curtir'}">
-      👍 <span class="score-num">${s.likes||0}</span>
+      👍 <span class="score-num">${activeLikes}</span>
     </button>`;
 
     const dislikeBtn = `<button class="vote-btn${myVote==='dislike'?' disliked':''}"
       onclick="voteSuggestion('${id}','dislike')"
       ${!isMember?'disabled title="Acesso restrito a membros"':''}
       title="${myVote==='dislike'?'Remover dislike':'Não curtir'}">
-      👎 <span class="score-num">${s.dislikes||0}</span>
+      👎 <span class="score-num">${activeDislikes}</span>
     </button>`;
 
     const rmBtn = isAuditAdmin ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')" title="Excluir sugestão (Apenas Administrador)">✕</button>` : '';
@@ -3427,6 +3467,7 @@ window.addEventListener('resize', applySuggestionsViewportLimit);
 
 window.voteSuggestion = async (id, type) => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (isAdminPaused) { showToast('⚠ Acesso pausado. Modo somente visualização.'); return; }
   const uid  = auth.currentUser?.uid;
   const snap = await getDoc(doc(db,'suggestions',id));
   if (!snap.exists()) return;
@@ -3441,10 +3482,20 @@ window.voteSuggestion = async (id, type) => {
     voterMap[uid] = type;
   }
 
-  const likes = Object.values(voterMap).filter(v => v === 'like').length;
-  const dislikes = Object.values(voterMap).filter(v => v === 'dislike').length;
+  const { activeUids, activeEmails, count: activeCount } = getActiveBandMembersInfo();
+  let likes = 0;
+  let dislikes = 0;
+  for (const [k, v] of Object.entries(voterMap)) {
+    const isActive = (activeUids.size > 0 || activeEmails.size > 0)
+      ? (activeUids.has(k) || activeEmails.has(String(k).toLowerCase()))
+      : true;
+    if (isActive) {
+      if (v === 'like') likes++;
+      else if (v === 'dislike') dislikes++;
+    }
+  }
 
-  const totalBandMembers = Math.max(2, membersCache.length || 6);
+  const totalBandMembers = Math.max(2, activeCount);
   const dislikeThreshold = Math.max(2, Math.ceil(totalBandMembers / 2));
 
   // EXCLUSÃO AUTOMÁTICA DINÂMICA (maioria dos membros ativos)
@@ -3452,7 +3503,7 @@ window.voteSuggestion = async (id, type) => {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes (maioria dos ${totalBandMembers} membros)`,
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes (maioria dos ${totalBandMembers} membros ativos)`,
       song: s.song,
       artist: s.artist,
       by: s.by,
@@ -6549,7 +6600,9 @@ async function claimPromotionExecution() {
     const sorted = [...suggestionsCache].sort((a, b) => {
       const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
       if (sb !== sa) return sb - sa;
-      return (b.data.likes || 0) - (a.data.likes || 0);
+      const aVotes = computeActiveSuggestionVotes(a.data);
+      const bVotes = computeActiveSuggestionVotes(b.data);
+      return (bVotes.likes || 0) - (aVotes.likes || 0);
     });
 
     const topScore = getSuggestionScore(sorted[0].data);

@@ -1012,26 +1012,55 @@ window.runSuggestionsCleanup = async () => {
   }
 };
 
-window.syncSuggestionVotes = async () => {
-  if (!confirm('Deseja sincronizar os votos de todas as sugestões com os membros ativos atuais da banda, removendo votos de integrantes que saíram e corrigindo divergências?')) return;
-  showToast('Sincronizando votos com os membros ativos...');
+async function recalculateSuggestionVotesForActiveMembers(silent = false) {
   try {
-    const [snap, membersSnap] = await Promise.all([
+    const [snap, membersSnap, pausedDoc] = await Promise.all([
       getDocs(collection(db, 'suggestions')),
-      getDocs(collection(db, 'members'))
+      getDocs(collection(db, 'members')),
+      getDoc(doc(db, 'config', 'pausedAdmins')).catch(() => null)
     ]);
 
     if (snap.empty) {
-      showToast('Nenhuma sugestão encontrada.');
-      return;
+      if (!silent) showToast('Nenhuma sugestão encontrada.');
+      return 0;
+    }
+
+    const pausedEmails = new Set();
+    if (pausedDoc && pausedDoc.exists()) {
+      const pData = pausedDoc.data() || {};
+      (pData.emails || []).forEach(e => { if (e) pausedEmails.add(String(e).toLowerCase().trim()); });
+      if (pData.pausedMap && typeof pData.pausedMap === 'object') {
+        Object.entries(pData.pausedMap).forEach(([e, val]) => {
+          if (val === true || (val && typeof val === 'object' && val.paused === true)) {
+            pausedEmails.add(String(e).toLowerCase().trim());
+          }
+        });
+      }
+    }
+    if (Array.isArray(pausedAdminsData?.emails)) {
+      pausedAdminsData.emails.forEach(e => { if (e) pausedEmails.add(String(e).toLowerCase().trim()); });
+    }
+    if (pausedAdminsData?.pausedMap && typeof pausedAdminsData.pausedMap === 'object') {
+      Object.entries(pausedAdminsData.pausedMap).forEach(([e, val]) => {
+        if (val === true || (val && typeof val === 'object' && val.paused === true)) {
+          pausedEmails.add(String(e).toLowerCase().trim());
+        }
+      });
     }
 
     const activeUids = new Set();
     const activeEmails = new Set();
+    let activeMembersCount = 0;
+
     membersSnap.forEach(d => {
       const data = d.data() || {};
-      if (data.ownerUid) activeUids.add(data.ownerUid);
-      if (data.ownerEmail) activeEmails.add(data.ownerEmail.toLowerCase().trim());
+      const email = (data.ownerEmail || '').toLowerCase().trim();
+      const isPaused = data.adminPaused === true || data.isPaused === true || (email && pausedEmails.has(email));
+      if (!isPaused) {
+        activeMembersCount++;
+        if (data.ownerUid) activeUids.add(data.ownerUid);
+        if (email) activeEmails.add(email);
+      }
     });
 
     let fixedCount = 0;
@@ -1043,21 +1072,24 @@ window.syncSuggestionVotes = async () => {
       const s = d.data() || {};
       const voterMap = s.voterMap || {};
 
-      let cleanVoterMap = { ...voterMap };
-      if (activeUids.size > 0 || activeEmails.size > 0) {
-        cleanVoterMap = {};
-        for (const [k, v] of Object.entries(voterMap)) {
-          if (activeUids.has(k) || activeEmails.has(k.toLowerCase())) {
-            cleanVoterMap[k] = v;
-          }
+      let realLikes = 0;
+      let realDislikes = 0;
+      for (const [k, v] of Object.entries(voterMap)) {
+        const isActive = (activeUids.size > 0 || activeEmails.size > 0)
+          ? (activeUids.has(k) || activeEmails.has(String(k).toLowerCase()))
+          : true;
+        if (isActive) {
+          if (v === 'like') realLikes++;
+          else if (v === 'dislike') realDislikes++;
         }
       }
 
-      const realLikes = Object.values(cleanVoterMap).filter(v => v === 'like').length;
-      const realDislikes = Object.values(cleanVoterMap).filter(v => v === 'dislike').length;
+      const currLikes = s.likes || 0;
+      const currDislikes = s.dislikes || 0;
 
-      if ((s.likes || 0) !== realLikes || (s.dislikes || 0) !== realDislikes || Object.keys(cleanVoterMap).length !== Object.keys(voterMap).length) {
-        batch.update(d.ref, { likes: realLikes, dislikes: realDislikes, voterMap: cleanVoterMap });
+      if (currLikes !== realLikes || currDislikes !== realDislikes) {
+        // NUNCA apaga voterMap: os votos de usuários inativos continuam salvos e retornam ao serem reativados
+        batch.update(d.ref, { likes: realLikes, dislikes: realDislikes });
         fixedCount++;
         opCount++;
         if (opCount % batchSize === 0) {
@@ -1070,21 +1102,33 @@ window.syncSuggestionVotes = async () => {
       await batch.commit();
     }
 
-    await addDoc(collection(db, 'logs'), {
-      action: 'Sincronização de Votos',
-      detail: `Sincronização de votos concluída: ${fixedCount} sugestão(ões) corrigida(s) com base nos ${membersSnap.size} membros ativos`,
-      category: 'sugestoes',
-      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Administrador',
-      whoEmail: auth.currentUser?.email || '',
-      ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
-    });
+    if (fixedCount > 0) {
+      await addDoc(collection(db, 'logs'), {
+        action: 'Sincronização de Votos',
+        detail: `Votos recalculados em ${fixedCount} sugestão(ões) ativas com base nos ${activeMembersCount} membros ativos`,
+        category: 'sugestoes',
+        who: auth.currentUser?.displayName || auth.currentUser?.email || 'Administrador',
+        whoEmail: auth.currentUser?.email || '',
+        ts: serverTimestamp(),
+        tsLocal: new Date().toLocaleString('pt-BR')
+      }).catch(() => {});
+    }
 
-    showToast(fixedCount > 0 ? `✓ ${fixedCount} sugestão(ões) sincronizada(s) com os membros ativos!` : '✓ Todas as sugestões já estão 100% consistentes com os membros atuais.');
+    if (!silent) {
+      showToast(fixedCount > 0 ? `✓ ${fixedCount} sugestão(ões) sincronizada(s) com os ${activeMembersCount} membros ativos!` : '✓ Todas as sugestões já estão 100% consistentes com os membros ativos.');
+    }
+    return fixedCount;
   } catch (err) {
-    console.error('Sync error:', err);
-    showToast('Erro ao sincronizar sugestões.');
+    console.error('recalculateSuggestionVotesForActiveMembers error:', err);
+    if (!silent) showToast('Erro ao sincronizar sugestões.');
+    return -1;
   }
+}
+
+window.syncSuggestionVotes = async () => {
+  if (!confirm('Deseja sincronizar os votos de todas as sugestões com os membros ativos atuais da banda? Votos de membros inativos serão desconsiderados do placar e votos de membros reativados retornarão automaticamente.')) return;
+  showToast('Sincronizando votos com os membros ativos...');
+  await recalculateSuggestionVotesForActiveMembers(false);
 };
 
 window.runDuplicateSuggestionsCleanup = async () => {
@@ -1859,6 +1903,9 @@ window.toggleMemberAdminPause = async (memberId) => {
     }).catch(err => console.warn('Erro ao registrar log de pausa:', err));
 
     showToast(shouldPause ? `⏸️ Acesso administrativo de ${displayName} desativado.` : `✓ Acesso administrativo de ${displayName} reativado!`);
+
+    // 4. Recalcula automaticamente os votos das sugestões ativas (ignora inativos / restaura votos se reativado)
+    recalculateSuggestionVotesForActiveMembers(true).catch(e => console.warn('Erro no recálculo automático de sugestões:', e));
   } catch (err) {
     console.error('toggleMemberAdminPause error:', err);
     showToast('⚠ Erro ao alterar acesso administrativo: ' + (err.message || err));
@@ -2207,6 +2254,8 @@ window.toggleAdminPause = async (email, shouldPause) => {
 
     showToast(shouldPause ? `⏸️ Acesso administrativo de ${displayName} desativado.` : `✓ Acesso administrativo de ${displayName} reativado!`);
 
+    // Recalcula automaticamente os votos das sugestões ativas (ignora inativos / restaura votos se reativado)
+    recalculateSuggestionVotesForActiveMembers(true).catch(e => console.warn('Erro no recálculo automático de sugestões:', e));
   } catch (err) {
     console.error('toggleAdminPause error:', err);
     showToast('⚠ Erro ao alterar acesso administrativo: ' + (err.message || err));

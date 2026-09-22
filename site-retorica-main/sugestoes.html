@@ -356,6 +356,21 @@ onAuthStateChanged(auth, async user => {
     const firstName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || 'Visitante';
     document.getElementById('navUser').textContent       = `🎸 ${firstName}`;
     document.getElementById('navUserMobile').textContent = `🎸 ${firstName}`;
+
+    if (user.email && approved) {
+      try {
+        const cleanEmail = user.email.toLowerCase().trim();
+        const snapM = await getDocs(collection(db, 'members'));
+        for (const d of snapM.docs) {
+          const data = d.data() || {};
+          const mEmail = (data.ownerEmail || '').toLowerCase().trim();
+          if (mEmail === cleanEmail && (!data.ownerUid || data.ownerUid !== user.uid)) {
+            updateDoc(doc(db, 'members', d.id), { ownerUid: user.uid }).catch(() => {});
+            break;
+          }
+        }
+      } catch (e) {}
+    }
   } else {
     isLoggedIn = false;
     isMember   = false;
@@ -841,21 +856,74 @@ window.addEventListener('load', () => {
 // --- SUGGESTIONS LOGIC ---
 let suggestionsCache = [];
 let membersCount = 6;
+let activeMemberUids = new Set();
+let activeMemberEmails = new Set();
 
 async function refreshMembersCount() {
   try {
-    const snap = await getDocs(collection(db, 'members'));
-    if (!snap.empty) membersCount = snap.size;
-  } catch (e) {}
+    const [snap, pausedDoc] = await Promise.all([
+      getDocs(collection(db, 'members')),
+      getDoc(doc(db, 'config', 'pausedAdmins')).catch(() => null)
+    ]);
+    const pausedEmails = new Set();
+    if (pausedDoc && pausedDoc.exists()) {
+      const pData = pausedDoc.data() || {};
+      (pData.emails || []).forEach(e => { if (e) pausedEmails.add(String(e).toLowerCase().trim()); });
+      if (pData.pausedMap && typeof pData.pausedMap === 'object') {
+        Object.entries(pData.pausedMap).forEach(([e, val]) => {
+          if (val === true || (val && typeof val === 'object' && val.paused === true)) {
+            pausedEmails.add(String(e).toLowerCase().trim());
+          }
+        });
+      }
+    }
+    const uids = new Set();
+    const emails = new Set();
+    let count = 0;
+    snap.forEach(d => {
+      const data = d.data() || {};
+      const em = (data.ownerEmail || '').toLowerCase().trim();
+      const isPaused = data.adminPaused === true || data.isPaused === true || (em && pausedEmails.has(em));
+      if (!isPaused) {
+        count++;
+        if (data.ownerUid) uids.add(data.ownerUid);
+        if (em) emails.add(em);
+      }
+    });
+    activeMemberUids = uids;
+    activeMemberEmails = emails;
+    if (count > 0) membersCount = count;
+  } catch (e) {
+    console.warn('Erro ao atualizar contagem de membros ativos:', e);
+  }
+}
+
+function computeActiveSuggestionVotes(s) {
+  if (!s) return { likes: 0, dislikes: 0 };
+  const voterMap = s.voterMap;
+  if (voterMap && (activeMemberUids.size > 0 || activeMemberEmails.size > 0)) {
+    let likes = 0;
+    let dislikes = 0;
+    for (const [k, v] of Object.entries(voterMap)) {
+      const isActive = activeMemberUids.has(k) || activeMemberEmails.has(String(k).toLowerCase());
+      if (isActive) {
+        if (v === 'like') likes++;
+        else if (v === 'dislike') dislikes++;
+      }
+    }
+    return { likes, dislikes };
+  }
+  return { likes: s.likes || 0, dislikes: s.dislikes || 0 };
 }
 
 function getSuggestionScore(s) {
-  return (s.likes||0) - (s.dislikes||0);
+  const { likes, dislikes } = computeActiveSuggestionVotes(s);
+  return likes - dislikes;
 }
 
 async function loadSuggestionsSnapshot(force = false) {
   if (suggestionsLoaded && !force) return;
-  refreshMembersCount();
+  await refreshMembersCount();
   const snap = await getDocs(query(collection(db,'suggestions'), orderBy('createdAt','desc')));
   suggestionsCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
   suggestionsLoaded = true;
@@ -978,13 +1046,16 @@ function renderSuggestions() {
   const sorted = filtered.sort((a,b) => {
     const sa = getSuggestionScore(a.data), sb = getSuggestionScore(b.data);
     if (sb !== sa) return sb - sa;
-    return (b.data.likes||0) - (a.data.likes||0);
+    const aVotes = computeActiveSuggestionVotes(a.data);
+    const bVotes = computeActiveSuggestionVotes(b.data);
+    return (bVotes.likes || 0) - (aVotes.likes || 0);
   });
 
   const trophies = ['🥇','🥈','🥉'];
 
   list.innerHTML = sorted.map(({id, data: s}, i) => {
     const score     = getSuggestionScore(s);
+    const { likes: activeLikes, dislikes: activeDislikes } = computeActiveSuggestionVotes(s);
     const myVote    = uid && s.voterMap ? s.voterMap[uid] : null;
     const rankClass = currentSuggestionFilter === 'all' && i < 3 ? ` rank-${i+1}` : '';
     const trophy    = currentSuggestionFilter === 'all' && i < 3 ? `<span class="suggestion-trophy">${trophies[i]}</span>` : `<span class="suggestion-rank">${i+1}</span>`;
@@ -994,7 +1065,8 @@ function renderSuggestions() {
       isTie = sorted.some((other, idx) => {
         if (idx === i) return false;
         if (idx >= 3) return false;
-        return getSuggestionScore(other.data) === score && (other.data.likes || 0) === (s.likes || 0);
+        const otherVotes = computeActiveSuggestionVotes(other.data);
+        return getSuggestionScore(other.data) === score && otherVotes.likes === activeLikes;
       });
     }
 
@@ -1002,14 +1074,14 @@ function renderSuggestions() {
       onclick="voteSuggestion('${id}','like')"
       ${!isMember?'disabled title="Acesso restrito a membros"':''}
       title="${myVote==='like'?'Remover like':'Curtir'}">
-      👍 <span class="score-num">${s.likes||0}</span>
+      👍 <span class="score-num">${activeLikes}</span>
     </button>`;
 
     const dislikeBtn = `<button class="vote-btn${myVote==='dislike'?' disliked':''}"
       onclick="voteSuggestion('${id}','dislike')"
       ${!isMember?'disabled title="Acesso restrito a membros"':''}
       title="${myVote==='dislike'?'Remover dislike':'Não curtir'}">
-      👎 <span class="score-num">${s.dislikes||0}</span>
+      👎 <span class="score-num">${activeDislikes}</span>
     </button>`;
 
     const rmBtn = isAuditAdmin ? `<button class="btn-ghost btn-sm" onclick="removeSuggestion('${id}')" title="Excluir sugestão (Apenas Administrador)">✕</button>` : '';
@@ -1033,6 +1105,7 @@ function renderSuggestions() {
 
 window.voteSuggestion = async (id, type) => {
   if (!isMember) { showToast('⚠ Acesso restrito a membros'); return; }
+  if (isAdminPaused) { showToast('⚠ Acesso pausado. Modo somente visualização.'); return; }
   const uid  = auth.currentUser?.uid;
   const snap = await getDoc(doc(db,'suggestions',id));
   if (!snap.exists()) return;
@@ -1047,8 +1120,23 @@ window.voteSuggestion = async (id, type) => {
     voterMap[uid] = type;
   }
 
-  const likes = Object.values(voterMap).filter(v => v === 'like').length;
-  const dislikes = Object.values(voterMap).filter(v => v === 'dislike').length;
+  if (activeMemberUids.size === 0 && activeMemberEmails.size === 0) {
+    await refreshMembersCount();
+  }
+
+  // Calcula likes e dislikes considerando exclusivamente os membros ativos
+  // O voterMap preserva o histórico de todos os votantes (ativos e inativos)
+  let likes = 0;
+  let dislikes = 0;
+  for (const [k, v] of Object.entries(voterMap)) {
+    const isActive = (activeMemberUids.size > 0 || activeMemberEmails.size > 0)
+      ? (activeMemberUids.has(k) || activeMemberEmails.has(String(k).toLowerCase()))
+      : true;
+    if (isActive) {
+      if (v === 'like') likes++;
+      else if (v === 'dislike') dislikes++;
+    }
+  }
 
   const totalBandMembers = Math.max(2, membersCount || 6);
   const dislikeThreshold = Math.max(2, Math.ceil(totalBandMembers / 2));
@@ -1057,7 +1145,7 @@ window.voteSuggestion = async (id, type) => {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes (maioria dos ${totalBandMembers} membros)`,
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes (maioria dos ${totalBandMembers} membros ativos)`,
       song: s.song, artist: s.artist, by: s.by, likes, dislikes,
       voterMap,
       reason: `Atingiu o limite de ${dislikeThreshold} dislikes`, removedBy: 'Sistema',
