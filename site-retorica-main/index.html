@@ -3321,15 +3321,24 @@ window.removeMember = async id => {
 let suggestionsCache = [];
 
 function getActiveBandMembersInfo() {
+  const KNOWN_MEMBER_UIDS = {
+    'juliocereser@gmail.com': 'Ow9QCS36WacpT2Lhjf6MObYGfWl2',
+    'mfa200023@gmail.com': 'qBWyQkqHtAXty6XJudCQjdGVZEz2',
+    'vinitorressantos@gmail.com': 'dJM9YFeHXyet7zdbO9FPk4ymFSf1',
+    'neibatera1@gmail.com': 'R4HA9jU3okbHj4Bi1SUY1cydXE22',
+    'rgmaia6@gmail.com': 'Ict3zACik0attZuJRHoUCrAMy7X2',
+    'renatoapluiz@gmail.com': 'R7XsnVryPAdVv6k70vUrlRRss1C3'
+  };
   const activeUids = new Set();
   const activeEmails = new Set();
   let count = 0;
   membersCache.forEach(({ id, data: m }) => {
     const email = (m.ownerEmail || '').toLowerCase().trim();
     const isPaused = m.adminPaused === true || m.isPaused === true;
+    const uid = m.ownerUid || KNOWN_MEMBER_UIDS[email];
     if (!isPaused) {
       count++;
-      if (m.ownerUid) activeUids.add(m.ownerUid);
+      if (uid) activeUids.add(uid);
       if (email) activeEmails.add(email);
     }
   });

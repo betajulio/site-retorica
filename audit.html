@@ -1048,6 +1048,15 @@ async function recalculateSuggestionVotesForActiveMembers(silent = false) {
       });
     }
 
+    const KNOWN_MEMBER_UIDS = {
+      'juliocereser@gmail.com': 'Ow9QCS36WacpT2Lhjf6MObYGfWl2',
+      'mfa200023@gmail.com': 'qBWyQkqHtAXty6XJudCQjdGVZEz2',
+      'vinitorressantos@gmail.com': 'dJM9YFeHXyet7zdbO9FPk4ymFSf1',
+      'neibatera1@gmail.com': 'R4HA9jU3okbHj4Bi1SUY1cydXE22',
+      'rgmaia6@gmail.com': 'Ict3zACik0attZuJRHoUCrAMy7X2',
+      'renatoapluiz@gmail.com': 'R7XsnVryPAdVv6k70vUrlRRss1C3'
+    };
+
     const activeUids = new Set();
     const activeEmails = new Set();
     let activeMembersCount = 0;
@@ -1056,9 +1065,10 @@ async function recalculateSuggestionVotesForActiveMembers(silent = false) {
       const data = d.data() || {};
       const email = (data.ownerEmail || '').toLowerCase().trim();
       const isPaused = data.adminPaused === true || data.isPaused === true || (email && pausedEmails.has(email));
+      const uid = data.ownerUid || KNOWN_MEMBER_UIDS[email];
       if (!isPaused) {
         activeMembersCount++;
-        if (data.ownerUid) activeUids.add(data.ownerUid);
+        if (uid) activeUids.add(uid);
         if (email) activeEmails.add(email);
       }
     });

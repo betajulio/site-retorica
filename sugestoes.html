@@ -877,6 +877,14 @@ async function refreshMembersCount() {
         });
       }
     }
+    const KNOWN_MEMBER_UIDS = {
+      'juliocereser@gmail.com': 'Ow9QCS36WacpT2Lhjf6MObYGfWl2',
+      'mfa200023@gmail.com': 'qBWyQkqHtAXty6XJudCQjdGVZEz2',
+      'vinitorressantos@gmail.com': 'dJM9YFeHXyet7zdbO9FPk4ymFSf1',
+      'neibatera1@gmail.com': 'R4HA9jU3okbHj4Bi1SUY1cydXE22',
+      'rgmaia6@gmail.com': 'Ict3zACik0attZuJRHoUCrAMy7X2',
+      'renatoapluiz@gmail.com': 'R7XsnVryPAdVv6k70vUrlRRss1C3'
+    };
     const uids = new Set();
     const emails = new Set();
     let count = 0;
@@ -884,9 +892,10 @@ async function refreshMembersCount() {
       const data = d.data() || {};
       const em = (data.ownerEmail || '').toLowerCase().trim();
       const isPaused = data.adminPaused === true || data.isPaused === true || (em && pausedEmails.has(em));
+      const uid = data.ownerUid || KNOWN_MEMBER_UIDS[em];
       if (!isPaused) {
         count++;
-        if (data.ownerUid) uids.add(data.ownerUid);
+        if (uid) uids.add(uid);
         if (em) emails.add(em);
       }
     });
