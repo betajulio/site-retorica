@@ -2895,10 +2895,22 @@ function renderMembersFromCache() {
 
 async function loadMembersSnapshot(force = false) {
   if (membersLoaded && !force) return;
-  const snap = await getDocs(query(collection(db,'members'), orderBy('createdAt','asc')));
-  membersCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
-  membersLoaded = true;
-  renderMembersFromCache();
+  try {
+    const snap = await getDocs(collection(db, 'members'));
+    membersCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+    membersCache.sort((a, b) => {
+      const orderA = typeof a.data.displayOrder === 'number' ? a.data.displayOrder : (typeof a.data.order === 'number' ? a.data.order : 999);
+      const orderB = typeof b.data.displayOrder === 'number' ? b.data.displayOrder : (typeof b.data.order === 'number' ? b.data.order : 999);
+      if (orderA !== orderB) return orderA - orderB;
+      const timeA = a.data.createdAt?.toMillis ? a.data.createdAt.toMillis() : (a.data.createdAt?.seconds || 0);
+      const timeB = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : (b.data.createdAt?.seconds || 0);
+      return timeA - timeB;
+    });
+    membersLoaded = true;
+    renderMembersFromCache();
+  } catch (err) {
+    console.error('loadMembersSnapshot error:', err);
+  }
 }
 
 // Comprime imagem para max 800px e qualidade 0.75 — evita estourar o limite de 1MB do Firestore
@@ -3268,7 +3280,8 @@ window.saveMember = async () => {
       await writeLog('Membro editado', `${name} (${instruments.join(', ')})`, 'membros');
       showToast(`✓ ${name} atualizado!`);
     } else {
-      await addDoc(collection(db,'members'), {...data, createdAt:serverTimestamp()});
+      const maxOrder = membersCache.reduce((max, m) => Math.max(max, typeof m.data?.displayOrder === 'number' ? m.data.displayOrder : (typeof m.data?.order === 'number' ? m.data.order : -1)), -1);
+      await addDoc(collection(db,'members'), {...data, displayOrder: maxOrder + 1, order: maxOrder + 1, createdAt:serverTimestamp()});
       if (ownerEmail) {
         await setDoc(doc(db, 'approved_emails', ownerEmail.toLowerCase().trim()), {
           addedAt: serverTimestamp(),
