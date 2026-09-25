@@ -6880,7 +6880,7 @@ async function createRepertoryPoll(suggestion, lockToken = null) {
     question: `🎸 ${suggestion.data.song} - ${suggestion.data.artist} deve entrar no repertório?`,
     options: [
       { label: '✅ Sim, adicionar ao repertório', votes: 0 },
-      { label: '❌ Não, manter em sugestões', votes: 0 }
+      { label: '❌ Não, descartar música', votes: 0 }
     ],
     createdAt: serverTimestamp(),
     deadline: endDate.toISOString(),
@@ -7014,24 +7014,12 @@ async function completeRepertoryPoll(pollId, pollData) {
       logAdminAction(`Música adicionada ao repertório via votação: ${title}`);
     }
   } else {
-    // REPROVADA: recriar como sugestão
+    // REPROVADA: descartar completamente
     const title = pollData.question.match(/🎸 (.+) deve entrar/)?.[1] || '';
-    const [songTitle, artist] = title.split(' - ');
-    
-    await addDoc(collection(db, 'suggestions'), {
-      song: songTitle?.trim() || '',
-      artist: artist?.trim() || '',
-      by: 'Sistema',
-      createdAt: serverTimestamp(),
-      likes: 0,
-      dislikes: 0,
-      likedBy: [],
-      dislikedBy: [],
-      voterMap: {}
-    });
-    await refreshSuggestionsIfNeeded();
-    
-    showToast('📋 Música retornou às sugestões para nova oportunidade.');
+    showToast(`❌ Música não aprovada na enquete e descartada definitivamente: ${title}`);
+    if (typeof logAdminAction === 'function') {
+      logAdminAction(`Música reprovada na enquete de repertório e descartada definitivamente: ${title}`);
+    }
   }
   
   // Agendar próxima promoção

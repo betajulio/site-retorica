@@ -1011,7 +1011,7 @@ def create_repertory_poll_backend(db, suggestion_doc):
         "question": f"🎸 {data.get('song', 'Música')} - {data.get('artist', 'Artista')} deve entrar no repertório?",
         "options": [
             {"label": "✅ Sim, adicionar ao repertório", "votes": 0},
-            {"label": "❌ Não, manter em sugestões", "votes": 0}
+            {"label": "❌ Não, descartar música", "votes": 0}
         ],
         "createdAt": firestore.SERVER_TIMESTAMP,
         "deadline": end_date.astimezone(ZoneInfo("UTC")).isoformat(),
@@ -1081,33 +1081,23 @@ def apply_repertory_poll_result(db, poll, poll_id=None):
                 pass
         return "approved"
 
-    # Se NÃO foi aprovada (Não > Sim ou Empate):
-    # Antes de recriar como sugestão, certificar de que a música NÃO existe no repertório
-    rep_exists = False
-    for rep_doc in db.collection("repertorio").stream():
-        rd = rep_doc.to_dict() or {}
-        if slugify_text(rd.get("song", "")) == norm_song:
-            rep_exists = True
-            break
+    # Se NÃO foi aprovada (Não >= Sim ou Empate):
+    # Política atualizada: descartar completamente!
+    # NÃO recria em suggestions e elimina qualquer documento remanescente da música
+    suggestion_id = poll.get("suggestionId")
+    if suggestion_id:
+        try:
+            db.collection("suggestions").document(str(suggestion_id)).delete()
+        except Exception:
+            pass
 
-    # E verificar se já não existe em sugestões
-    sug_exists = False
     for sug_doc in db.collection("suggestions").stream():
         sd = sug_doc.to_dict() or {}
         if slugify_text(sd.get("song", "")) == norm_song:
-            sug_exists = True
-            break
-
-    if not rep_exists and not sug_exists:
-        db.collection("suggestions").document().set({
-            "song": song_title,
-            "artist": artist,
-            "by": "Sistema",
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "likes": 0,
-            "dislikes": 0,
-            "voterMap": {}
-        })
+            try:
+                sug_doc.reference.delete()
+            except Exception:
+                pass
 
     if poll_id:
         try:
@@ -1132,9 +1122,9 @@ def build_repertory_result_message(poll):
     if yes_votes > no_votes:
         verdict = "✅ *APROVADA!* Entrou para o repertório."
     elif no_votes > yes_votes:
-        verdict = "❌ *REPROVADA.* Voltou para sugestões."
+        verdict = "❌ *REPROVADA.* Música descartada definitivamente."
     else:
-        verdict = "⚖️ *EMPATE.* Mantida em sugestões por segurança."
+        verdict = "⚖️ *EMPATE (NÃO APROVADA).* Música descartada definitivamente."
     return (
         f"🏁 *ENQUETE DE REPERTÓRIO ENCERRADA!*\n\n"
         f"🎵 *Música:* {song_and_artist}\n"
