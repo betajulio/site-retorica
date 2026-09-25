@@ -714,16 +714,45 @@ def get_active_band_members(db):
     except Exception as e:
         print(f"Aviso ao consultar config/pausedAdmins: {e}")
 
+    CANONICAL_MEMBER_EMAILS = {
+        'julio': 'juliocereser@gmail.com',
+        'matheus': 'mfa200023@gmail.com',
+        'vini': 'vinitorressantos@gmail.com',
+        'vinicius': 'vinitorressantos@gmail.com',
+        'nei': 'neibatera1@gmail.com',
+        'roni': 'rgmaia6@gmail.com',
+        'renato': 'renatoapluiz@gmail.com'
+    }
+
+    KNOWN_MEMBER_UIDS = {
+        'juliocereser@gmail.com': 'Ow9QCS36WacpT2Lhjf6MObYGfWl2',
+        'mfa200023@gmail.com': 'qBWyQkqHtAXty6XJudCQjdGVZEz2',
+        'vinitorressantos@gmail.com': 'dJM9YFeHXyet7zdbO9FPk4ymFSf1',
+        'neibatera1@gmail.com': 'R4HA9jU3okbHj4Bi1SUY1cydXE22',
+        'rgmaia6@gmail.com': 'Ict3zACik0attZuJRHoUCrAMy7X2',
+        'renatoapluiz@gmail.com': 'R7XsnVryPAdVv6k70vUrlRRss1C3'
+    }
+
+    def resolve_member_email(name="", explicit_email=""):
+        if explicit_email:
+            return explicit_email.strip().lower()
+        norm = unicodedata.normalize('NFKD', str(name or "")).encode('ascii', 'ignore').decode('ascii').lower()
+        for key, mail in CANONICAL_MEMBER_EMAILS.items():
+            if key in norm:
+                return mail
+        return ""
+
     try:
         members_snap = db.collection("members").get()
         active_members = []
         for doc in members_snap:
             d = doc.to_dict() or {}
-            email = (d.get("ownerEmail") or d.get("email") or "").strip().lower()
-            name = (d.get("name") or doc.id).strip()
-            uid = d.get("ownerUid") or d.get("uid")
+            raw_name = (d.get("name") or doc.id).strip()
+            saved_email = (d.get("ownerEmail") or d.get("email") or "").strip().lower()
+            email = resolve_member_email(raw_name, saved_email) or resolve_member_email(doc.id, "")
+            uid = d.get("ownerUid") or d.get("uid") or (KNOWN_MEMBER_UIDS.get(email) if email else None)
 
-            # Verifica se o membro está pausado/desativado
+            # Verifica se o membro está pausado/desativado (no doc do membro ou em pausedAdmins)
             is_paused = (
                 d.get("adminPaused") is True
                 or d.get("isPaused") is True
@@ -743,7 +772,7 @@ def get_active_band_members(db):
 
             active_members.append({
                 "id": doc.id,
-                "name": name,
+                "name": raw_name,
                 "email": email,
                 "uid": uid
             })
@@ -763,82 +792,92 @@ def get_active_band_members(db):
                 "id": em,
                 "name": em.split("@")[0].title(),
                 "email": em,
-                "uid": None
+                "uid": KNOWN_MEMBER_UIDS.get(em)
             })
     return fallback
 
 def build_pending_votes_report_message(db):
     try:
         active_members = get_active_band_members(db)
-        total_members = len(active_members)
-        if total_members == 0:
-            total_members = 6
+        if not active_members:
+            return None
 
         suggestions = get_sorted_suggestions(db)
         if not suggestions:
             return None
 
-        # Mapeamentos para identificar membros ativos que já votaram
-        uid_to_member = {}
-        email_to_member = {}
+        total_suggs = len(suggestions)
+
+        # Mapeamento e cálculo de votos de sugestões por membro
+        member_stats = []
         for m in active_members:
-            if m.get("uid"):
-                uid_to_member[m["uid"]] = m
-            if m.get("email"):
-                email_to_member[m["email"]] = m
+            m_uid = m.get("uid")
+            m_email = (m.get("email") or "").lower().strip()
+            raw_name = m.get("name") or m.get("id") or "Membro"
+            short_name = raw_name.split()[0].title()
 
-        pending_items = []
-        for doc in suggestions:
-            s = doc.to_dict() or {}
-            song = (s.get("song") or "Música").strip()
-            artist = (s.get("artist") or "").strip()
-            voter_map = s.get("voterMap") or {}
+            voted_count = 0
+            for doc in suggestions:
+                s = doc.to_dict() or {}
+                voter_map = s.get("voterMap") or {}
 
-            # Descobre quais membros ATIVOS já votaram nesta sugestão
-            voted_active_ids = set()
-            for key in voter_map.keys():
-                if key in uid_to_member:
-                    voted_active_ids.add(uid_to_member[key]["id"])
-                elif key.lower() in email_to_member:
-                    voted_active_ids.add(email_to_member[key.lower()]["id"])
+                # Checa se o membro votou nesta sugestão (por UID ou por e-mail)
+                has_voted = False
+                if m_uid and m_uid in voter_map:
+                    has_voted = True
+                elif m_email:
+                    for k in voter_map.keys():
+                        if str(k).lower().strip() == m_email:
+                            has_voted = True
+                            break
 
-            # Membros ativos que ainda NÃO votaram nesta música específica
-            missing_members = [m for m in active_members if m["id"] not in voted_active_ids]
-            not_voted_count = len(missing_members)
+                if has_voted:
+                    voted_count += 1
 
-            # Se todos os membros ativos votaram, not_voted_count é 0 -> música completa!
-            if not_voted_count > 0:
-                pending_items.append({
-                    "song": song,
-                    "artist": artist,
-                    "not_voted_count": not_voted_count,
-                    "missing_names": [m["name"].split()[0] for m in missing_members],
-                    "score": get_suggestion_score(s)
-                })
+            pending_count = max(0, total_suggs - voted_count)
+            member_stats.append({
+                "id": m.get("id"),
+                "name": short_name,
+                "voted": voted_count,
+                "pending": pending_count,
+                "total": total_suggs
+            })
 
-        pending_items.sort(key=lambda x: (x["not_voted_count"], x["score"]), reverse=True)
+        # Ordena do integrante com MAIS pendências (lanterna) para quem tem MENOS
+        # Critério secundário: quem votou em menos músicas
+        member_stats.sort(key=lambda x: (x["pending"], -x["voted"]), reverse=True)
 
         lines = [
-            "🎸 *SUGESTÕES PENDENTES DE VOTO* 🗳️",
+            "🎸 *RANKING DE VOTOS PENDENTES* 🗳️",
+            f"📋 *Total de sugestões ativas:* {total_suggs} {'música' if total_suggs == 1 else 'músicas'}",
             ""
         ]
 
-        if not pending_items:
-            lines.append(f"🎉 *Todas as sugestões estão 100% votadas pelos {total_members} membros da banda!*")
+        # Se todos os membros já votaram em todas as sugestões
+        if all(m["pending"] == 0 for m in member_stats):
+            lines.append(f"🎉 *Parabéns, banda! Todos os {len(member_stats)} integrantes votaram em 100% das sugestões!*")
         else:
-            for item in pending_items:
-                c = item["not_voted_count"]
-                falta_label = f"falta {c}" if c == 1 else f"faltam {c}"
-                names_str = f" ({falta_label}: {', '.join(item['missing_names'])})" if item.get("missing_names") else f" ({falta_label})"
-                artist = item.get("artist", "").strip()
-                title = f"*{item['song']}* – {artist}" if artist else f"*{item['song']}*"
-                lines.append(f"▪️ {title}{names_str}")
+            rank_emojis = ["🪫", "💤", "⚠️", "⚡", "👍", "👏"]
+            for idx, m in enumerate(member_stats):
+                pos = f"{idx + 1}º"
+                name = m["name"]
+                pending = m["pending"]
+                voted = m["voted"]
+                total = m["total"]
+
+                if pending == 0:
+                    lines.append(f"{pos} 🎉 *{name}* · 100% votado! (0 pendentes)")
+                elif pending == 1:
+                    lines.append(f"{pos} ⚡ *{name}* · Falta apenas 1 música (votou em {voted}/{total})")
+                else:
+                    emoji = rank_emojis[idx] if idx < len(rank_emojis) else "⚠️"
+                    lines.append(f"{pos} {emoji} *{name}* · {pending} músicas sem votar (votou em {voted}/{total})")
 
         lines.append("")
         lines.append(f"💡 *Veja e vote nas sugestões:* {SUGGESTIONS_URL}")
         return "\n".join(lines).strip()
     except Exception as exc:
-        print(f"Erro ao construir report de votos pendentes: {type(exc).__name__}: {exc}")
+        print(f"Erro ao construir ranking de votos pendentes: {type(exc).__name__}: {exc}")
         return None
 
 def build_weekly_member_ranking_message(db):
