@@ -167,9 +167,21 @@
   .auth-boot-status span:last-child{color:var(--gold)}
   @keyframes psxSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   @keyframes psxLoad{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
-  nav{height:60px;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(10,8,4,.98),rgba(10,8,4,.85));border-bottom:1px solid rgba(200,130,10,.3);position:sticky;top:0;z-index:10}
-  .nav-logo{font-family:'Cinzel',serif;font-size:1.15rem;font-weight:900;color:var(--gold);letter-spacing:.15em;text-decoration:none}
-  .nav-back{font-family:'Cinzel',serif;font-size:.72rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:1px solid rgba(200,130,10,.3);padding:.42rem .8rem}
+  nav{height:60px;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(10,8,4,.98),rgba(10,8,4,.85));border-bottom:1px solid rgba(200,130,10,.3);position:sticky;top:0;z-index:1000}
+  .nav-logo{font-family:'Cinzel',serif;font-size:1.25rem;font-weight:900;color:var(--gold);letter-spacing:.15em;text-decoration:none;flex-shrink:0}
+  .nav-links{display:flex;list-style:none;gap:.2rem;align-items:center}
+  .nav-links a{color:var(--paper);text-decoration:none;font-family:'Lora',serif;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .55rem;transition:color .2s;cursor:pointer;white-space:nowrap}
+  .nav-links a:hover{color:var(--gold)}
+  .nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:.4rem;flex-direction:column;gap:5px;z-index:1001}
+  .nav-hamburger span{display:block;width:22px;height:2px;background:var(--gold);border-radius:1px;transition:all .3s}
+  .nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .nav-hamburger.open span:nth-child(2){opacity:0}
+  .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .nav-mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;background:rgba(10,8,4,.98);border-bottom:1px solid rgba(200,130,10,.3);backdrop-filter:blur(16px);z-index:999;flex-direction:column;padding:.5rem 0}
+  .nav-mobile-menu.open{display:flex}
+  .nav-mobile-menu a{color:var(--paper);text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;padding:.85rem 1.6rem;border-bottom:1px solid rgba(200,130,10,.08);transition:color .2s;display:flex;align-items:center;justify-content:space-between}
+  .nav-mobile-menu a:last-child{border-bottom:none}
+  .nav-mobile-menu a:hover{color:var(--gold);background:rgba(200,130,10,.05)}
   main{max-width:1120px;margin:0 auto;padding:2.5rem 1.3rem 4rem}
   .page-title{font-family:'Cinzel',serif;font-size:2rem;color:var(--cream);margin-bottom:.35rem}
   .page-sub{font-size:.86rem;color:var(--smoke);font-style:italic;line-height:1.6;max-width:760px}
@@ -233,8 +245,8 @@
   .sched-last-run{font-size:.68rem;color:var(--smoke);font-style:italic}
   .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1)}
   .member-order-item.drag-over{border-color:var(--gold)!important;background:rgba(200,130,10,.25)!important;transform:scale(1.008)}
-  .member-order-item.dragging{opacity:.4;filter:grayscale(60%)}
-  @media(max-width:760px){nav{padding:0 0.8rem}.nav-logo{font-size:.78rem!important;letter-spacing:.05em!important}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}.page-title{font-size:1.45rem}th,td{font-size:.72rem;padding:.48rem}.toolbar{align-items:stretch}.toolbar button{width:100%}}
+  @media(max-width:960px){.nav-links{display:none}.nav-hamburger{display:flex}nav{padding:0 1rem}}
+  @media(max-width:760px){.nav-logo{font-size:.85rem!important;letter-spacing:.06em!important}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}.page-title{font-size:1.45rem}th,td{font-size:.72rem;padding:.48rem}.toolbar{align-items:stretch}.toolbar button{width:100%}}
   @media(max-width:380px){.nav-logo{font-size:.68rem!important;letter-spacing:.03em!important}}
 </style>
 <link rel="apple-touch-icon" href="imagens/logo_not_zap.jpg">
@@ -264,8 +276,35 @@
 
 <nav>
   <a class="nav-logo" href="index.html">Retórica</a>
-  <a class="nav-back" href="index.html">Voltar ao site</a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="sugestoes.html">Sugestões</a></li>
+    <li><a href="enquetes.html">Enquetes</a></li>
+    <li><a href="setlist.html">Setlist</a></li>
+    <li><a href="repertorio.html">Repertório</a></li>
+    <li><a href="galeria.html">Galeria</a></li>
+    <li><a href="noticias.html">Notícias</a></li>
+    <li><a href="regras.html" style="color:var(--gold)">📜 Regras</a></li>
+    <li><a href="logs.html" style="color:var(--amber)">⚡ Admin</a></li>
+    <li><a href="audit.html" style="color:var(--gold);font-weight:bold;border-bottom:2px solid var(--gold)">🛡️ Auditoria</a></li>
+  </ul>
+  <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()" aria-label="Abrir Menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<div class="nav-mobile-menu" id="navMobileMenu">
+  <a href="index.html">Home</a>
+  <a href="sugestoes.html">Sugestões</a>
+  <a href="enquetes.html">Enquetes</a>
+  <a href="setlist.html">Setlist de Ensaio</a>
+  <a href="repertorio.html">Repertório</a>
+  <a href="galeria.html">Galeria</a>
+  <a href="noticias.html">Notícias</a>
+  <a href="regras.html" style="color:var(--gold)">📜 Regras da Banda</a>
+  <a href="logs.html" style="color:var(--amber)">⚡ Portal Admin</a>
+  <a href="audit.html" style="color:var(--gold);font-weight:bold">🛡️ Auditoria</a>
+</div>
 
 <main>
   <div class="page-title">Auditoria de Leituras</div>
@@ -3554,6 +3593,20 @@ window.saveBandRulesFromAudit = async () => {
   }
 };
 
+// --- NAVIGATION MOBILE ---
+window.toggleMobileMenu = () => {
+  const menu = document.getElementById('navMobileMenu');
+  const btn = document.getElementById('navHamburger');
+  if (menu) menu.classList.toggle('open');
+  if (btn) btn.classList.toggle('open');
+};
+
+window.closeMobileMenu = () => {
+  const menu = document.getElementById('navMobileMenu');
+  const btn = document.getElementById('navHamburger');
+  if (menu) menu.classList.remove('open');
+  if (btn) btn.classList.remove('open');
+};
 </script>
 </body>
 </html>
