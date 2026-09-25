@@ -1979,7 +1979,7 @@ def admin_trigger_top_suggestions(req: https_fn.Request) -> https_fn.Response:
         if not msg:
             return json_response({"ok": True, "message": "Nenhuma sugestão cadastrada."}, 200)
         
-        result = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Top 3 Sugestões 🎵")
+        result = send_wa_message(msg)
         return json_response({"ok": result.get("ok"), "detail": result.get("detail"), "msg": msg}, 200 if result.get("ok") else 500)
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
@@ -2839,7 +2839,7 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
         try:
             msg = build_top_suggestions_message(db)
             if msg:
-                result = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Top 3 Sugestões 🎵")
+                result = send_wa_message(msg)
             else:
                 result = {"ok": False, "detail": "Nenhuma sugestão encontrada para montar o Top 3."}
             update_log_delivery_status(db, log_id, "sent" if result["ok"] else "failed", result["detail"])
@@ -3032,7 +3032,7 @@ def daily_top_suggestions(event: scheduler_fn.ScheduledEvent) -> None:
         if not msg:
             print("[TOP SUGESTÕES] Nenhuma sugestão encontrada no momento.")
             return
-        result = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Top 3 Sugestões 🎵")
+        result = send_wa_message(msg)
         print(f"[TOP SUGESTÕES] Disparo enviado: {result}")
     except Exception as exc:
         print(f"[TOP SUGESTÕES] Erro durante disparo: {type(exc).__name__}: {exc}")
@@ -3114,7 +3114,7 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                     if key == "top_suggestions":
                         msg = build_top_suggestions_message(db)
                         if msg:
-                            r = send_wa_notification_with_logo(msg, db, separate_image=True, image_caption="🎸 Retórica — Top 3 Sugestões 🎵")
+                            r = send_wa_message(msg)
                             result_ok = r.get("ok", False)
                             detail = r.get("detail", "")
                     elif key == "pending_votes_report":
