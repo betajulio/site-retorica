@@ -212,6 +212,31 @@
   .export-note{margin-top:.7rem;color:var(--smoke);font-size:.75rem;font-style:italic;line-height:1.5}
   .muted{color:var(--smoke);font-size:.78rem;font-style:italic}
   .hidden{display:none!important}
+  /* SCROLL ANCHOR OFFSET */
+  [id^="sec-"]{scroll-margin-top:110px}
+
+  /* AUDIT QUICK NAV */
+  .audit-quick-nav{display:flex;gap:.45rem;overflow-x:auto;padding:.65rem .3rem;margin:1rem 0 1.6rem;scrollbar-width:thin;position:sticky;top:60px;z-index:95;background:rgba(10,8,4,.94);backdrop-filter:blur(12px);border-bottom:1px solid rgba(200,130,10,.25);border-radius:2px}
+  .audit-quick-nav::-webkit-scrollbar{height:4px}
+  .audit-quick-nav::-webkit-scrollbar-thumb{background:rgba(200,130,10,.3);border-radius:2px}
+  .audit-quick-btn{background:rgba(255,255,255,.03);border:1px solid rgba(200,130,10,.24);color:var(--paper);padding:.4rem .75rem;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;border-radius:2px;white-space:nowrap;transition:all .18s;display:inline-flex;align-items:center;gap:.35rem;flex-shrink:0}
+  .audit-quick-btn:hover{background:rgba(200,130,10,.16);border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}
+
+  /* ADMIN CARDS & SECTIONS */
+  .admin-card-section{background:linear-gradient(135deg,rgba(32,22,12,.88),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.28);border-radius:3px;padding:1.25rem;margin-bottom:1.4rem;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .admin-card-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem;margin-bottom:1rem}
+  .admin-card-title{font-family:'Cinzel',serif;font-size:1.05rem;color:var(--gold);font-weight:700;display:flex;align-items:center;gap:.5rem}
+  .admin-card-sub{font-size:.78rem;color:var(--smoke);margin-top:.25rem;line-height:1.5;max-width:780px}
+  .admin-subgroup{background:rgba(0,0,0,.28);border:1px solid rgba(200,130,10,.12);border-radius:2px;padding:.85rem .95rem;margin-bottom:.85rem}
+  .admin-subgroup:last-child{margin-bottom:0}
+  .admin-subgroup-title{font-family:'Cinzel',serif;font-size:.78rem;color:var(--cream);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.65rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem}
+  .admin-subgroup-title span.badge{font-size:.62rem;padding:.15rem .45rem;border-radius:2px;background:rgba(200,130,10,.15);border:1px solid rgba(200,130,10,.3);color:var(--gold)}
+  .admin-btn-grid{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+  
+  /* MEDIA 2-COL CONFIG GRID */
+  .admin-media-config-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.4rem}
+  @media(max-width:860px){.admin-media-config-grid{grid-template-columns:1fr}}
+
   .admin-tools{margin:1.8rem 0 2rem;padding:1.1rem 1.2rem;border:1px solid rgba(248,113,113,.24);background:linear-gradient(135deg,rgba(48,20,14,.76),rgba(22,14,10,.94));border-radius:2px;box-shadow:0 10px 30px rgba(0,0,0,.2),0 0 0 1px rgba(248,113,113,.06) inset}
   .admin-tools-head{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;margin-bottom:1rem}
   .admin-tools-title{font-family:'Cinzel',serif;font-size:1rem;color:#fcd6a5;letter-spacing:.06em}
@@ -319,37 +344,97 @@
   </section>
 
   <section id="auditContent" class="hidden">
-    <div class="admin-tools">
-      <div class="admin-tools-head">
+    <!-- SUB-NAV / QUICK JUMP HUB -->
+    <div class="audit-quick-nav">
+      <a href="#sec-tools" class="audit-quick-btn">⚡ Ações Rápidas</a>
+      <a href="#sec-visual" class="audit-quick-btn">🎨 Temas & Visual</a>
+      <a href="#sec-media" class="audit-quick-btn">⚙️ Mídia</a>
+      <a href="#sec-order" class="audit-quick-btn">🎸 Ordem na Home</a>
+      <a href="#sec-votes" class="audit-quick-btn">🗳️ Votos Pendentes</a>
+      <a href="#sec-members" class="audit-quick-btn">👥 Membros & ADM</a>
+      <a href="#sec-schedules" class="audit-quick-btn">⏱ Agendamentos</a>
+      <a href="#sec-album" class="audit-quick-btn">🎥 Álbum Ensaio</a>
+      <a href="#sec-rules" class="audit-quick-btn">📜 Regras da Banda</a>
+      <a href="#sec-reads" class="audit-quick-btn" style="border-color:var(--amber);color:var(--gold)">🛡️ Leituras & Alertas</a>
+    </div>
+
+    <!-- PAINEL 1: AÇÕES RÁPIDAS & MANUTENÇÃO -->
+    <div id="sec-tools" class="admin-card-section" style="border-color:rgba(248,113,113,.28);background:linear-gradient(135deg,rgba(42,20,14,.85),rgba(18,12,8,.96))">
+      <div class="admin-card-head">
         <div>
-          <div class="admin-tools-title">Ferramentas Administrativas</div>
-          <div class="admin-tools-sub">Ações sensíveis ficam aqui para serem acompanhadas junto da auditoria de leituras e alertas em tempo real.</div>
+          <div class="admin-card-title" style="color:#fcd6a5">
+            <span>⚡ Ações Rápidas & Manutenção</span>
+          </div>
+          <div class="admin-card-sub">Rotinas automáticas de limpeza, sincronização de votos e ações críticas para execução imediata.</div>
         </div>
         <div class="admin-tools-warning">⚠ Ações sensíveis</div>
       </div>
-      <div class="admin-tools-grid">
-        <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()">🧹 Varredura: Limpar 3+ dislikes</button>
-        <button class="btn-ghost" style="border-color:#f97316;color:#fdba74" onclick="runDuplicateSuggestionsCleanup()">♻️ Limpar Músicas Duplicadas</button>
-        <button class="btn-ghost" style="border-color:#38bdf8;color:#7dd3fc" onclick="syncSuggestionVotes()">🔄 Sincronizar Votos das Sugestões</button>
-        <button class="btn-ghost" style="border-color:#93c5fd;color:#bfdbfe" onclick="forceTop3Tiebreaker()">⚔️ Forçar desempate Top 3</button>
-        <button id="promotionPauseBtn" class="btn-ghost" style="border-color:#fbbf24;color:#fde68a" onclick="togglePromotionPause()">⏸ Pausar ciclo de sugestões</button>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9" href="index.html?videoFrameDebug=1#galeria">🎛 Ajustar vídeos da galeria</a>
-        <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()">🚫 Cancelar Ensaio</button>
-        <button id="pollReminderPauseBtn" class="btn-ghost" style="border-color:#818cf8;color:#c7d2fe" onclick="togglePollReminderPause()">⏸ Pausar lembretes de enquete</button>
-        <button class="btn-danger" onclick="confirmClearLogs()">🗑 Limpar todos os logs</button>
+
+      <!-- Subgrupo 1: Votação & Sugestões de Músicas -->
+      <div class="admin-subgroup">
+        <div class="admin-subgroup-title">
+          <span>🗳️ Sugestões de Músicas & Votação</span>
+          <span class="badge">Rotinas do Ciclo</span>
+        </div>
+        <div class="admin-btn-grid">
+          <button class="btn-ghost" style="border-color:var(--rust);color:#fca5a5" onclick="runSuggestionsCleanup()" title="Remove sugestões rejeitadas com 3 ou mais dislikes">🧹 Varredura: Limpar 3+ dislikes</button>
+          <button class="btn-ghost" style="border-color:#f97316;color:#fdba74" onclick="runDuplicateSuggestionsCleanup()" title="Identifica e consolida músicas sugeridas em duplicidade">♻️ Limpar Músicas Duplicadas</button>
+          <button class="btn-ghost" style="border-color:#38bdf8;color:#7dd3fc" onclick="syncSuggestionVotes()" title="Recalcula likes/dislikes somando as subcoleções reais de votos">🔄 Sincronizar Votos das Sugestões</button>
+          <button class="btn-ghost" style="border-color:#93c5fd;color:#bfdbfe" onclick="forceTop3Tiebreaker()" title="Força critério de desempate caso haja empate nas 3 primeiras posições">⚔️ Forçar desempate Top 3</button>
+          <button id="promotionPauseBtn" class="btn-ghost" style="border-color:#fbbf24;color:#fde68a" onclick="togglePromotionPause()">⏸ Pausar ciclo de sugestões</button>
+          <button id="pollReminderPauseBtn" class="btn-ghost" style="border-color:#818cf8;color:#c7d2fe" onclick="togglePollReminderPause()">⏸ Pausar lembretes de enquete</button>
+        </div>
       </div>
-      <div class="admin-tools-grid" style="margin-top:.8rem">
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=default#hero">Logo padrão</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=pascoa#hero">Páscoa</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=festajunina#hero">Festa Junina</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=independencia#hero">Independência</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=halloween#hero">Halloween</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=natal#hero">Natal</a>
-        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=anonovo#hero">Ano Novo</a>
+
+      <!-- Subgrupo 2: Operações Críticas & Ensaios -->
+      <div class="admin-subgroup" style="border-color:rgba(239,68,68,.25);background:rgba(40,10,10,.35)">
+        <div class="admin-subgroup-title" style="color:#fca5a5">
+          <span>⚠️ Operações Críticas & Ensaios</span>
+          <span class="badge" style="border-color:rgba(239,68,68,.4);color:#fca5a5;background:rgba(239,68,68,.1)">Atenção</span>
+        </div>
+        <div class="admin-btn-grid">
+          <button class="btn-ghost" style="border-color:#f87171;color:#fca5a5" onclick="cancelThisWeeksRehearsal()" title="Cancela o ensaio da semana atual no site e avisa os membros">🚫 Cancelar Ensaio da Semana</button>
+          <button class="btn-danger" onclick="confirmClearLogs()" title="Exclui o histórico de logs acumulados no Firestore">🗑 Limpar todos os logs</button>
+        </div>
       </div>
-      <div style="margin-top:1rem;border-top:1px solid rgba(200,130,10,.15);padding-top:1rem">
-        <div style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--gold);margin-bottom:.5rem">🎨 Testar Fundos por Dia da Semana:</div>
-        <div class="admin-tools-grid">
+    </div>
+
+    <!-- PAINEL 2: PERSONALIZAÇÃO VISUAL & TESTES DE TEMA -->
+    <div id="sec-visual" class="admin-card-section" style="border-color:rgba(200,130,10,.3);background:linear-gradient(135deg,rgba(30,22,12,.85),rgba(14,10,6,.96))">
+      <div class="admin-card-head">
+        <div>
+          <div class="admin-card-title">
+            <span>🎨 Personalização Visual & Testes de Tema</span>
+          </div>
+          <div class="admin-card-sub">Simule os temas por dia da semana e visualize antecipadamente os logotipos comemorativos do topo do site.</div>
+        </div>
+        <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9;font-size:.7rem;padding:.35rem .7rem" href="index.html?videoFrameDebug=1#galeria">🎛 Ajustar vídeos da galeria</a>
+      </div>
+
+      <!-- Subgrupo 1: Logotipos Sazonais (Hero) -->
+      <div class="admin-subgroup">
+        <div class="admin-subgroup-title">
+          <span>🌟 Logotipos Sazonais (Prévia no Topo)</span>
+          <span class="badge">Preview</span>
+        </div>
+        <div class="admin-btn-grid">
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=default#hero">🎸 Logo padrão</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=pascoa#hero">🐰 Páscoa</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=festajunina#hero">🌽 Festa Junina</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=independencia#hero">🇧🇷 Independência</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=halloween#hero">🎃 Halloween</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=natal#hero">🎄 Natal</a>
+          <a class="btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center" href="index.html?seasonalPreview=anonovo#hero">🥂 Ano Novo</a>
+        </div>
+      </div>
+
+      <!-- Subgrupo 2: Fundos por Dia da Semana -->
+      <div class="admin-subgroup">
+        <div class="admin-subgroup-title">
+          <span>🎶 Fundos & Ambientes por Dia da Semana</span>
+          <span class="badge">Atmosfera Sonora</span>
+        </div>
+        <div class="admin-btn-grid">
           <button class="btn-ghost" onclick="setAuditDailyTheme('day-sun')">☕ Dom (Vinyl Lounge)</button>
           <button class="btn-ghost" onclick="setAuditDailyTheme('day-mon')">🎙️ Seg (Studio Noir)</button>
           <button class="btn-ghost" onclick="setAuditDailyTheme('day-tue')">⚡ Ter (Classic Tube)</button>
@@ -357,143 +442,165 @@
           <button class="btn-ghost" onclick="setAuditDailyTheme('day-thu')">🤘 Qui (Grunge Rust)</button>
           <button class="btn-ghost" onclick="setAuditDailyTheme('day-fri')">🏆 Sex (Friday Lights)</button>
           <button class="btn-ghost" onclick="setAuditDailyTheme('day-sat')">🥁 Sáb (Live Arena)</button>
-          <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold)" onclick="setAuditDailyTheme(null)">🔄 Automático (Hoje)</button>
+          <button class="btn-ghost" style="border-color:var(--amber);color:var(--gold);font-weight:bold" onclick="setAuditDailyTheme(null)">🔄 Automático (Hoje)</button>
         </div>
       </div>
-      <div class="admin-inline-config">
-        <div class="admin-inline-config-copy">
-          <div class="admin-inline-config-title">Tempo do carrossel</div>
-          <div class="admin-inline-config-sub">Escolha quantos segundos cada item da galeria principal fica em destaque antes de passar para o próximo.</div>
-        </div>
-        <div class="admin-inline-config-controls">
-          <div class="admin-inline-field">
-            <label for="carouselDelaySecondsInput">Segundos por imagem</label>
-            <input id="carouselDelaySecondsInput" type="number" min="2" max="30" step="1" value="5">
+    </div>
+
+    <!-- PAINEL 3: CONFIGURAÇÕES RÁPIDAS DE MÍDIA (GRID 2 COLUNAS) -->
+    <div id="sec-media" class="admin-media-config-grid">
+      <!-- Coluna 1: Tempo do Carrossel -->
+      <div class="admin-card-section" style="margin-bottom:0;display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <div class="admin-card-head" style="margin-bottom:.8rem;padding-bottom:.6rem">
+            <div>
+              <div class="admin-card-title" style="font-size:.95rem">⏱ Tempo do Carrossel</div>
+              <div class="admin-card-sub" style="font-size:.74rem">Segundos que cada foto da galeria fica em destaque na Home.</div>
+            </div>
           </div>
-          <button class="btn-ghost" onclick="saveCarouselTimingConfig()" style="border-color:var(--amber);color:var(--gold)">⏱ Salvar tempo</button>
+          <div class="admin-inline-field" style="margin-bottom:.9rem">
+            <label for="carouselDelaySecondsInput">Segundos por imagem (2 a 30s)</label>
+            <input id="carouselDelaySecondsInput" type="number" min="2" max="30" step="1" value="5" style="width:100%;max-width:140px">
+          </div>
+        </div>
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+          <button class="btn-ghost" onclick="saveCarouselTimingConfig()" style="border-color:var(--amber);color:var(--gold);padding:.55rem 1rem">⏱ Salvar tempo</button>
           <span id="carouselTimingSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
         </div>
       </div>
-      <div class="admin-inline-config">
-        <div class="admin-inline-config-copy">
-          <div class="admin-inline-config-title">Compressão da galeria</div>
-          <div class="admin-inline-config-sub">Define a qualidade e o tamanho máximo usados nos próximos uploads de imagens.</div>
-        </div>
-        <div class="admin-inline-config-controls">
-          <div class="admin-inline-field">
-            <label>Qualidade: <span id="qualityLabel" style="color:var(--gold)">carregando…</span></label>
-            <input type="range" id="qualitySlider" min="30" max="100" step="5" value="70" oninput="onQualitySlide(this.value)">
-            <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="qualityPresets">
-              <button class="btn-ghost" onclick="setQualityPreset(50)">50%</button>
-              <button class="btn-ghost" onclick="setQualityPreset(70)">70%</button>
-              <button class="btn-ghost" onclick="setQualityPreset(85)">85%</button>
+
+      <!-- Coluna 2: Compressão da Galeria -->
+      <div class="admin-card-section" style="margin-bottom:0;display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <div class="admin-card-head" style="margin-bottom:.8rem;padding-bottom:.6rem">
+            <div>
+              <div class="admin-card-title" style="font-size:.95rem">🗜 Compressão da Galeria</div>
+              <div class="admin-card-sub" style="font-size:.74rem">Qualidade e resolução máxima para novos uploads de fotos.</div>
             </div>
-            <p style="font-size:.72rem;color:var(--smoke);margin-top:.5rem;font-style:italic" id="qualityHint"></p>
           </div>
-          <div class="admin-inline-field">
-            <label for="maxPxSelect">Tamanho máximo</label>
-            <select id="maxPxSelect" onchange="onMaxPxChange(this.value)">
-              <option value="1280">1280px</option>
-              <option value="1600">1600px</option>
-              <option value="1920">1920px</option>
-              <option value="2400">2400px</option>
-            </select>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.6rem">
+            <div class="admin-inline-field">
+              <label>Qualidade: <span id="qualityLabel" style="color:var(--gold)">carregando…</span></label>
+              <input type="range" id="qualitySlider" min="30" max="100" step="5" value="70" oninput="onQualitySlide(this.value)" style="width:100%">
+              <div style="display:flex;gap:.35rem;margin-top:.4rem">
+                <button class="btn-ghost" style="padding:.2rem .45rem;font-size:.62rem" onclick="setQualityPreset(50)">50%</button>
+                <button class="btn-ghost" style="padding:.2rem .45rem;font-size:.62rem" onclick="setQualityPreset(70)">70%</button>
+                <button class="btn-ghost" style="padding:.2rem .45rem;font-size:.62rem" onclick="setQualityPreset(85)">85%</button>
+              </div>
+            </div>
+            <div class="admin-inline-field">
+              <label for="maxPxSelect">Tamanho Máximo</label>
+              <select id="maxPxSelect" onchange="onMaxPxChange(this.value)" style="width:100%">
+                <option value="1280">1280px</option>
+                <option value="1600">1600px</option>
+                <option value="1920">1920px</option>
+                <option value="2400">2400px</option>
+              </select>
+              <p style="font-size:.68rem;color:var(--smoke);margin-top:.4rem;font-style:italic" id="qualityHint"></p>
+            </div>
           </div>
-          <button class="btn-ghost" onclick="saveGalleryConfig()" style="border-color:var(--amber);color:var(--gold)">Salvar compressão</button>
+        </div>
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+          <button class="btn-ghost" onclick="saveGalleryConfig()" style="border-color:var(--amber);color:var(--gold);padding:.55rem 1rem">Salvar compressão</button>
           <span id="configSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
         </div>
-      </div><!-- /admin-inline-config compressão -->
+      </div>
+    </div>
 
-      <!-- Painel: Vínculo Membro ↔ E-mail & Controle de Acesso ADM -->
-      <div class="admin-inline-config" style="flex-direction:column;gap:.9rem">
-        <div class="admin-inline-config-copy">
-          <div class="admin-inline-config-title">🔗 Vínculo Membro ↔ E-mail & Controle de Acesso ADM</div>
-          <div class="admin-inline-config-sub">Associe o e-mail de login de cada membro ao seu perfil e controle o acesso administrativo (<strong>Desativar / Ativar ADM</strong>). Membros com ADM desativado continuam acessando o site e editando o próprio perfil/fotos, porém em modo somente leitura nas demais áreas (sem permissão de alteração ou exclusão).</div>
+    <!-- PAINEL 4: ORDEM DOS INTEGRANTES NA HOME -->
+    <div id="sec-order" class="admin-card-section" style="background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.35)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
+        <div>
+          <div class="admin-card-title">🎸 Ordem de Exibição dos Integrantes na Home</div>
+          <div class="admin-card-sub">Defina a sequência exata em que os membros da Retórica aparecem na página inicial do site. Use os botões <strong>Subir (▲)</strong> e <strong>Descer (▼)</strong>, o seletor de posição ou arraste os cards para reorganizar. Em seguida, clique em <strong>Salvar Ordem</strong>.</div>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <span id="membersOrderSaveBadge" class="status-pill on" style="font-size:.72rem;display:none">✓ Ordem sincronizada</span>
+          <button class="btn" id="btnSaveMembersOrder" style="padding:.5rem 1.15rem;font-size:.75rem" onclick="saveMembersOrderFromAudit()">💾 Salvar Ordem na Home</button>
+          <button class="btn-ghost" style="padding:.5rem .85rem;font-size:.72rem" onclick="loadMembersOrderList(true)">🔄 Recarregar</button>
+        </div>
+      </div>
+      <div id="membersOrderList" style="display:grid;gap:.6rem;width:100%;margin-top:.9rem">
+        <div style="color:var(--smoke);font-size:.8rem;font-style:italic">Carregando integrantes…</div>
+      </div>
+    </div>
+
+    <!-- PAINEL 5: VOTOS PENDENTES NAS SUGESTÕES -->
+    <div id="sec-votes" class="admin-card-section" style="background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.35)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
+        <div>
+          <div class="admin-card-title">🗳️ Votos Pendentes nas Sugestões (Por Integrante)</div>
+          <div class="admin-card-sub">Contador dinâmico de sugestões de músicas que ainda faltam ser votadas por cada integrante ativo da Retórica. Membros com acesso desativado/pausado são excluídos automaticamente.</div>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <span id="pendingVotesTotalBadge" class="status-pill on" style="font-size:.72rem">Carregando sugestões…</span>
+          <button class="btn-ghost" style="font-size:.72rem;padding:.3rem .7rem" onclick="refreshPendingVotesCounter(true)">🔄 Atualizar</button>
+          <button class="btn-ghost" style="font-size:.72rem;padding:.3rem .7rem;border-color:#38bdf8;color:#7dd3fc" onclick="triggerPendingVotesReportZap()" title="Disparar ranking atualizado de cobrança para o WhatsApp agora">📲 Cobrança no WhatsApp</button>
+        </div>
+      </div>
+      <div id="pendingVotesMembersGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:.85rem;width:100%;margin-top:.9rem">
+        <div style="color:var(--smoke);font-size:.8rem;font-style:italic">Carregando contadores de votos…</div>
+      </div>
+      <div id="pendingVotesInactiveNotice" style="font-size:.75rem;color:var(--smoke);font-style:italic;display:none;border-top:1px dashed rgba(200,130,10,.15);padding-top:.5rem;margin-top:.8rem"></div>
+    </div>
+
+    <!-- PAINEL 6: GESTÃO DE MEMBROS & CONTROLE DE ACESSO ADM -->
+    <div id="sec-members" class="admin-card-section" style="background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.35)">
+      <div class="admin-card-head">
+        <div>
+          <div class="admin-card-title">👥 Gestão de Membros & Permissões ADM</div>
+          <div class="admin-card-sub">Associe os e-mails de login dos membros aos seus perfis e gerencie o status de permissão administrativa (Ativo / Pausado). Usuários com ADM pausado permanecem logados em modo somente leitura.</div>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <span id="pausedAdminsBadge" class="status-pill on" style="font-size:.72rem">Carregando status…</span>
+          <button class="btn-ghost" style="font-size:.72rem;padding:.3rem .7rem" onclick="refreshAdminAccessList()">🔄 Atualizar</button>
+        </div>
+      </div>
+
+      <!-- Subgrupo 1: Vínculo Membro ↔ E-mail -->
+      <div class="admin-subgroup">
+        <div class="admin-subgroup-title">
+          <span>🔗 Vínculo Integrante ↔ E-mail Google</span>
+          <span class="badge">Perfis</span>
         </div>
         <div id="memberLinksGrid" style="display:grid;gap:.65rem"></div>
       </div>
 
-      <!-- Painel: Ordem dos Integrantes na Home -->
-      <div class="admin-inline-config" style="flex-direction:column;gap:1.1rem;background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.35)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
-          <div>
-            <div class="admin-inline-config-title" style="color:var(--gold);font-size:1.05rem">🎸 Ordem de Exibição dos Integrantes na Home</div>
-            <div class="admin-inline-config-sub" style="max-width:820px">Defina a sequência exata em que os membros da Retórica aparecem na página inicial do site. Use os botões <strong>Subir (▲)</strong> e <strong>Descer (▼)</strong>, o seletor de posição ou arraste os cards para reorganizar. Em seguida, clique em <strong>Salvar Ordem</strong>.</div>
-          </div>
-          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-            <span id="membersOrderSaveBadge" class="status-pill on" style="font-size:.72rem;display:none">✓ Ordem sincronizada</span>
-            <button class="btn" id="btnSaveMembersOrder" style="padding:.5rem 1.15rem;font-size:.75rem" onclick="saveMembersOrderFromAudit()">💾 Salvar Ordem na Home</button>
-            <button class="btn-ghost" style="padding:.5rem .85rem;font-size:.72rem" onclick="loadMembersOrderList(true)">🔄 Recarregar</button>
-          </div>
+      <!-- Subgrupo 2: Pausar ADM por e-mail direto & Usuários ADM -->
+      <div class="admin-subgroup">
+        <div class="admin-subgroup-title">
+          <span>⏸️ Pausar Acesso ADM por E-mail Direto</span>
+          <span class="badge">Controle Restrito</span>
         </div>
-        <div id="membersOrderList" style="display:grid;gap:.6rem;width:100%">
-          <div style="color:var(--smoke);font-size:.8rem;font-style:italic">Carregando integrantes…</div>
-        </div>
-      </div>
-
-      <!-- Painel: Votos Pendentes nas Sugestões por Membro -->
-      <div class="admin-inline-config" style="flex-direction:column;gap:1.1rem;background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.35)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
-          <div>
-            <div class="admin-inline-config-title" style="color:var(--gold);font-size:1.05rem">🗳️ Votos Pendentes nas Sugestões (Por Integrante)</div>
-            <div class="admin-inline-config-sub" style="max-width:820px">Contador dinâmico de sugestões de músicas que ainda faltam ser votadas por cada integrante ativo da Retórica. Membros com acesso desativado/pausado são excluídos automaticamente.</div>
-          </div>
-          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-            <span id="pendingVotesTotalBadge" class="status-pill on" style="font-size:.72rem">Carregando sugestões…</span>
-            <button class="btn-ghost" style="font-size:.72rem;padding:.3rem .7rem" onclick="refreshPendingVotesCounter(true)">🔄 Atualizar</button>
-            <button class="btn-ghost" style="font-size:.72rem;padding:.3rem .7rem;border-color:#38bdf8;color:#7dd3fc" onclick="triggerPendingVotesReportZap()" title="Disparar ranking atualizado de cobrança para o WhatsApp agora">📲 Cobrança no WhatsApp</button>
-          </div>
-        </div>
-        <div id="pendingVotesMembersGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:.85rem;width:100%">
-          <div style="color:var(--smoke);font-size:.8rem;font-style:italic">Carregando contadores de votos…</div>
-        </div>
-        <div id="pendingVotesInactiveNotice" style="font-size:.75rem;color:var(--smoke);font-style:italic;display:none;border-top:1px dashed rgba(200,130,10,.15);padding-top:.5rem"></div>
-      </div>
-
-      <!-- Painel: Controle de Acesso Administrativo (Pausar Acesso ADM) -->
-      <div class="admin-inline-config" style="flex-direction:column;gap:1.1rem;background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.35)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
-          <div>
-            <div class="admin-inline-config-title" style="color:var(--gold);font-size:1.05rem">⏸️ Controle de Acesso Administrativo (Pausar ADM)</div>
-            <div class="admin-inline-config-sub" style="max-width:820px">Gerencie o acesso administrativo dos usuários da banda. Ao pausar o acesso adm de um usuário, ele permanece com login ativo no site, <strong>porém em modo somente visualização</strong> — sem poder adicionar, editar ou excluir repertório, setlist, enquetes, fotos, regras ou configurações.</div>
-          </div>
-          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-            <span id="pausedAdminsBadge" class="status-pill on" style="font-size:.72rem">Carregando status…</span>
-            <button class="btn-ghost" style="font-size:.72rem;padding:.3rem .7rem" onclick="refreshAdminAccessList()">🔄 Atualizar</button>
-          </div>
-        </div>
-
-        <!-- Entrada manual de e-mail para pausar -->
-        <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;background:rgba(0,0,0,.25);padding:.6rem .8rem;border:1px solid rgba(200,130,10,.15);border-radius:2px">
-          <span style="font-size:.75rem;color:var(--paper)">Pausar por e-mail direto:</span>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;background:rgba(0,0,0,.25);padding:.6rem .8rem;border:1px solid rgba(200,130,10,.15);border-radius:2px;margin-bottom:.8rem">
+          <span style="font-size:.75rem;color:var(--paper)">Pausar por e-mail:</span>
           <input type="email" id="customPauseEmailInput" placeholder="usuario@gmail.com" style="background:rgba(255,255,255,.05);border:1px solid rgba(200,130,10,.3);color:var(--cream);padding:.4rem .6rem;font-size:.78rem;flex:1;min-width:200px">
           <button class="btn-ghost" style="border-color:#fbbf24;color:#fde68a;font-size:.75rem;padding:.4rem .8rem;white-space:nowrap" onclick="pauseCustomEmail()">⏸️ Pausar este e-mail</button>
         </div>
-
-        <!-- Grid de Usuários Administradores -->
         <div id="adminAccessGrid" style="display:grid;gap:.65rem;width:100%">
           <div style="color:var(--smoke);font-size:.8rem;font-style:italic">Carregando administradores…</div>
         </div>
       </div>
+    </div>
 
-      <!-- Painel: Central de Agendamentos & Disparos WhatsApp -->
-      <div class="admin-inline-config" style="flex-direction:column;gap:1.1rem;background:linear-gradient(135deg,rgba(36,23,10,.75),rgba(14,10,6,.92));border:1px solid rgba(200,130,10,.35)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
-          <div>
-            <div class="admin-inline-config-title" style="color:var(--gold);font-size:1.05rem">⏱ Central de Agendamentos & Disparos WhatsApp</div>
-            <div class="admin-inline-config-sub" style="max-width:820px">Configure os horários, dias da semana e ative/pause qualquer rotina de disparo automático da banda. Todas as alterações são salvas no banco de dados e aplicadas em tempo real.</div>
-          </div>
-          <div style="display:flex;gap:.5rem;align-items:center">
-            <button class="btn" style="padding:.5rem 1.1rem;font-size:.78rem" onclick="saveAllSchedules()">💾 Salvar Todos os Horários</button>
-          </div>
+    <!-- PAINEL 7: CENTRAL DE AGENDAMENTOS & DISPAROS WHATSAPP -->
+    <div id="sec-schedules" class="admin-card-section" style="background:linear-gradient(135deg,rgba(36,23,10,.75),rgba(14,10,6,.92));border:1px solid rgba(200,130,10,.35)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
+        <div>
+          <div class="admin-card-title">⏱ Central de Agendamentos & Disparos WhatsApp</div>
+          <div class="admin-card-sub">Configure os horários, dias da semana e ative/pause qualquer rotina de disparo automático da banda. Todas as alterações são salvas no banco de dados e aplicadas em tempo real.</div>
         </div>
-        <div id="schedulesCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:1.1rem;width:100%">
-          <div style="color:var(--smoke);font-size:.8rem;font-style:italic">Carregando agendamentos…</div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button class="btn" style="padding:.5rem 1.1rem;font-size:.78rem" onclick="saveAllSchedules()">💾 Salvar Todos os Horários</button>
         </div>
       </div>
+      <div id="schedulesCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:1.1rem;width:100%;margin-top:.9rem">
+        <div style="color:var(--smoke);font-size:.8rem;font-style:italic">Carregando agendamentos…</div>
+      </div>
+    </div>
 
-      <!-- Painel: Publicação de Álbum do Ensaio (Vídeos Gravados & Fotos - Exclusivo Membros) -->
-      <div class="admin-inline-config" style="flex-direction:column;gap:1.1rem;background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.38);margin-top:1.2rem">
+    <!-- PAINEL 8: PUBLICAÇÃO DE ÁLBUM DO ENSAIO (VÍDEOS & FOTOS) -->
+    <div id="sec-album" class="admin-card-section" style="background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.38)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
           <div>
             <div class="admin-inline-config-title" style="color:var(--gold);font-size:1.05rem">🎥📸 Publicar Álbum do Ensaio (Vídeos & Fotos)</div>
@@ -577,29 +684,37 @@
         </div>
       </div>
 
-      <!-- Painel: Gerenciamento das Regras da Banda (Exclusivo Master Admin) -->
-      <div class="admin-inline-config" style="flex-direction:column;gap:1.1rem;background:linear-gradient(135deg,rgba(26,18,10,.9),rgba(14,10,6,.97));border:1px solid rgba(200,130,10,.35);margin-top:1.2rem">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
-          <div>
-            <div class="admin-inline-config-title" style="color:var(--gold);font-size:1.05rem">📜 Gerenciador de Regras da Banda</div>
-            <div class="admin-inline-config-sub" style="max-width:820px">Defina e atualize as diretrizes da Retórica (ensaios, pontualidade, repertório, equipamentos e convivência). <strong>Visível apenas para membros logados</strong> e editável exclusivamente pelo Master Admin.</div>
-          </div>
-          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-            <button class="btn" style="padding:.5rem 1.1rem;font-size:.75rem" onclick="saveBandRulesFromAudit()">💾 Salvar Todas as Regras</button>
-            <button class="btn-ghost" style="padding:.5rem 1rem;font-size:.72rem" onclick="addBandRuleItemAudit()">+ Nova Regra</button>
-          </div>
+    <!-- PAINEL 9: GERENCIAMENTO DAS REGRAS DA BANDA -->
+    <div id="sec-rules" class="admin-card-section" style="background:linear-gradient(135deg,rgba(26,18,10,.9),rgba(14,10,6,.97));border:1px solid rgba(200,130,10,.35)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
+        <div>
+          <div class="admin-card-title">📜 Gerenciador de Regras da Banda</div>
+          <div class="admin-card-sub" style="max-width:820px">Defina e atualize as diretrizes da Retórica (ensaios, pontualidade, repertório, equipamentos e convivência). <strong>Visível apenas para membros logados</strong> e editável exclusivamente pelo Master Admin.</div>
         </div>
-
-        <div class="admin-inline-field" style="width:100%">
-          <label for="auditBandRulesNoticeInput">📢 Comunicado / Preâmbulo Geral (opcional)</label>
-          <input type="text" id="auditBandRulesNoticeInput" placeholder="Ex: Diretrizes oficiais aprovadas em reunião da banda para manter o padrão e evolução dos ensaios." style="width:100%">
-        </div>
-
-        <div id="auditBandRulesList" style="display:grid;gap:.9rem;width:100%">
-          <div style="color:var(--smoke);font-size:.78rem;font-style:italic">Carregando regras da banda…</div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <button class="btn" style="padding:.5rem 1.1rem;font-size:.75rem" onclick="saveBandRulesFromAudit()">💾 Salvar Todas as Regras</button>
+          <button class="btn-ghost" style="padding:.5rem 1rem;font-size:.72rem" onclick="addBandRuleItemAudit()">+ Nova Regra</button>
         </div>
       </div>
-    </div><!-- /admin-tools -->
+
+      <div class="admin-inline-field" style="width:100%;margin-top:.9rem">
+        <label for="auditBandRulesNoticeInput">📢 Comunicado / Preâmbulo Geral (opcional)</label>
+        <input type="text" id="auditBandRulesNoticeInput" placeholder="Ex: Diretrizes oficiais aprovadas em reunião da banda para manter o padrão e evolução dos ensaios." style="width:100%">
+      </div>
+
+      <div id="auditBandRulesList" style="display:grid;gap:.9rem;width:100%;margin-top:.9rem">
+        <div style="color:var(--smoke);font-size:.78rem;font-style:italic">Carregando regras da banda…</div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 10: AUDITORIA DE LEITURAS FIRESTORE (24 HORAS) -->
+    <div id="sec-reads" class="admin-card-section" style="margin-top:2.2rem;background:linear-gradient(135deg,rgba(26,18,10,.9),rgba(10,8,4,.98));border:1px solid rgba(200,130,10,.35)">
+      <div class="admin-card-head">
+        <div>
+          <div class="admin-card-title" style="font-size:1.15rem">🛡️ Auditoria de Leituras Firestore (Janela 24h)</div>
+          <div class="admin-card-sub">Painel de telemetria sob demanda: contagem de leituras estimadas, alertas de pico, horários mais caros, ranking de ofensores e histórico detalhado.</div>
+        </div>
+      </div>
 
 
     <div class="toolbar">
@@ -647,6 +762,7 @@
 
     <div class="section-title">Eventos recentes</div>
     <div class="panel"><table><thead><tr><th>Hora</th><th>Usuário</th><th>Ação</th><th>Coleção</th><th class="num">Leituras</th></tr></thead><tbody id="eventsTable"></tbody></table></div>
+    </div><!-- /#sec-reads -->
   </section>
 </main>
 <div class="toast" id="toast"></div>
