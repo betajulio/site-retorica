@@ -34,7 +34,7 @@ service cloud.firestore {
     }
 
     function publicConfigDoc(docId) {
-      return docId in ['galleryTags', 'galleryCompression', 'pausedAdmins'];
+      return docId in ['galleryTags', 'galleryCompression', 'pausedAdmins', 'loadingScreen', 'loading_screen'];
     }
 
     match /approved_emails/{emailId} {

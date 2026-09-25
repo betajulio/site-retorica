@@ -6,6 +6,7 @@
 <title>Retórica — Logs</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&family=Press+Start+2P&display=swap" rel="stylesheet">
 <script>
+window.__retoricaBootStart = performance.now();
 (function(){
   try{
     const f=new URLSearchParams(window.location.search).get('dayPreview');
@@ -688,7 +689,40 @@ function calcStorageStats(galleryData = []) {
   renderStorageMetric();
 }
 
-// ─── AUTH ──────────────────────────────────────────────────────────
+// ─── AUTH & BOOT ──────────────────────────────────────────────────
+const DEFAULT_BOOT_EXPOSURE_SEC = 3.0;
+let cachedLoadingExposureSec = parseFloat(localStorage.getItem('retorica_loading_exposure_sec') || String(DEFAULT_BOOT_EXPOSURE_SEC));
+if (isNaN(cachedLoadingExposureSec) || cachedLoadingExposureSec < 0) cachedLoadingExposureSec = DEFAULT_BOOT_EXPOSURE_SEC;
+
+let authBootResolved = false;
+async function resolveAuthBoot(forceImmediate = false) {
+  if (authBootResolved && !forceImmediate) return;
+  authBootResolved = true;
+
+  let exposureSec = cachedLoadingExposureSec;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'loading_screen'));
+    if (snap.exists()) {
+      const val = parseFloat(snap.data()?.exposureSeconds);
+      if (!isNaN(val) && val >= 0) {
+        exposureSec = val;
+        cachedLoadingExposureSec = val;
+        localStorage.setItem('retorica_loading_exposure_sec', String(val));
+      }
+    }
+  } catch (err) {
+    // fallback para localStorage
+  }
+
+  const startTime = window.__retoricaBootStart || 0;
+  const elapsed = startTime > 0 ? (performance.now() - startTime) : 0;
+  const delayMs = forceImmediate ? 0 : Math.max(0, (exposureSec * 1000) - elapsed);
+
+  setTimeout(() => {
+    document.body.classList.add('auth-resolved');
+  }, delayMs);
+}
+
 async function isApproved(email) {
   const snap = await getDoc(doc(db,'approved_emails', email.toLowerCase()));
   return snap.exists();
@@ -701,7 +735,7 @@ onAuthStateChanged(auth, async user => {
       await signOut(auth);
       document.getElementById('deniedMsg').textContent = `${user.email} não está na lista de membros aprovados.`;
       document.getElementById('deniedMsg').style.display = 'block';
-      document.body.classList.add('auth-resolved');
+      resolveAuthBoot();
       authResolved = true;
       return;
     }
@@ -717,7 +751,7 @@ onAuthStateChanged(auth, async user => {
     document.querySelectorAll('.audit-only').forEach(el => el.style.display = 'none');
   }
   if (!authResolved) authResolved = true;
-  document.body.classList.add('auth-resolved');
+  resolveAuthBoot();
 });
 
 window.doLogin = async () => {

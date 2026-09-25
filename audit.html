@@ -6,6 +6,7 @@
 <title>Retórica — Auditoria</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&family=Press+Start+2P&display=swap" rel="stylesheet">
 <script>
+window.__retoricaBootStart = performance.now();
 (function(){
   try{
     const f=new URLSearchParams(window.location.search).get('dayPreview');
@@ -245,9 +246,8 @@
   .admin-subgroup-title span.badge{font-size:.62rem;padding:.15rem .45rem;border-radius:2px;background:rgba(200,130,10,.15);border:1px solid rgba(200,130,10,.3);color:var(--gold)}
   .admin-btn-grid{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
   
-  /* MEDIA 2-COL CONFIG GRID */
-  .admin-media-config-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.4rem}
-  @media(max-width:860px){.admin-media-config-grid{grid-template-columns:1fr}}
+  /* MEDIA & LOAD CONFIG GRID */
+  .admin-media-config-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.1rem;margin-bottom:1.4rem}
 
   .admin-tools{margin:1.8rem 0 2rem;padding:1.1rem 1.2rem;border:1px solid rgba(248,113,113,.24);background:linear-gradient(135deg,rgba(48,20,14,.76),rgba(22,14,10,.94));border-radius:2px;box-shadow:0 10px 30px rgba(0,0,0,.2),0 0 0 1px rgba(248,113,113,.06) inset}
   .admin-tools-head{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;margin-bottom:1rem}
@@ -518,6 +518,35 @@
         <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
           <button class="btn-ghost" onclick="saveGalleryConfig()" style="border-color:var(--amber);color:var(--gold);padding:.55rem 1rem">Salvar compressão</button>
           <span id="configSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
+        </div>
+      </div>
+
+      <!-- Coluna 3: Duração do Loading Retrô -->
+      <div class="admin-card-section" style="margin-bottom:0;display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <div class="admin-card-head" style="margin-bottom:.8rem;padding-bottom:.6rem">
+            <div>
+              <div class="admin-card-title" style="font-size:.95rem">🎮 Tempo de Load Retrô</div>
+              <div class="admin-card-sub" style="font-size:.74rem">Defina por quanto tempo o disco e animação retrô ficam visíveis ao abrir o Admin e Auditoria.</div>
+            </div>
+          </div>
+          <div class="admin-inline-field" style="margin-bottom:.85rem">
+            <label for="loadingExposureSecondsInput">Exposição do Loading (0 a 10s)</label>
+            <div style="display:flex;gap:.5rem;align-items:center;margin-top:.3rem">
+              <input id="loadingExposureSecondsInput" type="number" min="0" max="10" step="0.5" value="3" style="width:100%;max-width:110px">
+              <span style="font-size:.75rem;color:var(--gold);font-family:'Press Start 2P',monospace">seg</span>
+            </div>
+            <div style="display:flex;gap:.3rem;margin-top:.45rem;flex-wrap:wrap">
+              <button type="button" class="btn-ghost" style="padding:.2rem .4rem;font-size:.62rem" onclick="setLoadingExposurePreset(1.5)">1.5s</button>
+              <button type="button" class="btn-ghost" style="padding:.2rem .4rem;font-size:.62rem" onclick="setLoadingExposurePreset(3)">3s (Padrão)</button>
+              <button type="button" class="btn-ghost" style="padding:.2rem .4rem;font-size:.62rem" onclick="setLoadingExposurePreset(5)">5s</button>
+              <button type="button" class="btn-ghost" style="padding:.2rem .4rem;font-size:.62rem;border-color:var(--gold);color:var(--gold)" onclick="testLoadingScreenPreview()">👁️ Testar</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+          <button class="btn-ghost" onclick="saveLoadingExposureConfig()" style="border-color:var(--amber);color:var(--gold);padding:.55rem 1rem">💾 Salvar tempo</button>
+          <span id="loadingExposureSaveStatus" style="font-size:.75rem;color:var(--smoke);font-style:italic"></span>
         </div>
       </div>
     </div>
@@ -1863,35 +1892,148 @@ window.doLogin = async () => {
   }
 };
 
+// ── Tempo de Exposição do Loading Retrô ──────────────────────────────────────
+const DEFAULT_BOOT_EXPOSURE_SEC = 3.0;
+let cachedLoadingExposureSec = parseFloat(localStorage.getItem('retorica_loading_exposure_sec') || String(DEFAULT_BOOT_EXPOSURE_SEC));
+if (isNaN(cachedLoadingExposureSec) || cachedLoadingExposureSec < 0) cachedLoadingExposureSec = DEFAULT_BOOT_EXPOSURE_SEC;
+
+let authBootResolved = false;
+async function resolveAuthBoot(forceImmediate = false) {
+  if (authBootResolved && !forceImmediate) return;
+  authBootResolved = true;
+
+  let exposureSec = cachedLoadingExposureSec;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'loading_screen'));
+    if (snap.exists()) {
+      const val = parseFloat(snap.data()?.exposureSeconds);
+      if (!isNaN(val) && val >= 0) {
+        exposureSec = val;
+        cachedLoadingExposureSec = val;
+        localStorage.setItem('retorica_loading_exposure_sec', String(val));
+      }
+    }
+  } catch (err) {
+    // fallback para localStorage
+  }
+
+  const startTime = window.__retoricaBootStart || 0;
+  const elapsed = startTime > 0 ? (performance.now() - startTime) : 0;
+  const delayMs = forceImmediate ? 0 : Math.max(0, (exposureSec * 1000) - elapsed);
+
+  setTimeout(() => {
+    document.body.classList.add('auth-resolved');
+  }, delayMs);
+}
+
+window.saveLoadingExposureConfig = async () => {
+  const input = document.getElementById('loadingExposureSecondsInput');
+  const statusEl = document.getElementById('loadingExposureSaveStatus');
+  let sec = parseFloat(input?.value);
+  if (isNaN(sec) || sec < 0) sec = 0;
+  if (sec > 15) sec = 15;
+  if (input) input.value = sec;
+
+  if (statusEl) {
+    statusEl.textContent = 'Salvando…';
+    statusEl.style.color = 'var(--gold)';
+  }
+
+  try {
+    await setDoc(doc(db, 'config', 'loading_screen'), {
+      exposureSeconds: sec,
+      exposureMs: Math.round(sec * 1000),
+      updatedAt: serverTimestamp(),
+      updatedBy: auth.currentUser?.email || AUDIT_EMAIL
+    }, { merge: true });
+
+    cachedLoadingExposureSec = sec;
+    localStorage.setItem('retorica_loading_exposure_sec', String(sec));
+
+    if (statusEl) {
+      statusEl.textContent = '✓ Salvo!';
+      statusEl.style.color = '#86efac';
+    }
+    showToast(`✓ Tempo do loading retrô definido para ${sec}s em Admin e Auditoria!`);
+    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000);
+  } catch (err) {
+    console.error('saveLoadingExposureConfig error:', err);
+    if (statusEl) {
+      statusEl.textContent = 'Erro ao salvar.';
+      statusEl.style.color = '#fca5a5';
+    }
+    showToast('Erro ao salvar tempo de loading: ' + (err.message || ''));
+  }
+};
+
+window.setLoadingExposurePreset = (sec) => {
+  const input = document.getElementById('loadingExposureSecondsInput');
+  if (input) input.value = sec;
+};
+
+window.testLoadingScreenPreview = () => {
+  const input = document.getElementById('loadingExposureSecondsInput');
+  let sec = parseFloat(input?.value);
+  if (isNaN(sec) || sec < 0) sec = 3;
+  document.body.classList.remove('auth-resolved');
+  showToast(`🎮 Testando tela de load retrô (${sec}s)...`);
+  setTimeout(() => {
+    document.body.classList.add('auth-resolved');
+  }, sec * 1000);
+};
+
+window.loadLoadingExposureConfig = async () => {
+  const input = document.getElementById('loadingExposureSecondsInput');
+  const localVal = localStorage.getItem('retorica_loading_exposure_sec');
+  if (input && localVal !== null) {
+    input.value = localVal;
+  }
+  try {
+    const snap = await getDoc(doc(db, 'config', 'loading_screen'));
+    if (snap.exists()) {
+      const data = snap.data();
+      const val = parseFloat(data.exposureSeconds);
+      if (!isNaN(val) && input) {
+        input.value = val;
+        cachedLoadingExposureSec = val;
+        localStorage.setItem('retorica_loading_exposure_sec', String(val));
+      }
+    }
+  } catch (err) {
+    console.warn('loadLoadingExposureConfig error:', err);
+  }
+};
+
 onAuthStateChanged(auth, async user => {
   const email = (user?.email || '').toLowerCase();
   if (!user) {
     document.getElementById('loginWall').classList.remove('hidden');
     document.getElementById('auditContent').classList.add('hidden');
-    document.body.classList.add('auth-resolved');
+    resolveAuthBoot();
     return;
   }
   if (email !== AUDIT_EMAIL) {
     await signOut(auth);
     document.getElementById('deniedMsg').textContent = `${email} não tem acesso à auditoria.`;
-    document.body.classList.add('auth-resolved');
+    resolveAuthBoot();
     return;
   }
   const approved = await getDoc(doc(db, 'approved_emails', email));
   if (!approved.exists()) {
     await signOut(auth);
     document.getElementById('deniedMsg').textContent = `${email} não está aprovado como membro.`;
-    document.body.classList.add('auth-resolved');
+    resolveAuthBoot();
     return;
   }
   document.getElementById('loginWall').classList.add('hidden');
   document.getElementById('auditContent').classList.remove('hidden');
-  document.body.classList.add('auth-resolved');
+  resolveAuthBoot();
   loadGalleryConfig();
   loadPromotionPauseState();
   loadPollReminderPauseState();
   loadMembersForLinking();
   loadMembersOrderList();
+  loadLoadingExposureConfig();
   loadPausedAdminsConfig();
   loadSchedulesConfig();
   loadSuggestionPendingVotesCounter();
