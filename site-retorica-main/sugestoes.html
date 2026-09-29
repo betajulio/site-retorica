@@ -726,6 +726,8 @@ window.closePoll = async id => {
 setInterval(() => { if (pollsCache.length) renderPolls(); }, 60000);
 
 // --- PIPELINE DE PROMOÇÃO AUTOMÁTICA ---
+let currentPromotionStateData = null;
+
 async function updatePromotionCountdowns() {
   try {
     const now = Date.now();
@@ -733,6 +735,7 @@ async function updatePromotionCountdowns() {
     try {
       const stateSnap = await getDoc(promotionStateRef);
       state = stateSnap.exists() ? (stateSnap.data() || {}) : {};
+      currentPromotionStateData = state;
     } catch (stateErr) {
       console.warn('[COUNTDOWN] Não foi possível ler promotion_state, usando fallback local.', stateErr);
     }
@@ -740,34 +743,23 @@ async function updatePromotionCountdowns() {
       renderPromotionBanner(0, true);
       return;
     }
+    const durationDays = Number(state.promotionDurationDays) || 7;
     const stateNextPromo = toDateOrNull(state.nextPromotionDate);
-    const nextPromoDate = stateNextPromo || getNextFriday(new Date(now + 60000));
+    const nextPromoDate = stateNextPromo || getNextPromotionDate(new Date(now + 60000), durationDays);
     const nextPromo = nextPromoDate.getTime();
     const timeUntil = nextPromo - now;
     
     renderPromotionBanner(timeUntil);
   } catch (e) {
     console.error('[COUNTDOWN] Erro ao atualizar:', e);
-    const fallbackTimeUntil = getNextFriday(new Date(Date.now() + 60000)).getTime() - Date.now();
+    const fallbackTimeUntil = getNextPromotionDate(new Date(Date.now() + 60000), 7).getTime() - Date.now();
     renderPromotionBanner(fallbackTimeUntil);
   }
 }
 
-function getNextFriday(fromDate = new Date()) {
+function getNextPromotionDate(fromDate = new Date(), durationDays = 7) {
   const date = new Date(fromDate);
-  date.setSeconds(0, 0);
-  const dayOfWeek = date.getDay();
-  let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
-  const isFridayAfterCutoff = dayOfWeek === 5 && (
-    date.getHours() > 23 ||
-    (date.getHours() === 23 && date.getMinutes() >= 59)
-  );
-  if (daysUntilFriday === 0 && isFridayAfterCutoff) {
-    daysUntilFriday = 7;
-  }
-  // Ciclo de 2 semanas: pula para a sexta-feira seguinte (+ 7 dias extras)
-  daysUntilFriday += 7;
-  date.setDate(date.getDate() + daysUntilFriday);
+  date.setDate(date.getDate() + (Number(durationDays) || 7));
   date.setHours(23, 59, 0, 0);
   return date;
 }
@@ -784,7 +776,7 @@ function renderPromotionBanner(timeUntil, paused = false) {
   const navBadgeMobile = document.getElementById('promoCountdownNavMobile');
   const bannerHost = document.getElementById('promotionCountdownBanner');
   const timeLabel = formatTimeRemaining(timeUntil);
-  const shouldShowNav = !paused && timeUntil > 0 && timeUntil < 14 * 24 * 60 * 60 * 1000;
+  const shouldShowNav = !paused && timeUntil > 0;
   const shouldShowSection = paused || timeUntil > 0;
 
   if (navBadge) {
@@ -1148,13 +1140,25 @@ window.voteSuggestion = async (id, type) => {
   }
 
   const totalBandMembers = Math.max(2, membersCount || 6);
-  const dislikeThreshold = Math.max(2, Math.ceil(totalBandMembers / 2));
+  let configuredThreshold = Number(currentPromotionStateData?.dislikeThreshold);
+  if (isNaN(configuredThreshold) || configuredThreshold <= 0) {
+    try {
+      const snap = await getDoc(promotionStateRef);
+      if (snap.exists()) {
+        currentPromotionStateData = snap.data() || {};
+        configuredThreshold = Number(currentPromotionStateData.dislikeThreshold);
+      }
+    } catch (e) {}
+  }
+  const dislikeThreshold = (!isNaN(configuredThreshold) && configuredThreshold > 0)
+    ? configuredThreshold
+    : Math.max(2, Math.ceil(totalBandMembers / 2));
 
   if (dislikes >= dislikeThreshold && isAuditAdmin) {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes (maioria dos ${totalBandMembers} membros ativos)`,
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes`,
       song: s.song, artist: s.artist, by: s.by, likes, dislikes,
       voterMap,
       reason: `Atingiu o limite de ${dislikeThreshold} dislikes`, removedBy: 'Sistema',

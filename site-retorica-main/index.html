@@ -2895,10 +2895,22 @@ function renderMembersFromCache() {
 
 async function loadMembersSnapshot(force = false) {
   if (membersLoaded && !force) return;
-  const snap = await getDocs(query(collection(db,'members'), orderBy('createdAt','asc')));
-  membersCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
-  membersLoaded = true;
-  renderMembersFromCache();
+  try {
+    const snap = await getDocs(collection(db, 'members'));
+    membersCache = snap.docs.map(d => ({id: d.id, data: d.data()}));
+    membersCache.sort((a, b) => {
+      const orderA = typeof a.data.displayOrder === 'number' ? a.data.displayOrder : (typeof a.data.order === 'number' ? a.data.order : 999);
+      const orderB = typeof b.data.displayOrder === 'number' ? b.data.displayOrder : (typeof b.data.order === 'number' ? b.data.order : 999);
+      if (orderA !== orderB) return orderA - orderB;
+      const timeA = a.data.createdAt?.toMillis ? a.data.createdAt.toMillis() : (a.data.createdAt?.seconds || 0);
+      const timeB = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : (b.data.createdAt?.seconds || 0);
+      return timeA - timeB;
+    });
+    membersLoaded = true;
+    renderMembersFromCache();
+  } catch (err) {
+    console.error('loadMembersSnapshot error:', err);
+  }
 }
 
 // Comprime imagem para max 800px e qualidade 0.75 — evita estourar o limite de 1MB do Firestore
@@ -3268,7 +3280,8 @@ window.saveMember = async () => {
       await writeLog('Membro editado', `${name} (${instruments.join(', ')})`, 'membros');
       showToast(`✓ ${name} atualizado!`);
     } else {
-      await addDoc(collection(db,'members'), {...data, createdAt:serverTimestamp()});
+      const maxOrder = membersCache.reduce((max, m) => Math.max(max, typeof m.data?.displayOrder === 'number' ? m.data.displayOrder : (typeof m.data?.order === 'number' ? m.data.order : -1)), -1);
+      await addDoc(collection(db,'members'), {...data, displayOrder: maxOrder + 1, order: maxOrder + 1, createdAt:serverTimestamp()});
       if (ownerEmail) {
         await setDoc(doc(db, 'approved_emails', ownerEmail.toLowerCase().trim()), {
           addedAt: serverTimestamp(),
@@ -3505,14 +3518,25 @@ window.voteSuggestion = async (id, type) => {
   }
 
   const totalBandMembers = Math.max(2, activeCount);
-  const dislikeThreshold = Math.max(2, Math.ceil(totalBandMembers / 2));
+  let configuredThreshold = null;
+  try {
+    const snap = await getDoc(promotionStateRef);
+    if (snap.exists()) {
+      const st = snap.data();
+      if (st && st.dislikeThreshold) configuredThreshold = Number(st.dislikeThreshold);
+    }
+  } catch (e) {}
 
-  // EXCLUSÃO AUTOMÁTICA DINÂMICA (maioria dos membros ativos)
+  const dislikeThreshold = (configuredThreshold && !isNaN(configuredThreshold) && configuredThreshold > 0)
+    ? configuredThreshold
+    : Math.max(2, Math.ceil(totalBandMembers / 2));
+
+  // EXCLUSÃO AUTOMÁTICA DINÂMICA
   if (dislikes >= dislikeThreshold && isAuditAdmin) {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes (maioria dos ${totalBandMembers} membros ativos)`,
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes`,
       song: s.song,
       artist: s.artist,
       by: s.by,
@@ -6543,24 +6567,16 @@ async function initPromotionState() {
   }
 }
 
-// Calcular próxima sexta-feira às 23:59
-function getNextFriday(fromDate = new Date()) {
+// Calcular próxima promoção às 23:59
+function getNextPromotionDate(fromDate = new Date(), durationDays = 7) {
   const date = new Date(fromDate);
-  date.setSeconds(0, 0);
-  const dayOfWeek = date.getDay();
-  let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
-  const isFridayAfterCutoff = dayOfWeek === 5 && (
-    date.getHours() > 23 ||
-    (date.getHours() === 23 && date.getMinutes() >= 59)
-  );
-  if (daysUntilFriday === 0 && isFridayAfterCutoff) {
-    daysUntilFriday = 7;
-  }
-  // Ciclo de 2 semanas: pula para a sexta-feira seguinte (+ 7 dias extras)
-  daysUntilFriday += 7;
-  date.setDate(date.getDate() + daysUntilFriday);
+  date.setDate(date.getDate() + (Number(durationDays) || 7));
   date.setHours(23, 59, 0, 0);
   return date;
+}
+
+function getNextFriday(fromDate = new Date(), durationDays = 7) {
+  return getNextPromotionDate(fromDate, durationDays);
 }
 
 function createPromotionLockToken() {
@@ -6598,8 +6614,9 @@ async function claimPromotionExecution() {
     }
 
     if (!suggestionsCache.length) {
+      const durationDays = Number(state.promotionDurationDays) || 7;
       transaction.update(promotionStateRef, {
-        nextPromotionDate: Timestamp.fromDate(getNextFriday(now)),
+        nextPromotionDate: Timestamp.fromDate(getNextPromotionDate(now, durationDays)),
         promotionLockToken: null,
         promotionLockUntil: null
       });
@@ -6867,7 +6884,7 @@ async function createRepertoryPoll(suggestion, lockToken = null) {
     question: `🎸 ${suggestion.data.song} - ${suggestion.data.artist} deve entrar no repertório?`,
     options: [
       { label: '✅ Sim, adicionar ao repertório', votes: 0 },
-      { label: '❌ Não, manter em sugestões', votes: 0 }
+      { label: '❌ Não, descartar música', votes: 0 }
     ],
     createdAt: serverTimestamp(),
     deadline: endDate.toISOString(),
@@ -7001,24 +7018,12 @@ async function completeRepertoryPoll(pollId, pollData) {
       logAdminAction(`Música adicionada ao repertório via votação: ${title}`);
     }
   } else {
-    // REPROVADA: recriar como sugestão
+    // REPROVADA: descartar completamente
     const title = pollData.question.match(/🎸 (.+) deve entrar/)?.[1] || '';
-    const [songTitle, artist] = title.split(' - ');
-    
-    await addDoc(collection(db, 'suggestions'), {
-      song: songTitle?.trim() || '',
-      artist: artist?.trim() || '',
-      by: 'Sistema',
-      createdAt: serverTimestamp(),
-      likes: 0,
-      dislikes: 0,
-      likedBy: [],
-      dislikedBy: [],
-      voterMap: {}
-    });
-    await refreshSuggestionsIfNeeded();
-    
-    showToast('📋 Música retornou às sugestões para nova oportunidade.');
+    showToast(`❌ Música não aprovada na enquete e descartada definitivamente: ${title}`);
+    if (typeof logAdminAction === 'function') {
+      logAdminAction(`Música reprovada na enquete de repertório e descartada definitivamente: ${title}`);
+    }
   }
   
   // Agendar próxima promoção

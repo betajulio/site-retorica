@@ -3518,14 +3518,25 @@ window.voteSuggestion = async (id, type) => {
   }
 
   const totalBandMembers = Math.max(2, activeCount);
-  const dislikeThreshold = Math.max(2, Math.ceil(totalBandMembers / 2));
+  let configuredThreshold = null;
+  try {
+    const snap = await getDoc(promotionStateRef);
+    if (snap.exists()) {
+      const st = snap.data();
+      if (st && st.dislikeThreshold) configuredThreshold = Number(st.dislikeThreshold);
+    }
+  } catch (e) {}
 
-  // EXCLUSÃO AUTOMÁTICA DINÂMICA (maioria dos membros ativos)
+  const dislikeThreshold = (configuredThreshold && !isNaN(configuredThreshold) && configuredThreshold > 0)
+    ? configuredThreshold
+    : Math.max(2, Math.ceil(totalBandMembers / 2));
+
+  // EXCLUSÃO AUTOMÁTICA DINÂMICA
   if (dislikes >= dislikeThreshold && isAuditAdmin) {
     await deleteDoc(doc(db, 'suggestions', id));
     await addDoc(collection(db,'logs'), {
       action: 'Sugestão Removida',
-      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes (maioria dos ${totalBandMembers} membros ativos)`,
+      detail: `${s.song} — ${s.artist} · ${likes}👍 ${dislikes}👎 · Motivo: Atingiu o limite de ${dislikeThreshold} dislikes`,
       song: s.song,
       artist: s.artist,
       by: s.by,
@@ -6556,24 +6567,16 @@ async function initPromotionState() {
   }
 }
 
-// Calcular próxima sexta-feira às 23:59
-function getNextFriday(fromDate = new Date()) {
+// Calcular próxima promoção às 23:59
+function getNextPromotionDate(fromDate = new Date(), durationDays = 7) {
   const date = new Date(fromDate);
-  date.setSeconds(0, 0);
-  const dayOfWeek = date.getDay();
-  let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
-  const isFridayAfterCutoff = dayOfWeek === 5 && (
-    date.getHours() > 23 ||
-    (date.getHours() === 23 && date.getMinutes() >= 59)
-  );
-  if (daysUntilFriday === 0 && isFridayAfterCutoff) {
-    daysUntilFriday = 7;
-  }
-  // Ciclo de 2 semanas: pula para a sexta-feira seguinte (+ 7 dias extras)
-  daysUntilFriday += 7;
-  date.setDate(date.getDate() + daysUntilFriday);
+  date.setDate(date.getDate() + (Number(durationDays) || 7));
   date.setHours(23, 59, 0, 0);
   return date;
+}
+
+function getNextFriday(fromDate = new Date(), durationDays = 7) {
+  return getNextPromotionDate(fromDate, durationDays);
 }
 
 function createPromotionLockToken() {
@@ -6611,8 +6614,9 @@ async function claimPromotionExecution() {
     }
 
     if (!suggestionsCache.length) {
+      const durationDays = Number(state.promotionDurationDays) || 7;
       transaction.update(promotionStateRef, {
-        nextPromotionDate: Timestamp.fromDate(getNextFriday(now)),
+        nextPromotionDate: Timestamp.fromDate(getNextPromotionDate(now, durationDays)),
         promotionLockToken: null,
         promotionLockUntil: null
       });

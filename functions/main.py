@@ -159,17 +159,49 @@ def to_datetime(value):
                 continue
     return None
 
-def get_next_promotion_datetime(reference=None):
-    ref = reference.astimezone(SP_TZ) if isinstance(reference, datetime) else now_sp()
+def get_promotion_duration_days(db):
+    try:
+        snap = promotion_state_ref(db).get()
+        if snap.exists:
+            val = snap.to_dict().get("promotionDurationDays")
+            if val is not None:
+                d = int(val)
+                if d > 0:
+                    return d
+    except Exception as e:
+        print(f"Erro ao obter promotionDurationDays: {e}")
+    return 7
+
+def get_dislike_threshold(db):
+    try:
+        snap = promotion_state_ref(db).get()
+        if snap.exists:
+            val = snap.to_dict().get("dislikeThreshold")
+            if val is not None:
+                th = int(val)
+                if th > 0:
+                    return th
+    except Exception as e:
+        print(f"Erro ao obter dislikeThreshold: {e}")
+    return 3
+
+def get_next_promotion_datetime(db=None, reference=None, duration_days=None):
+    if isinstance(db, datetime):
+        ref = db
+        actual_db = None
+    else:
+        actual_db = db
+        ref = reference
+
+    ref = ref.astimezone(SP_TZ) if isinstance(ref, datetime) else now_sp()
     date = ref.replace(second=0, microsecond=0)
-    day_of_week = date.weekday()
-    days_until_friday = (4 - day_of_week + 7) % 7
-    is_friday_after_cutoff = day_of_week == 4 and (
-        date.hour > 23 or (date.hour == 23 and date.minute >= 59)
-    )
-    if days_until_friday == 0 and is_friday_after_cutoff:
-        days_until_friday = 7
-    target = date + timedelta(days=days_until_friday)
+
+    if duration_days is None and actual_db is not None:
+        duration_days = get_promotion_duration_days(actual_db)
+    if duration_days is None or duration_days <= 0:
+        duration_days = 7
+
+    target = date + timedelta(days=duration_days)
     return target.replace(hour=23, minute=59, second=0, microsecond=0)
 
 def ensure_promotion_state(db):
@@ -178,7 +210,9 @@ def ensure_promotion_state(db):
     if snap.exists:
         return snap
     ref.set({
-        "nextPromotionDate": get_next_promotion_datetime(),
+        "nextPromotionDate": get_next_promotion_datetime(db),
+        "promotionDurationDays": 7,
+        "dislikeThreshold": 3,
         "activeTiebreakerPoll": None,
         "activeRepertoryPoll": None,
         "pendingRepertorySuggestionId": None,
@@ -217,6 +251,10 @@ def normalize_promotion_state(db):
 
     if "promotionPaused" not in state:
         updates["promotionPaused"] = False
+    if "promotionDurationDays" not in state:
+        updates["promotionDurationDays"] = 7
+    if "dislikeThreshold" not in state:
+        updates["dislikeThreshold"] = 3
 
     active_tiebreaker = state.get("activeTiebreakerPoll")
     _, tie_exists = get_poll_snapshot_data(db, active_tiebreaker)
@@ -1214,7 +1252,7 @@ def process_due_repertory_polls(db):
     if active_repertory and any(item["pollId"] == active_repertory for item in completed):
         promotion_state_ref(db).set({
             "activeRepertoryPoll": None,
-            "nextPromotionDate": get_next_promotion_datetime()
+            "nextPromotionDate": get_next_promotion_datetime(db)
         }, merge=True)
     return completed
 
@@ -1272,7 +1310,44 @@ def process_pending_repertory_poll(db):
     print(f"Enquete de repertório pendente ativada automaticamente: {poll_id}")
     return {"status": "created", "pollId": poll_id, "suggestionId": str(pending_suggestion_id)}
 
+def cleanup_disliked_suggestions(db):
+    try:
+        threshold = get_dislike_threshold(db)
+        removed_count = 0
+        for doc in db.collection("suggestions").stream():
+            data = doc.to_dict() or {}
+            dislikes = safe_int(data.get("dislikes", 0))
+            if dislikes >= threshold:
+                doc.reference.delete()
+                song = data.get("song", "Música")
+                artist = data.get("artist", "Artista")
+                db.collection("logs").add({
+                    "action": "Sugestão Removida",
+                    "detail": f"{song} — {artist} · {dislikes}👎 · Motivo: Atingiu o limite de {threshold} dislikes",
+                    "song": song,
+                    "artist": artist,
+                    "by": data.get("by", "Membro"),
+                    "likes": safe_int(data.get("likes", 0)),
+                    "dislikes": dislikes,
+                    "voterMap": data.get("voterMap", {}),
+                    "reason": f"Atingiu o limite de {threshold} dislikes",
+                    "removedBy": "Sistema",
+                    "category": "sugestoes",
+                    "who": "Sistema",
+                    "whoEmail": "",
+                    "ts": firestore.SERVER_TIMESTAMP,
+                    "tsLocal": now_sp().strftime("%d/%m/%Y %H:%M:%S")
+                })
+                removed_count += 1
+        if removed_count > 0:
+            print(f"{removed_count} sugestão(ões) com {threshold}+ dislikes eliminada(s) automaticamente.")
+        return removed_count
+    except Exception as e:
+        print(f"Erro em cleanup_disliked_suggestions: {e}")
+        return 0
+
 def advance_promotion_pipeline(db):
+    cleanup_disliked_suggestions(db)
     completed_repertory_polls = process_due_repertory_polls(db)
     process_repertory_completion(db)
     pending_before_tie = process_pending_repertory_poll(db)
@@ -1326,7 +1401,7 @@ def process_due_promotion(db):
 
     suggestions = get_sorted_suggestions(db)
     if not suggestions:
-        state_ref.set({"nextPromotionDate": get_next_promotion_datetime(now_local)}, merge=True)
+        state_ref.set({"nextPromotionDate": get_next_promotion_datetime(db, now_local)}, merge=True)
         return
 
     top_score = get_suggestion_score(suggestions[0].to_dict() or {})
@@ -1336,14 +1411,14 @@ def process_due_promotion(db):
         poll_id = create_tiebreaker_poll_backend(db, top_candidates[: min(3, len(top_candidates))])
         state_ref.set({
             "activeTiebreakerPoll": poll_id,
-            "nextPromotionDate": get_next_promotion_datetime(now_local)
+            "nextPromotionDate": get_next_promotion_datetime(db, now_local)
         }, merge=True)
         print(f"Desempate criado automaticamente: {poll_id}")
         return
 
     repertory_result = activate_or_queue_repertory_poll(db, top_candidates[0])
     state_ref.set({
-        "nextPromotionDate": get_next_promotion_datetime(now_local)
+        "nextPromotionDate": get_next_promotion_datetime(db, now_local)
     }, merge=True)
     if repertory_result["status"] == "created":
         print(f"Enquete de repertório criada automaticamente: {repertory_result['pollId']}")
@@ -1459,7 +1534,7 @@ def process_tiebreaker_completion(db):
     options = poll.get("options", []) or []
     if not options:
         poll_ref.set({"closed": True}, merge=True)
-        state_ref.set({"activeTiebreakerPoll": None, "nextPromotionDate": get_next_promotion_datetime()}, merge=True)
+        state_ref.set({"activeTiebreakerPoll": None, "nextPromotionDate": get_next_promotion_datetime(db)}, merge=True)
         return
 
     max_votes = max((opt.get("votes", 0) or 0) for opt in options)
@@ -1467,7 +1542,7 @@ def process_tiebreaker_completion(db):
     suggestion_ids = poll.get("suggestionIds", []) or []
     if winner_idx is None or winner_idx >= len(suggestion_ids):
         poll_ref.set({"closed": True}, merge=True)
-        state_ref.set({"activeTiebreakerPoll": None, "nextPromotionDate": get_next_promotion_datetime()}, merge=True)
+        state_ref.set({"activeTiebreakerPoll": None, "nextPromotionDate": get_next_promotion_datetime(db)}, merge=True)
         return
 
     suggestion_ref = db.collection("suggestions").document(suggestion_ids[winner_idx])
@@ -1479,7 +1554,7 @@ def process_tiebreaker_completion(db):
     poll_ref.set({"closed": True, "winnerLabel": winner_label}, merge=True)
 
     if not suggestion_snap.exists:
-        state_ref.set({"activeTiebreakerPoll": None, "nextPromotionDate": get_next_promotion_datetime()}, merge=True)
+        state_ref.set({"activeTiebreakerPoll": None, "nextPromotionDate": get_next_promotion_datetime(db)}, merge=True)
         return
 
     repertory_result = activate_or_queue_repertory_poll(db, suggestion_snap)
@@ -1506,7 +1581,7 @@ def process_repertory_completion(db):
     poll_ref = db.collection("polls").document(poll_id)
     poll_snap = poll_ref.get()
     if not poll_snap.exists:
-        state_ref.set({"activeRepertoryPoll": None, "nextPromotionDate": get_next_promotion_datetime()}, merge=True)
+        state_ref.set({"activeRepertoryPoll": None, "nextPromotionDate": get_next_promotion_datetime(db)}, merge=True)
         return
 
     poll = poll_snap.to_dict() or {}
@@ -1530,7 +1605,7 @@ def process_repertory_completion(db):
             state_ref.set({
                 "activeRepertoryPoll": queued_result.get("pollId"),
                 "pendingRepertorySuggestionId": None,
-                "nextPromotionDate": get_next_promotion_datetime()
+                "nextPromotionDate": get_next_promotion_datetime(db)
             }, merge=True)
             print(f"Enquete de repertório concluída; próxima enquete de repertório ativada: {queued_result.get('pollId')}")
             return
@@ -1541,7 +1616,7 @@ def process_repertory_completion(db):
 
     state_ref.set({
         "activeRepertoryPoll": None,
-        "nextPromotionDate": get_next_promotion_datetime()
+        "nextPromotionDate": get_next_promotion_datetime(db)
     }, merge=True)
     print(f"Enquete de repertório concluída automaticamente: {poll_id}")
 
@@ -2751,8 +2826,10 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
         dislikes = safe_int(log.get('dislikes', 0))
         removed_by = log.get('removedBy', 'Sistema')
         reason = str(log.get('reason') or 'Não informado').strip()
-        if removed_by == 'Sistema' and dislikes >= 3:
-            reason = 'Atingiu o limite de 3 dislikes'
+        db_client = firestore.client()
+        dislike_th = get_dislike_threshold(db_client)
+        if removed_by == 'Sistema' and dislikes >= dislike_th:
+            reason = f'Atingiu o limite de {dislike_th} dislikes'
         
         msg = (
             f"🗑️ *SUGESTÃO REMOVIDA*\n\n"

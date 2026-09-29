@@ -6499,24 +6499,16 @@ async function initPromotionState() {
   }
 }
 
-// Calcular próxima sexta-feira às 23:59
-function getNextFriday(fromDate = new Date()) {
+// Calcular próxima promoção às 23:59
+function getNextPromotionDate(fromDate = new Date(), durationDays = 7) {
   const date = new Date(fromDate);
-  date.setSeconds(0, 0);
-  const dayOfWeek = date.getDay();
-  let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
-  const isFridayAfterCutoff = dayOfWeek === 5 && (
-    date.getHours() > 23 ||
-    (date.getHours() === 23 && date.getMinutes() >= 59)
-  );
-  if (daysUntilFriday === 0 && isFridayAfterCutoff) {
-    daysUntilFriday = 7;
-  }
-  // Ciclo de 2 semanas: pula para a sexta-feira seguinte (+ 7 dias extras)
-  daysUntilFriday += 7;
-  date.setDate(date.getDate() + daysUntilFriday);
+  date.setDate(date.getDate() + (Number(durationDays) || 7));
   date.setHours(23, 59, 0, 0);
   return date;
+}
+
+function getNextFriday(fromDate = new Date(), durationDays = 7) {
+  return getNextPromotionDate(fromDate, durationDays);
 }
 
 function createPromotionLockToken() {
