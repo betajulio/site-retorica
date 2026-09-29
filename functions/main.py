@@ -455,8 +455,24 @@ def build_poll_reminder_message(p, header_title="📢 *LEMBRETE DE ENQUETE ATIVA
     return msg
 
 
-def get_suggestion_score(data):
-    return safe_int((data or {}).get("likes", 0)) - safe_int((data or {}).get("dislikes", 0))
+def compute_suggestion_active_counts(data, active_uids=None, active_emails=None):
+    voter_map = (data or {}).get("voterMap")
+    if isinstance(voter_map, dict) and (active_uids is not None or active_emails is not None):
+        a_likes = 0
+        a_dislikes = 0
+        for k, val in voter_map.items():
+            is_active = (k in (active_uids or set())) or (str(k).lower() in (active_emails or set()))
+            if is_active:
+                if val == "like":
+                    a_likes += 1
+                elif val == "dislike":
+                    a_dislikes += 1
+        return a_likes, a_dislikes
+    return safe_int((data or {}).get("likes", 0)), safe_int((data or {}).get("dislikes", 0))
+
+def get_suggestion_score(data, active_uids=None, active_emails=None):
+    a_likes, a_dislikes = compute_suggestion_active_counts(data, active_uids, active_emails)
+    return a_likes - a_dislikes
 
 def get_sorted_suggestions(db):
     try:
@@ -467,23 +483,9 @@ def get_sorted_suggestions(db):
         active_uids = set()
         active_emails = set()
 
-    def compute_active_counts(data):
-        voter_map = data.get("voterMap")
-        if isinstance(voter_map, dict) and (active_uids or active_emails):
-            a_likes = 0
-            a_dislikes = 0
-            for k, val in voter_map.items():
-                if k in active_uids or str(k).lower() in active_emails:
-                    if val == "like":
-                        a_likes += 1
-                    elif val == "dislike":
-                        a_dislikes += 1
-            return a_likes, a_dislikes
-        return safe_int(data.get("likes", 0)), safe_int(data.get("dislikes", 0))
-
     def suggestion_sort_key(doc):
         data = doc.to_dict() or {}
-        a_likes, a_dislikes = compute_active_counts(data)
+        a_likes, a_dislikes = compute_suggestion_active_counts(data, active_uids, active_emails)
         score = a_likes - a_dislikes
         created_at = to_datetime(data.get("createdAt"))
         created_ts = created_at.timestamp() if isinstance(created_at, datetime) else 0
@@ -497,11 +499,22 @@ def get_sorted_suggestions(db):
     return sorted(suggestions, key=suggestion_sort_key, reverse=True)
 
 def get_top_tied_suggestions(db, limit=3):
+    try:
+        active_members = get_active_band_members(db)
+        active_uids = set(m["uid"] for m in active_members if m.get("uid"))
+        active_emails = set(m["email"].lower() for m in active_members if m.get("email"))
+    except Exception:
+        active_uids = set()
+        active_emails = set()
+
     sorted_suggestions = get_sorted_suggestions(db)
     if not sorted_suggestions:
         return []
-    top_score = get_suggestion_score(sorted_suggestions[0].to_dict() or {})
-    top_candidates = [doc for doc in sorted_suggestions if get_suggestion_score(doc.to_dict() or {}) == top_score]
+    top_score = get_suggestion_score(sorted_suggestions[0].to_dict() or {}, active_uids, active_emails)
+    top_candidates = [
+        doc for doc in sorted_suggestions 
+        if get_suggestion_score(doc.to_dict() or {}, active_uids, active_emails) == top_score
+    ]
     return top_candidates[: min(limit, len(top_candidates))]
 
 
@@ -1313,24 +1326,29 @@ def process_pending_repertory_poll(db):
 def cleanup_disliked_suggestions(db):
     try:
         threshold = get_dislike_threshold(db)
+        active_members = get_active_band_members(db)
+        active_uids = set(m["uid"] for m in active_members if m.get("uid"))
+        active_emails = set(m["email"].lower() for m in active_members if m.get("email"))
+
         removed_count = 0
         for doc in db.collection("suggestions").stream():
             data = doc.to_dict() or {}
-            dislikes = safe_int(data.get("dislikes", 0))
-            if dislikes >= threshold:
+            a_likes, a_dislikes = compute_suggestion_active_counts(data, active_uids, active_emails)
+
+            if a_dislikes >= threshold:
                 doc.reference.delete()
                 song = data.get("song", "Música")
                 artist = data.get("artist", "Artista")
                 db.collection("logs").add({
                     "action": "Sugestão Removida",
-                    "detail": f"{song} — {artist} · {dislikes}👎 · Motivo: Atingiu o limite de {threshold} dislikes",
+                    "detail": f"{song} — {artist} · {a_dislikes}👎 · Motivo: Atingiu o limite de {threshold} dislikes de membros ativos",
                     "song": song,
                     "artist": artist,
                     "by": data.get("by", "Membro"),
-                    "likes": safe_int(data.get("likes", 0)),
-                    "dislikes": dislikes,
+                    "likes": a_likes,
+                    "dislikes": a_dislikes,
                     "voterMap": data.get("voterMap", {}),
-                    "reason": f"Atingiu o limite de {threshold} dislikes",
+                    "reason": f"Atingiu o limite de {threshold} dislikes de membros ativos",
                     "removedBy": "Sistema",
                     "category": "sugestoes",
                     "who": "Sistema",
@@ -1339,8 +1357,15 @@ def cleanup_disliked_suggestions(db):
                     "tsLocal": now_sp().strftime("%d/%m/%Y %H:%M:%S")
                 })
                 removed_count += 1
+            else:
+                # Mantém os contadores de likes/dislikes sincronizados com membros ativos sem alterar o voterMap
+                curr_likes = safe_int(data.get("likes", 0))
+                curr_dislikes = safe_int(data.get("dislikes", 0))
+                if curr_likes != a_likes or curr_dislikes != a_dislikes:
+                    doc.reference.update({"likes": a_likes, "dislikes": a_dislikes})
+
         if removed_count > 0:
-            print(f"{removed_count} sugestão(ões) com {threshold}+ dislikes eliminada(s) automaticamente.")
+            print(f"{removed_count} sugestão(ões) com {threshold}+ dislikes de membros ativos eliminada(s) automaticamente.")
         return removed_count
     except Exception as e:
         print(f"Erro em cleanup_disliked_suggestions: {e}")
@@ -2232,6 +2257,10 @@ def admin_restore_deleted_suggestions(req: https_fn.Request) -> https_fn.Respons
 
     db = firestore.client()
     try:
+        active_members = get_active_band_members(db)
+        active_uids = set(m["uid"] for m in active_members if m.get("uid"))
+        active_emails = set(m["email"].lower() for m in active_members if m.get("email"))
+
         payload = req.get_json(silent=True) or {}
         items = payload.get("items", [])
         results = []
@@ -2241,8 +2270,7 @@ def admin_restore_deleted_suggestions(req: https_fn.Request) -> https_fn.Respons
             if not song:
                 continue
             voter_map = item.get("voterMap") or {}
-            likes = len([v for v in voter_map.values() if v == "like"]) if voter_map else safe_int(item.get("likes"), 0)
-            dislikes = len([v for v in voter_map.values() if v == "dislike"]) if voter_map else safe_int(item.get("dislikes"), 0)
+            likes, dislikes = compute_suggestion_active_counts({"voterMap": voter_map}, active_uids, active_emails)
             doc_data = {
                 "song": song,
                 "artist": artist,
@@ -2252,7 +2280,9 @@ def admin_restore_deleted_suggestions(req: https_fn.Request) -> https_fn.Respons
                 "voterMap": voter_map,
                 "youtube": item.get("youtube") or "",
                 "note": item.get("note") or "",
-                "createdAt": firestore.SERVER_TIMESTAMP
+                "createdAt": firestore.SERVER_TIMESTAMP,
+                "skipWhatsAppNotification": True,
+                "restored": True
             }
             new_ref = db.collection("suggestions").document()
             new_ref.set(doc_data)
@@ -2791,6 +2821,8 @@ def on_photo_added(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
 def on_suggestion_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | None]) -> None:
     s = event.data.to_dict()
     if s:
+        if s.get("skipWhatsAppNotification") is True or s.get("restored") is True:
+            return
         song = s.get('song', 'Desconhecida')
         artist = s.get('artist', 'Desconhecido')
         user = s.get('by', 'Alguém')

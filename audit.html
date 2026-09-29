@@ -1482,15 +1482,107 @@ window.applyPromotionDurationToCurrentCycle = async () => {
 
 window.runSuggestionsCleanup = async () => {
   const th = currentDislikeThreshold || 3;
-  if (!confirm(`Deseja iniciar a varredura? Todas as músicas com ${th} ou mais dislikes serão removidas e as mensagens de motivação serão enviadas ao WhatsApp.`)) return;
+  if (!confirm(`Deseja iniciar a varredura? Todas as músicas com ${th} ou mais dislikes de membros ativos serão removidas e as mensagens de motivação serão enviadas ao WhatsApp.`)) return;
 
   showToast('Iniciando varredura...');
   let removedCount = 0;
 
   try {
+    const [snap, membersSnap, pausedDoc] = await Promise.all([
+      getDocs(collection(db, 'suggestions')),
+      getDocs(collection(db, 'members')),
+      getDoc(doc(db, 'config', 'pausedAdmins')).catch(() => null)
+    ]);
+
+    const pausedEmails = new Set();
+    if (pausedDoc && pausedDoc.exists()) {
+      const pData = pausedDoc.data() || {};
+      (pData.emails || []).forEach(e => { if (e) pausedEmails.add(String(e).toLowerCase().trim()); });
+      if (pData.pausedMap && typeof pData.pausedMap === 'object') {
+        Object.entries(pData.pausedMap).forEach(([e, val]) => {
+          if (val === true || (val && typeof val === 'object' && val.paused === true)) {
+            pausedEmails.add(String(e).toLowerCase().trim());
+          }
+        });
+      }
+    }
+    if (Array.isArray(pausedAdminsData?.emails)) {
+      pausedAdminsData.emails.forEach(e => { if (e) pausedEmails.add(String(e).toLowerCase().trim()); });
+    }
+    if (pausedAdminsData?.pausedMap && typeof pausedAdminsData.pausedMap === 'object') {
+      Object.entries(pausedAdminsData.pausedMap).forEach(([e, val]) => {
+        if (val === true || (val && typeof val === 'object' && val.paused === true)) {
+          pausedEmails.add(String(e).toLowerCase().trim());
+        }
+      });
+    }
+
+    const KNOWN_MEMBER_UIDS = {
+      'juliocereser@gmail.com': 'Ow9QCS36WacpT2Lhjf6MObYGfWl2',
+      'mfa200023@gmail.com': 'qBWyQkqHtAXty6XJudCQjdGVZEz2',
+      'vinitorressantos@gmail.com': 'dJM9YFeHXyet7zdbO9FPk4ymFSf1',
+      'neibatera1@gmail.com': 'R4HA9jU3okbHj4Bi1SUY1cydXE22',
+      'rgmaia6@gmail.com': 'Ict3zACik0attZuJRHoUCrAMy7X2',
+      'renatoapluiz@gmail.com': 'R7XsnVryPAdVv6k70vUrlRRss1C3'
+    };
+
+    const activeUids = new Set();
+    const activeEmails = new Set();
+    membersSnap.forEach(d => {
+      const data = d.data() || {};
+      const email = (data.ownerEmail || '').toLowerCase().trim();
+      const isPaused = data.adminPaused === true || data.isPaused === true || (email && pausedEmails.has(email));
+      const uid = data.ownerUid || KNOWN_MEMBER_UIDS[email];
+      if (!isPaused) {
+        if (uid) activeUids.add(uid);
+        if (email) activeEmails.add(email);
+      }
+    });
+
+    const toRemove = [];
+    const toUpdate = [];
+
+    snap.docs.forEach(d => {
+      const s = d.data() || {};
+      const voterMap = s.voterMap || {};
+      let realLikes = 0;
+      let realDislikes = 0;
+      for (const [k, v] of Object.entries(voterMap)) {
+        const isActive = (activeUids.size > 0 || activeEmails.size > 0)
+          ? (activeUids.has(k) || activeEmails.has(String(k).toLowerCase()))
+          : true;
+        if (isActive) {
+          if (v === 'like') realLikes++;
+          else if (v === 'dislike') realDislikes++;
+        }
+      }
+
+      if (realDislikes >= th) {
+        toRemove.push({ id: d.id, ref: d.ref, data: s, realLikes, realDislikes });
+      } else {
+        const currLikes = s.likes || 0;
+        const currDislikes = s.dislikes || 0;
+        if (currLikes !== realLikes || currDislikes !== realDislikes) {
+          toUpdate.push({ ref: d.ref, realLikes, realDislikes });
+        }
+      }
+    });
+
+    if (toRemove.length === 0) {
+      if (toUpdate.length > 0) {
+        for (const item of toUpdate) {
+          await updateDoc(item.ref, { likes: item.realLikes, dislikes: item.realDislikes });
+        }
+        showToast(`Nenhuma música com ${th}+ dislikes de membros ativos. (${toUpdate.length} votos sincronizados)`);
+      } else {
+        showToast(`Nenhuma música com ${th}+ dislikes de membros ativos encontrada.`);
+      }
+      return;
+    }
+
     await addDoc(collection(db, 'logs'), {
       action: 'Varredura Manual de Sugestões',
-      detail: `Solicitação manual via página de auditoria para remover sugestões com ${th} ou mais dislikes`,
+      detail: `Solicitação manual via página de auditoria para remover sugestões com ${th} ou mais dislikes de membros ativos`,
       category: 'sugestoes',
       who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
       whoEmail: auth.currentUser?.email || '',
@@ -1498,27 +1590,19 @@ window.runSuggestionsCleanup = async () => {
       tsLocal: new Date().toLocaleString('pt-BR')
     });
 
-    const snap = await getDocs(collection(db, 'suggestions'));
-    const toRemove = snap.docs.filter(d => (d.data().dislikes || 0) >= th);
-
-    if (toRemove.length === 0) {
-      showToast(`Nenhuma música com ${th}+ dislikes encontrada.`);
-      return;
-    }
-
-    for (const d of toRemove) {
-      const s = d.data();
-      await deleteDoc(doc(db, 'suggestions', d.id));
+    for (const item of toRemove) {
+      const s = item.data;
+      await deleteDoc(item.ref);
       await addDoc(collection(db, 'logs'), {
         action: 'Sugestão Removida',
-        detail: `${s.song} — ${s.artist} · ${s.likes || 0}👍 ${s.dislikes || 0}👎 · Motivo: Atingiu o limite de ${th} dislikes (Varredura de manutenção)`,
+        detail: `${s.song} — ${s.artist} · ${item.realLikes}👍 ${item.realDislikes}👎 · Motivo: Atingiu o limite de ${th} dislikes de membros ativos (Varredura de manutenção)`,
         song: s.song,
         artist: s.artist,
         by: s.by || 'Membro',
-        likes: s.likes || 0,
-        dislikes: s.dislikes || 0,
+        likes: item.realLikes,
+        dislikes: item.realDislikes,
         voterMap: s.voterMap || {},
-        reason: `Atingiu o limite de ${th} dislikes (Varredura de manutenção)`,
+        reason: `Atingiu o limite de ${th} dislikes de membros ativos (Varredura de manutenção)`,
         removedBy: 'Varredura Automática',
         category: 'sugestoes',
         who: 'Varredura Automática',
@@ -1527,6 +1611,12 @@ window.runSuggestionsCleanup = async () => {
         tsLocal: new Date().toLocaleString('pt-BR')
       });
       removedCount++;
+    }
+
+    if (toUpdate.length > 0) {
+      for (const item of toUpdate) {
+        await updateDoc(item.ref, { likes: item.realLikes, dislikes: item.realDislikes });
+      }
     }
 
     showToast(`Varredura concluída: ${removedCount} música(s) removida(s).`);
