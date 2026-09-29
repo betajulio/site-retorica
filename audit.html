@@ -1533,9 +1533,17 @@ window.runSuggestionsCleanup = async () => {
       const email = (data.ownerEmail || '').toLowerCase().trim();
       const isPaused = data.adminPaused === true || data.isPaused === true || (email && pausedEmails.has(email));
       const uid = data.ownerUid || KNOWN_MEMBER_UIDS[email];
-      if (!isPaused) {
+      if (isPaused) {
+        if (email) pausedEmails.add(email);
+      } else {
         if (uid) activeUids.add(uid);
         if (email) activeEmails.add(email);
+      }
+    });
+    Object.entries(KNOWN_MEMBER_UIDS).forEach(([em, uid]) => {
+      if (!pausedEmails.has(em)) {
+        if (uid) activeUids.add(uid);
+        if (em) activeEmails.add(em);
       }
     });
 
@@ -1680,12 +1688,21 @@ async function recalculateSuggestionVotesForActiveMembers(silent = false) {
       const email = (data.ownerEmail || '').toLowerCase().trim();
       const isPaused = data.adminPaused === true || data.isPaused === true || (email && pausedEmails.has(email));
       const uid = data.ownerUid || KNOWN_MEMBER_UIDS[email];
-      if (!isPaused) {
+      if (isPaused) {
+        if (email) pausedEmails.add(email);
+      } else {
         activeMembersCount++;
         if (uid) activeUids.add(uid);
         if (email) activeEmails.add(email);
       }
     });
+    Object.entries(KNOWN_MEMBER_UIDS).forEach(([em, uid]) => {
+      if (!pausedEmails.has(em)) {
+        if (uid && !activeUids.has(uid)) activeUids.add(uid);
+        if (em && !activeEmails.has(em)) activeEmails.add(em);
+      }
+    });
+    activeMembersCount = Math.max(activeMembersCount, activeEmails.size);
 
     let fixedCount = 0;
     const batchSize = 400;

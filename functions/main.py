@@ -752,6 +752,7 @@ def get_active_band_members(db):
     imediatamente a composição real ativa da banda.
     """
     paused_emails = set()
+    paused_uids = set()
     try:
         paused_doc = db.collection("config").document("pausedAdmins").get()
         if paused_doc.exists:
@@ -808,8 +809,13 @@ def get_active_band_members(db):
                 d.get("adminPaused") is True
                 or d.get("isPaused") is True
                 or (email and email in paused_emails)
+                or (uid and uid in paused_uids)
             )
             if is_paused:
+                if email:
+                    paused_emails.add(email)
+                if uid:
+                    paused_uids.add(uid)
                 continue
 
             # Se tiver email mas não tiver UID gravado, busca no Firebase Auth Admin e salva
@@ -827,6 +833,20 @@ def get_active_band_members(db):
                 "email": email,
                 "uid": uid
             })
+
+        # Garante que todos os integrantes canônicos conhecidos (que não estejam pausados)
+        # estejam na lista de membros ativos, mesmo que não haja documento na coleção members
+        known_emails_seen = set(m.get("email") for m in active_members if m.get("email"))
+        known_uids_seen = set(m.get("uid") for m in active_members if m.get("uid"))
+        for can_email, can_uid in KNOWN_MEMBER_UIDS.items():
+            if can_email not in paused_emails and can_uid not in paused_uids and can_email not in known_emails_seen and can_uid not in known_uids_seen:
+                prefix = can_email.split("@")[0].title()
+                active_members.append({
+                    "id": can_email,
+                    "name": prefix,
+                    "email": can_email,
+                    "uid": can_uid
+                })
 
         if active_members:
             return active_members
@@ -2364,7 +2384,30 @@ def admin_sync_suggestion_votes(req: https_fn.Request) -> https_fn.Response:
                 "ts": firestore.SERVER_TIMESTAMP,
                 "tsLocal": now_sp().strftime("%d/%m/%Y %H:%M:%S")
             })
-        return json_response({"ok": True, "fixed_count": len(fixed), "fixed": fixed}, 200)
+        all_suggs = []
+        for doc in suggestions_ref.stream():
+            d = doc.to_dict() or {}
+            all_suggs.append({
+                "id": doc.id,
+                "song": d.get("song"),
+                "artist": d.get("artist"),
+                "likes": d.get("likes"),
+                "dislikes": d.get("dislikes"),
+                "voterMap": d.get("voterMap")
+            })
+        members_docs = [{"id": m.id, "name": (m.to_dict() or {}).get("name"), "ownerEmail": (m.to_dict() or {}).get("ownerEmail"), "email": (m.to_dict() or {}).get("email"), "adminPaused": (m.to_dict() or {}).get("adminPaused"), "isPaused": (m.to_dict() or {}).get("isPaused")} for m in db.collection("members").stream()]
+        paused_doc = db.collection("config").document("pausedAdmins").get().to_dict() or {}
+        return json_response({
+            "ok": True, 
+            "fixed_count": len(fixed), 
+            "fixed": fixed,
+            "active_members_count": len(active_members),
+            "active_members": active_members,
+            "members_docs": members_docs,
+            "paused_doc": paused_doc,
+            "suggestions_count": len(all_suggs),
+            "suggestions": all_suggs
+        }, 200)
     except Exception as exc:
         return json_response({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 

@@ -3345,17 +3345,37 @@ function getActiveBandMembersInfo() {
   const activeUids = new Set();
   const activeEmails = new Set();
   let count = 0;
+  const pausedEmails = new Set();
+  if (Array.isArray(pausedAdminsData?.emails)) {
+    pausedAdminsData.emails.forEach(e => { if (e) pausedEmails.add(String(e).toLowerCase().trim()); });
+  }
+  if (pausedAdminsData?.pausedMap && typeof pausedAdminsData.pausedMap === 'object') {
+    Object.entries(pausedAdminsData.pausedMap).forEach(([e, val]) => {
+      if (val === true || (val && typeof val === 'object' && val.paused === true)) {
+        pausedEmails.add(String(e).toLowerCase().trim());
+      }
+    });
+  }
+
   membersCache.forEach(({ id, data: m }) => {
     const email = (m.ownerEmail || '').toLowerCase().trim();
-    const isPaused = m.adminPaused === true || m.isPaused === true;
+    const isPaused = m.adminPaused === true || m.isPaused === true || (email && pausedEmails.has(email));
     const uid = m.ownerUid || KNOWN_MEMBER_UIDS[email];
-    if (!isPaused) {
+    if (isPaused) {
+      if (email) pausedEmails.add(email);
+    } else {
       count++;
       if (uid) activeUids.add(uid);
       if (email) activeEmails.add(email);
     }
   });
-  return { activeUids, activeEmails, count: count || 6 };
+  Object.entries(KNOWN_MEMBER_UIDS).forEach(([em, uid]) => {
+    if (!pausedEmails.has(em)) {
+      if (uid && !activeUids.has(uid)) activeUids.add(uid);
+      if (em && !activeEmails.has(em)) activeEmails.add(em);
+    }
+  });
+  return { activeUids, activeEmails, count: activeEmails.size || count || 6 };
 }
 
 function computeActiveSuggestionVotes(s) {
