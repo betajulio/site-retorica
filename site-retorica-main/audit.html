@@ -560,60 +560,35 @@ window.__retoricaBootStart = performance.now();
         </div>
       </div>
 
-      <!-- Subgrupo 3: Rodízio Diário de Bandas (Ciclo de 14 Dias) -->
+      <!-- Subgrupo 3: Carrossel Automático de Bandas (Home) -->
       <div class="admin-subgroup" style="margin-top:1.2rem;border-color:rgba(200,130,10,.35)">
         <div class="admin-subgroup-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
           <div style="display:flex;align-items:center;gap:.5rem">
-            <span>🎸 Rodízio Diário de Bandas (Ciclo de 14 Dias)</span>
-            <span class="badge" style="border-color:rgba(200,130,10,.4);color:var(--gold);background:rgba(200,130,10,.1)">Logo Central Home</span>
+            <span>🎸 Carrossel Automático de Bandas (Logo Central Home)</span>
+            <span class="badge" style="border-color:rgba(200,130,10,.4);color:var(--gold);background:rgba(200,130,10,.1)">Fade Contínuo</span>
           </div>
-          <div id="dailyBandsCycleStatusBadge" style="font-size:.72rem;color:var(--gold);background:rgba(200,130,10,.15);border:1px solid rgba(200,130,10,.3);padding:.2rem .6rem;border-radius:4px;font-family:'Cinzel',serif">
-            Calculando dia do ciclo...
-          </div>
+          <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9;font-size:.7rem;padding:.25rem .6rem" href="index.html#hero">
+            👁️ Ver Carrossel ao Vivo na Home
+          </a>
         </div>
 
         <div style="background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.18);border-radius:4px;padding:.85rem;margin-bottom:1rem">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
-            <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
-              <label style="display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.82rem;color:var(--cream);font-weight:600">
-                <input type="checkbox" id="dailyBandsEnabled" checked style="accent-color:var(--gold);width:16px;height:16px">
-                Ativar alternância diária na Home
-              </label>
-
-              <div style="display:inline-flex;align-items:center;gap:.5rem">
-                <label for="dailyBandsSwitchTime" style="font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--smoke)">Horário de Troca:</label>
-                <input type="time" id="dailyBandsSwitchTime" value="00:00" style="background:#0a0804;border:1px solid rgba(200,130,10,.4);color:var(--gold);padding:.35rem .6rem;font-family:'Cinzel',serif;font-size:.8rem;border-radius:3px">
-              </div>
-            </div>
-
-            <div style="display:flex;align-items:center;gap:.6rem">
-              <button class="btn-ghost" onclick="saveDailyBandsConfig()" style="border-color:var(--amber);color:var(--gold);font-weight:bold;padding:.5rem 1rem">
-                💾 Salvar Configurações de Bandas
-              </button>
-              <span id="dailyBandsSaveStatus" style="font-size:.74rem;color:var(--smoke);font-style:italic"></span>
-            </div>
+          <div style="display:flex;align-items:center;gap:.7rem;color:var(--cream);font-size:.82rem;font-weight:600">
+            <span>✨ Modo de Exibição:</span>
+            <span style="color:var(--gold)">Transição Contínua de 14 Bandas + Marca Retórica (4.5s com dissolvência suave)</span>
           </div>
-
-          <div style="margin-top:.7rem;font-size:.72rem;color:var(--smoke);line-height:1.5;border-top:1px dashed rgba(200,130,10,.15);padding-top:.6rem">
-            🛡️ <strong>Regra de Precedência:</strong> Datas comemorativas cadastradas (Páscoa, Festa Junina, Independência, Halloween, Natal, Ano Novo) têm <em>prioridade máxima</em> sobre o rodízio e nunca são sobrepostas. Quando não houver data festiva ativa, a banda do dia assume o logo principal.
+          <div style="margin-top:.6rem;font-size:.73rem;color:var(--smoke);line-height:1.5;border-top:1px dashed rgba(200,130,10,.15);padding-top:.6rem">
+            🛡️ <strong>Regra de Precedência:</strong> Em datas comemorativas cadastradas (Páscoa, Festa Junina, Independência, Halloween, Natal, Ano Novo), o logotipo comemorativo tem <em>prioridade máxima</em> e permanece fixo no topo. Nos demais dias, o carrossel rotaciona automaticamente sem necessidade de agendamento manual.
           </div>
         </div>
 
-        <div style="margin-bottom:.5rem;font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);font-family:'Cinzel',serif;display:flex;justify-content:space-between;align-items:center">
-          <span>Cronograma do Ciclo de 14 Dias:</span>
-          <span style="font-size:.68rem;color:var(--smoke);text-transform:none">Selecione qual banda tocará em cada dia do ciclo</span>
-        </div>
-
-        <div id="dailyBandsDaysGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.75rem">
-          <!-- Gerado dinamicamente por renderDailyBandsAudit() -->
-        </div>
-
-        <!-- Prévias rápidas de todas as 14 bandas -->
-        <div style="margin-top:1.2rem;border-top:1px solid rgba(200,130,10,.15);padding-top:.9rem">
+        <!-- Prévias individuais de cada logo -->
+        <div>
           <div style="font-size:.72rem;color:var(--smoke);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">
-            Testar Todas as 14 Imagens Diretamente no Topo da Home (Preview URL):
+            Testar Imagens Individuais Diretamente no Topo da Home (Preview URL):
           </div>
           <div class="admin-btn-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.45rem">
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?seasonalPreview=default#hero">🎸 Logo Padrão</a>
             <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?bandPreview=pink_floyd#hero">🎸 Pink Floyd</a>
             <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?bandPreview=legiao_urbana#hero">🎸 Legião Urbana</a>
             <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?bandPreview=the_cure#hero">🎸 The Cure</a>
@@ -2503,7 +2478,6 @@ onAuthStateChanged(auth, async user => {
   loadLoadingExposureConfig();
   loadPausedAdminsConfig();
   loadSchedulesConfig();
-  loadDailyBandsAuditConfig();
   loadSuggestionPendingVotesCounter();
   initAlbumDateDefault();
   loadRehearsalAlbumsList();
@@ -4331,218 +4305,6 @@ window.saveBandRulesFromAudit = async () => {
   } catch (err) {
     console.error('saveBandRulesFromAudit error:', err);
     showToast(`⚠ Erro ao salvar regras: ${err.message || err}`);
-  }
-};
-
-// ─── RODÍZIO DIÁRIO DE BANDAS (HOME) ──────────────────────────────────────────
-
-const BAND_LOGOS_DATA = {
-  pink_floyd: { id: 'pink_floyd', name: 'Pink Floyd', image: 'imagens/bands/band_pink_floyd.png', song: 'Comfortably Numb' },
-  legiao_urbana: { id: 'legiao_urbana', name: 'Legião Urbana', image: 'imagens/bands/band_legiao_urbana.png', song: 'Tempo Perdido' },
-  the_cure: { id: 'the_cure', name: 'The Cure', image: 'imagens/bands/band_the_cure.png', song: "Boys Don't Cry" },
-  guns_n_roses: { id: 'guns_n_roses', name: "Guns N' Roses", image: 'imagens/bands/band_guns_n_roses.png', song: "Knockin' on Heaven's Door" },
-  nirvana: { id: 'nirvana', name: 'Nirvana', image: 'imagens/bands/band_nirvana.png', song: 'Come as You Are' },
-  u2: { id: 'u2', name: 'U2', image: 'imagens/bands/band_u2.png', song: 'With or Without You' },
-  raul_seixas: { id: 'raul_seixas', name: 'Raul Seixas', image: 'imagens/bands/band_raul_seixas.png', song: 'Tente Outra Vez' },
-  ramones: { id: 'ramones', name: 'Ramones', image: 'imagens/bands/band_ramones.png', song: 'Pet Sematary' },
-  billy_idol: { id: 'billy_idol', name: 'Billy Idol', image: 'imagens/bands/band_billy_idol.png', song: 'Eyes Without a Face' },
-  inxs: { id: 'inxs', name: 'INXS', image: 'imagens/bands/band_inxs.png', song: 'Never Tear Us Apart' },
-  depeche_mode: { id: 'depeche_mode', name: 'Depeche Mode', image: 'imagens/bands/band_depeche_mode.png', song: 'Enjoy the Silence' },
-  rem: { id: 'rem', name: 'R.E.M.', image: 'imagens/bands/band_rem.png', song: 'Losing My Religion' },
-  whitesnake: { id: 'whitesnake', name: 'Whitesnake', image: 'imagens/bands/band_whitesnake.png', song: 'Is This Love' },
-  rpm: { id: 'rpm', name: 'RPM', image: 'imagens/bands/band_rpm.png', song: 'Rádio Pirata' }
-};
-
-const DEFAULT_DAILY_BANDS = {
-  enabled: true,
-  switchTime: '00:00',
-  days: [
-    'pink_floyd',     // Dia 1
-    'legiao_urbana',  // Dia 2
-    'the_cure',       // Dia 3
-    'guns_n_roses',   // Dia 4
-    'nirvana',        // Dia 5
-    'u2',             // Dia 6
-    'raul_seixas',    // Dia 7
-    'ramones',        // Dia 8
-    'billy_idol',     // Dia 9
-    'inxs',           // Dia 10
-    'depeche_mode',   // Dia 11
-    'rem',            // Dia 12
-    'whitesnake',     // Dia 13
-    'rpm'             // Dia 14
-  ]
-};
-
-let currentDailyBands = JSON.parse(JSON.stringify(DEFAULT_DAILY_BANDS));
-
-function getAuditDailyCycleDay(now = new Date(), switchTime = '00:00') {
-  const [sh, sm] = (switchTime || '00:00').split(':').map(Number);
-  const switchHour = isNaN(sh) ? 0 : sh;
-  const switchMin = isNaN(sm) ? 0 : sm;
-  
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const switchMinutes = switchHour * 60 + switchMin;
-  
-  const midnightTarget = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (currentMinutes < switchMinutes) {
-    midnightTarget.setDate(midnightTarget.getDate() - 1);
-  }
-  
-  const anchorDate = new Date(2026, 0, 1);
-  const diffDays = Math.floor((midnightTarget - anchorDate) / 86400000);
-  return ((diffDays % 14) + 14) % 14;
-}
-
-window.loadDailyBandsAuditConfig = async () => {
-  try {
-    const docSnap = await getDoc(doc(db, 'config', 'dailyBands'));
-    if (docSnap.exists()) {
-      const data = docSnap.data() || {};
-      currentDailyBands = {
-        enabled: data.enabled !== false,
-        switchTime: data.switchTime || DEFAULT_DAILY_BANDS.switchTime,
-        days: Array.isArray(data.days) && data.days.length === 14 ? data.days : DEFAULT_DAILY_BANDS.days
-      };
-    }
-  } catch (err) {
-    console.warn('loadDailyBandsAuditConfig error:', err);
-  }
-  renderDailyBandsAudit();
-};
-
-window.renderDailyBandsAudit = () => {
-  const enabledInput = document.getElementById('dailyBandsEnabled');
-  const switchTimeInput = document.getElementById('dailyBandsSwitchTime');
-  const statusBadge = document.getElementById('dailyBandsCycleStatusBadge');
-  const grid = document.getElementById('dailyBandsDaysGrid');
-
-  if (enabledInput) enabledInput.checked = currentDailyBands.enabled !== false;
-  if (switchTimeInput) switchTimeInput.value = currentDailyBands.switchTime || '00:00';
-
-  const currentCycleIdx = getAuditDailyCycleDay(new Date(), currentDailyBands.switchTime);
-  const currentBandKey = (currentDailyBands.days && currentDailyBands.days[currentCycleIdx]) || DEFAULT_DAILY_BANDS.days[currentCycleIdx];
-  const currentBand = BAND_LOGOS_DATA[currentBandKey] || BAND_LOGOS_DATA.pink_floyd;
-
-  if (statusBadge) {
-    statusBadge.innerHTML = `✨ Hoje: <strong>Dia ${currentCycleIdx + 1} (${currentBand.name})</strong> • Troca às ${currentDailyBands.switchTime}`;
-  }
-
-  if (!grid) return;
-
-  const bandOptionsHtml = Object.keys(BAND_LOGOS_DATA).map(key => {
-    const b = BAND_LOGOS_DATA[key];
-    return `<option value="${b.id}">${b.name} (${b.song})</option>`;
-  }).join('');
-
-  grid.innerHTML = (currentDailyBands.days || DEFAULT_DAILY_BANDS.days).map((bandKey, idx) => {
-    const isToday = idx === currentCycleIdx;
-    const band = BAND_LOGOS_DATA[bandKey] || BAND_LOGOS_DATA.pink_floyd;
-
-    return `
-      <div class="card" style="border:1px solid ${isToday ? 'rgba(232,168,32,.7)' : 'rgba(200,130,10,.2)'};background:${isToday ? 'rgba(40,25,8,.75)' : 'rgba(10,8,4,.6)'};padding:.75rem;position:relative;display:flex;flex-direction:column;gap:.5rem">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-family:'Cinzel',serif;font-size:.78rem;font-weight:bold;color:${isToday ? 'var(--gold)' : 'var(--paper)'}">
-            Dia ${idx + 1} de 14
-          </span>
-          ${isToday ? `<span style="font-size:.6rem;background:rgba(200,130,10,.3);color:var(--gold);border:1px solid rgba(200,130,10,.6);padding:.1rem .35rem;border-radius:3px;font-weight:bold;text-transform:uppercase">Hoje</span>` : ''}
-        </div>
-
-        <div style="display:flex;gap:.7rem;align-items:center">
-          <img id="dailyBandThumb_${idx}" src="${band.image}" alt="${band.name}" style="width:50px;height:53px;object-fit:contain;background:rgba(0,0,0,.6);border:1px solid rgba(200,130,10,.3);border-radius:4px;padding:3px;flex-shrink:0">
-          <div style="flex:1;min-width:0">
-            <label for="dailyBandSelect_${idx}" style="font-size:.65rem;color:var(--smoke);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.2rem">Banda Escalada:</label>
-            <select id="dailyBandSelect_${idx}" onchange="onDailyBandSelectChange(${idx}, this.value)" style="width:100%;background:#0d0a06;color:var(--cream);border:1px solid rgba(200,130,10,.35);padding:.35rem .45rem;font-size:.72rem;border-radius:3px;font-family:'Lora',serif">
-              ${bandOptionsHtml}
-            </select>
-          </div>
-        </div>
-
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.2rem;padding-top:.4rem;border-top:1px dashed rgba(200,130,10,.15)">
-          <span style="font-size:.65rem;color:var(--smoke);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px" id="dailyBandSong_${idx}">
-            🎵 ${band.song}
-          </span>
-          <a id="dailyBandLink_${idx}" class="btn-ghost" target="_blank" style="text-decoration:none;padding:.2rem .4rem;font-size:.62rem;border-color:rgba(103,232,249,.4);color:#67e8f9" href="index.html?bandPreview=${band.id}#hero">
-            👁️ Home
-          </a>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  (currentDailyBands.days || DEFAULT_DAILY_BANDS.days).forEach((bKey, idx) => {
-    const sel = document.getElementById(`dailyBandSelect_${idx}`);
-    if (sel) sel.value = bKey;
-  });
-};
-
-window.onDailyBandSelectChange = (dayIdx, newBandKey) => {
-  if (!currentDailyBands.days) currentDailyBands.days = [...DEFAULT_DAILY_BANDS.days];
-  currentDailyBands.days[dayIdx] = newBandKey;
-  
-  const band = BAND_LOGOS_DATA[newBandKey];
-  if (band) {
-    const thumb = document.getElementById(`dailyBandThumb_${dayIdx}`);
-    if (thumb) {
-      thumb.src = band.image;
-      thumb.alt = band.name;
-    }
-    const song = document.getElementById(`dailyBandSong_${dayIdx}`);
-    if (song) song.textContent = `🎵 ${band.song}`;
-    const link = document.getElementById(`dailyBandLink_${dayIdx}`);
-    if (link) link.href = `index.html?bandPreview=${band.id}#hero`;
-  }
-};
-
-window.saveDailyBandsConfig = async () => {
-  const enabledInput = document.getElementById('dailyBandsEnabled');
-  const switchTimeInput = document.getElementById('dailyBandsSwitchTime');
-  const statusSpan = document.getElementById('dailyBandsSaveStatus');
-
-  const enabled = enabledInput ? enabledInput.checked : true;
-  const switchTime = (switchTimeInput?.value || '00:00').trim();
-
-  const days = [];
-  for (let i = 0; i < 14; i++) {
-    const sel = document.getElementById(`dailyBandSelect_${i}`);
-    days.push(sel ? sel.value : (currentDailyBands.days[i] || DEFAULT_DAILY_BANDS.days[i]));
-  }
-
-  currentDailyBands = { enabled, switchTime, days };
-
-  if (statusSpan) statusSpan.textContent = 'Salvando no Firestore...';
-  showToast('Salvando rodízio diário de bandas...');
-
-  try {
-    const payload = {
-      enabled,
-      switchTime,
-      days,
-      updatedAt: serverTimestamp(),
-      updatedBy: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin'
-    };
-    await setDoc(doc(db, 'config', 'dailyBands'), payload, { merge: true });
-
-    await addDoc(collection(db, 'logs'), {
-      action: 'Configuração Rodízio de Bandas',
-      detail: `Alternância diária ${enabled ? 'ativada' : 'desativada'} às ${switchTime} (14 bandas)`,
-      category: 'visual',
-      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
-      whoEmail: auth.currentUser?.email || '',
-      ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
-    });
-
-    if (statusSpan) {
-      statusSpan.textContent = `✓ Salvo às ${new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`;
-      setTimeout(() => { if (statusSpan) statusSpan.textContent = ''; }, 4000);
-    }
-    showToast('✓ Configuração do rodízio de bandas salva com sucesso!');
-    renderDailyBandsAudit();
-  } catch (err) {
-    console.error('saveDailyBandsConfig error:', err);
-    if (statusSpan) statusSpan.textContent = '⚠ Erro ao salvar.';
-    showToast('⚠ Erro ao salvar configurações de bandas no Firestore.');
   }
 };
 

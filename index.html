@@ -234,8 +234,9 @@
   .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
   .hero-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(200,130,10,.04) 59px,rgba(200,130,10,.04) 60px)}
   .hero-content{position:relative;text-align:center;animation:fadeUp 1.2s ease both;padding:1rem 0 6.6rem}
-  .hero-inst-wrap{display:flex;justify-content:center;align-items:center;margin:.5rem 0 .75rem;animation:fadeUp 1.2s .1s ease both}
-  .hero-inst-img{width:214px;max-width:63.75vw;height:auto;object-fit:contain;filter:drop-shadow(0 0 24px rgba(200,130,10,0.25))}
+  .hero-inst-wrap{position:relative;width:214px;max-width:63.75vw;aspect-ratio:485 / 514;height:auto;margin:.5rem auto .75rem;display:flex;justify-content:center;align-items:center;animation:fadeUp 1.2s .1s ease both}
+  .hero-inst-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 24px rgba(200,130,10,0.25));opacity:0;transform:scale(0.96);transition:opacity 1.3s cubic-bezier(.4,0,.2,1),transform 1.3s cubic-bezier(.4,0,.2,1);pointer-events:none;user-select:none;z-index:1;will-change:opacity,transform}
+  .hero-inst-img.active{opacity:1;transform:scale(1);z-index:2}
   @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
   .hero-tag{font-family:'IM Fell English SC',serif;font-size:.85rem;letter-spacing:.4em;color:var(--amber);text-transform:uppercase;margin-bottom:1.5rem}
   .hero-title{font-family:'Cinzel',serif;font-size:clamp(5rem,14vw,12rem);font-weight:900;color:var(--cream);line-height:.85;text-shadow:0 0 80px rgba(200,130,10,.3),3px 3px 0 rgba(139,58,10,.4);animation:fadeUp 1.2s .2s ease both}
@@ -1147,9 +1148,10 @@
   <div class="hero-content">
     <p class="hero-tag">Classic Rock</p>
 
-    <!-- Band instruments image -->
-    <div class="hero-inst-wrap">
-      <img class="hero-inst-img" id="heroInstrumentsImage" src="imagens/inst.png" alt="Instrumentos Retórica">
+    <!-- Band instruments carousel logo -->
+    <div class="hero-inst-wrap" id="heroLogoCarouselWrap">
+      <img class="hero-inst-img active" id="heroInstrumentsImage" src="imagens/inst.png" alt="Instrumentos Retórica">
+      <img class="hero-inst-img" id="heroInstrumentsImageNext" src="" alt="Instrumentos Retórica">
     </div>
 
     <h1 class="hero-title">Retórica</h1>
@@ -2562,76 +2564,83 @@ function getSeasonalTheme(date = new Date()) {
   return { key: 'none', image: 'imagens/inst.png' };
 }
 
-const BAND_LOGOS_DATA = {
-  pink_floyd: { id: 'pink_floyd', name: 'Pink Floyd', image: 'imagens/bands/band_pink_floyd.png', song: 'Comfortably Numb' },
-  legiao_urbana: { id: 'legiao_urbana', name: 'Legião Urbana', image: 'imagens/bands/band_legiao_urbana.png', song: 'Tempo Perdido' },
-  the_cure: { id: 'the_cure', name: 'The Cure', image: 'imagens/bands/band_the_cure.png', song: "Boys Don't Cry" },
-  guns_n_roses: { id: 'guns_n_roses', name: "Guns N' Roses", image: 'imagens/bands/band_guns_n_roses.png', song: "Knockin' on Heaven's Door" },
-  nirvana: { id: 'nirvana', name: 'Nirvana', image: 'imagens/bands/band_nirvana.png', song: 'Come as You Are' },
-  u2: { id: 'u2', name: 'U2', image: 'imagens/bands/band_u2.png', song: 'With or Without You' },
-  raul_seixas: { id: 'raul_seixas', name: 'Raul Seixas', image: 'imagens/bands/band_raul_seixas.png', song: 'Tente Outra Vez' },
-  ramones: { id: 'ramones', name: 'Ramones', image: 'imagens/bands/band_ramones.png', song: 'Pet Sematary' },
-  billy_idol: { id: 'billy_idol', name: 'Billy Idol', image: 'imagens/bands/band_billy_idol.png', song: 'Eyes Without a Face' },
-  inxs: { id: 'inxs', name: 'INXS', image: 'imagens/bands/band_inxs.png', song: 'Never Tear Us Apart' },
-  depeche_mode: { id: 'depeche_mode', name: 'Depeche Mode', image: 'imagens/bands/band_depeche_mode.png', song: 'Enjoy the Silence' },
-  rem: { id: 'rem', name: 'R.E.M.', image: 'imagens/bands/band_rem.png', song: 'Losing My Religion' },
-  whitesnake: { id: 'whitesnake', name: 'Whitesnake', image: 'imagens/bands/band_whitesnake.png', song: 'Is This Love' },
-  rpm: { id: 'rpm', name: 'RPM', image: 'imagens/bands/band_rpm.png', song: 'Rádio Pirata' }
-};
+const HERO_CAROUSEL_ITEMS = [
+  { id: 'retorica', name: 'Retórica', image: 'imagens/inst.png', song: 'Classic Rock' },
+  { id: 'pink_floyd', name: 'Pink Floyd', image: 'imagens/bands/band_pink_floyd.png', song: 'Comfortably Numb' },
+  { id: 'legiao_urbana', name: 'Legião Urbana', image: 'imagens/bands/band_legiao_urbana.png', song: 'Tempo Perdido' },
+  { id: 'the_cure', name: 'The Cure', image: 'imagens/bands/band_the_cure.png', song: "Boys Don't Cry" },
+  { id: 'guns_n_roses', name: "Guns N' Roses", image: 'imagens/bands/band_guns_n_roses.png', song: "Knockin' on Heaven's Door" },
+  { id: 'nirvana', name: 'Nirvana', image: 'imagens/bands/band_nirvana.png', song: 'Come as You Are' },
+  { id: 'u2', name: 'U2', image: 'imagens/bands/band_u2.png', song: 'With or Without You' },
+  { id: 'raul_seixas', name: 'Raul Seixas', image: 'imagens/bands/band_raul_seixas.png', song: 'Tente Outra Vez' },
+  { id: 'ramones', name: 'Ramones', image: 'imagens/bands/band_ramones.png', song: 'Pet Sematary' },
+  { id: 'billy_idol', name: 'Billy Idol', image: 'imagens/bands/band_billy_idol.png', song: 'Eyes Without a Face' },
+  { id: 'inxs', name: 'INXS', image: 'imagens/bands/band_inxs.png', song: 'Never Tear Us Apart' },
+  { id: 'depeche_mode', name: 'Depeche Mode', image: 'imagens/bands/band_depeche_mode.png', song: 'Enjoy the Silence' },
+  { id: 'rem', name: 'R.E.M.', image: 'imagens/bands/band_rem.png', song: 'Losing My Religion' },
+  { id: 'whitesnake', name: 'Whitesnake', image: 'imagens/bands/band_whitesnake.png', song: 'Is This Love' },
+  { id: 'rpm', name: 'RPM', image: 'imagens/bands/band_rpm.png', song: 'Rádio Pirata' }
+];
 
-const DEFAULT_DAILY_BANDS = {
-  enabled: true,
-  switchTime: '00:00',
-  days: [
-    'pink_floyd',     // Dia 1
-    'legiao_urbana',  // Dia 2
-    'the_cure',       // Dia 3
-    'guns_n_roses',   // Dia 4
-    'nirvana',        // Dia 5
-    'u2',             // Dia 6
-    'raul_seixas',    // Dia 7
-    'ramones',        // Dia 8
-    'billy_idol',     // Dia 9
-    'inxs',           // Dia 10
-    'depeche_mode',   // Dia 11
-    'rem',            // Dia 12
-    'whitesnake',     // Dia 13
-    'rpm'             // Dia 14
-  ]
-};
+let heroCarouselTimer = null;
+let heroCarouselIndex = 0;
+let heroCarouselActiveLayer = 0;
 
-let dailyBandsConfig = { ...DEFAULT_DAILY_BANDS };
-
-function getDailyCycleDay(now = new Date(), switchTime = '00:00') {
-  const [sh, sm] = (switchTime || '00:00').split(':').map(Number);
-  const targetDate = new Date(now);
-  if (now.getHours() < (sh || 0) || (now.getHours() === (sh || 0) && now.getMinutes() < (sm || 0))) {
-    targetDate.setDate(targetDate.getDate() - 1);
-  }
-  const refEpoch = new Date(2026, 0, 1, 0, 0, 0);
-  const midnightTarget = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
-  const diffDays = Math.floor((midnightTarget - refEpoch) / 86400000);
-  return ((diffDays % 14) + 14) % 14; // 0 to 13
+function preloadHeroCarouselImages() {
+  HERO_CAROUSEL_ITEMS.forEach(item => {
+    const img = new Image();
+    img.src = item.image;
+  });
 }
 
-function getDailyBandTheme(date = new Date()) {
-  if (dailyBandsConfig.enabled === false) return null;
-  const cycleIdx = getDailyCycleDay(date, dailyBandsConfig.switchTime);
-  const bandKey = Array.isArray(dailyBandsConfig.days) ? dailyBandsConfig.days[cycleIdx] : DEFAULT_DAILY_BANDS.days[cycleIdx];
-  const band = BAND_LOGOS_DATA[bandKey];
-  if (!band) return null;
-  return {
-    key: 'band-' + band.id,
-    image: band.image,
-    name: band.name,
-    cycleDay: cycleIdx + 1
-  };
+function startHeroLogoCarousel() {
+  stopHeroLogoCarousel();
+  preloadHeroCarouselImages();
+
+  const imgA = document.getElementById('heroInstrumentsImage');
+  const imgB = document.getElementById('heroInstrumentsImageNext');
+  if (!imgA || !imgB) return;
+
+  const ROTATE_INTERVAL = 4500; // 4.5 segundos por imagem
+
+  heroCarouselTimer = setInterval(() => {
+    if (document.hidden) return; // Pausa se a janela estiver minimizada ou em segundo plano
+
+    heroCarouselIndex = (heroCarouselIndex + 1) % HERO_CAROUSEL_ITEMS.length;
+    const nextItem = HERO_CAROUSEL_ITEMS[heroCarouselIndex];
+
+    const currentImg = heroCarouselActiveLayer === 0 ? imgA : imgB;
+    const nextImg = heroCarouselActiveLayer === 0 ? imgB : imgA;
+
+    nextImg.src = nextItem.image;
+    nextImg.alt = `Logo ${nextItem.name} - Retórica`;
+
+    // Transição suave com dissolvência (crossfade)
+    nextImg.classList.add('active');
+    currentImg.classList.remove('active');
+
+    const hero = document.getElementById('hero');
+    if (hero) {
+      hero.dataset.season = nextItem.id === 'retorica' ? 'none' : 'band-' + nextItem.id;
+    }
+
+    heroCarouselActiveLayer = heroCarouselActiveLayer === 0 ? 1 : 0;
+  }, ROTATE_INTERVAL);
+}
+
+function stopHeroLogoCarousel() {
+  if (heroCarouselTimer) {
+    clearInterval(heroCarouselTimer);
+    heroCarouselTimer = null;
+  }
 }
 
 function applySeasonalHeroTheme() {
   const hero = document.getElementById('hero');
-  const image = document.getElementById('heroInstrumentsImage');
-  if (!hero || !image) return;
+  const imgA = document.getElementById('heroInstrumentsImage');
+  const imgB = document.getElementById('heroInstrumentsImageNext');
+  if (!hero || !imgA) return;
+
   const urlParams = new URLSearchParams(window.location.search);
   const forcedTheme = urlParams.get('seasonalPreview');
   const forcedBand = urlParams.get('bandPreview');
@@ -2647,59 +2656,45 @@ function applySeasonalHeroTheme() {
 
   // 1. Previews forçados pela URL (testes do administrador)
   if (forcedTheme && forcedMap[forcedTheme]) {
+    stopHeroLogoCarousel();
     const theme = forcedMap[forcedTheme];
     hero.dataset.season = theme.key;
-    image.src = theme.image;
-    image.alt = 'Instrumentos Retórica';
+    imgA.src = theme.image;
+    imgA.classList.add('active');
+    if (imgB) imgB.classList.remove('active');
     return;
   }
-  if (forcedBand && BAND_LOGOS_DATA[forcedBand]) {
-    const band = BAND_LOGOS_DATA[forcedBand];
-    hero.dataset.season = 'band-' + band.id;
-    image.src = band.image;
-    image.alt = `Logo ${band.name} - Retórica`;
-    return;
+  if (forcedBand) {
+    const bandItem = HERO_CAROUSEL_ITEMS.find(b => b.id === forcedBand);
+    if (bandItem) {
+      stopHeroLogoCarousel();
+      hero.dataset.season = 'band-' + bandItem.id;
+      imgA.src = bandItem.image;
+      imgA.classList.add('active');
+      if (imgB) imgB.classList.remove('active');
+      return;
+    }
   }
 
-  // 2. Precedência Máxima: Datas Comemorativas Sazonais (NUNCA são sobrepostas pelo rodízio)
+  // 2. Precedência Máxima: Datas Comemorativas Sazonais (NUNCA são sobrepostas)
   const seasonalTheme = getSeasonalTheme();
   if (seasonalTheme.key !== 'none') {
+    stopHeroLogoCarousel();
     hero.dataset.season = seasonalTheme.key;
-    image.src = seasonalTheme.image;
-    image.alt = 'Instrumentos Retórica';
+    imgA.src = seasonalTheme.image;
+    imgA.classList.add('active');
+    if (imgB) imgB.classList.remove('active');
     return;
   }
 
-  // 3. Rodízio Diário de Bandas (Ciclo de 14 Dias no horário configurado)
-  const dailyBand = getDailyBandTheme();
-  if (dailyBand) {
-    hero.dataset.season = dailyBand.key;
-    image.src = dailyBand.image;
-    image.alt = `Logo ${dailyBand.name} - Retórica`;
-    return;
-  }
-
-  // 4. Logo Padrão Retórica (fallback)
+  // 3. Carrossel Automático de Bandas (sempre ativo em dias normais com transição contínua)
   hero.dataset.season = 'none';
-  image.src = 'imagens/inst.png';
-  image.alt = 'Instrumentos Retórica';
-}
-
-async function loadDailyBandsConfig() {
-  try {
-    const snap = await getDoc(doc(db, 'config', 'dailyBands'));
-    if (snap.exists()) {
-      const data = snap.data() || {};
-      dailyBandsConfig = {
-        enabled: data.enabled !== false,
-        switchTime: data.switchTime || '00:00',
-        days: Array.isArray(data.days) && data.days.length === 14 ? data.days : DEFAULT_DAILY_BANDS.days
-      };
-      applySeasonalHeroTheme();
-    }
-  } catch (err) {
-    console.warn('dailyBands config could not be loaded from Firestore, using local defaults:', err);
-  }
+  imgA.src = HERO_CAROUSEL_ITEMS[0].image;
+  imgA.classList.add('active');
+  if (imgB) imgB.classList.remove('active');
+  heroCarouselIndex = 0;
+  heroCarouselActiveLayer = 0;
+  startHeroLogoCarousel();
 }
 
 function getNextSaturdayInfo() {
@@ -6547,7 +6542,6 @@ function initLazySectionSubscriptions() {
 
 // ─── INIT ──────────────────────────────────────────────────────────
 applySeasonalHeroTheme();
-loadDailyBandsConfig();
 initLazySectionSubscriptions();
 initCarouselTouch();
 let lastWindowFocusRefreshAt = 0;
