@@ -2592,20 +2592,41 @@ const HERO_CAROUSEL_ITEMS = [
   { id: 'rpm', name: 'RPM', image: 'imagens/bands/band_rpm.png', song: 'Rádio Pirata' }
 ];
 
+const HERO_CAROUSEL_ITEMS_MEMBERS = [
+  { id: 'member_julio', name: 'Julio (Guitarra)', image: 'imagens/members/member_julio.png', song: 'Solo & Riffs' },
+  { id: 'member_matheus', name: 'Matheus (Vocal & Violão)', image: 'imagens/members/member_matheus.png', song: 'Voz & Violão' },
+  { id: 'member_nei', name: 'Nei (Baixo)', image: 'imagens/members/member_nei.png', song: 'Groove & Baixo' },
+  { id: 'member_renato', name: 'Renato (Teclado)', image: 'imagens/members/member_renato.png', song: 'Teclas & Synths' },
+  { id: 'member_roni', name: 'Roni (Vocal & Cajón)', image: 'imagens/members/member_roni.png', song: 'Cajón & Voz' },
+  { id: 'member_vini', name: 'Vini (Violão)', image: 'imagens/members/member_vini.png', song: 'Violão Base' },
+  { id: 'member_banda_juntos', name: 'Banda Retórica (Juntos)', image: 'imagens/members/member_banda_juntos.png', song: 'Todos Juntos' },
+  { id: 'retorica', name: 'Retórica', image: 'imagens/inst.png', song: 'Classic Rock' }
+];
+
 let heroCarouselTimer = null;
 let heroCarouselIndex = 0;
 let heroCarouselActiveLayer = 0;
 let heroCarouselDelaySeconds = 4.5;
+let heroCarouselMode = 'bands'; // 'bands' | 'members'
 
 try {
   const cachedDelay = parseFloat(localStorage.getItem('retorica_hero_carousel_delay_sec'));
   if (!isNaN(cachedDelay) && cachedDelay >= 2 && cachedDelay <= 30) {
     heroCarouselDelaySeconds = cachedDelay;
   }
+  const cachedMode = localStorage.getItem('retorica_hero_carousel_mode');
+  if (cachedMode === 'members' || cachedMode === 'bands') {
+    heroCarouselMode = cachedMode;
+  }
 } catch (e) {}
 
+function getActiveHeroCarouselItems() {
+  return heroCarouselMode === 'members' ? HERO_CAROUSEL_ITEMS_MEMBERS : HERO_CAROUSEL_ITEMS;
+}
+
 function preloadHeroCarouselImages() {
-  HERO_CAROUSEL_ITEMS.forEach(item => {
+  const items = getActiveHeroCarouselItems();
+  items.forEach(item => {
     const img = new Image();
     img.src = item.image;
   });
@@ -2624,8 +2645,9 @@ function startHeroLogoCarousel() {
   heroCarouselTimer = setInterval(() => {
     if (document.hidden) return; // Pausa se a janela estiver minimizada ou em segundo plano
 
-    heroCarouselIndex = (heroCarouselIndex + 1) % HERO_CAROUSEL_ITEMS.length;
-    const nextItem = HERO_CAROUSEL_ITEMS[heroCarouselIndex];
+    const items = getActiveHeroCarouselItems();
+    heroCarouselIndex = (heroCarouselIndex + 1) % items.length;
+    const nextItem = items[heroCarouselIndex];
 
     const currentImg = heroCarouselActiveLayer === 0 ? imgA : imgB;
     const nextImg = heroCarouselActiveLayer === 0 ? imgB : imgA;
@@ -2639,7 +2661,7 @@ function startHeroLogoCarousel() {
 
     const hero = document.getElementById('hero');
     if (hero) {
-      hero.dataset.season = nextItem.id === 'retorica' ? 'none' : 'band-' + nextItem.id;
+      hero.dataset.season = nextItem.id === 'retorica' ? 'none' : 'carousel-' + nextItem.id;
     }
 
     heroCarouselActiveLayer = heroCarouselActiveLayer === 0 ? 1 : 0;
@@ -2658,12 +2680,26 @@ async function syncHeroCarouselTimingFromFirestore() {
     const snap = await getDoc(doc(db, 'config', 'dailyBands'));
     if (snap.exists()) {
       const data = snap.data() || {};
+      let changed = false;
+
+      const newMode = (data.heroMode === 'members' || data.heroMode === 'bands') ? data.heroMode : 'bands';
+      if (newMode !== heroCarouselMode) {
+        heroCarouselMode = newMode;
+        localStorage.setItem('retorica_hero_carousel_mode', newMode);
+        changed = true;
+      }
+
       const sec = parseFloat(data.heroCarouselDelaySeconds || data.delaySeconds);
       if (!isNaN(sec) && sec >= 2 && sec <= 30 && sec !== heroCarouselDelaySeconds) {
         heroCarouselDelaySeconds = sec;
         localStorage.setItem('retorica_hero_carousel_delay_sec', String(sec));
-        if (heroCarouselTimer) {
-          startHeroLogoCarousel();
+        changed = true;
+      }
+
+      if (changed) {
+        const seasonalTheme = getSeasonalTheme();
+        if (seasonalTheme.key === 'none') {
+          applySeasonalHeroTheme();
         }
       }
     }
@@ -2681,6 +2717,12 @@ function applySeasonalHeroTheme() {
   const urlParams = new URLSearchParams(window.location.search);
   const forcedTheme = urlParams.get('seasonalPreview');
   const forcedBand = urlParams.get('bandPreview');
+  const forcedMember = urlParams.get('memberPreview');
+  const forcedMode = urlParams.get('heroMode');
+  if (forcedMode === 'bands' || forcedMode === 'members') {
+    heroCarouselMode = forcedMode;
+  }
+
   const forcedMap = {
     natal: { key: 'natal', image: 'imagens/natal.png' },
     anonovo: { key: 'ano-novo', image: 'imagens/anonovo.png' },
@@ -2712,6 +2754,17 @@ function applySeasonalHeroTheme() {
       return;
     }
   }
+  if (forcedMember) {
+    const memberItem = HERO_CAROUSEL_ITEMS_MEMBERS.find(m => m.id === forcedMember);
+    if (memberItem) {
+      stopHeroLogoCarousel();
+      hero.dataset.season = 'member-' + memberItem.id;
+      imgA.src = memberItem.image;
+      imgA.classList.add('active');
+      if (imgB) imgB.classList.remove('active');
+      return;
+    }
+  }
 
   // 2. Precedência Máxima: Datas Comemorativas Sazonais (NUNCA são sobrepostas)
   const seasonalTheme = getSeasonalTheme();
@@ -2724,9 +2777,10 @@ function applySeasonalHeroTheme() {
     return;
   }
 
-  // 3. Carrossel Automático de Bandas (sempre ativo em dias normais com transição contínua)
+  // 3. Carrossel Automático (Bandas ou Membros conforme heroCarouselMode configurado)
   hero.dataset.season = 'none';
-  imgA.src = HERO_CAROUSEL_ITEMS[0].image;
+  const activeItems = getActiveHeroCarouselItems();
+  imgA.src = activeItems[0].image;
   imgA.classList.add('active');
   if (imgB) imgB.classList.remove('active');
   heroCarouselIndex = 0;

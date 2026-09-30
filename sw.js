@@ -1,4 +1,4 @@
-const CACHE_NAME = 'retorica-v24';
+const CACHE_NAME = 'retorica-v25';
 const ASSETS = [
   './index.html',
   './regras.html',
@@ -34,7 +34,14 @@ const ASSETS = [
   './imagens/bands/band_creedence.png',
   './imagens/bands/band_black_sabbath.png',
   './imagens/bands/band_aerosmith.png',
-  './imagens/bands/band_the_doors.png'
+  './imagens/bands/band_the_doors.png',
+  './imagens/members/member_julio.png',
+  './imagens/members/member_matheus.png',
+  './imagens/members/member_nei.png',
+  './imagens/members/member_renato.png',
+  './imagens/members/member_roni.png',
+  './imagens/members/member_vini.png',
+  './imagens/members/member_banda_juntos.png'
 ];
 
 self.addEventListener('install', (e) => {

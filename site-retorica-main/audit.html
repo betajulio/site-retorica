@@ -560,11 +560,11 @@ window.__retoricaBootStart = performance.now();
         </div>
       </div>
 
-      <!-- Subgrupo 3: Carrossel Automático de Bandas (Home) -->
+      <!-- Subgrupo 3: Carrossel do Logo Central (Home) -->
       <div class="admin-subgroup" style="margin-top:1.2rem;border-color:rgba(200,130,10,.35)">
         <div class="admin-subgroup-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
           <div style="display:flex;align-items:center;gap:.5rem">
-            <span>🎸 Carrossel Automático de Bandas (Logo Central Home)</span>
+            <span>🎸👥 Carrossel do Logo Central (Home)</span>
             <span class="badge" style="border-color:rgba(200,130,10,.4);color:var(--gold);background:rgba(200,130,10,.1)">Fade Contínuo</span>
           </div>
           <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;border-color:#67e8f9;color:#67e8f9;font-size:.7rem;padding:.25rem .6rem" href="index.html#hero">
@@ -573,6 +573,31 @@ window.__retoricaBootStart = performance.now();
         </div>
 
         <div style="background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.18);border-radius:4px;padding:.85rem;margin-bottom:1rem">
+          <!-- SELETOR DE MODO DO LOGO CENTRAL -->
+          <div style="margin-bottom:1rem;padding-bottom:.85rem;border-bottom:1px solid rgba(200,130,10,.15)">
+            <div style="font-size:.82rem;font-weight:600;color:var(--cream);margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem">
+              <span>🎭 Modo de Exibição do Logo Central:</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.75rem">
+              <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:pointer;background:rgba(0,0,0,.35);padding:.65rem .85rem;border-radius:4px;border:1px solid rgba(200,130,10,.25)">
+                <input type="radio" name="heroLogoMode" value="bands" id="heroModeBands" checked style="margin-top:.2rem">
+                <div>
+                  <div style="color:var(--gold);font-weight:700;font-size:.85rem">🎸 Bandas de Classic Rock</div>
+                  <div style="color:var(--smoke);font-size:.72rem;line-height:1.3;margin-top:.15rem">Rotaciona entre as 24 bandas homenageadas do rock mundial e o logo oficial Retórica.</div>
+                </div>
+              </label>
+
+              <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:pointer;background:rgba(0,0,0,.35);padding:.65rem .85rem;border-radius:4px;border:1px solid rgba(200,130,10,.25)">
+                <input type="radio" name="heroLogoMode" value="members" id="heroModeMembers" style="margin-top:.2rem">
+                <div>
+                  <div style="color:var(--gold);font-weight:700;font-size:.85rem">👥 Membros da Banda</div>
+                  <div style="color:var(--smoke);font-size:.72rem;line-height:1.3;margin-top:.15rem">Rotaciona as caricaturas dos 6 integrantes com seus instrumentos, a formação completa junta e o logo oficial.</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- TEMPO DE TRANSIÇÃO -->
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
             <div>
               <div style="display:flex;align-items:center;gap:.6rem;color:var(--cream);font-size:.82rem;font-weight:600">
@@ -580,7 +605,7 @@ window.__retoricaBootStart = performance.now();
                 <span id="heroCarouselDelayLabel" style="color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:1.25rem">4.5s</span>
               </div>
               <div style="font-size:.72rem;color:var(--smoke);margin-top:.2rem">
-                Define quantos segundos cada logo de banda (e Retórica) permanece visível antes de iniciar a transição suave.
+                Define quantos segundos cada imagem permanece visível antes de iniciar a transição suave de fade.
               </div>
             </div>
 
@@ -598,24 +623,42 @@ window.__retoricaBootStart = performance.now();
               </div>
 
               <button class="btn-ghost" onclick="saveHeroCarouselTimingConfig()" style="border-color:var(--amber);color:var(--gold);font-weight:bold;padding:.45rem .9rem">
-                💾 Salvar Tempo
+                💾 Salvar Configuração
               </button>
               <span id="heroCarouselTimingSaveStatus" style="font-size:.74rem;color:var(--smoke);font-style:italic"></span>
             </div>
           </div>
 
           <div style="margin-top:.7rem;font-size:.72rem;color:var(--smoke);line-height:1.5;border-top:1px dashed rgba(200,130,10,.15);padding-top:.6rem">
-            🛡️ <strong>Regra de Precedência:</strong> Em datas comemorativas cadastradas (Páscoa, Festa Junina, Independência, Halloween, Natal, Ano Novo), o logotipo comemorativo tem <em>prioridade máxima</em> e permanece fixo no topo. Nos demais dias, o carrossel rotaciona automaticamente sem necessidade de agendamento manual.
+            🛡️ <strong>Regra de Precedência:</strong> Em datas comemorativas cadastradas (Páscoa, Festa Junina, Independência, Halloween, Natal, Ano Novo), o logotipo comemorativo tem <em>prioridade máxima</em> e permanece fixo no topo. Nos demais dias normais, o carrossel rotaciona automaticamente no modo escolhido acima sem necessidade de agendamento manual.
           </div>
         </div>
 
-        <!-- Prévias individuais de cada logo -->
+        <!-- Prévias individuais de Membros da Banda -->
+        <div style="margin-bottom:1rem">
+          <div style="font-size:.72rem;color:var(--smoke);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">
+            👥 Testar Logos dos Membros da Banda na Home (Preview URL):
+          </div>
+          <div class="admin-btn-grid" style="grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:.45rem">
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?heroMode=members#hero">👥 Carrossel Membros</a>
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?memberPreview=member_julio#hero">🎸 Julio (Guitarra)</a>
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?memberPreview=member_matheus#hero">🎤 Matheus (Vocal & Violão)</a>
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?memberPreview=member_nei#hero">🎸 Nei (Baixo)</a>
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?memberPreview=member_renato#hero">🎹 Renato (Teclado)</a>
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?memberPreview=member_roni#hero">🥁 Roni (Vocal & Cajón)</a>
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?memberPreview=member_vini#hero">🎸 Vini (Violão)</a>
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?memberPreview=member_banda_juntos#hero">👥 Banda Reunida (Juntos)</a>
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?seasonalPreview=default#hero">🎸 Retórica (Logo Padrão)</a>
+          </div>
+        </div>
+
+        <!-- Prévias individuais de Bandas -->
         <div>
           <div style="font-size:.72rem;color:var(--smoke);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">
-            Testar Imagens Individuais Diretamente no Topo da Home (Preview URL):
+            🎸 Testar Logos de Bandas de Classic Rock na Home (Preview URL):
           </div>
-          <div class="admin-btn-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.45rem">
-            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?seasonalPreview=default#hero">🎸 Logo Padrão</a>
+          <div class="admin-btn-grid" style="grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:.45rem">
+            <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?heroMode=bands#hero">🎸 Carrossel Bandas</a>
             <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?bandPreview=pink_floyd#hero">🎸 Pink Floyd</a>
             <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?bandPreview=legiao_urbana#hero">🎸 Legião Urbana</a>
             <a class="btn-ghost" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;font-size:.7rem;padding:.3rem .5rem" href="index.html?bandPreview=the_cure#hero">🎸 The Cure</a>
@@ -4354,11 +4397,21 @@ window.setHeroCarouselPreset = (sec) => {
 window.loadHeroCarouselTimingConfig = async () => {
   const input = document.getElementById('heroCarouselDelaySecondsInput');
   const label = document.getElementById('heroCarouselDelayLabel');
+  const bRadio = document.getElementById('heroModeBands');
+  const mRadio = document.getElementById('heroModeMembers');
+
   const localVal = parseFloat(localStorage.getItem('retorica_hero_carousel_delay_sec'));
   if (!isNaN(localVal) && localVal >= 2 && localVal <= 30) {
     if (input) input.value = localVal;
     if (label) label.textContent = `${localVal}s`;
   }
+  const localMode = localStorage.getItem('retorica_hero_carousel_mode');
+  if (localMode === 'members') {
+    if (mRadio) mRadio.checked = true;
+  } else if (localMode === 'bands') {
+    if (bRadio) bRadio.checked = true;
+  }
+
   try {
     const snap = await getDoc(doc(db, 'config', 'dailyBands'));
     if (snap.exists()) {
@@ -4369,6 +4422,13 @@ window.loadHeroCarouselTimingConfig = async () => {
         if (label) label.textContent = `${val}s`;
         localStorage.setItem('retorica_hero_carousel_delay_sec', String(val));
       }
+      const mode = data.heroMode || 'bands';
+      if (mode === 'members') {
+        if (mRadio) mRadio.checked = true;
+      } else {
+        if (bRadio) bRadio.checked = true;
+      }
+      localStorage.setItem('retorica_hero_carousel_mode', mode);
     }
   } catch (err) {
     console.warn('loadHeroCarouselTimingConfig error:', err);
@@ -4378,6 +4438,9 @@ window.loadHeroCarouselTimingConfig = async () => {
 window.saveHeroCarouselTimingConfig = async () => {
   const input = document.getElementById('heroCarouselDelaySecondsInput');
   const status = document.getElementById('heroCarouselTimingSaveStatus');
+  const mRadio = document.getElementById('heroModeMembers');
+  const heroMode = (mRadio && mRadio.checked) ? 'members' : 'bands';
+
   let sec = parseFloat(input?.value);
   if (isNaN(sec) || sec < 2) sec = 2;
   if (sec > 30) sec = 30;
@@ -4389,10 +4452,12 @@ window.saveHeroCarouselTimingConfig = async () => {
     status.textContent = 'Salvando...';
     status.style.color = 'var(--gold)';
   }
-  showToast(`Salvando tempo de exibição: ${sec}s por logo...`);
+  const modeLabel = heroMode === 'members' ? 'Membros da Banda' : 'Bandas de Classic Rock';
+  showToast(`Salvando configuração do logo: Modo ${modeLabel}, ${sec}s por logo...`);
 
   try {
     await setDoc(doc(db, 'config', 'dailyBands'), {
+      heroMode: heroMode,
       heroCarouselDelaySeconds: sec,
       delaySeconds: sec,
       updatedAt: serverTimestamp(),
@@ -4400,10 +4465,11 @@ window.saveHeroCarouselTimingConfig = async () => {
     }, { merge: true });
 
     localStorage.setItem('retorica_hero_carousel_delay_sec', String(sec));
+    localStorage.setItem('retorica_hero_carousel_mode', heroMode);
 
     await addDoc(collection(db, 'logs'), {
       action: 'Configuração Carrossel do Logo',
-      detail: `Tempo de exibição ajustado para ${sec}s por logo`,
+      detail: `Modo do logo definido como "${modeLabel}" e tempo para ${sec}s`,
       category: 'visual',
       who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
       whoEmail: auth.currentUser?.email || '',
@@ -4416,7 +4482,7 @@ window.saveHeroCarouselTimingConfig = async () => {
       status.style.color = 'var(--gold)';
       setTimeout(() => { if (status) status.textContent = ''; }, 4000);
     }
-    showToast(`✓ Tempo do logo central salvo: ${sec}s por imagem!`);
+    showToast(`✓ Configuração salva: ${modeLabel} (${sec}s)!`);
   } catch (err) {
     console.error('saveHeroCarouselTimingConfig error:', err);
     if (status) {

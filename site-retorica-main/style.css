@@ -270,8 +270,9 @@
   .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 60%,rgba(200,130,10,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(139,58,10,.12) 0%,transparent 60%)}
   .hero-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(200,130,10,.04) 59px,rgba(200,130,10,.04) 60px)}
   .hero-content{position:relative;text-align:center;animation:fadeUp 1.2s ease both;padding:1rem 0 6.6rem}
-  .hero-inst-wrap{display:flex;justify-content:center;align-items:center;margin:.5rem 0 .75rem;animation:fadeUp 1.2s .1s ease both}
-  .hero-inst-img{width:214px;max-width:63.75vw;height:auto;object-fit:contain;filter:drop-shadow(0 0 24px rgba(200,130,10,0.25))}
+  .hero-inst-wrap{position:relative;width:214px;max-width:63.75vw;aspect-ratio:485 / 514;height:auto;margin:.5rem auto .75rem;display:flex;justify-content:center;align-items:center;animation:fadeUp 1.2s .1s ease both}
+  .hero-inst-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 24px rgba(200,130,10,0.25));opacity:0;transform:scale(0.96);transition:opacity 1.3s cubic-bezier(.4,0,.2,1),transform 1.3s cubic-bezier(.4,0,.2,1);pointer-events:none;user-select:none;z-index:1;will-change:opacity,transform}
+  .hero-inst-img.active{opacity:1;transform:scale(1);z-index:2}
   @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
   @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
   .hero-tag{font-family:'IM Fell English SC',serif;font-size:.85rem;letter-spacing:.4em;color:var(--amber);text-transform:uppercase;margin-bottom:1.5rem}
