@@ -2585,6 +2585,14 @@ const HERO_CAROUSEL_ITEMS = [
 let heroCarouselTimer = null;
 let heroCarouselIndex = 0;
 let heroCarouselActiveLayer = 0;
+let heroCarouselDelaySeconds = 4.5;
+
+try {
+  const cachedDelay = parseFloat(localStorage.getItem('retorica_hero_carousel_delay_sec'));
+  if (!isNaN(cachedDelay) && cachedDelay >= 2 && cachedDelay <= 30) {
+    heroCarouselDelaySeconds = cachedDelay;
+  }
+} catch (e) {}
 
 function preloadHeroCarouselImages() {
   HERO_CAROUSEL_ITEMS.forEach(item => {
@@ -2601,7 +2609,7 @@ function startHeroLogoCarousel() {
   const imgB = document.getElementById('heroInstrumentsImageNext');
   if (!imgA || !imgB) return;
 
-  const ROTATE_INTERVAL = 4500; // 4.5 segundos por imagem
+  const intervalMs = Math.round(heroCarouselDelaySeconds * 1000);
 
   heroCarouselTimer = setInterval(() => {
     if (document.hidden) return; // Pausa se a janela estiver minimizada ou em segundo plano
@@ -2625,13 +2633,32 @@ function startHeroLogoCarousel() {
     }
 
     heroCarouselActiveLayer = heroCarouselActiveLayer === 0 ? 1 : 0;
-  }, ROTATE_INTERVAL);
+  }, intervalMs);
 }
 
 function stopHeroLogoCarousel() {
   if (heroCarouselTimer) {
     clearInterval(heroCarouselTimer);
     heroCarouselTimer = null;
+  }
+}
+
+async function syncHeroCarouselTimingFromFirestore() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'dailyBands'));
+    if (snap.exists()) {
+      const data = snap.data() || {};
+      const sec = parseFloat(data.heroCarouselDelaySeconds || data.delaySeconds);
+      if (!isNaN(sec) && sec >= 2 && sec <= 30 && sec !== heroCarouselDelaySeconds) {
+        heroCarouselDelaySeconds = sec;
+        localStorage.setItem('retorica_hero_carousel_delay_sec', String(sec));
+        if (heroCarouselTimer) {
+          startHeroLogoCarousel();
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('syncHeroCarouselTimingFromFirestore error:', err);
   }
 }
 
@@ -6542,6 +6569,7 @@ function initLazySectionSubscriptions() {
 
 // ─── INIT ──────────────────────────────────────────────────────────
 applySeasonalHeroTheme();
+syncHeroCarouselTimingFromFirestore();
 initLazySectionSubscriptions();
 initCarouselTouch();
 let lastWindowFocusRefreshAt = 0;

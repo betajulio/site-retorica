@@ -573,11 +573,38 @@ window.__retoricaBootStart = performance.now();
         </div>
 
         <div style="background:rgba(10,8,4,.6);border:1px solid rgba(200,130,10,.18);border-radius:4px;padding:.85rem;margin-bottom:1rem">
-          <div style="display:flex;align-items:center;gap:.7rem;color:var(--cream);font-size:.82rem;font-weight:600">
-            <span>✨ Modo de Exibição:</span>
-            <span style="color:var(--gold)">Transição Contínua de 14 Bandas + Marca Retórica (4.5s com dissolvência suave)</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+            <div>
+              <div style="display:flex;align-items:center;gap:.6rem;color:var(--cream);font-size:.82rem;font-weight:600">
+                <span>⏱ Tempo de Exibição por Logo:</span>
+                <span id="heroCarouselDelayLabel" style="color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:1.25rem">4.5s</span>
+              </div>
+              <div style="font-size:.72rem;color:var(--smoke);margin-top:.2rem">
+                Define quantos segundos cada logo de banda (e Retórica) permanece visível antes de iniciar a transição suave.
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:.35rem">
+                <input id="heroCarouselDelaySecondsInput" type="number" min="2" max="30" step="0.5" value="4.5" style="background:#0a0804;border:1px solid rgba(200,130,10,.4);color:var(--gold);padding:.4rem .6rem;font-family:'Bebas Neue',sans-serif;font-size:1.15rem;border-radius:3px;width:75px;text-align:center" oninput="onHeroCarouselDelayInput(this.value)">
+                <span style="font-size:.75rem;color:var(--smoke)">segundos</span>
+              </div>
+
+              <div style="display:flex;gap:.3rem">
+                <button type="button" class="btn-ghost" style="padding:.25rem .5rem;font-size:.65rem" onclick="setHeroCarouselPreset(3)">3s</button>
+                <button type="button" class="btn-ghost" style="padding:.25rem .5rem;font-size:.65rem" onclick="setHeroCarouselPreset(4.5)">4.5s</button>
+                <button type="button" class="btn-ghost" style="padding:.25rem .5rem;font-size:.65rem" onclick="setHeroCarouselPreset(6)">6s</button>
+                <button type="button" class="btn-ghost" style="padding:.25rem .5rem;font-size:.65rem" onclick="setHeroCarouselPreset(8)">8s</button>
+              </div>
+
+              <button class="btn-ghost" onclick="saveHeroCarouselTimingConfig()" style="border-color:var(--amber);color:var(--gold);font-weight:bold;padding:.45rem .9rem">
+                💾 Salvar Tempo
+              </button>
+              <span id="heroCarouselTimingSaveStatus" style="font-size:.74rem;color:var(--smoke);font-style:italic"></span>
+            </div>
           </div>
-          <div style="margin-top:.6rem;font-size:.73rem;color:var(--smoke);line-height:1.5;border-top:1px dashed rgba(200,130,10,.15);padding-top:.6rem">
+
+          <div style="margin-top:.7rem;font-size:.72rem;color:var(--smoke);line-height:1.5;border-top:1px dashed rgba(200,130,10,.15);padding-top:.6rem">
             🛡️ <strong>Regra de Precedência:</strong> Em datas comemorativas cadastradas (Páscoa, Festa Junina, Independência, Halloween, Natal, Ano Novo), o logotipo comemorativo tem <em>prioridade máxima</em> e permanece fixo no topo. Nos demais dias, o carrossel rotaciona automaticamente sem necessidade de agendamento manual.
           </div>
         </div>
@@ -2478,6 +2505,7 @@ onAuthStateChanged(auth, async user => {
   loadLoadingExposureConfig();
   loadPausedAdminsConfig();
   loadSchedulesConfig();
+  loadHeroCarouselTimingConfig();
   loadSuggestionPendingVotesCounter();
   initAlbumDateDefault();
   loadRehearsalAlbumsList();
@@ -4305,6 +4333,97 @@ window.saveBandRulesFromAudit = async () => {
   } catch (err) {
     console.error('saveBandRulesFromAudit error:', err);
     showToast(`⚠ Erro ao salvar regras: ${err.message || err}`);
+  }
+};
+
+// ─── CARROSSEL DO LOGO CENTRAL (HOME) ────────────────────────────────────────
+
+window.onHeroCarouselDelayInput = (val) => {
+  const label = document.getElementById('heroCarouselDelayLabel');
+  const num = parseFloat(val);
+  if (label && !isNaN(num)) label.textContent = `${num}s`;
+};
+
+window.setHeroCarouselPreset = (sec) => {
+  const input = document.getElementById('heroCarouselDelaySecondsInput');
+  const label = document.getElementById('heroCarouselDelayLabel');
+  if (input) input.value = sec;
+  if (label) label.textContent = `${sec}s`;
+};
+
+window.loadHeroCarouselTimingConfig = async () => {
+  const input = document.getElementById('heroCarouselDelaySecondsInput');
+  const label = document.getElementById('heroCarouselDelayLabel');
+  const localVal = parseFloat(localStorage.getItem('retorica_hero_carousel_delay_sec'));
+  if (!isNaN(localVal) && localVal >= 2 && localVal <= 30) {
+    if (input) input.value = localVal;
+    if (label) label.textContent = `${localVal}s`;
+  }
+  try {
+    const snap = await getDoc(doc(db, 'config', 'dailyBands'));
+    if (snap.exists()) {
+      const data = snap.data() || {};
+      const val = parseFloat(data.heroCarouselDelaySeconds || data.delaySeconds);
+      if (!isNaN(val) && val >= 2 && val <= 30) {
+        if (input) input.value = val;
+        if (label) label.textContent = `${val}s`;
+        localStorage.setItem('retorica_hero_carousel_delay_sec', String(val));
+      }
+    }
+  } catch (err) {
+    console.warn('loadHeroCarouselTimingConfig error:', err);
+  }
+};
+
+window.saveHeroCarouselTimingConfig = async () => {
+  const input = document.getElementById('heroCarouselDelaySecondsInput');
+  const status = document.getElementById('heroCarouselTimingSaveStatus');
+  let sec = parseFloat(input?.value);
+  if (isNaN(sec) || sec < 2) sec = 2;
+  if (sec > 30) sec = 30;
+  if (input) input.value = sec;
+  const label = document.getElementById('heroCarouselDelayLabel');
+  if (label) label.textContent = `${sec}s`;
+
+  if (status) {
+    status.textContent = 'Salvando...';
+    status.style.color = 'var(--gold)';
+  }
+  showToast(`Salvando tempo de exibição: ${sec}s por logo...`);
+
+  try {
+    await setDoc(doc(db, 'config', 'dailyBands'), {
+      heroCarouselDelaySeconds: sec,
+      delaySeconds: sec,
+      updatedAt: serverTimestamp(),
+      updatedBy: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin'
+    }, { merge: true });
+
+    localStorage.setItem('retorica_hero_carousel_delay_sec', String(sec));
+
+    await addDoc(collection(db, 'logs'), {
+      action: 'Configuração Carrossel do Logo',
+      detail: `Tempo de exibição ajustado para ${sec}s por logo`,
+      category: 'visual',
+      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
+      whoEmail: auth.currentUser?.email || '',
+      ts: serverTimestamp(),
+      tsLocal: new Date().toLocaleString('pt-BR')
+    });
+
+    if (status) {
+      status.textContent = `✓ Salvo às ${new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`;
+      status.style.color = 'var(--gold)';
+      setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+    }
+    showToast(`✓ Tempo do logo central salvo: ${sec}s por imagem!`);
+  } catch (err) {
+    console.error('saveHeroCarouselTimingConfig error:', err);
+    if (status) {
+      status.textContent = '⚠ Erro ao salvar.';
+      status.style.color = '#fca5a5';
+    }
+    showToast('⚠ Erro ao salvar tempo no Firestore.');
   }
 };
 
