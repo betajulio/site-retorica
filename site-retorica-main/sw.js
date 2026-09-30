@@ -1,4 +1,4 @@
-const CACHE_NAME = 'retorica-v22';
+const CACHE_NAME = 'retorica-v23';
 const ASSETS = [
   './index.html',
   './regras.html',
@@ -10,7 +10,21 @@ const ASSETS = [
   './repertorio.html',
   './style.css',
   './firebase-init.js',
-  './manifest.json'
+  './manifest.json',
+  './imagens/bands/band_pink_floyd.png',
+  './imagens/bands/band_legiao_urbana.png',
+  './imagens/bands/band_the_cure.png',
+  './imagens/bands/band_guns_n_roses.png',
+  './imagens/bands/band_nirvana.png',
+  './imagens/bands/band_u2.png',
+  './imagens/bands/band_raul_seixas.png',
+  './imagens/bands/band_ramones.png',
+  './imagens/bands/band_billy_idol.png',
+  './imagens/bands/band_inxs.png',
+  './imagens/bands/band_depeche_mode.png',
+  './imagens/bands/band_rem.png',
+  './imagens/bands/band_whitesnake.png',
+  './imagens/bands/band_rpm.png'
 ];
 
 self.addEventListener('install', (e) => {
