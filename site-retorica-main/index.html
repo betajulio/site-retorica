@@ -2632,6 +2632,17 @@ function preloadHeroCarouselImages() {
   });
 }
 
+function updateHeroWrapLayout(itemId) {
+  const wrap = document.getElementById('heroLogoCarouselWrap');
+  if (wrap) {
+    if (itemId === 'member_banda_juntos') {
+      wrap.classList.add('is-wide-band');
+    } else {
+      wrap.classList.remove('is-wide-band');
+    }
+  }
+}
+
 function startHeroLogoCarousel() {
   stopHeroLogoCarousel();
   preloadHeroCarouselImages();
@@ -2654,6 +2665,7 @@ function startHeroLogoCarousel() {
 
     nextImg.src = nextItem.image;
     nextImg.alt = `Logo ${nextItem.name} - Retórica`;
+    updateHeroWrapLayout(nextItem.id);
 
     // Transição suave com dissolvência (crossfade)
     nextImg.classList.add('active');
@@ -2736,6 +2748,7 @@ function applySeasonalHeroTheme() {
   // 1. Previews forçados pela URL (testes do administrador)
   if (forcedTheme && forcedMap[forcedTheme]) {
     stopHeroLogoCarousel();
+    updateHeroWrapLayout(null);
     const theme = forcedMap[forcedTheme];
     hero.dataset.season = theme.key;
     imgA.src = theme.image;
@@ -2747,6 +2760,7 @@ function applySeasonalHeroTheme() {
     const bandItem = HERO_CAROUSEL_ITEMS.find(b => b.id === forcedBand);
     if (bandItem) {
       stopHeroLogoCarousel();
+      updateHeroWrapLayout(bandItem.id);
       hero.dataset.season = 'band-' + bandItem.id;
       imgA.src = bandItem.image;
       imgA.classList.add('active');
@@ -2758,6 +2772,7 @@ function applySeasonalHeroTheme() {
     const memberItem = HERO_CAROUSEL_ITEMS_MEMBERS.find(m => m.id === forcedMember);
     if (memberItem) {
       stopHeroLogoCarousel();
+      updateHeroWrapLayout(memberItem.id);
       hero.dataset.season = 'member-' + memberItem.id;
       imgA.src = memberItem.image;
       imgA.classList.add('active');
@@ -2770,6 +2785,7 @@ function applySeasonalHeroTheme() {
   const seasonalTheme = getSeasonalTheme();
   if (seasonalTheme.key !== 'none') {
     stopHeroLogoCarousel();
+    updateHeroWrapLayout(null);
     hero.dataset.season = seasonalTheme.key;
     imgA.src = seasonalTheme.image;
     imgA.classList.add('active');
@@ -2781,6 +2797,7 @@ function applySeasonalHeroTheme() {
   hero.dataset.season = 'none';
   const activeItems = getActiveHeroCarouselItems();
   imgA.src = activeItems[0].image;
+  updateHeroWrapLayout(activeItems[0].id);
   imgA.classList.add('active');
   if (imgB) imgB.classList.remove('active');
   heroCarouselIndex = 0;
