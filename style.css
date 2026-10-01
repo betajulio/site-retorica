@@ -271,7 +271,8 @@
   .hero-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(200,130,10,.04) 59px,rgba(200,130,10,.04) 60px)}
   .hero-content{position:relative;text-align:center;animation:fadeUp 1.2s ease both;padding:1rem 0 6.6rem}
   .hero-inst-wrap{position:relative;width:214px;max-width:63.75vw;aspect-ratio:485 / 514;height:auto;margin:.5rem auto .75rem;display:flex;justify-content:center;align-items:center;animation:fadeUp 1.2s .1s ease both;transition:width .6s cubic-bezier(.4,0,.2,1),max-width .6s cubic-bezier(.4,0,.2,1),aspect-ratio .6s ease}
-  .hero-inst-wrap.is-wide-band{width:min(980px,94vw);max-width:94vw;aspect-ratio:2100 / 600;height:auto}
+  .hero-inst-wrap.is-wide-band{width:min(1050px,96vw)!important;max-width:96vw!important;aspect-ratio:1855 / 620!important;height:auto!important;margin:.25rem auto .75rem!important}
+  .hero-inst-wrap.is-wide-band .hero-inst-img:not(.active){opacity:0!important;transition:none!important}
   .hero-inst-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 24px rgba(200,130,10,0.25));opacity:0;transform:scale(0.96);transition:opacity 1.3s cubic-bezier(.4,0,.2,1),transform 1.3s cubic-bezier(.4,0,.2,1);pointer-events:none;user-select:none;z-index:1;will-change:opacity,transform}
   .hero-inst-img.active{opacity:1;transform:scale(1);z-index:2}
   @keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
