@@ -2596,13 +2596,25 @@ const HERO_CAROUSEL_ITEMS = [
 ];
 
 const HERO_CAROUSEL_ITEMS_MEMBERS = [
+  // 1. Membros da Banda Atual
   { id: 'member_julio', name: 'Julio (Guitarra)', image: 'imagens/members/member_julio.png', song: 'Solo & Riffs' },
   { id: 'member_matheus', name: 'Matheus (Vocal & Violão)', image: 'imagens/members/member_matheus.png', song: 'Voz & Violão' },
   { id: 'member_nei', name: 'Nei (Baixo)', image: 'imagens/members/member_nei.png', song: 'Groove & Baixo' },
   { id: 'member_renato', name: 'Renato (Teclado)', image: 'imagens/members/member_renato.png', song: 'Teclas & Synths' },
   { id: 'member_roni', name: 'Roni (Vocal & Cajón)', image: 'imagens/members/member_roni.png', song: 'Cajón & Voz' },
   { id: 'member_vini', name: 'Vini (Violão)', image: 'imagens/members/member_vini.png', song: 'Violão Base' },
-  { id: 'member_banda_juntos', name: 'Banda Retórica (Juntos)', image: 'imagens/members/member_banda_juntos.png', song: 'Todos Juntos' },
+  // 2. Banda Atual Completa
+  { id: 'member_banda_juntos', name: 'Banda Retórica (Atual)', image: 'imagens/members/member_banda_juntos.png', song: 'Todos Juntos' },
+
+  // 3. Membros da 1ª Formação
+  { id: 'member_antiga_julio', name: 'Julio (Guitarra - 1ª Formação)', image: 'imagens/members/member_antiga_julio.png', song: 'Guitarra Solo' },
+  { id: 'member_antiga_nei', name: 'Nei (Bateria - 1ª Formação)', image: 'imagens/members/member_antiga_nei.png', song: 'Bateria & Ritmo' },
+  { id: 'member_antiga_jamil', name: 'Jamil (Vocal - 1ª Formação)', image: 'imagens/members/member_antiga_jamil.png', song: 'Vocal Clássico' },
+  { id: 'member_antiga_carlos', name: 'Carlos (Baixo - 1ª Formação)', image: 'imagens/members/member_antiga_carlos.png', song: 'Baixo & Groove' },
+  { id: 'member_antiga_renato', name: 'Renato (Guitarra - 1ª Formação)', image: 'imagens/members/member_antiga_renato.png', song: 'Guitarra Base' },
+  // 4. 1ª Formação Completa
+  { id: 'member_antiga_banda_juntos', name: 'Banda Retórica (1ª Formação)', image: 'imagens/members/member_antiga_banda_juntos.png', song: '1ª Formação' },
+
   { id: 'retorica', name: 'Retórica', image: 'imagens/inst.png', song: 'Classic Rock' }
 ];
 
@@ -2638,9 +2650,9 @@ function preloadHeroCarouselImages() {
 function updateHeroWrapLayout(itemId) {
   const wrap = document.getElementById('heroLogoCarouselWrap');
   if (wrap) {
-    const isBand = itemId === 'member_banda_juntos' ||
-      (typeof itemId === 'string' && itemId.includes('member_banda_juntos')) ||
-      (wrap.querySelector('.hero-inst-img.active') && wrap.querySelector('.hero-inst-img.active').src.includes('member_banda_juntos'));
+    const isBand = itemId === 'member_banda_juntos' || itemId === 'member_antiga_banda_juntos' ||
+      (typeof itemId === 'string' && (itemId.includes('member_banda_juntos') || itemId.includes('member_antiga_banda_juntos'))) ||
+      (wrap.querySelector('.hero-inst-img.active') && (wrap.querySelector('.hero-inst-img.active').src.includes('member_banda_juntos') || wrap.querySelector('.hero-inst-img.active').src.includes('member_antiga_banda_juntos')));
     if (isBand) {
       wrap.classList.add('is-wide-band');
     } else {
