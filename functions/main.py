@@ -529,12 +529,30 @@ def get_next_weekly_elimination_datetime(db, reference=None):
     sched_day = 0 # Domingo (0 = Dom ... 6 = Sáb)
     sched_hour = 23
     sched_min = 59
+    is_enabled = True
+    weeks_interval = 1
+    p_data = {}
+
+    try:
+        p_snap = db.collection("promotion_state").document("current").get()
+        if p_snap.exists:
+            p_data = p_snap.to_dict() or {}
+            if "weeklyEliminationEnabled" in p_data:
+                is_enabled = bool(p_data["weeklyEliminationEnabled"])
+            if "weeklyEliminationWeeks" in p_data:
+                weeks_interval = safe_int(p_data["weeklyEliminationWeeks"]) or 1
+    except Exception as e:
+        print(f"Erro ao ler promotion_state para eliminação: {e}")
 
     try:
         doc = db.collection("config").document("schedules").get()
         if doc.exists:
             cfg = (doc.to_dict() or {}).get("weekly_elimination", {})
             if isinstance(cfg, dict):
+                if "weeklyEliminationEnabled" not in p_data and "enabled" in cfg:
+                    is_enabled = bool(cfg["enabled"])
+                if "weeklyEliminationWeeks" not in p_data and "weeksInterval" in cfg:
+                    weeks_interval = safe_int(cfg["weeksInterval"]) or 1
                 days = cfg.get("days", [])
                 if days and isinstance(days, list) and len(days) > 0:
                     sched_day = days[0]
@@ -545,6 +563,12 @@ def get_next_weekly_elimination_datetime(db, reference=None):
     except Exception as e:
         print(f"Erro ao ler schedule de eliminação: {e}")
 
+    if not is_enabled:
+        return None
+
+    if weeks_interval < 1:
+        weeks_interval = 1
+
     current_day_idx = (ref.weekday() + 1) % 7
     days_ahead = (sched_day - current_day_idx + 7) % 7
 
@@ -554,12 +578,28 @@ def get_next_weekly_elimination_datetime(db, reference=None):
     if days_ahead == 0 and is_today_after_time:
         days_ahead = 7
 
+    # Se o intervalo for > 1 semana e houver última execução, projeta a partir do último ciclo
+    if weeks_interval > 1:
+        try:
+            cfg = (doc.to_dict() or {}).get("weekly_elimination", {}) if 'doc' in locals() and doc.exists else {}
+            last_run_at = cfg.get("lastRunAt")
+            if last_run_at:
+                last_dt = to_datetime(last_run_at)
+                if last_dt:
+                    target_candidate = (last_dt.astimezone(SP_TZ) + timedelta(weeks=weeks_interval)).replace(
+                        hour=sched_hour, minute=sched_min, second=0, microsecond=0
+                    )
+                    if target_candidate > ref:
+                        return target_candidate
+        except Exception:
+            pass
+
     target = ref + timedelta(days=days_ahead)
     return target.replace(hour=sched_hour, minute=sched_min, second=0, microsecond=0)
 
 def format_elimination_time_remaining(target_dt):
     if not target_dt:
-        return "Sem data definida"
+        return "Pausada nas configurações"
     now = now_sp()
     if target_dt.tzinfo is None:
         target_sp = target_dt.replace(tzinfo=SP_TZ)
@@ -591,6 +631,26 @@ def format_elimination_time_remaining(target_dt):
 
 def eliminate_bottom_suggestion(db, is_manual=False, executor="Sistema"):
     try:
+        # Se for automático, valida se a rotina está ligada
+        if not is_manual:
+            try:
+                p_snap = db.collection("promotion_state").document("current").get()
+                p_data = p_snap.to_dict() if p_snap.exists else {}
+                sched_snap = db.collection("config").document("schedules").get()
+                sched_data = sched_snap.to_dict() if sched_snap.exists else {}
+                cfg = sched_data.get("weekly_elimination", {})
+
+                is_enabled = True
+                if "weeklyEliminationEnabled" in p_data:
+                    is_enabled = bool(p_data["weeklyEliminationEnabled"])
+                elif isinstance(cfg, dict) and "enabled" in cfg:
+                    is_enabled = bool(cfg["enabled"])
+
+                if not is_enabled:
+                    return {"ok": False, "message": "Eliminação da lanterna está pausada nas configurações."}
+            except Exception as e:
+                print(f"Erro ao verificar ativação da eliminação: {e}")
+
         sorted_suggs = get_sorted_suggestions(db)
         if not sorted_suggs:
             return {"ok": False, "message": "Nenhuma sugestão encontrada para eliminação."}
@@ -727,14 +787,24 @@ def build_top_suggestions_message(db):
             elim_time_str = format_elimination_time_remaining(elim_dt)
             b_artist_part = f" – {b_artist}" if b_artist else ""
 
-            lines.extend([
-                "",
-                "━━━━━━━━━━━━━━━━━━━━",
-                "🎯 *NA MIRA DA ELIMINAÇÃO:*",
-                f"⚠️ *{b_song}*{b_artist_part} · {b_score} pts (👍 {b_likes} | 👎 {b_dislikes})",
-                f"⏳ *Prazo:* {elim_time_str} · _Votem no site para salvar!_",
-                "━━━━━━━━━━━━━━━━━━━━"
-            ])
+            if elim_dt:
+                lines.extend([
+                    "",
+                    "━━━━━━━━━━━━━━━━━━━━",
+                    "🎯 *NA MIRA DA ELIMINAÇÃO:*",
+                    f"⚠️ *{b_song}*{b_artist_part} · {b_score} pts (👍 {b_likes} | 👎 {b_dislikes})",
+                    f"⏳ *Prazo:* {elim_time_str} · _Votem no site para salvar!_",
+                    "━━━━━━━━━━━━━━━━━━━━"
+                ])
+            else:
+                lines.extend([
+                    "",
+                    "━━━━━━━━━━━━━━━━━━━━",
+                    "🎯 *LANTERNA ATUAL (Eliminação Pausada):*",
+                    f"⚠️ *{b_song}*{b_artist_part} · {b_score} pts (👍 {b_likes} | 👎 {b_dislikes})",
+                    "⏸️ _Eliminação periódica desligada nas configurações._",
+                    "━━━━━━━━━━━━━━━━━━━━"
+                ])
 
         lines.append("")
         lines.append(f"💡 *Veja e vote nas sugestões:* {SUGGESTIONS_URL}")
@@ -3281,9 +3351,32 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                                     r = send_wa_message(msg)
                                     result_ok = r.get("ok", False)
                     elif key == "weekly_elimination":
-                        r = eliminate_bottom_suggestion(db, is_manual=False, executor="Sistema (Automático)")
-                        result_ok = r.get("ok", False)
-                        detail = r.get("message", "") or r.get("error", "")
+                        weeks_interval = safe_int(cfg.get("weeksInterval", 1))
+                        try:
+                            p_snap = db.collection("promotion_state").document("current").get()
+                            if p_snap.exists:
+                                p_data = p_snap.to_dict() or {}
+                                if "weeklyEliminationWeeks" in p_data:
+                                    weeks_interval = safe_int(p_data["weeklyEliminationWeeks"]) or weeks_interval
+                        except Exception:
+                            pass
+
+                        should_run = True
+                        if weeks_interval > 1:
+                            last_run_at = cfg.get("lastRunAt")
+                            if last_run_at:
+                                last_dt = to_datetime(last_run_at)
+                                if last_dt:
+                                    days_since = (now_sp() - last_dt.astimezone(SP_TZ)).days
+                                    if days_since < (weeks_interval * 7 - 2):
+                                        should_run = False
+                                        detail = f"Ciclo de {weeks_interval} semanas em andamento (última execução há {days_since} dias)"
+                        if should_run:
+                            r = eliminate_bottom_suggestion(db, is_manual=False, executor="Sistema (Automático)")
+                            result_ok = r.get("ok", False)
+                            detail = r.get("message", "") or r.get("error", "")
+                        else:
+                            result_ok = True
                 except Exception as exc:
                     detail = str(exc)
                 
