@@ -532,6 +532,7 @@ def get_next_weekly_elimination_datetime(db, reference=None):
     is_enabled = True
     weeks_interval = 1
     p_data = {}
+    cfg = {}
 
     try:
         p_snap = db.collection("promotion_state").document("current").get()
@@ -541,6 +542,9 @@ def get_next_weekly_elimination_datetime(db, reference=None):
                 is_enabled = bool(p_data["weeklyEliminationEnabled"])
             if "weeklyEliminationWeeks" in p_data:
                 weeks_interval = safe_int(p_data["weeklyEliminationWeeks"]) or 1
+            elif "promotionDurationDays" in p_data:
+                dur_days = safe_int(p_data["promotionDurationDays"]) or 7
+                weeks_interval = max(1, round(dur_days / 7))
     except Exception as e:
         print(f"Erro ao ler promotion_state para eliminação: {e}")
 
@@ -552,7 +556,7 @@ def get_next_weekly_elimination_datetime(db, reference=None):
                 if "weeklyEliminationEnabled" not in p_data and "enabled" in cfg:
                     is_enabled = bool(cfg["enabled"])
                 if "weeklyEliminationWeeks" not in p_data and "weeksInterval" in cfg:
-                    weeks_interval = safe_int(cfg["weeksInterval"]) or 1
+                    weeks_interval = safe_int(cfg["weeksInterval"]) or weeks_interval
                 days = cfg.get("days", [])
                 if days and isinstance(days, list) and len(days) > 0:
                     sched_day = days[0]
@@ -578,24 +582,84 @@ def get_next_weekly_elimination_datetime(db, reference=None):
     if days_ahead == 0 and is_today_after_time:
         days_ahead = 7
 
-    # Se o intervalo for > 1 semana e houver última execução, projeta a partir do último ciclo
-    if weeks_interval > 1:
+    first_sched = (ref + timedelta(days=days_ahead)).replace(
+        hour=sched_hour, minute=sched_min, second=0, microsecond=0
+    )
+
+    if weeks_interval == 1:
+        return first_sched
+
+    # Para intervalo > 1 semana: determina a data âncora
+    anchor_dt = None
+    is_run_anchor = False
+
+    if isinstance(cfg, dict) and cfg.get("lastRunAt"):
+        anchor_dt = to_datetime(cfg["lastRunAt"])
+        is_run_anchor = True
+
+    if not anchor_dt and p_data.get("lastWeeklyEliminationDate"):
+        anchor_dt = to_datetime(p_data["lastWeeklyEliminationDate"])
+        is_run_anchor = True
+
+    if not anchor_dt:
         try:
-            cfg = (doc.to_dict() or {}).get("weekly_elimination", {}) if 'doc' in locals() and doc.exists else {}
-            last_run_at = cfg.get("lastRunAt")
-            if last_run_at:
-                last_dt = to_datetime(last_run_at)
-                if last_dt:
-                    target_candidate = (last_dt.astimezone(SP_TZ) + timedelta(weeks=weeks_interval)).replace(
-                        hour=sched_hour, minute=sched_min, second=0, microsecond=0
-                    )
-                    if target_candidate > ref:
-                        return target_candidate
+            logs = db.collection("logs").where("action", "==", "Sugestão Removida").limit(10).get()
+            candidates = []
+            for l_doc in logs:
+                ld = l_doc.to_dict() or {}
+                reason_str = str(ld.get("reason", "") or ld.get("detail", ""))
+                if "Lanterna" in reason_str or "Eliminação Semanal" in reason_str:
+                    ts = to_datetime(ld.get("ts"))
+                    if ts:
+                        candidates.append(ts)
+            if candidates:
+                anchor_dt = max(candidates)
+                is_run_anchor = True
+        except Exception as e:
+            print(f"Erro ao buscar log de eliminação: {e}")
+
+    if not anchor_dt:
+        if isinstance(cfg, dict) and cfg.get("updatedAt"):
+            anchor_dt = to_datetime(cfg["updatedAt"])
+        elif p_data.get("updatedAt"):
+            anchor_dt = to_datetime(p_data["updatedAt"])
+
+    if not anchor_dt and p_data.get("nextPromotionDate") and p_data.get("promotionDurationDays"):
+        try:
+            next_promo = to_datetime(p_data["nextPromotionDate"])
+            dur_days = safe_int(p_data["promotionDurationDays"])
+            if next_promo and dur_days > 0:
+                anchor_dt = next_promo - timedelta(days=dur_days)
         except Exception:
             pass
 
-    target = ref + timedelta(days=days_ahead)
-    return target.replace(hour=sched_hour, minute=sched_min, second=0, microsecond=0)
+    if not anchor_dt:
+        target = first_sched + timedelta(weeks=(weeks_interval - 1))
+        while target <= ref:
+            target += timedelta(weeks=weeks_interval)
+        return target
+
+    anchor_sp = anchor_dt.astimezone(SP_TZ)
+    anchor_day_idx = (anchor_sp.weekday() + 1) % 7
+    days_to_sched = (sched_day - anchor_day_idx + 7) % 7
+
+    if is_run_anchor:
+        base_sched = (anchor_sp + timedelta(days=days_to_sched)).replace(
+            hour=sched_hour, minute=sched_min, second=0, microsecond=0
+        )
+        target = base_sched + timedelta(weeks=weeks_interval)
+    else:
+        if days_to_sched == 0 and (anchor_sp.hour > sched_hour or (anchor_sp.hour == sched_hour and anchor_sp.minute >= sched_min)):
+            days_to_sched = 7
+        base_sched = (anchor_sp + timedelta(days=days_to_sched)).replace(
+            hour=sched_hour, minute=sched_min, second=0, microsecond=0
+        )
+        target = base_sched + timedelta(weeks=(weeks_interval - 1))
+
+    while target <= ref:
+        target += timedelta(weeks=weeks_interval)
+
+    return target
 
 def format_elimination_time_remaining(target_dt):
     if not target_dt:
@@ -619,15 +683,16 @@ def format_elimination_time_remaining(target_dt):
     target_day_idx = (target_sp.weekday() + 1) % 7
     day_name = day_names[target_day_idx]
     time_str = target_sp.strftime("%H:%M")
+    date_str = target_sp.strftime("%d/%m")
 
     if days == 0:
         if hours > 0:
             return f"Hoje às {time_str} (em {hours}h)"
         return f"Hoje às {time_str} (em {minutes}m)"
     elif days == 1:
-        return f"1 dia ({day_name} às {time_str})"
+        return f"Amanhã ({day_name}, {date_str} às {time_str})"
     else:
-        return f"{days} dias ({day_name} às {time_str})"
+        return f"{days} dias ({day_name}, {date_str} às {time_str})"
 
 def eliminate_bottom_suggestion(db, is_manual=False, executor="Sistema"):
     try:
@@ -692,7 +757,22 @@ def eliminate_bottom_suggestion(db, is_manual=False, executor="Sistema"):
             "tsLocal": now_sp().strftime("%d/%m/%Y %H:%M:%S")
         })
 
-        # 3. Dispara aviso no WhatsApp
+        # 3. Registra execução para manter cálculo de ciclos ancorado
+        try:
+            db.collection("config").document("schedules").set({
+                "weekly_elimination": {
+                    "lastRunAt": firestore.SERVER_TIMESTAMP,
+                    "lastRunDate": now_sp().strftime("%Y-%m-%d"),
+                    "lastRunResult": "ok"
+                }
+            }, merge=True)
+            db.collection("promotion_state").document("current").set({
+                "lastWeeklyEliminationDate": firestore.SERVER_TIMESTAMP
+            }, merge=True)
+        except Exception as e_up:
+            print(f"Aviso ao registrar lastRunAt da eliminação: {e_up}")
+
+        # 4. Dispara aviso no WhatsApp
         msg = (
             f"🗑️ *ELIMINAÇÃO SEMANAL DE SUGESTÕES*\n\n"
             f"🎵 *Música eliminada:* {song} — {artist}\n"
@@ -3304,8 +3384,12 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
             except Exception:
                 continue
             
-            # Janela de 10 minutos
-            if 0 <= (current_minutes - sched_minutes) < 10:
+            # Janela de 10 minutos (se horário for 23:59, dispara na execução das 23:50)
+            in_window = (0 <= (current_minutes - sched_minutes) < 10)
+            if not in_window and sched_minutes >= 1430 and current_minutes >= 1430:
+                in_window = True
+
+            if in_window:
                 last_run_date = cfg.get("lastRunDate")
                 if last_run_date == today_str:
                     continue
@@ -3380,12 +3464,16 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                 except Exception as exc:
                     detail = str(exc)
                 
+                sched_update = {
+                    "lastRunDate": today_str,
+                    "lastRunResult": "ok" if result_ok else f"erro: {detail}"
+                }
+                # Para weekly_elimination, só atualiza lastRunAt se a eliminação de fato foi executada
+                if key != "weekly_elimination" or (should_run and result_ok):
+                    sched_update["lastRunAt"] = firestore.SERVER_TIMESTAMP
+
                 db.collection("config").document("schedules").set({
-                    key: {
-                        "lastRunDate": today_str,
-                        "lastRunAt": firestore.SERVER_TIMESTAMP,
-                        "lastRunResult": "ok" if result_ok else f"erro: {detail}"
-                    }
+                    key: sched_update
                 }, merge=True)
     except Exception as exc:
         print(f"[DYNAMIC SCHEDULER] Erro no dispatcher: {exc}")

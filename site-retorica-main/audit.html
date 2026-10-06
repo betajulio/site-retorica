@@ -1488,6 +1488,9 @@ async function loadPromotionFlowConfig() {
         currentWeeklyEliminationWeeks = Number(data.weeklyEliminationWeeks) || 1;
       } else if (currentSchedules && currentSchedules.weekly_elimination && currentSchedules.weekly_elimination.weeksInterval !== undefined) {
         currentWeeklyEliminationWeeks = Number(currentSchedules.weekly_elimination.weeksInterval) || 1;
+      } else {
+        const promoDays = Number(data.promotionDurationDays) || 7;
+        currentWeeklyEliminationWeeks = Math.max(1, Math.round(promoDays / 7));
       }
       if (data.nextPromotionDate) {
         currentNextPromotionDate = data.nextPromotionDate.toDate ? data.nextPromotionDate.toDate() : new Date(data.nextPromotionDate);
@@ -1554,7 +1557,17 @@ function updatePromotionFlowConfigUi() {
 
   if (schedElim) {
     if (currentWeeklyEliminationEnabled) {
-      schedElim.textContent = `A cada ${currentWeeklyEliminationWeeks} semana(s) · Domingo às 23:59`;
+      const now = new Date();
+      const schedDay = (currentSchedules?.weekly_elimination?.days && currentSchedules.weekly_elimination.days[0] !== undefined)
+        ? currentSchedules.weekly_elimination.days[0] : 0;
+      const currentDay = now.getDay();
+      let daysAhead = (schedDay - currentDay + 7) % 7;
+      if (daysAhead === 0 && (now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59))) {
+        daysAhead = 7;
+      }
+      const nextDate = new Date(now.getTime() + (daysAhead + ((currentWeeklyEliminationWeeks - 1) * 7)) * 86400000);
+      const dateStr = nextDate.toLocaleDateString('pt-BR');
+      schedElim.textContent = `A cada ${currentWeeklyEliminationWeeks} semana(s) · Domingo às 23:59 (Próxima: ${dateStr})`;
       schedElim.style.color = '#86efac';
     } else {
       schedElim.textContent = 'Pausado (desligado nas configurações)';
@@ -1691,6 +1704,8 @@ window.savePromotionFlowConfig = async () => {
       weekly_elimination: {
         enabled: currentWeeklyEliminationEnabled,
         weeksInterval: currentWeeklyEliminationWeeks,
+        time: currentSchedules?.weekly_elimination?.time || '23:59',
+        days: currentSchedules?.weekly_elimination?.days || [0],
         updatedAt: serverTimestamp(),
         updatedBy: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin'
       }
