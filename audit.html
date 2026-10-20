@@ -844,8 +844,8 @@ window.__retoricaBootStart = performance.now();
     <div id="sec-votes" class="admin-card-section" style="background:linear-gradient(135deg,rgba(36,23,10,.85),rgba(14,10,6,.96));border:1px solid rgba(200,130,10,.35)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem;width:100%;border-bottom:1px solid rgba(200,130,10,.18);padding-bottom:.8rem">
         <div>
-          <div class="admin-card-title">🗳️ Votos Pendentes nas Sugestões (Por Integrante)</div>
-          <div class="admin-card-sub">Contador dinâmico de sugestões de músicas que ainda faltam ser votadas por cada integrante ativo da Retórica. Membros com acesso desativado/pausado são excluídos automaticamente.</div>
+          <div class="admin-card-title">🗳️ Votos Pendentes nas Sugestões & Enquetes (Por Integrante)</div>
+          <div class="admin-card-sub">Contador dinâmico de sugestões de músicas e de enquetes ativas que ainda faltam ser votadas por cada integrante ativo da Retórica. Membros com acesso desativado/pausado são excluídos automaticamente.</div>
         </div>
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
           <span id="pendingVotesTotalBadge" class="status-pill on" style="font-size:.72rem">Carregando sugestões…</span>
@@ -3266,9 +3266,10 @@ window.saveMembersOrderFromAudit = async () => {
 
 window.loadMembersOrderList = loadMembersOrderList;
 
-// ── Contador de Votos Pendentes nas Sugestões por Membro ──────────────────────
+// ── Contador de Votos Pendentes nas Sugestões e Enquetes por Membro ──────────────────────
 
 let unsubPendingVotesSuggestions = null;
+let unsubPendingVotesPolls = null;
 let lastPendingVotesStats = null;
 
 async function loadSuggestionPendingVotesCounter() {
@@ -3279,6 +3280,10 @@ async function loadSuggestionPendingVotesCounter() {
     unsubPendingVotesSuggestions();
     unsubPendingVotesSuggestions = null;
   }
+  if (unsubPendingVotesPolls) {
+    unsubPendingVotesPolls();
+    unsubPendingVotesPolls = null;
+  }
 
   unsubPendingVotesSuggestions = onSnapshot(collection(db, 'suggestions'), async (sugSnap) => {
     await computeAndRenderPendingVotes(sugSnap);
@@ -3286,6 +3291,92 @@ async function loadSuggestionPendingVotesCounter() {
     console.error('onSnapshot suggestions pending votes error:', err);
     if (grid) grid.innerHTML = '<div class="muted">Erro ao monitorar votos das sugestões.</div>';
   });
+
+  unsubPendingVotesPolls = onSnapshot(collection(db, 'polls'), async () => {
+    await computeAndRenderPendingVotes(null);
+  }, err => {
+    console.warn('onSnapshot polls pending votes warning:', err);
+  });
+}
+
+async function fetchActivePollsWithVoters() {
+  const activePolls = [];
+  try {
+    const pollsSnap = await getDocs(collection(db, 'polls'));
+    const nowMs = Date.now();
+    const openDocs = pollsSnap.docs.filter(d => {
+      const p = d.data() || {};
+      if (p.closed === true) return false;
+      const status = String(p.status || '').toLowerCase();
+      if (['closed', 'finished', 'encerrada'].includes(status)) return false;
+      if (p.deadline) {
+        const dlMs = new Date(p.deadline).getTime();
+        if (!isNaN(dlMs) && nowMs >= dlMs) return false;
+      } else if (p.createdAt) {
+        const cMs = p.createdAt?.toMillis ? p.createdAt.toMillis() : (p.createdAt?.toDate ? p.createdAt.toDate().getTime() : new Date(p.createdAt).getTime());
+        if (!isNaN(cMs) && (nowMs - cMs) > 48 * 3600 * 1000) return false;
+      } else {
+        return false;
+      }
+      return true;
+    });
+
+    await Promise.all(openDocs.map(async d => {
+      const p = d.data() || {};
+      const votersSet = new Set();
+      if (p.voterMap && typeof p.voterMap === 'object') {
+        Object.entries(p.voterMap).forEach(([k, val]) => {
+          if (k && val !== null && val !== undefined) {
+            votersSet.add(String(k).trim());
+            votersSet.add(String(k).trim().toLowerCase());
+          }
+        });
+      }
+      if (Array.isArray(p.voters)) {
+        p.voters.forEach(item => {
+          if (typeof item === 'string' && item.trim()) {
+            votersSet.add(item.trim());
+            votersSet.add(item.trim().toLowerCase());
+          } else if (item && typeof item === 'object') {
+            if (item.uid) {
+              votersSet.add(String(item.uid).trim());
+              votersSet.add(String(item.uid).trim().toLowerCase());
+            }
+            if (item.email) {
+              votersSet.add(String(item.email).trim().toLowerCase());
+            }
+          }
+        });
+      }
+      try {
+        const votesSnap = await getDocs(collection(db, 'polls', d.id, 'votes'));
+        votesSnap.forEach(vdoc => {
+          if (vdoc.id) {
+            votersSet.add(String(vdoc.id).trim());
+            votersSet.add(String(vdoc.id).trim().toLowerCase());
+          }
+          const vd = vdoc.data() || {};
+          if (vd.uid) {
+            votersSet.add(String(vd.uid).trim());
+            votersSet.add(String(vd.uid).trim().toLowerCase());
+          }
+          if (vd.email) {
+            votersSet.add(String(vd.email).trim().toLowerCase());
+          }
+        });
+      } catch (e) {
+        console.warn('Aviso ao ler subcoleção votes da enquete ' + d.id + ':', e);
+      }
+      activePolls.push({
+        id: d.id,
+        question: p.question || 'Enquete',
+        votersSet
+      });
+    }));
+  } catch (err) {
+    console.warn('fetchActivePollsWithVoters warning:', err);
+  }
+  return activePolls;
 }
 
 async function computeAndRenderPendingVotes(sugSnap = null) {
@@ -3303,13 +3394,16 @@ async function computeAndRenderPendingVotes(sugSnap = null) {
       suggestions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     }
 
+    const activePolls = await fetchActivePollsWithVoters();
     const totalSuggs = suggestions.length;
+    const totalPolls = activePolls.length;
+
     if (badge) {
-      badge.textContent = `${totalSuggs} sugestões ativas`;
+      badge.textContent = `${totalSuggs} sugestões · ${totalPolls} ${totalPolls === 1 ? 'enquete ativa' : 'enquetes ativas'}`;
     }
 
-    if (totalSuggs === 0) {
-      grid.innerHTML = '<div style="color:var(--smoke);font-size:.85rem;padding:.6rem 0;font-style:italic">Nenhuma sugestão cadastrada no momento.</div>';
+    if (totalSuggs === 0 && totalPolls === 0) {
+      grid.innerHTML = '<div style="color:var(--smoke);font-size:.85rem;padding:.6rem 0;font-style:italic">Nenhuma sugestão ou enquete ativa no momento.</div>';
       if (notice) notice.style.display = 'none';
       return;
     }
@@ -3390,7 +3484,20 @@ async function computeAndRenderPendingVotes(sugSnap = null) {
         if (hasVoted) voted++;
       });
 
+      let votedPolls = 0;
+      activePolls.forEach(poll => {
+        const vs = poll.votersSet;
+        let hasVotedPoll = false;
+        if (m.uid && (vs.has(m.uid) || vs.has(m.uid.toLowerCase()))) {
+          hasVotedPoll = true;
+        } else if (m.email && vs.has(m.email)) {
+          hasVotedPoll = true;
+        }
+        if (hasVotedPoll) votedPolls++;
+      });
+
       const pending = Math.max(0, totalSuggs - voted);
+      const pendingPolls = Math.max(0, totalPolls - votedPolls);
       const percentage = totalSuggs > 0 ? Math.round((voted / totalSuggs) * 100) : 100;
       return {
         id: m.id,
@@ -3399,16 +3506,19 @@ async function computeAndRenderPendingVotes(sugSnap = null) {
         voted,
         pending,
         total: totalSuggs,
+        votedPolls,
+        pendingPolls,
+        totalPolls,
         percentage
       };
     });
 
-    memberStats.sort((a, b) => b.pending - a.pending || a.voted - b.voted);
+    memberStats.sort((a, b) => (b.pending - a.pending) || (b.pendingPolls - a.pendingPolls) || (a.voted - b.voted));
     lastPendingVotesStats = memberStats;
 
     grid.innerHTML = memberStats.map(stat => {
-      const isComplete = stat.pending === 0;
-      const isAlmost = stat.pending === 1;
+      const isComplete = stat.pending === 0 && stat.pendingPolls === 0;
+      const isAlmost = (stat.pending === 1 && stat.pendingPolls === 0) || (stat.pending === 0 && stat.pendingPolls === 1);
 
       let badgeHtml = '';
       let accentColor = '#ef4444';
@@ -3418,16 +3528,31 @@ async function computeAndRenderPendingVotes(sugSnap = null) {
         accentColor = '#22c55e';
         progressGradient = 'linear-gradient(90deg, #15803d, #4ade80)';
         badgeHtml = `<span style="background:rgba(34,197,94,.18);color:#86efac;border:1px solid rgba(34,197,94,.38);border-radius:999px;font-size:.65rem;padding:.15rem .55rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em">🎉 100% Votado</span>`;
-      } else if (isAlmost) {
+      } else if (stat.pending === 0 && stat.pendingPolls > 0) {
+        accentColor = '#22c55e';
+        progressGradient = 'linear-gradient(90deg, #15803d, #4ade80)';
+        badgeHtml = `<span style="background:rgba(234,179,8,.18);color:#fde047;border:1px solid rgba(234,179,8,.38);border-radius:999px;font-size:.65rem;padding:.15rem .55rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em">🗳️ Falta ${stat.pendingPolls} enquete${stat.pendingPolls > 1 ? 's' : ''}</span>`;
+      } else if (stat.pending === 1) {
         accentColor = '#eab308';
         progressGradient = 'linear-gradient(90deg, #ca8a04, #fde047)';
-        badgeHtml = `<span style="background:rgba(234,179,8,.18);color:#fde047;border:1px solid rgba(234,179,8,.38);border-radius:999px;font-size:.65rem;padding:.15rem .55rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em">⚡ Falta 1 música</span>`;
+        badgeHtml = `<span style="background:rgba(234,179,8,.18);color:#fde047;border:1px solid rgba(234,179,8,.38);border-radius:999px;font-size:.65rem;padding:.15rem .55rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em">⚡ Falta 1 música${stat.pendingPolls > 0 ? ` + ${stat.pendingPolls} enq.` : ''}</span>`;
       } else {
-        badgeHtml = `<span style="background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.38);border-radius:999px;font-size:.65rem;padding:.15rem .55rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em">⚠️ Faltam ${stat.pending}</span>`;
+        badgeHtml = `<span style="background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.38);border-radius:999px;font-size:.65rem;padding:.15rem .55rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em">⚠️ Faltam ${stat.pending}${stat.pendingPolls > 0 ? ` + ${stat.pendingPolls} enq.` : ''}</span>`;
       }
 
+      const pollRowHtml = `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem .65rem;background:${stat.pendingPolls > 0 ? 'rgba(239,68,68,.12)' : 'rgba(34,197,94,.08)'};border:1px solid ${stat.pendingPolls > 0 ? 'rgba(239,68,68,.35)' : 'rgba(34,197,94,.25)'};border-radius:3px;font-size:.73rem;margin-top:.1rem">
+          <span style="color:var(--cream)">📊 Enquetes para votar:</span>
+          <strong style="color:${stat.pendingPolls > 0 ? '#fca5a5' : '#86efac'};font-family:'Cinzel',serif;font-size:.75rem">
+            ${stat.pendingPolls > 0
+              ? `⚠️ ${stat.pendingPolls} pendente${stat.pendingPolls > 1 ? 's' : ''} (${stat.votedPolls}/${stat.totalPolls})`
+              : `✅ 0 pendentes (${stat.votedPolls}/${stat.totalPolls})`}
+          </strong>
+        </div>
+      `;
+
       return `
-        <div style="background:rgba(18,14,9,.82);border:1px solid ${isComplete ? 'rgba(34,197,94,.35)' : (isAlmost ? 'rgba(234,179,8,.35)' : 'rgba(239,68,68,.35)')};border-radius:4px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.7rem;box-shadow:0 4px 14px rgba(0,0,0,.35)">
+        <div style="background:rgba(18,14,9,.82);border:1px solid ${isComplete ? 'rgba(34,197,94,.35)' : (isAlmost ? 'rgba(234,179,8,.35)' : 'rgba(239,68,68,.35)')};border-radius:4px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.65rem;box-shadow:0 4px 14px rgba(0,0,0,.35)">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;flex-wrap:wrap">
             <div>
               <div style="font-family:'Cinzel',serif;font-size:.95rem;color:var(--cream);font-weight:700;letter-spacing:.04em">${esc(stat.name)}</div>
@@ -3436,20 +3561,28 @@ async function computeAndRenderPendingVotes(sugSnap = null) {
             ${badgeHtml}
           </div>
 
-          <div style="display:flex;align-items:baseline;gap:.5rem">
-            <span style="font-size:1.85rem;font-family:'Cinzel',serif;font-weight:700;color:${accentColor};line-height:1">${stat.pending}</span>
-            <span style="font-size:.75rem;color:var(--smoke);text-transform:uppercase;letter-spacing:.05em">música(s) pendente(s)</span>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
+            <div style="display:flex;align-items:baseline;gap:.5rem">
+              <span style="font-size:1.85rem;font-family:'Cinzel',serif;font-weight:700;color:${accentColor};line-height:1">${stat.pending}</span>
+              <span style="font-size:.75rem;color:var(--smoke);text-transform:uppercase;letter-spacing:.05em">música(s) pendente(s)</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:.35rem">
+              <span style="font-size:1.35rem;font-family:'Cinzel',serif;font-weight:700;color:${stat.pendingPolls > 0 ? '#fca5a5' : '#86efac'};line-height:1">${stat.pendingPolls}</span>
+              <span style="font-size:.7rem;color:var(--smoke);text-transform:uppercase;letter-spacing:.04em">enquete(s) pendente(s)</span>
+            </div>
           </div>
 
-          <!-- Barra de progresso -->
+          <!-- Barra de progresso sugestões -->
           <div style="width:100%;background:rgba(255,255,255,.07);height:8px;border-radius:999px;overflow:hidden;border:1px solid rgba(200,130,10,.18)">
             <div style="width:${stat.percentage}%;height:100%;background:${progressGradient};border-radius:999px;transition:width .4s ease"></div>
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:.72rem;color:var(--smoke)">
-            <span>Votadas: <strong style="color:var(--cream)">${stat.voted}</strong> de ${stat.total}</span>
-            <span style="color:${isComplete ? '#86efac' : 'var(--gold)'};font-weight:600">${stat.percentage}% concluído</span>
+            <span>Sugestões votadas: <strong style="color:var(--cream)">${stat.voted}</strong> de ${stat.total}</span>
+            <span style="color:${stat.pending === 0 ? '#86efac' : 'var(--gold)'};font-weight:600">${stat.percentage}% concluído</span>
           </div>
+
+          ${pollRowHtml}
         </div>
       `;
     }).join('');
@@ -3475,19 +3608,22 @@ function updateMemberLinksPendingBadges(memberStats = []) {
   memberStats.forEach(stat => {
     const el = document.getElementById(`mlvotes-${stat.id}`);
     if (el) {
-      if (stat.pending === 0) {
-        el.innerHTML = `<span style="background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.3);border-radius:999px;padding:.1rem .45rem;font-size:.62rem;font-weight:600">🗳️ 0 pendentes</span>`;
+      const pollBadge = stat.pendingPolls > 0
+        ? ` · 📊 ${stat.pendingPolls} enq. pend.`
+        : ` · 📊 0 enq. pend.`;
+      if (stat.pending === 0 && stat.pendingPolls === 0) {
+        el.innerHTML = `<span style="background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.3);border-radius:999px;padding:.1rem .45rem;font-size:.62rem;font-weight:600">🗳️ 0 músicas pend.${pollBadge}</span>`;
       } else if (stat.pending === 1) {
-        el.innerHTML = `<span style="background:rgba(234,179,8,.15);color:#fde047;border:1px solid rgba(234,179,8,.3);border-radius:999px;padding:.1rem .45rem;font-size:.62rem;font-weight:600">🗳️ Falta 1 (${stat.voted}/${stat.total})</span>`;
+        el.innerHTML = `<span style="background:rgba(234,179,8,.15);color:#fde047;border:1px solid rgba(234,179,8,.3);border-radius:999px;padding:.1rem .45rem;font-size:.62rem;font-weight:600">🗳️ Falta 1 música (${stat.voted}/${stat.total})${pollBadge}</span>`;
       } else {
-        el.innerHTML = `<span style="background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);border-radius:999px;padding:.1rem .45rem;font-size:.62rem;font-weight:600">🗳️ Faltam ${stat.pending} (${stat.voted}/${stat.total})</span>`;
+        el.innerHTML = `<span style="background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);border-radius:999px;padding:.1rem .45rem;font-size:.62rem;font-weight:600">🗳️ Faltam ${stat.pending} músicas (${stat.voted}/${stat.total})${pollBadge}</span>`;
       }
     }
   });
 }
 
 window.refreshPendingVotesCounter = async (showToastMsg = false) => {
-  if (showToastMsg) showToast('🔄 Atualizando contadores de votos das sugestões...');
+  if (showToastMsg) showToast('🔄 Atualizando contadores de votos das sugestões e enquetes...');
   try {
     const sugSnap = await getDocs(collection(db, 'suggestions'));
     await computeAndRenderPendingVotes(sugSnap);

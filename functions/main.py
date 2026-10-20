@@ -1088,18 +1088,10 @@ def build_pending_votes_report_message(db):
         total_polls = len(active_polls)
 
         # Pré-carrega os votantes de cada enquete ativa
-        poll_info_list = []
+        poll_voters_list = []
         for poll_id, p_data in active_polls:
-            q_title = str((p_data or {}).get("question") or "Enquete").strip()
-            deadline_str = format_time_remaining((p_data or {}).get("deadline"))
             voters_set = get_poll_voter_identifiers(db, poll_id, p_data)
-            poll_info_list.append({
-                "id": poll_id,
-                "question": q_title,
-                "deadlineStr": deadline_str,
-                "votersSet": voters_set,
-                "missingMembers": []
-            })
+            poll_voters_list.append(voters_set)
 
         # Mapeamento e cálculo de votos de sugestões e enquetes por membro
         member_stats = []
@@ -1129,11 +1121,9 @@ def build_pending_votes_report_message(db):
 
             pending_count = max(0, total_suggs - voted_count)
 
-            # Checa se o membro votou em cada enquete ativa
+            # Checa quantas enquetes ativas o membro já votou e quantas faltam
             voted_polls_count = 0
-            pending_poll_titles = []
-            for p_info in poll_info_list:
-                v_set = p_info["votersSet"]
+            for v_set in poll_voters_list:
                 has_voted_poll = False
                 if m_uid and (m_uid in v_set or m_uid.lower() in v_set):
                     has_voted_poll = True
@@ -1142,9 +1132,6 @@ def build_pending_votes_report_message(db):
 
                 if has_voted_poll:
                     voted_polls_count += 1
-                else:
-                    pending_poll_titles.append(p_info["question"])
-                    p_info["missingMembers"].append(short_name)
 
             pending_polls_count = max(0, total_polls - voted_polls_count)
 
@@ -1156,35 +1143,27 @@ def build_pending_votes_report_message(db):
                 "total": total_suggs,
                 "votedPolls": voted_polls_count,
                 "pendingPolls": pending_polls_count,
-                "totalPolls": total_polls,
-                "pendingPollTitles": pending_poll_titles
+                "totalPolls": total_polls
             })
 
         # Ordena do integrante com MAIS pendências (sugestões + enquetes) para quem tem MENOS
         member_stats.sort(
-            key=lambda x: (x["pending"] + x["pendingPolls"], x["pendingPolls"], x["pending"], -x["voted"]),
+            key=lambda x: (x["pending"], x["pendingPolls"], -x["voted"]),
             reverse=True
         )
 
         lines = [
             "🎸 *RANKING DE VOTOS PENDENTES* 🗳️",
-            f"📋 *Sugestões ativas:* {total_suggs} {'música' if total_suggs == 1 else 'músicas'}",
+            f"📋 *Total de sugestões ativas:* {total_suggs} {'música' if total_suggs == 1 else 'músicas'}",
+            f"📊 *Enquetes ativas:* {total_polls} {'enquete' if total_polls == 1 else 'enquetes'}",
+            ""
         ]
-        if total_polls > 0:
-            lines.append(f"📊 *Enquetes abertas:* {total_polls} {'enquete ativa' if total_polls == 1 else 'enquetes ativas'}")
-        else:
-            lines.append("📊 *Enquetes abertas:* Nenhuma enquete ativa no momento")
-        lines.append("")
 
         all_suggs_done = all(m["pending"] == 0 for m in member_stats)
         all_polls_done = all(m["pendingPolls"] == 0 for m in member_stats)
 
-        # Se todos os membros já votaram em todas as sugestões e enquetes
         if all_suggs_done and all_polls_done:
-            if total_polls > 0:
-                lines.append(f"🎉 *Parabéns, banda! Todos os {len(member_stats)} integrantes votaram em 100% das sugestões e enquetes ativas!*")
-            else:
-                lines.append(f"🎉 *Parabéns, banda! Todos os {len(member_stats)} integrantes votaram em 100% das sugestões!*")
+            lines.append(f"🎉 *Parabéns, banda! Todos os {len(member_stats)} integrantes votaram em 100% das sugestões e enquetes!*")
         else:
             rank_emojis = ["🪫", "💤", "⚠️", "⚡", "👍", "👏"]
             for idx, m in enumerate(member_stats):
@@ -1195,46 +1174,20 @@ def build_pending_votes_report_message(db):
                 total = m["total"]
                 pending_polls = m["pendingPolls"]
 
-                # Sufixo de enquete para a linha do membro (quando há enquete ativa)
-                poll_tag = ""
-                if total_polls > 0:
-                    if pending_polls > 0:
-                        poll_tag = f" · 🗳️ *Falta votar em {pending_polls} {'enquete' if pending_polls == 1 else 'enquetes'}!*"
-                    else:
-                        poll_tag = " · ✅ Enquete em dia"
+                if pending_polls > 0:
+                    poll_info_str = f" · 🗳️ *{pending_polls} {'enquete pendente' if pending_polls == 1 else 'enquetes pendentes'}*"
+                else:
+                    poll_info_str = " · ✅ 0 enquetes pendentes"
 
                 if pending == 0 and pending_polls == 0:
-                    if total_polls > 0:
-                        lines.append(f"{pos} 🎉 *{name}* · 100% votado! (Sugestões e Enquete em dia)")
-                    else:
-                        lines.append(f"{pos} 🎉 *{name}* · 100% votado! (0 pendentes)")
+                    lines.append(f"{pos} 🎉 *{name}* · 100% votado! (0 músicas pendentes{poll_info_str})")
                 elif pending == 0 and pending_polls > 0:
-                    lines.append(f"{pos} ⚠️ *{name}* · Sugestões 100% ({voted}/{total}){poll_tag}")
+                    lines.append(f"{pos} ⚠️ *{name}* · 0 músicas sem votar (votou em {voted}/{total}){poll_info_str}")
                 elif pending == 1:
-                    lines.append(f"{pos} ⚡ *{name}* · Falta apenas 1 música (votou em {voted}/{total}){poll_tag}")
+                    lines.append(f"{pos} ⚡ *{name}* · Falta apenas 1 música (votou em {voted}/{total}){poll_info_str}")
                 else:
                     emoji = rank_emojis[idx] if idx < len(rank_emojis) else "⚠️"
-                    lines.append(f"{pos} {emoji} *{name}* · {pending} músicas sem votar (votou em {voted}/{total}){poll_tag}")
-
-        # Bloco detalhado das enquetes ativas (se houver alguma aberta)
-        if total_polls > 0:
-            lines.extend([
-                "",
-                "━━━━━━━━━━━━━━━━━━━━",
-                "📊 *ENQUETES AGUARDANDO VOTO:*"
-            ])
-            for p_info in poll_info_list:
-                q_text = p_info["question"]
-                dl_text = p_info["deadlineStr"]
-                missing = p_info["missingMembers"]
-                lines.append(f"❓ *{q_text}*")
-                lines.append(f"⏳ _Tempo restante: {dl_text}_")
-                if missing:
-                    missing_str = ", ".join(missing)
-                    lines.append(f"⚠️ *Faltam votar ({len(missing)}):* {missing_str}")
-                else:
-                    lines.append("✅ *Todos os integrantes já votaram nesta enquete!*")
-            lines.append("━━━━━━━━━━━━━━━━━━━━")
+                    lines.append(f"{pos} {emoji} *{name}* · {pending} músicas sem votar (votou em {voted}/{total}){poll_info_str}")
 
         lines.append("")
         lines.append(f"💡 *Veja e vote nas sugestões:* {SUGGESTIONS_URL}")

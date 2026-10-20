@@ -61,8 +61,8 @@ service cloud.firestore {
       allow create, update, delete: if isAdminActive();
 
       match /votes/{userId} {
-        allow get: if signedIn() && request.auth.uid == userId;
-        allow list: if false;
+        allow get: if signedIn() && (request.auth.uid == userId || isAuditAdmin());
+        allow list: if isAuditAdmin();
         allow create, update, delete: if isMember() && request.auth.uid == userId;
       }
     }
