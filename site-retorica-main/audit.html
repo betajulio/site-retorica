@@ -280,8 +280,9 @@ window.__retoricaBootStart = performance.now();
   .admin-inline-field label{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke)}
   .admin-inline-field input,.admin-inline-field select{background:rgba(255,255,255,.04);border:1px solid rgba(200,130,10,.28);color:var(--cream);padding:.7rem .8rem;font:inherit}
   /* SCHEDULES PANEL */
-  .sched-card{background:linear-gradient(135deg,rgba(30,20,10,.7),rgba(14,10,6,.85));border:1px solid rgba(200,130,10,.2);padding:1.1rem;border-radius:2px;display:flex;flex-direction:column;gap:.8rem;transition:border-color .2s}
+  .sched-card{background:linear-gradient(135deg,rgba(30,20,10,.7),rgba(14,10,6,.85));border:1px solid rgba(200,130,10,.2);padding:1.1rem;border-radius:2px;display:flex;flex-direction:column;gap:.8rem;transition:border-color .2s,opacity .2s}
   .sched-card:hover{border-color:rgba(200,130,10,.4)}
+  .sched-card.is-disabled{border-color:rgba(248,113,113,.28);background:linear-gradient(135deg,rgba(26,14,14,.68),rgba(12,8,8,.88))}
   .sched-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem}
   .sched-title{font-family:'Cinzel',serif;font-size:.9rem;color:var(--cream);font-weight:700;display:flex;align-items:center;gap:.45rem}
   .sched-desc{font-size:.74rem;color:var(--smoke);line-height:1.45}
@@ -291,12 +292,15 @@ window.__retoricaBootStart = performance.now();
   .sched-days-wrap{display:flex;gap:.25rem;flex-wrap:wrap}
   .sched-day-btn{background:rgba(255,255,255,.03);border:1px solid rgba(200,130,10,.2);color:var(--smoke);padding:.22rem .48rem;font-size:.65rem;font-family:'Cinzel',serif;text-transform:uppercase;cursor:pointer;border-radius:2px;transition:all .15s}
   .sched-day-btn.active{background:rgba(200,130,10,.22);border-color:var(--gold);color:var(--gold);font-weight:bold}
-  .sched-status-badge{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .45rem;border-radius:1px}
-  .sched-status-badge.active{background:rgba(134,239,172,.15);color:#86efac;border:1px solid rgba(134,239,172,.35)}
-  .sched-status-badge.paused{background:rgba(248,113,113,.15);color:#fca5a5;border:1px solid rgba(248,113,113,.35)}
+  .sched-status-badge{font-family:'Cinzel',serif;font-weight:700;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:.28rem .58rem;border-radius:2px;cursor:pointer;transition:all .15s}
+  .sched-status-badge.active{background:rgba(134,239,172,.15);color:#86efac;border:1px solid rgba(134,239,172,.45)}
+  .sched-status-badge.active:hover{background:rgba(248,113,113,.2);color:#fca5a5;border-color:rgba(248,113,113,.5)}
+  .sched-status-badge.paused{background:rgba(248,113,113,.18);color:#fca5a5;border:1px solid rgba(248,113,113,.45)}
+  .sched-status-badge.paused:hover{background:rgba(134,239,172,.2);color:#86efac;border-color:rgba(134,239,172,.5)}
   .sched-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-top:auto;padding-top:.4rem}
   .sched-last-run{font-size:.68rem;color:var(--smoke);font-style:italic}
-  .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1)}
+  .toast{position:fixed;bottom:2rem;right:2rem;background:linear-gradient(135deg,var(--brown),rgba(19,15,9,.95));border:1px solid var(--amber);color:var(--cream);padding:1rem 1.5rem;border-radius:2px;font-size:.85rem;z-index:10000;transform:translateY(100px);opacity:0;pointer-events:none;transition:all .4s cubic-bezier(.34,1.56,.64,1)}
+  .toast.show{transform:translateY(0);opacity:1;pointer-events:auto}
   .member-order-item.drag-over{border-color:var(--gold)!important;background:rgba(200,130,10,.25)!important;transform:scale(1.008)}
   @media(max-width:960px){.nav-links{display:none}.nav-hamburger{display:flex}nav{padding:0 1rem}}
   @media(max-width:760px){.nav-logo{font-size:.85rem!important;letter-spacing:.06em!important}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}.page-title{font-size:1.45rem}th,td{font-size:.72rem;padding:.48rem}.toolbar{align-items:stretch}.toolbar button{width:100%}}
@@ -901,8 +905,9 @@ window.__retoricaBootStart = performance.now();
           <div class="admin-card-title">⏱ Central de Agendamentos & Disparos WhatsApp</div>
           <div class="admin-card-sub">Configure os horários, dias da semana e ative/pause qualquer rotina de disparo automático da banda. Todas as alterações são salvas no banco de dados e aplicadas em tempo real.</div>
         </div>
-        <div style="display:flex;gap:.5rem;align-items:center">
-          <button class="btn" style="padding:.5rem 1.1rem;font-size:.78rem" onclick="saveAllSchedules()">💾 Salvar Todos os Horários</button>
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+          <span id="schedulesGlobalSaveStatus" style="font-size:.75rem;color:var(--gold);font-style:italic"></span>
+          <button id="btnSaveAllSchedules" class="btn" style="padding:.5rem 1.1rem;font-size:.78rem" onclick="saveAllSchedules()">💾 Salvar Todos os Horários</button>
         </div>
       </div>
       <div id="schedulesCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:1.1rem;width:100%;margin-top:.9rem">
@@ -3900,198 +3905,554 @@ const DEFAULT_SCHEDULES = {
 };
 
 let currentSchedules = JSON.parse(JSON.stringify(DEFAULT_SCHEDULES));
+const SCHEDULES_LOCAL_CACHE_KEY = "retorica_schedules_cache_v1";
+let unsubSchedulesSnap = null;
+let scheduleSaveStatusMap = {};
 
-async function loadSchedulesConfig() {
-  const container = document.getElementById('schedulesCardsGrid');
-  if (!container) return;
-  try {
-    const docSnap = await getDoc(doc(db, 'config', 'schedules'));
-    if (docSnap.exists()) {
-      const data = docSnap.data() || {};
-      Object.keys(DEFAULT_SCHEDULES).forEach(key => {
-        if (data[key]) {
-          currentSchedules[key] = {
-            ...DEFAULT_SCHEDULES[key],
-            ...data[key]
-          };
-        }
-      });
-      if (currentSchedules.weekly_elimination) {
-        if (currentSchedules.weekly_elimination.enabled !== undefined) {
-          currentWeeklyEliminationEnabled = currentSchedules.weekly_elimination.enabled !== false;
-        }
-        if (currentSchedules.weekly_elimination.weeksInterval !== undefined) {
-          currentWeeklyEliminationWeeks = Number(currentSchedules.weekly_elimination.weeksInterval) || 1;
-        }
-        updatePromotionFlowConfigUi();
-      }
-    }
-  } catch (err) {
-    console.error('loadSchedulesConfig error:', err);
+function normalizeScheduleItem(key, rawItem = {}) {
+  const def = DEFAULT_SCHEDULES[key] || {};
+  const merged = { ...def, ...(rawItem || {}) };
+  if (rawItem && typeof rawItem.enabled === "boolean") {
+    merged.enabled = rawItem.enabled;
+  } else {
+    merged.enabled = merged.enabled !== false;
   }
-  renderSchedulesCards();
+  merged.time = String(merged.time || def.time || "12:00").trim();
+  if (Array.isArray(merged.days)) {
+    merged.days = merged.days
+      .map(d => parseInt(d, 10))
+      .filter(d => !isNaN(d) && d >= 0 && d <= 6)
+      .sort((a, b) => a - b);
+    merged.days = [...new Set(merged.days)];
+  } else {
+    merged.days = [...(def.days || [0, 1, 2, 3, 4, 5, 6])];
+  }
+  if (key === "weekly_elimination") {
+    merged.weeksInterval = Math.max(1, parseInt(merged.weeksInterval ?? def.weeksInterval ?? 1, 10) || 1);
+  }
+  return merged;
 }
 
-const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+function saveSchedulesToLocalCache() {
+  try {
+    const serializable = {};
+    Object.keys(currentSchedules).forEach(k => {
+      const it = currentSchedules[k];
+      serializable[k] = {
+        enabled: it.enabled !== false,
+        time: it.time || "12:00",
+        days: Array.isArray(it.days) ? it.days : [],
+        weeksInterval: it.weeksInterval,
+        lastRunDate: it.lastRunDate || ""
+      };
+    });
+    localStorage.setItem(SCHEDULES_LOCAL_CACHE_KEY, JSON.stringify(serializable));
+  } catch (e) {}
+}
+
+function applyIncomingSchedulesData(data = {}) {
+  if (!data || typeof data !== "object") return;
+  Object.keys(DEFAULT_SCHEDULES).forEach(key => {
+    if (data[key] && typeof data[key] === "object") {
+      currentSchedules[key] = normalizeScheduleItem(key, {
+        ...currentSchedules[key],
+        ...data[key]
+      });
+    } else {
+      currentSchedules[key] = normalizeScheduleItem(key, currentSchedules[key]);
+    }
+  });
+  if (currentSchedules.weekly_elimination) {
+    if (currentSchedules.weekly_elimination.enabled !== undefined) {
+      currentWeeklyEliminationEnabled = currentSchedules.weekly_elimination.enabled !== false;
+    }
+    if (currentSchedules.weekly_elimination.weeksInterval !== undefined) {
+      currentWeeklyEliminationWeeks = Number(currentSchedules.weekly_elimination.weeksInterval) || 1;
+    }
+    updatePromotionFlowConfigUi();
+  }
+  saveSchedulesToLocalCache();
+}
+
+function syncScheduleDomTimesIntoState() {
+  Object.keys(currentSchedules).forEach(key => {
+    const timeInput = document.getElementById(`sched_time_${key}`);
+    if (timeInput && timeInput.value) {
+      currentSchedules[key].time = timeInput.value.trim();
+    }
+  });
+}
+
+async function loadSchedulesConfig() {
+  const container = document.getElementById("schedulesCardsGrid");
+  if (!container) return;
+
+  // 1. Carrega cache local imediatamente se existir
+  try {
+    const cachedRaw = localStorage.getItem(SCHEDULES_LOCAL_CACHE_KEY);
+    if (cachedRaw) {
+      const cached = JSON.parse(cachedRaw);
+      applyIncomingSchedulesData(cached);
+      renderSchedulesCards();
+    }
+  } catch (e) {}
+
+  // 2. Busca do Firestore config/schedules
+  let loadedFromFirestore = false;
+  try {
+    const docSnap = await getDoc(doc(db, "config", "schedules"));
+    if (docSnap.exists()) {
+      applyIncomingSchedulesData(docSnap.data() || {});
+      loadedFromFirestore = true;
+    }
+  } catch (err) {
+    console.warn("loadSchedulesConfig direct Firestore read warning, trying backend fallback:", err);
+  }
+
+  // 3. Fallback via endpoint administrativo se leitura direta falhou
+  if (!loadedFromFirestore) {
+    try {
+      const resp = await fetch(INSPECT_PROMOTION_URL);
+      const payload = await resp.json().catch(() => ({}));
+      if (resp.ok && payload?.schedules && typeof payload.schedules === "object") {
+        applyIncomingSchedulesData(payload.schedules);
+      }
+    } catch (e) {
+      console.warn("loadSchedulesConfig backend fallback error:", e);
+    }
+  }
+
+  renderSchedulesCards();
+
+  // 4. Escuta atualizações em tempo real
+  if (unsubSchedulesSnap) {
+    unsubSchedulesSnap();
+    unsubSchedulesSnap = null;
+  }
+  try {
+    unsubSchedulesSnap = onSnapshot(doc(db, "config", "schedules"), snap => {
+      if (snap.exists()) {
+        syncScheduleDomTimesIntoState();
+        applyIncomingSchedulesData(snap.data() || {});
+        renderSchedulesCards();
+      }
+    }, err => {
+      console.warn("onSnapshot config/schedules warning:", err);
+    });
+  } catch (e) {}
+}
+
+const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function renderSchedulesCards() {
-  const container = document.getElementById('schedulesCardsGrid');
+  const container = document.getElementById("schedulesCardsGrid");
   if (!container) return;
 
   container.innerHTML = Object.keys(currentSchedules).map(key => {
-    const item = currentSchedules[key];
-    const isEnabled = item.enabled !== false;
+    const item = normalizeScheduleItem(key, currentSchedules[key]);
+    currentSchedules[key] = item;
+    const isEnabled = item.enabled !== false && (Array.isArray(item.days) ? item.days.length > 0 : true);
     const days = item.days || [];
+    const saveStatusText = scheduleSaveStatusMap[key] || "";
     
-    let lastRunDisplay = 'Nenhum registro ainda';
+    let lastRunDisplay = "Nenhum registro ainda";
     if (item.lastRunAt) {
       try {
-        const d = item.lastRunAt.toDate ? item.lastRunAt.toDate() : new Date(item.lastRunAt);
-        lastRunDisplay = `Último: ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
+        const d = item.lastRunAt.toDate
+          ? item.lastRunAt.toDate()
+          : (item.lastRunAt._seconds ? new Date(item.lastRunAt._seconds * 1000) : new Date(item.lastRunAt));
+        if (!isNaN(d.getTime())) {
+          lastRunDisplay = `Último: ${d.toLocaleDateString("pt-BR")} às ${d.toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})}`;
+        } else if (item.lastRunDate) {
+          lastRunDisplay = `Último: ${item.lastRunDate}`;
+        }
       } catch(e) {
-        lastRunDisplay = `Último: ${item.lastRunDate || ''}`;
+        lastRunDisplay = `Último: ${item.lastRunDate || ""}`;
       }
     } else if (item.lastRunDate) {
       lastRunDisplay = `Último: ${item.lastRunDate}`;
     }
 
     return `
-      <div class="sched-card" id="sched_card_${key}">
+      <div class="sched-card ${isEnabled ? "" : "is-disabled"}" id="sched_card_${key}">
         <div class="sched-head">
           <div>
-            <div class="sched-title">${item.icon || '⏰'} ${esc(item.name)}</div>
-            <div style="font-size:.66rem;color:var(--amber);margin-top:.2rem;text-transform:uppercase;letter-spacing:.08em">${esc(item.category || '')}</div>
+            <div class="sched-title">${item.icon || "⏰"} ${esc(item.name)}</div>
+            <div style="font-size:.66rem;color:var(--amber);margin-top:.2rem;text-transform:uppercase;letter-spacing:.08em">${esc(item.category || "")}</div>
           </div>
-          <button class="sched-status-badge ${isEnabled ? 'active' : 'paused'}" onclick="toggleScheduleEnabled('${key}')" style="cursor:pointer;border:none">
-            ${isEnabled ? '● Ativo' : '⏸ Pausado'}
+          <button type="button" class="sched-status-badge ${isEnabled ? "active" : "paused"}" onclick="toggleScheduleEnabled('${key}')" title="Clique para habilitar ou desabilitar este disparo automático">
+            ${isEnabled ? "🟢 Ativo" : "🔴 Desabilitado"}
           </button>
         </div>
 
         <div class="sched-desc">${esc(item.description)}</div>
 
-        <div class="sched-body">
+        <div class="sched-body" style="${isEnabled ? "" : "opacity:.65"}">
           <div class="sched-row">
-            <label style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--smoke)">Horário (Brasília):</label>
-            <input type="time" class="sched-time-input" id="sched_time_${key}" value="${item.time || '12:00'}" onchange="updateScheduleTime('${key}', this.value)">
+            <label for="sched_time_${key}" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--smoke)">Horário (Brasília):</label>
+            <input type="time" class="sched-time-input" id="sched_time_${key}" value="${esc(item.time || "12:00")}" oninput="updateScheduleTime('${key}', this.value, false)" onchange="updateScheduleTime('${key}', this.value, true)">
           </div>
 
           <div style="display:flex;flex-direction:column;gap:.35rem;margin-top:.2rem">
-            <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.35rem">
               <span style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--smoke)">Dias de Envio:</span>
-              <button type="button" style="background:none;border:none;color:var(--amber);font-size:.65rem;cursor:pointer;text-decoration:underline" onclick="setAllDaysSchedule('${key}')">Todos os dias</button>
+              <div style="display:flex;gap:.55rem;align-items:center">
+                <button type="button" style="background:none;border:none;color:var(--amber);font-size:.65rem;cursor:pointer;text-decoration:underline;padding:0" onclick="setAllDaysSchedule('${key}')">Todos os dias</button>
+                <span style="color:var(--smoke);font-size:.6rem">•</span>
+                <button type="button" style="background:none;border:none;color:#fca5a5;font-size:.65rem;cursor:pointer;text-decoration:underline;padding:0" onclick="clearAllDaysSchedule('${key}')">Desabilitar</button>
+              </div>
             </div>
             <div class="sched-days-wrap">
               ${DAY_NAMES.map((dName, dIdx) => `
-                <button type="button" class="sched-day-btn ${days.includes(dIdx) ? 'active' : ''}" onclick="toggleScheduleDay('${key}', ${dIdx})">
+                <button type="button" class="sched-day-btn ${(isEnabled && days.includes(dIdx)) ? "active" : ""}" onclick="toggleScheduleDay('${key}', ${dIdx})" title="${(isEnabled && days.includes(dIdx)) ? 'Clique para desmarcar este dia' : 'Clique para marcar este dia'}">
                   ${dName}
                 </button>
-              `).join('')}
+              `).join("")}
             </div>
           </div>
         </div>
 
         <div class="sched-footer">
-          <div class="sched-last-run" id="sched_last_${key}">${lastRunDisplay}</div>
-          <div style="display:flex;gap:.4rem">
-            <button class="btn-ghost" style="padding:.35rem .65rem;font-size:.72rem;border-color:var(--amber);color:var(--gold)" onclick="saveSingleSchedule('${key}')">💾 Salvar</button>
-            <button class="btn-ghost" style="padding:.35rem .65rem;font-size:.72rem;border-color:rgba(134,239,172,.4);color:#86efac" onclick="triggerScheduleManually('${key}')">⚡ Disparar</button>
+          <div>
+            <div class="sched-last-run" id="sched_last_${key}">${esc(lastRunDisplay)}</div>
+            <div id="sched_status_${key}" style="font-size:.68rem;color:#86efac;margin-top:.15rem;min-height:.9rem">${esc(saveStatusText)}</div>
+          </div>
+          <div style="display:flex;gap:.35rem;flex-wrap:wrap;justify-content:flex-end">
+            <button type="button" class="btn-ghost" style="padding:.35rem .6rem;font-size:.7rem;border-color:${isEnabled ? "rgba(248,113,113,.45)" : "rgba(134,239,172,.45)"};color:${isEnabled ? "#fca5a5" : "#86efac"}" onclick="toggleScheduleEnabled('${key}')" title="${isEnabled ? "Desabilitar disparo automático" : "Habilitar disparo automático"}">
+              ${isEnabled ? "⏸ Desabilitar" : "▶ Habilitar"}
+            </button>
+            <button type="button" id="sched_save_btn_${key}" class="btn-ghost" style="padding:.35rem .6rem;font-size:.7rem;border-color:var(--amber);color:var(--gold)" onclick="saveSingleSchedule('${key}')">💾 Salvar</button>
+            <button type="button" class="btn-ghost" style="padding:.35rem .6rem;font-size:.7rem;border-color:rgba(134,239,172,.4);color:#86efac" onclick="triggerScheduleManually('${key}')">⚡ Disparar</button>
           </div>
         </div>
       </div>
     `;
-  }).join('');
+  }).join("");
 }
 
-window.toggleScheduleEnabled = (key) => {
+function setCardSaveStatus(key, text, isError = false) {
+  scheduleSaveStatusMap[key] = text;
+  const el = document.getElementById(`sched_status_${key}`);
+  if (el) {
+    el.textContent = text;
+    el.style.color = isError ? "#fca5a5" : "#86efac";
+  }
+}
+
+window.toggleScheduleEnabled = async (key) => {
   if (!currentSchedules[key]) return;
-  currentSchedules[key].enabled = !currentSchedules[key].enabled;
-  if (key === 'weekly_elimination') {
+  syncScheduleDomTimesIntoState();
+  const currentlyActive = currentSchedules[key].enabled !== false && (Array.isArray(currentSchedules[key].days) ? currentSchedules[key].days.length > 0 : true);
+  const nextEnabled = !currentlyActive;
+  currentSchedules[key].enabled = nextEnabled;
+  if (nextEnabled && (!Array.isArray(currentSchedules[key].days) || currentSchedules[key].days.length === 0)) {
+    const defDays = DEFAULT_SCHEDULES[key]?.days || [0, 1, 2, 3, 4, 5, 6];
+    currentSchedules[key].days = [...defDays];
+  }
+  if (key === "weekly_elimination") {
+    currentWeeklyEliminationEnabled = nextEnabled;
+    updatePromotionFlowConfigUi();
+  }
+  renderSchedulesCards();
+  await window.saveSingleSchedule(key);
+};
+
+window.clearAllDaysSchedule = async (key) => {
+  if (!currentSchedules[key]) return;
+  syncScheduleDomTimesIntoState();
+  currentSchedules[key].enabled = false;
+  if (key === "weekly_elimination") {
+    currentWeeklyEliminationEnabled = false;
+    updatePromotionFlowConfigUi();
+  }
+  renderSchedulesCards();
+  await window.saveSingleSchedule(key);
+};
+
+window.updateScheduleTime = async (key, val, autoSave = false) => {
+  if (!currentSchedules[key] || !val) return;
+  const prevTime = currentSchedules[key].time;
+  currentSchedules[key].time = val.trim();
+  if (prevTime !== currentSchedules[key].time) {
+    currentSchedules[key]._timeChanged = true;
+  }
+  if (autoSave) {
+    await window.saveSingleSchedule(key);
+  }
+};
+
+window.toggleScheduleDay = async (key, dayIdx) => {
+  if (!currentSchedules[key]) return;
+  syncScheduleDomTimesIntoState();
+  const isCurrentlyEnabled = currentSchedules[key].enabled !== false;
+  const days = (currentSchedules[key].days || []).map(d => parseInt(d, 10)).filter(d => !isNaN(d));
+
+  if (!isCurrentlyEnabled) {
+    // Se estava desabilitado e o usuário clicou em um dia, habilita a rotina naquele dia
+    currentSchedules[key].enabled = true;
+    currentSchedules[key].days = [dayIdx];
+  } else if (days.includes(dayIdx)) {
+    if (days.length === 1) {
+      // Ao desmarcar o último dia, desabilita automaticamente o agendamento em vez de bloquear!
+      currentSchedules[key].days = [];
+      currentSchedules[key].enabled = false;
+    } else {
+      currentSchedules[key].days = days.filter(d => d !== dayIdx);
+    }
+  } else {
+    currentSchedules[key].days = [...days, dayIdx].sort((a, b) => a - b);
+    currentSchedules[key].enabled = true;
+  }
+
+  if (key === "weekly_elimination") {
     currentWeeklyEliminationEnabled = currentSchedules[key].enabled !== false;
     updatePromotionFlowConfigUi();
   }
   renderSchedulesCards();
-  showToast(`${currentSchedules[key].name}: ${currentSchedules[key].enabled ? 'Ativado' : 'Pausado'}. Clique em "Salvar" para aplicar.`);
+  await window.saveSingleSchedule(key);
 };
 
-window.updateScheduleTime = (key, val) => {
-  if (!currentSchedules[key] || !val) return;
-  currentSchedules[key].time = val;
-};
-
-window.toggleScheduleDay = (key, dayIdx) => {
+window.setAllDaysSchedule = async (key) => {
   if (!currentSchedules[key]) return;
-  const days = currentSchedules[key].days || [];
-  if (days.includes(dayIdx)) {
-    if (days.length === 1) {
-      showToast('Aviso: Selecione ao menos 1 dia ou pause a rotina.');
-      return;
-    }
-    currentSchedules[key].days = days.filter(d => d !== dayIdx);
-  } else {
-    currentSchedules[key].days = [...days, dayIdx].sort();
+  syncScheduleDomTimesIntoState();
+  currentSchedules[key].days = [0, 1, 2, 3, 4, 5, 6];
+  currentSchedules[key].enabled = true;
+  if (key === "weekly_elimination") {
+    currentWeeklyEliminationEnabled = true;
+    updatePromotionFlowConfigUi();
   }
   renderSchedulesCards();
+  await window.saveSingleSchedule(key);
 };
 
-window.setAllDaysSchedule = (key) => {
-  if (!currentSchedules[key]) return;
-  currentSchedules[key].days = [0, 1, 2, 3, 4, 5, 6];
-  renderSchedulesCards();
-  showToast(`${currentSchedules[key].name}: Configurado para todos os dias.`);
-};
+function shouldResetTodayRun(item) {
+  if (!item || !item.time || !item.time.includes(":")) return false;
+  const now = new Date();
+  const [h, m] = item.time.split(":").map(x => parseInt(x, 10));
+  if (isNaN(h) || isNaN(m)) return false;
+  const schedMinutes = h * 60 + m;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return item._timeChanged && schedMinutes >= nowMinutes;
+}
 
 window.saveSingleSchedule = async (key) => {
   if (!currentSchedules[key]) return;
-  const item = currentSchedules[key];
-  const timeInput = document.getElementById(`sched_time_${key}`);
-  if (timeInput) item.time = timeInput.value;
+  syncScheduleDomTimesIntoState();
+  const item = normalizeScheduleItem(key, currentSchedules[key]);
+  currentSchedules[key] = item;
 
-  showToast(`Salvando agendamento: ${item.name}...`);
+  const btn = document.getElementById(`sched_save_btn_${key}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "⏳ Salvando...";
+  }
+  setCardSaveStatus(key, "Salvando alteração...", false);
+
+  const updatedBy = auth.currentUser?.displayName || auth.currentUser?.email || "Admin";
+  const resetToday = shouldResetTodayRun(item);
+  const entry = {
+    enabled: item.enabled !== false && (Array.isArray(item.days) ? item.days.length > 0 : true),
+    time: item.time || "12:00",
+    days: Array.isArray(item.days) ? item.days : [0, 1, 2, 3, 4, 5, 6],
+    updatedAt: serverTimestamp(),
+    updatedBy
+  };
+  if (key === "weekly_elimination") {
+    entry.weeksInterval = Math.max(1, parseInt(item.weeksInterval || currentWeeklyEliminationWeeks || 1, 10) || 1);
+  }
+  if (resetToday) {
+    entry.lastRunDate = "";
+    item.lastRunDate = "";
+  }
+  delete item._timeChanged;
+
+  let savedOk = false;
   try {
-    const payload = {};
-    payload[key] = {
-      enabled: item.enabled !== false,
-      time: item.time || '12:00',
-      days: item.days || [0,1,2,3,4,5,6],
-      updatedAt: serverTimestamp(),
-      updatedBy: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin'
-    };
-    await setDoc(doc(db, 'config', 'schedules'), payload, { merge: true });
-    showToast(`✓ Agendamento salvo: ${item.name} (${item.time})`);
+    await setDoc(doc(db, "config", "schedules"), { [key]: entry }, { merge: true });
+    if (key === "weekly_elimination") {
+      await setDoc(promotionStateRef, {
+        weeklyEliminationEnabled: entry.enabled,
+        weeklyEliminationWeeks: entry.weeksInterval,
+        updatedAt: serverTimestamp(),
+        updatedBy
+      }, { merge: true }).catch(() => {});
+    }
+    savedOk = true;
   } catch (err) {
-    console.error('saveSingleSchedule error:', err);
-    showToast('⚠ Erro ao salvar agendamento no Firestore.');
+    console.warn("saveSingleSchedule direct Firestore error, trying backend fallback:", err);
+  }
+
+  if (!savedOk) {
+    try {
+      const resp = await fetch(INSPECT_PROMOTION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save_schedules",
+          schedules: {
+            [key]: {
+              enabled: entry.enabled,
+              time: entry.time,
+              days: entry.days,
+              weeksInterval: entry.weeksInterval,
+              resetLastRunToday: resetToday,
+              updatedBy
+            }
+          }
+        })
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok && data.ok !== false) {
+        savedOk = true;
+      }
+    } catch (fallbackErr) {
+      console.error("saveSingleSchedule fallback error:", fallbackErr);
+    }
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = savedOk ? "✓ Salvo!" : "💾 Salvar";
+    if (savedOk) {
+      setTimeout(() => {
+        const b = document.getElementById(`sched_save_btn_${key}`);
+        if (b) b.textContent = "💾 Salvar";
+      }, 2500);
+    }
+  }
+
+  if (savedOk) {
+    saveSchedulesToLocalCache();
+    const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const daysLabel = !entry.enabled || entry.days.length === 0
+      ? "Sem disparos"
+      : (entry.days.length === 7 ? "Todos os dias" : entry.days.map(d => DAY_NAMES[d]).join(", "));
+    setCardSaveStatus(key, `✓ Salvo às ${nowTime} (${entry.enabled ? "Ativo" : "Desabilitado"} · ${entry.time} · ${daysLabel})`, false);
+    showToast(`✓ ${item.name}: ${entry.enabled ? "Ativo" : "Desabilitado"} · ${entry.time} (${daysLabel})`);
+  } else {
+    setCardSaveStatus(key, "⚠ Erro ao salvar no banco de dados.", true);
+    showToast("⚠ Erro ao salvar agendamento no Firestore.");
   }
 };
 
 window.saveAllSchedules = async () => {
-  showToast('Salvando todos os agendamentos...');
+  syncScheduleDomTimesIntoState();
+  const btnAll = document.getElementById("btnSaveAllSchedules");
+  const globalStatus = document.getElementById("schedulesGlobalSaveStatus");
+  if (btnAll) {
+    btnAll.disabled = true;
+    btnAll.textContent = "⏳ Salvando...";
+  }
+  if (globalStatus) {
+    globalStatus.textContent = "Salvando todos os horários...";
+    globalStatus.style.color = "var(--gold)";
+  }
+  showToast("Salvando todos os agendamentos...");
+
+  const updatedBy = auth.currentUser?.displayName || auth.currentUser?.email || "Admin";
+  const firestorePayload = {};
+  const backendPayload = {};
+
+  Object.keys(currentSchedules).forEach(key => {
+    const item = normalizeScheduleItem(key, currentSchedules[key]);
+    currentSchedules[key] = item;
+    const resetToday = shouldResetTodayRun(item);
+    const entry = {
+      enabled: item.enabled !== false,
+      time: item.time || "12:00",
+      days: item.days || [0, 1, 2, 3, 4, 5, 6],
+      updatedAt: serverTimestamp(),
+      updatedBy
+    };
+    if (key === "weekly_elimination") {
+      entry.weeksInterval = Math.max(1, parseInt(item.weeksInterval || currentWeeklyEliminationWeeks || 1, 10) || 1);
+    }
+    if (resetToday) {
+      entry.lastRunDate = "";
+      item.lastRunDate = "";
+    }
+    delete item._timeChanged;
+    firestorePayload[key] = entry;
+    backendPayload[key] = {
+      enabled: entry.enabled,
+      time: entry.time,
+      days: entry.days,
+      weeksInterval: entry.weeksInterval,
+      resetLastRunToday: resetToday,
+      updatedBy
+    };
+  });
+
+  let savedOk = false;
   try {
-    const payload = {};
-    Object.keys(currentSchedules).forEach(key => {
-      const item = currentSchedules[key];
-      const timeInput = document.getElementById(`sched_time_${key}`);
-      if (timeInput) item.time = timeInput.value;
-      payload[key] = {
-        enabled: item.enabled !== false,
-        time: item.time || '12:00',
-        days: item.days || [0,1,2,3,4,5,6],
+    await setDoc(doc(db, "config", "schedules"), firestorePayload, { merge: true });
+    if (firestorePayload.weekly_elimination) {
+      await setDoc(promotionStateRef, {
+        weeklyEliminationEnabled: firestorePayload.weekly_elimination.enabled,
+        weeklyEliminationWeeks: firestorePayload.weekly_elimination.weeksInterval,
         updatedAt: serverTimestamp(),
-        updatedBy: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin'
-      };
-    });
-    await setDoc(doc(db, 'config', 'schedules'), payload, { merge: true });
-    showToast('✓ Todos os horários e dias foram atualizados com sucesso!');
+        updatedBy
+      }, { merge: true }).catch(() => {});
+    }
+    savedOk = true;
   } catch (err) {
-    console.error('saveAllSchedules error:', err);
-    showToast('⚠ Erro ao salvar configurações no Firestore.');
+    console.warn("saveAllSchedules direct Firestore error, trying backend fallback:", err);
+  }
+
+  if (!savedOk) {
+    try {
+      const resp = await fetch(INSPECT_PROMOTION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save_schedules",
+          schedules: backendPayload
+        })
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok && data.ok !== false) {
+        savedOk = true;
+      }
+    } catch (fallbackErr) {
+      console.error("saveAllSchedules fallback error:", fallbackErr);
+    }
+  }
+
+  if (btnAll) {
+    btnAll.disabled = false;
+    btnAll.textContent = savedOk ? "✓ Todos os Horários Salvos!" : "💾 Salvar Todos os Horários";
+    if (savedOk) {
+      setTimeout(() => {
+        const b = document.getElementById("btnSaveAllSchedules");
+        if (b) b.textContent = "💾 Salvar Todos os Horários";
+      }, 3000);
+    }
+  }
+
+  if (savedOk) {
+    saveSchedulesToLocalCache();
+    const nowTime = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    Object.keys(currentSchedules).forEach(k => {
+      setCardSaveStatus(k, `✓ Sincronizado às ${nowTime}`, false);
+    });
+    if (globalStatus) {
+      globalStatus.textContent = `✓ Todos salvos às ${nowTime}`;
+      globalStatus.style.color = "#86efac";
+    }
+    showToast("✓ Todos os horários e dias foram atualizados com sucesso!");
+  } else {
+    if (globalStatus) {
+      globalStatus.textContent = "⚠ Erro ao salvar.";
+      globalStatus.style.color = "#fca5a5";
+    }
+    showToast("⚠ Erro ao salvar configurações no Firestore.");
   }
 };
 
 let isTriggeringManual = false;
 window.triggerScheduleManually = async (key) => {
   if (isTriggeringManual) {
-    showToast('Aguarde o disparo atual terminar...');
+    showToast("Aguarde o disparo atual terminar...");
     return;
   }
   const item = currentSchedules[key];
@@ -4102,30 +4463,30 @@ window.triggerScheduleManually = async (key) => {
   showToast(`Disparando ${item.name}...`);
   try {
     if (item.triggerEndpoint) {
-      const res = await fetch(item.triggerEndpoint, { method: 'POST' });
+      const res = await fetch(item.triggerEndpoint, { method: "POST" });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.ok !== false) {
         showToast(data.message || `✓ ${item.name} enviado com sucesso!`);
         return;
       } else {
-        showToast(`⚠ Falha no envio: ${data.error || data.detail || 'Erro no servidor'}`);
+        showToast(`⚠ Falha no envio: ${data.error || data.detail || "Erro no servidor"}`);
         return;
       }
     }
 
-    await addDoc(collection(db, 'logs'), {
+    await addDoc(collection(db, "logs"), {
       action: `Disparo Manual: ${item.name}`,
       detail: `Execução manual via Central de Agendamentos`,
-      category: 'scheduler',
-      who: auth.currentUser?.displayName || auth.currentUser?.email || 'Admin',
-      whoEmail: auth.currentUser?.email || '',
+      category: "scheduler",
+      who: auth.currentUser?.displayName || auth.currentUser?.email || "Admin",
+      whoEmail: auth.currentUser?.email || "",
       ts: serverTimestamp(),
-      tsLocal: new Date().toLocaleString('pt-BR')
+      tsLocal: new Date().toLocaleString("pt-BR")
     });
     showToast(`✓ Comando registrado! O disparo de ${item.name} será processado.`);
   } catch (err) {
-    console.error('triggerScheduleManually error:', err);
-    showToast('⚠ Falha ao disparar. Verifique o console.');
+    console.error("triggerScheduleManually error:", err);
+    showToast("⚠ Falha ao disparar. Verifique o console.");
   } finally {
     isTriggeringManual = false;
   }

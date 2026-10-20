@@ -34,7 +34,7 @@ service cloud.firestore {
     }
 
     function publicConfigDoc(docId) {
-      return docId in ['galleryTags', 'galleryCompression', 'pausedAdmins', 'loadingScreen', 'loading_screen', 'dailyBands', 'heroCarousel'];
+      return docId in ['galleryTags', 'galleryCompression', 'pausedAdmins', 'loadingScreen', 'loading_screen', 'dailyBands', 'heroCarousel', 'schedules', 'seasonalTheme'];
     }
 
     match /approved_emails/{emailId} {
@@ -119,7 +119,8 @@ service cloud.firestore {
 
     match /config/{docId} {
       allow read: if publicConfigDoc(docId)
-        || ((docId == 'readAudit' || docId == 'bandRules') && isMember());
+        || isMember()
+        || isAuditAdmin();
       allow create, update, delete: if ((docId == 'readAudit' || docId == 'bandRules' || docId == 'pausedAdmins') && isAuditAdmin())
         || (docId != 'readAudit' && docId != 'bandRules' && docId != 'pausedAdmins' && isAdminActive());
     }

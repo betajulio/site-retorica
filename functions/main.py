@@ -288,9 +288,17 @@ def inspect_promotion_state(db):
     repertory_id = state.get("activeRepertoryPoll")
     tie_snap, tie_exists = get_poll_snapshot_data(db, tiebreaker_id)
     rep_snap, rep_exists = get_poll_snapshot_data(db, repertory_id)
+    schedules_data = {}
+    try:
+        sched_snap = db.collection("config").document("schedules").get()
+        if sched_snap.exists:
+            schedules_data = sched_snap.to_dict() or {}
+    except Exception:
+        pass
     return {
         "ok": True,
         "state": state,
+        "schedules": schedules_data,
         "activeTiebreakerPoll": {
             "id": tiebreaker_id,
             "exists": tie_exists,
@@ -2134,6 +2142,31 @@ def admin_inspect_promotion(req: https_fn.Request) -> https_fn.Response:
 
     db = firestore.client()
     try:
+        if req.method == "POST":
+            payload = req.get_json(silent=True) or {}
+            if payload.get("action") == "save_schedules" and isinstance(payload.get("schedules"), dict):
+                sched_payload = {}
+                for k, v in payload["schedules"].items():
+                    if isinstance(v, dict):
+                        entry = {
+                            "enabled": bool(v.get("enabled", True)),
+                            "time": str(v.get("time") or "12:00").strip(),
+                            "days": [int(d) for d in (v.get("days") or []) if str(d).lstrip("-").isdigit()],
+                            "updatedAt": firestore.SERVER_TIMESTAMP,
+                            "updatedBy": str(v.get("updatedBy") or "Admin")
+                        }
+                        if "weeksInterval" in v:
+                            entry["weeksInterval"] = safe_int(v.get("weeksInterval"), 1)
+                        if v.get("resetLastRunToday") is True:
+                            entry["lastRunDate"] = ""
+                        sched_payload[k] = entry
+                        if k == "weekly_elimination":
+                            promo_up = {"weeklyEliminationEnabled": entry["enabled"]}
+                            if "weeksInterval" in entry:
+                                promo_up["weeklyEliminationWeeks"] = entry["weeksInterval"]
+                            promotion_state_ref(db).set(promo_up, merge=True)
+                if sched_payload:
+                    db.collection("config").document("schedules").set(sched_payload, merge=True)
         result = inspect_promotion_state(db)
         return json_response(result, 200)
     except Exception as exc:
@@ -3191,22 +3224,99 @@ def on_log_created(event: firestore_fn.Event[firestore_fn.DocumentSnapshot | Non
             print(f"Erro ao processar disparo de Álbum de Ensaio: {error_detail}")
             update_log_delivery_status(db, log_id, "failed", error_detail)
 
+DEFAULT_SCHEDULES_BACKEND = {
+    "top_suggestions": {"enabled": True, "time": "15:00", "days": [0, 1, 2, 3, 4, 5, 6]},
+    "weekly_elimination": {"enabled": True, "time": "23:59", "days": [0], "weeksInterval": 1},
+    "weekly_ranking": {"enabled": True, "time": "13:00", "days": [5]},
+    "daily_curiosidades": {"enabled": True, "time": "10:00", "days": [0, 1, 2, 3, 4, 5, 6]},
+    "tuesday_repertoire": {"enabled": True, "time": "14:00", "days": [2]},
+    "daily_reminder": {"enabled": True, "time": "14:10", "days": [0, 1, 2, 3, 4, 5, 6]},
+    "pending_votes_report": {"enabled": True, "time": "18:00", "days": [0, 1, 2, 3, 4, 5, 6]},
+}
+
+def get_merged_schedules(db):
+    merged = {k: dict(v) for k, v in DEFAULT_SCHEDULES_BACKEND.items()}
+    try:
+        doc = db.collection("config").document("schedules").get()
+        if doc.exists:
+            raw = doc.to_dict() or {}
+            for k, v in raw.items():
+                if isinstance(v, dict):
+                    base = dict(merged.get(k, {}))
+                    base.update(v)
+                    if "days" in base and isinstance(base["days"], list):
+                        base["days"] = [int(d) for d in base["days"] if str(d).lstrip("-").isdigit()]
+                    merged[k] = base
+    except Exception as exc:
+        print(f"[SCHEDULES] Erro ao ler config/schedules: {exc}")
+    return merged
+
+def should_fixed_scheduler_run(db, key, default_time):
+    """Verifica se o agendamento fixo deve executar ou se foi pausado/reagendado em config/schedules."""
+    now = now_sp()
+    day_idx = (now.weekday() + 1) % 7  # 0 = Domingo .. 6 = Sábado
+    today_str = now.strftime("%Y-%m-%d")
+
+    schedules = get_merged_schedules(db)
+    cfg = schedules.get(key) or DEFAULT_SCHEDULES_BACKEND.get(key, {})
+
+    if not cfg.get("enabled", True):
+        print(f"[{key}] Ignorado no agendamento fixo: rotina pausada em config/schedules.")
+        return False
+
+    days = cfg.get("days", [])
+    if isinstance(days, list) and day_idx not in days:
+        print(f"[{key}] Ignorado no agendamento fixo: dia atual ({day_idx}) não está nos dias permitidos ({days}).")
+        return False
+
+    configured_time = str(cfg.get("time") or default_time).strip()
+    if configured_time != default_time:
+        print(f"[{key}] Ignorado no agendamento fixo ({default_time}): horário alterado para {configured_time} (será disparado pelo dynamic_schedule_dispatcher).")
+        return False
+
+    if cfg.get("lastRunDate") == today_str:
+        print(f"[{key}] Ignorado no agendamento fixo: já executado hoje ({today_str}).")
+        return False
+
+    return True
+
+def record_schedule_execution(db, key, result_ok, detail="", update_last_run_at=True):
+    today_str = now_sp().strftime("%Y-%m-%d")
+    sched_update = {
+        "lastRunDate": today_str,
+        "lastRunResult": "ok" if result_ok else f"erro: {detail}"
+    }
+    if update_last_run_at:
+        sched_update["lastRunAt"] = firestore.SERVER_TIMESTAMP
+    try:
+        db.collection("config").document("schedules").set({
+            key: sched_update
+        }, merge=True)
+    except Exception as exc:
+        print(f"[{key}] Aviso ao gravar status de execução em config/schedules: {exc}")
+
 # 5. AGENDAMENTO: LEMBRETE DIÁRIO (14:10)
 @scheduler_fn.on_schedule(schedule="10 14 * * *", timezone="America/Sao_Paulo")
 def daily_reminder(event: scheduler_fn.ScheduledEvent) -> None:
     db = firestore.client()
     try:
+        if not should_fixed_scheduler_run(db, "daily_reminder", "14:10"):
+            return
         if get_poll_reminder_paused(db):
             print("Lembrete diário de enquete ignorado: lembretes pausados pelo admin.")
             return
         active_polls = get_active_polls(db)
         if not active_polls:
             print("Lembrete diário de enquete ignorado: nenhuma enquete ativa no momento.")
+            record_schedule_execution(db, "daily_reminder", True, "Nenhuma enquete ativa")
             return
+        result_ok = False
         for poll_id, p in active_polls:
             msg = build_poll_reminder_message(p, header_title="📢 *LEMBRETE DE ENQUETE ATIVA!*")
             res = send_wa_message(msg)
+            result_ok = result_ok or bool(res.get("ok"))
             print(f"Lembrete de enquete enviado ({poll_id}): {res}")
+        record_schedule_execution(db, "daily_reminder", result_ok)
     except Exception as exc:
         print(f"Erro em daily_reminder: {type(exc).__name__}: {exc}")
 
@@ -3214,20 +3324,17 @@ def daily_reminder(event: scheduler_fn.ScheduledEvent) -> None:
 @scheduler_fn.on_schedule(schedule="0 14 * * 2", timezone="America/Sao_Paulo")
 def tuesday_repertoire(event: scheduler_fn.ScheduledEvent) -> None:
     db = firestore.client()
-    
-    # Verifica se o ensaio desta semana está cancelado
-    sat_iso = get_next_saturday_iso()
-    if is_rehearsal_cancelled(db, sat_iso):
-        print(f"Cancelando disparo automático: ensaio de {sat_iso} está marcado como cancelado.")
+    if not should_fixed_scheduler_run(db, "tuesday_repertoire", "14:00"):
         return
 
-    doc = db.collection("setlists").document("data").get()
-    if doc.exists:
-        tab0 = doc.to_dict().get("tab0", [])
-        if tab0:
-            sat_date = get_next_saturday_str()
-            txt = "\n".join([f"{i+1}. {m.get('song')} ({m.get('artist')})" for i, m in enumerate(tab0)])
-            send_wa_message(f"🎸 *REPERTÓRIO DO ENSAIO — SÁBADO ({sat_date})*\n\n{txt}\n\nEstudem! 🤘{SETLIST_FOOTER}")
+    msg, err = build_tuesday_repertoire_message(db)
+    if not msg:
+        print(f"[REPERTÓRIO TERÇA] Disparo não enviado: {err}")
+        record_schedule_execution(db, "tuesday_repertoire", False, err or "Lista vazia")
+        return
+
+    res = send_wa_message(msg)
+    record_schedule_execution(db, "tuesday_repertoire", bool(res.get("ok")), res.get("detail", ""))
 
 # 7. AGENDAMENTO: ABRIR FÓRUM DO ENSAIO (SÁBADO 00:01)
 @scheduler_fn.on_schedule(schedule="1 0 * * 6", timezone="America/Sao_Paulo")
@@ -3270,8 +3377,8 @@ def poll_monitor(event: scheduler_fn.ScheduledEvent) -> None:
         p = doc.to_dict()
         opts = p.get("options", [])
         if not opts: continue
-        res = sorted(opts, key=lambda x: x.get('votes', 0), reverse=True)
-        winner = res[0].get('label')
+        res = sorted(opts, key=lambda x: x.get("votes", 0), reverse=True)
+        winner = res[0].get("label")
         t = p.get("type", "")
         if t in ["repertoire", "repertory"]:
             send_wa_message(build_repertory_result_message(p))
@@ -3298,54 +3405,70 @@ def poll_monitor(event: scheduler_fn.ScheduledEvent) -> None:
                 continue
             send_wa_message(build_poll_reminder_message(p, header_title="⚠️ *ÚLTIMA CHAMADA (1 HORA)!*"))
 
-# 10. AGENDAMENTO: CURIOSIDADES DO DIA (TODOS OS DIAS ÀS 10:00)
+# 10. AGENDAMENTO: CURIOSIDADES DO DIA (PADRÃO ÀS 10:00 — RESPEITA config/schedules)
 @scheduler_fn.on_schedule(schedule="0 10 * * *", timezone="America/Sao_Paulo")
 def daily_curiosidades(event: scheduler_fn.ScheduledEvent) -> None:
     """Busca o almanaque musical da UCSFM e paradas da Apple Music e envia para o grupo."""
+    db = firestore.client()
+    if not should_fixed_scheduler_run(db, "daily_curiosidades", "10:00"):
+        return
     result = send_daily_curiosidades_and_top_music()
+    record_schedule_execution(db, "daily_curiosidades", bool(result.get("ok")), result.get("detail", ""))
     print(f"[CURIOSIDADES] Execução agendada finalizada: {result}")
 
-# 11. AGENDAMENTO: TOP 3 SUGESTÕES DIÁRIAS (TODOS OS DIAS ÀS 15:00)
+# 11. AGENDAMENTO: TOP 3 SUGESTÕES DIÁRIAS (PADRÃO ÀS 15:00 — RESPEITA config/schedules)
 @scheduler_fn.on_schedule(schedule="0 15 * * *", timezone="America/Sao_Paulo")
 def daily_top_suggestions(event: scheduler_fn.ScheduledEvent) -> None:
     """Envia diariamente às 15:00 as 3 primeiras colocadas das sugestões com o logo dinâmico."""
     db = firestore.client()
     try:
+        if not should_fixed_scheduler_run(db, "top_suggestions", "15:00"):
+            return
         msg = build_top_suggestions_message(db)
         if not msg:
             print("[TOP SUGESTÕES] Nenhuma sugestão encontrada no momento.")
+            record_schedule_execution(db, "top_suggestions", False, "Nenhuma sugestão encontrada")
             return
         result = send_wa_message(msg)
+        record_schedule_execution(db, "top_suggestions", bool(result.get("ok")), result.get("detail", ""))
         print(f"[TOP SUGESTÕES] Disparo enviado: {result}")
     except Exception as exc:
         print(f"[TOP SUGESTÕES] Erro durante disparo: {type(exc).__name__}: {exc}")
 
-# 12. AGENDAMENTO: RANKING SEMANAL DE MEMBROS (SEXTA-FEIRA ÀS 13:00)
+# 12. AGENDAMENTO: RANKING SEMANAL DE MEMBROS (PADRÃO SEXTA-FEIRA ÀS 13:00 — RESPEITA config/schedules)
 @scheduler_fn.on_schedule(schedule="0 13 * * 5", timezone="America/Sao_Paulo")
 def weekly_member_ranking(event: scheduler_fn.ScheduledEvent) -> None:
     """Envia toda sexta-feira às 13:00 o ranking semanal com o logo dinâmico."""
     db = firestore.client()
     try:
+        if not should_fixed_scheduler_run(db, "weekly_ranking", "13:00"):
+            return
         msg = build_weekly_member_ranking_message(db)
         if not msg:
             print("[RANKING SEMANAL] Nenhum membro/estatística encontrada no momento.")
+            record_schedule_execution(db, "weekly_ranking", False, "Sem estatísticas")
             return
         result = send_wa_message(msg)
+        record_schedule_execution(db, "weekly_ranking", bool(result.get("ok")), result.get("detail", ""))
         print(f"[RANKING SEMANAL] Disparo semanal enviado: {result}")
     except Exception as exc:
         print(f"[RANKING SEMANAL] Erro durante disparo: {type(exc).__name__}: {exc}")
 
-# 13. AGENDAMENTO: REPORT DE VOTOS PENDENTES DAS SUGESTÕES (TODOS OS DIAS ÀS 18:00)
+# 13. AGENDAMENTO: REPORT DE VOTOS PENDENTES DAS SUGESTÕES (PADRÃO ÀS 18:00 — RESPEITA config/schedules)
 @scheduler_fn.on_schedule(schedule="0 18 * * *", timezone="America/Sao_Paulo")
 def daily_pending_votes_report(event: scheduler_fn.ScheduledEvent) -> None:
     """Envia diariamente às 18:00 as músicas que faltam voto e a quantidade de membros faltantes."""
     db = firestore.client()
     try:
+        if not should_fixed_scheduler_run(db, "pending_votes_report", "18:00"):
+            return
         msg = build_pending_votes_report_message(db)
         if not msg:
             print("[REPORT PENDENTES] Nenhuma sugestão encontrada.")
+            record_schedule_execution(db, "pending_votes_report", False, "Nenhuma sugestão encontrada")
             return
         result = send_wa_message(msg)
+        record_schedule_execution(db, "pending_votes_report", bool(result.get("ok")), result.get("detail", ""))
         print(f"[REPORT PENDENTES] Disparo diário enviado: {result}")
     except Exception as exc:
         print(f"[REPORT PENDENTES] Erro durante disparo: {type(exc).__name__}: {exc}")
@@ -3361,20 +3484,17 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
     current_minutes = now.hour * 60 + now.minute
 
     try:
-        doc = db.collection("config").document("schedules").get()
-        if not doc.exists:
-            return
-        schedules = doc.to_dict() or {}
+        schedules = get_merged_schedules(db)
         
         for key, cfg in schedules.items():
             if not isinstance(cfg, dict) or not cfg.get("enabled", True):
                 continue
             
             days = cfg.get("days", [])
-            if days and day_idx not in days:
+            if isinstance(days, list) and day_idx not in days:
                 continue
             
-            time_str = (cfg.get("time") or "").strip()
+            time_str = str(cfg.get("time") or "").strip()
             if not time_str or ":" not in time_str:
                 continue
             
@@ -3384,8 +3504,8 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
             except Exception:
                 continue
             
-            # Janela de 10 minutos (se horário for 23:59, dispara na execução das 23:50)
-            in_window = (0 <= (current_minutes - sched_minutes) < 10)
+            # Janela de 15 minutos para absorver pequenas variações do Cloud Scheduler
+            in_window = (0 <= (current_minutes - sched_minutes) <= 15)
             if not in_window and sched_minutes >= 1430 and current_minutes >= 1430:
                 in_window = True
 
@@ -3397,6 +3517,7 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                 print(f"[DYNAMIC SCHEDULER] Disparando '{key}' programada para {time_str}.")
                 result_ok = False
                 detail = ""
+                should_run = True
                 try:
                     if key == "top_suggestions":
                         msg = build_top_suggestions_message(db)
@@ -3404,18 +3525,24 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                             r = send_wa_message(msg)
                             result_ok = r.get("ok", False)
                             detail = r.get("detail", "")
+                        else:
+                            detail = "Nenhuma sugestão ativa"
                     elif key == "pending_votes_report":
                         msg = build_pending_votes_report_message(db)
                         if msg:
                             r = send_wa_message(msg)
                             result_ok = r.get("ok", False)
                             detail = r.get("detail", "")
+                        else:
+                            detail = "Nenhuma sugestão ativa"
                     elif key == "weekly_ranking":
                         msg = build_weekly_member_ranking_message(db)
                         if msg:
                             r = send_wa_message(msg)
                             result_ok = r.get("ok", False)
                             detail = r.get("detail", "")
+                        else:
+                            detail = "Sem estatísticas"
                     elif key == "daily_curiosidades":
                         r = send_daily_curiosidades_and_top_music()
                         result_ok = r.get("ok", False)
@@ -3426,6 +3553,8 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                             r = send_wa_message(msg)
                             result_ok = r.get("ok", False)
                             detail = r.get("detail", "")
+                        else:
+                            detail = err or "Lista do ensaio vazia"
                     elif key == "daily_reminder":
                         if not get_poll_reminder_paused(db):
                             active_polls = get_active_polls(db)
@@ -3433,7 +3562,13 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                                 for poll_id, p in active_polls:
                                     msg = build_poll_reminder_message(p, header_title="📢 *LEMBRETE DE ENQUETE ATIVA!*")
                                     r = send_wa_message(msg)
-                                    result_ok = r.get("ok", False)
+                                    result_ok = result_ok or r.get("ok", False)
+                            else:
+                                result_ok = True
+                                detail = "Nenhuma enquete ativa"
+                        else:
+                            result_ok = True
+                            detail = "Lembretes pausados"
                     elif key == "weekly_elimination":
                         weeks_interval = safe_int(cfg.get("weeksInterval", 1))
                         try:
@@ -3445,7 +3580,6 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                         except Exception:
                             pass
 
-                        should_run = True
                         if weeks_interval > 1:
                             last_run_at = cfg.get("lastRunAt")
                             if last_run_at:
@@ -3464,19 +3598,12 @@ def dynamic_schedule_dispatcher(event: scheduler_fn.ScheduledEvent) -> None:
                 except Exception as exc:
                     detail = str(exc)
                 
-                sched_update = {
-                    "lastRunDate": today_str,
-                    "lastRunResult": "ok" if result_ok else f"erro: {detail}"
-                }
-                # Para weekly_elimination, só atualiza lastRunAt se a eliminação de fato foi executada
-                if key != "weekly_elimination" or (should_run and result_ok):
-                    sched_update["lastRunAt"] = firestore.SERVER_TIMESTAMP
-
-                db.collection("config").document("schedules").set({
-                    key: sched_update
-                }, merge=True)
+                record_schedule_execution(
+                    db,
+                    key,
+                    result_ok,
+                    detail,
+                    update_last_run_at=(key != "weekly_elimination" or (should_run and result_ok))
+                )
     except Exception as exc:
         print(f"[DYNAMIC SCHEDULER] Erro no dispatcher: {exc}")
-
-
-
